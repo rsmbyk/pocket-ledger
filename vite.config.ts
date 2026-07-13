@@ -5,13 +5,12 @@ import { playwright } from '@vitest/browser-playwright';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// GitHub Pages project site is served under /pocket-ledger/.
-// Local preview and CI e2e use root base unless GITHUB_PAGES=true.
-const repoBase = process.env.GITHUB_PAGES === 'true' ? '/pocket-ledger/' : '/';
+// Cloudflare Pages / Workers static assets serve at site root.
+const appBase = '/';
 
 // https://vite.dev/config/
 export default defineConfig({
-	base: repoBase,
+	base: appBase,
 	plugins: [
 		tailwindcss(),
 		svelte(),
@@ -25,8 +24,8 @@ export default defineConfig({
 				theme_color: '#0a0a0a',
 				background_color: '#0a0a0a',
 				display: 'standalone',
-				start_url: repoBase,
-				scope: repoBase,
+				start_url: appBase,
+				scope: appBase,
 				icons: [
 					{
 						src: 'icons/icon-192.png',
@@ -48,9 +47,9 @@ export default defineConfig({
 			},
 			workbox: {
 				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webp}'],
-				navigateFallback: `${repoBase}index.html`,
+				navigateFallback: `${appBase}index.html`,
 				navigateFallbackDenylist: [/^\/api\//],
-				additionalManifestEntries: [{ url: `${repoBase}offline.html`, revision: '1' }]
+				additionalManifestEntries: [{ url: `${appBase}offline.html`, revision: '1' }]
 			},
 			devOptions: {
 				enabled: true
