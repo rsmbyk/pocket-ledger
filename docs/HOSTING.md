@@ -14,12 +14,20 @@ Cloudflare builds on push — **GitHub Actions is not required** for deploys.
 
 ### Local / CLI (optional)
 
-```bash
+Credentials live in **`.env.local`** (gitignored). Template: `.env.example`.
+
+```powershell
+# PowerShell: load then deploy
+Get-Content .env.local | ForEach-Object {
+  if ($_ -match '^\s*#' -or $_ -notmatch '=') { return }
+  $k, $v = $_.Split('=', 2)
+  Set-Item -Path "Env:$k" -Value $v
+}
 npm run build
 npx wrangler pages deploy dist --project-name=pocket-ledger --branch main
 ```
 
-Requires `wrangler login` or `CLOUDFLARE_API_TOKEN` (never commit tokens).
+Never commit tokens. Rotate the token in the Cloudflare dashboard if it was ever shared in chat or committed by mistake.
 
 ## Former: GitHub Pages
 
