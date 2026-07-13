@@ -12,7 +12,7 @@ test.describe('001 transactions', () => {
 
 		await page.getByRole('button', { name: 'Expense', exact: true }).click();
 		await page.getByLabel(/amount/i).fill('15000');
-		await page.getByLabel(/category/i).selectOption({ label: 'Food' });
+		await page.getByLabel('Category', { exact: true }).selectOption({ label: 'Food' });
 		await page.getByRole('button', { name: 'Save' }).click();
 
 		await expect(page.getByTestId('account-balance')).toContainText('15');
@@ -27,7 +27,7 @@ test.describe('001 transactions', () => {
 		await page.getByRole('button', { name: 'Add transaction' }).click();
 		await page.getByRole('button', { name: 'Income', exact: true }).click();
 		await page.getByLabel(/amount/i).fill('100000');
-		await page.getByLabel(/category/i).selectOption({ label: 'Salary' });
+		await page.getByLabel('Category', { exact: true }).selectOption({ label: 'Salary' });
 		await page.getByRole('button', { name: 'Save' }).click();
 
 		await expect(page.getByTestId('account-balance')).toContainText('100');

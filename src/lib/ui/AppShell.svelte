@@ -5,10 +5,12 @@
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import ThemeMenu from '$lib/ui/ThemeMenu.svelte';
 	import QuickAddSheet from '$lib/ui/QuickAddSheet.svelte';
+	import MonthSummaryCard from '$lib/ui/MonthSummary.svelte';
 	import type { Account } from '$lib/domain/account';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
 	import type { ThemePreference } from '$lib/shared/theme';
+	import type { MonthSummary } from '$lib/domain/month-summary';
 	import { formatMinor } from '$lib/domain/money';
 
 	type Props = {
@@ -17,9 +19,12 @@
 		balanceMinor: number;
 		transactions: LedgerTransaction[];
 		categoriesById: Record<string, CategoryRow>;
+		monthSummary: MonthSummary | null;
 		themePreference: ThemePreference;
 		onThemePreferenceChange: (next: ThemePreference) => void;
 		onRefreshLedger: () => void | Promise<void>;
+		onPrevMonth: () => void | Promise<void>;
+		onNextMonth: () => void | Promise<void>;
 		ready: boolean;
 		error: string | null;
 	};
@@ -30,9 +35,12 @@
 		balanceMinor,
 		transactions,
 		categoriesById,
+		monthSummary,
 		themePreference,
 		onThemePreferenceChange,
 		onRefreshLedger,
+		onPrevMonth,
+		onNextMonth,
 		ready,
 		error
 	}: Props = $props();
@@ -98,9 +106,14 @@
 					<Tabs.Trigger value="more" disabled>More</Tabs.Trigger>
 				</Tabs.List>
 				<Tabs.Content value="home" class="mt-4 space-y-3">
-					<p class="text-muted-foreground text-sm">
-						Tap Add to log income or spending. Charts and budgets come later.
-					</p>
+					{#if monthSummary}
+						<MonthSummaryCard
+							summary={monthSummary}
+							currencyLabel={account?.currencyLabel ?? 'IDR'}
+							onPrevMonth={() => void onPrevMonth()}
+							onNextMonth={() => void onNextMonth()}
+						/>
+					{/if}
 					{#if transactions[0]}
 						<Card.Root>
 							<Card.Header class="pb-2">

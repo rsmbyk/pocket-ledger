@@ -7,10 +7,17 @@
 		getAccountBalance,
 		listRecentTransactions
 	} from '$lib/application/transactions';
+	import { getMonthSummary } from '$lib/application/month-summary';
 	import { listCategories } from '$lib/data/category-repo';
 	import type { Account } from '$lib/domain/account';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
+	import {
+		currentMonthKey,
+		shiftMonth,
+		type MonthKey,
+		type MonthSummary
+	} from '$lib/domain/month-summary';
 	import {
 		parseThemePreference,
 		THEME_STORAGE_KEY,
@@ -22,19 +29,23 @@
 	let balanceMinor = $state(0);
 	let transactions = $state<LedgerTransaction[]>([]);
 	let categoriesById = $state<Record<string, CategoryRow>>({});
+	let monthKey = $state<MonthKey>(currentMonthKey());
+	let monthSummary = $state<MonthSummary | null>(null);
 	let ready = $state(false);
 	let error = $state<string | null>(null);
 	let themePreference = $state<ThemePreference>('system');
 
-	async function refreshLedger(active: Account) {
-		const [balance, recent, categories] = await Promise.all([
+	async function refreshLedger(active: Account, key: MonthKey = monthKey) {
+		const [balance, recent, categories, summary] = await Promise.all([
 			getAccountBalance(active.id),
 			listRecentTransactions(active.id),
-			listCategories()
+			listCategories(),
+			getMonthSummary(active.id, key)
 		]);
 		balanceMinor = balance;
 		transactions = recent;
 		categoriesById = Object.fromEntries(categories.map((c) => [c.id, c]));
+		monthSummary = summary;
 	}
 
 	async function bootstrap() {
@@ -71,6 +82,18 @@
 		await refreshLedger(account);
 	}
 
+	async function onPrevMonth() {
+		if (!account) return;
+		monthKey = shiftMonth(monthKey, -1);
+		monthSummary = await getMonthSummary(account.id, monthKey);
+	}
+
+	async function onNextMonth() {
+		if (!account) return;
+		monthKey = shiftMonth(monthKey, 1);
+		monthSummary = await getMonthSummary(account.id, monthKey);
+	}
+
 	$effect(() => {
 		themePreference = parseThemePreference(userPrefersMode.current);
 		void mode.current;
@@ -89,9 +112,12 @@
 	{balanceMinor}
 	{transactions}
 	{categoriesById}
+	{monthSummary}
 	{themePreference}
 	{onThemePreferenceChange}
 	{onRefreshLedger}
+	{onPrevMonth}
+	{onNextMonth}
 	{ready}
 	{error}
 />

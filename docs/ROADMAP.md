@@ -4,7 +4,7 @@ Ordered slices after scaffold. Each slice gets a numbered spec before code.
 
 1. ~~**Transactions** — add/list expenses & income (mobile quick-add sheet)~~ → `specs/001-transactions.md`
 2. ~~**Categories** — seed + assign~~ (included in 001; custom category UI still later)
-3. **Month summary + charts** — cashflow / category views
+3. ~~**Month summary + charts** — cashflow / category views~~ → `specs/002-month-charts.md`
 4. **Export** — JSON backup download
 5. **Recurring** — templates that spawn transactions
 6. **Goals** — progress toward targets

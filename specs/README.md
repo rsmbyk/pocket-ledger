@@ -17,3 +17,4 @@ Living behavior contracts for Pocket Ledger.
 |------|-------|--------|
 | [000](000-scaffold.md) | Scaffold shell, theme, PWA, default account | Accepted |
 | [001](001-transactions.md) | Transactions + seed categories | Accepted |
+| [002](002-month-charts.md) | Month summary + charts | Accepted |
