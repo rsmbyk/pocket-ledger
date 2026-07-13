@@ -4,6 +4,7 @@ import {
 	DEFAULT_CURRENCY_LABEL,
 	type Account
 } from '$lib/domain/account';
+import { ensureSeedCategories } from '$lib/application/transactions';
 
 function createId(): string {
 	return crypto.randomUUID();
@@ -33,6 +34,7 @@ export async function getAccountsOverview(): Promise<{
 	isSinglePot: boolean;
 }> {
 	await ensureDefaultAccount();
+	await ensureSeedCategories();
 	const accounts = await listAccounts();
 	return {
 		accounts,
