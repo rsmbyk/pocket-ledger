@@ -21,10 +21,10 @@ UI wiring is thin; prefer testing rules below the Svelte boundary.
 
 ## GitHub Flow
 
-1. `main` is always deployable (Pages deploys from `main`).
+1. `main` is always deployable (Cloudflare deploys from `main`).
 2. Feature work happens on short-lived branches (`feat/*`, `fix/*`, `chore/*`, `docs/*`).
-3. Open a PR into `main`; CI must pass.
-4. Merge to `main` triggers Pages deploy.
+3. Open a PR into `main`; CI must pass when GitHub Actions is available.
+4. Merge to `main` triggers Cloudflare production deploy.
 
 ### Scaffold exception
 

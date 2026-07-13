@@ -2,13 +2,13 @@
 
 ## Status
 
-Accepted
+Superseded by [0006](0006-cloudflare-pages.md)
 
 ## Context
 
 Deploy without a server; use offline after first visit; mobile installability.
 
-## Decision
+## Decision (original)
 
 - Static `dist/` on GitHub Pages with base `/pocket-ledger/`
 - vite-plugin-pwa: manifest, icons, service worker, offline fallback page
@@ -18,4 +18,4 @@ Deploy without a server; use offline after first visit; mobile installability.
 
 - First visit needs network; later visits work offline
 - Changing Pages URL/origin can appear as an empty database
-- Flutter / native shells deferred
+- Blocked in practice when GitHub Actions could not run (billing lock)

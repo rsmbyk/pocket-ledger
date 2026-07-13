@@ -4,14 +4,14 @@ Living record of locked choices for Pocket Ledger. Update this file in the same 
 
 ## Goal
 
-Personal finance app that works offline after first load, hosted on GitHub Pages, with data stored only on the device.
+Personal finance app that works offline after first load, hosted on Cloudflare Pages (Git-connected), with data stored only on the device.
 
 ## Locked
 
 | Area | Decision |
 |------|----------|
 | Name | `pocket-ledger` |
-| Hosting | Public GitHub Pages (`/pocket-ledger/`) |
+| Hosting | Cloudflare Pages (Git → `main`); URL https://pocket-ledger.ronaldsumbayak611.workers.dev/ |
 | Client | Svelte 5 runes + Vite + TypeScript |
 | UI kit | shadcn-svelte (Vega / Lucide) + Tailwind |
 | Theme | Dark mode from day one; default **system**; Light / Dark / System override |
@@ -40,6 +40,6 @@ Personal finance app that works offline after first load, hosted on GitHub Pages
 
 ## Privacy model
 
-- App shell is public on GitHub Pages.
+- App shell is public on Cloudflare; source is on GitHub.
 - Ledger data never leaves the browser unless the user exports it (when export ships).
 - Clearing site data wipes the ledger — backups matter once export exists.

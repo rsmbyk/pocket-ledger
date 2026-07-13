@@ -1,0 +1,6 @@
+# Cloudflare Pages (Git-connected). Build settings in the dashboard should match:
+#   Build command: npm run build
+#   Output directory: dist
+name = "pocket-ledger"
+compatibility_date = "2026-07-13"
+pages_build_output_dir = "dist"

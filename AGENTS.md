@@ -8,7 +8,7 @@
 
 ## Hard constraints
 
-- No backend. Static GitHub Pages + IndexedDB only.
+- No backend. Static Cloudflare Pages + IndexedDB only.
 - Do not put Dexie imports in UI components.
 - Money = integer minor units.
 - Do not add a router unless navigation pain is documented in a spec.
@@ -19,4 +19,4 @@
 
 - UI: shadcn under `src/lib/components/ui`
 - Theme: `mode-watcher` + `pocket-ledger-theme` storage key
-- Pages base: set `GITHUB_PAGES=true` for `/pocket-ledger/` builds
+- Hosting: Cloudflare Pages at site root (`base: '/'`) — see `docs/HOSTING.md`

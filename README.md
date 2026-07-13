@@ -1,6 +1,8 @@
 # Pocket Ledger
 
-Offline-first personal finance tracker. Mobile-first PWA, data stays on your device (IndexedDB), deployed as a static site on GitHub Pages.
+Offline-first personal finance tracker. Mobile-first PWA, data stays on your device (IndexedDB).
+
+**Live:** https://pocket-ledger.ronaldsumbayak611.workers.dev/
 
 ## Stack
 
@@ -10,6 +12,7 @@ Offline-first personal finance tracker. Mobile-first PWA, data stays on your dev
 - vite-plugin-pwa
 - Vitest + Playwright
 - Spec-Driven Development + TDD + GitHub Flow
+- Hosting: **Cloudflare Pages** (Git-connected to this repo)
 
 ## Quick start
 
@@ -26,15 +29,16 @@ npm run test:e2e
 npm run build
 ```
 
-GitHub Pages production build (base path `/pocket-ledger/`):
+## Deploy
 
-```bash
-# Unix
-GITHUB_PAGES=true npm run build
+Production deploys automatically from `main` via Cloudflare’s Git integration (not GitHub Actions).
 
-# PowerShell
-$env:GITHUB_PAGES='true'; npm run build
-```
+Build settings (Cloudflare dashboard):
+
+- Build command: `npm run build`
+- Output directory: `dist`
+
+See [docs/HOSTING.md](docs/HOSTING.md).
 
 ## Process
 
@@ -45,6 +49,7 @@ Read these before changing behavior:
 | [docs/PRODUCT.md](docs/PRODUCT.md) | Locked product decisions |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layered client architecture |
 | [docs/PROCESS.md](docs/PROCESS.md) | SDD + TDD + GitHub Flow |
+| [docs/HOSTING.md](docs/HOSTING.md) | Cloudflare Pages |
 | [docs/FIRST_WORK.md](docs/FIRST_WORK.md) | Scaffold scope |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Feature order |
 | [specs/](specs/) | Living behavior specs |

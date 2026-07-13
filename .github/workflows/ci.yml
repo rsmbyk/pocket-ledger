@@ -24,5 +24,3 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - run: npm run build
-        env:
-          GITHUB_PAGES: 'true'
