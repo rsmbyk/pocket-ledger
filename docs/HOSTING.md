@@ -15,7 +15,7 @@ Cloudflare builds on push — **GitHub Actions is not required** for deploys.
 
 `pages_build_output_dir` must **not** be set. That flag makes Wrangler treat the project as classic Pages and reject `wrangler deploy` (which is what the Git pipeline runs).
 
-SPA deep links use `not_found_handling = "single-page-application"` in `wrangler.toml` (not `public/_redirects`).
+SPA deep links use `not_found_handling = "single-page-application"` in `wrangler.toml`. Do **not** ship a `public/_redirects` SPA rule — Workers rejects it as an infinite loop when assets are uploaded.
 
 ### Local / CLI (optional)
 
