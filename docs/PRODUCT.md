@@ -23,8 +23,9 @@ Personal finance app that works offline after first load, hosted on Cloudflare P
 | Budgets | None for now |
 | Multi-currency / FX | None |
 | UX | Mobile-first |
-| Features (planned) | Recurring, goals, net worth, charts, export |
-| Import | Not yet (export only when we reach that slice) |
+| Features (planned) | Recurring, goals, net worth, charts, export — **shipped in specs 001–008** |
+| Import | JSON restore (full replace) via More → Backup |
+| Lock | Optional passphrase lock, **off by default** (spec 007) |
 | Router | None at first |
 | Tests | Vitest + Playwright from the start |
 | Process | Spec-Driven Development + TDD + GitHub Flow |

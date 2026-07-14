@@ -24,7 +24,14 @@ UI wiring is thin; prefer testing rules below the Svelte boundary.
 1. `main` is always deployable (Cloudflare deploys from `main`).
 2. Feature work happens on short-lived branches (`feat/*`, `fix/*`, `chore/*`, `docs/*`).
 3. Open a PR into `main`; CI must pass when GitHub Actions is available.
-4. Merge to `main` triggers Cloudflare production deploy.
+4. Land the PR on `main` — that triggers Cloudflare production deploy.
+
+### Merge style
+
+- **Normal features / chores / docs:** **squash merge** the PR into `main` (one clean commit on `main`).
+- **Hotfixes only:** use a regular **merge commit** (preserve the hotfix branch history).
+
+Do not land features via local `--no-ff` merges to `main` unless GitHub is unavailable and Ronald explicitly approves a temporary exception.
 
 ### Scaffold exception
 

@@ -13,7 +13,7 @@
 - Money = integer minor units.
 - Do not add a router unless navigation pain is documented in a spec.
 - Encryption stays off unless implementing that feature slice.
-- After scaffold: no direct commits to `main` — use GitHub Flow (branch + PR).
+- After scaffold: no direct commits to `main` — use GitHub Flow (branch + PR). Squash-merge normal features; merge commits only for hotfixes (see `docs/PROCESS.md`).
 
 ## Stack pointers
 

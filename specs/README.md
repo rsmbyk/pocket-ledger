@@ -18,3 +18,9 @@ Living behavior contracts for Pocket Ledger.
 | [000](000-scaffold.md) | Scaffold shell, theme, PWA, default account | Accepted |
 | [001](001-transactions.md) | Transactions + seed categories | Accepted |
 | [002](002-month-charts.md) | Month summary + charts | Accepted |
+| [003](003-export-import.md) | Export & import JSON backup | Accepted |
+| [004](004-recurring.md) | Recurring transactions | Accepted |
+| [005](005-goals.md) | Goals | Accepted |
+| [006](006-net-worth.md) | Net worth snapshots | Accepted |
+| [007](007-passphrase-lock.md) | Optional passphrase lock | Accepted |
+| [008](008-more-tab.md) | More tab hub | Accepted |

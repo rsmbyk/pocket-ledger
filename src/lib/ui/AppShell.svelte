@@ -6,11 +6,16 @@
 	import ThemeMenu from '$lib/ui/ThemeMenu.svelte';
 	import QuickAddSheet from '$lib/ui/QuickAddSheet.svelte';
 	import MonthSummaryCard from '$lib/ui/MonthSummary.svelte';
+	import MorePanel from '$lib/ui/MorePanel.svelte';
 	import type { Account } from '$lib/domain/account';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
 	import type { ThemePreference } from '$lib/shared/theme';
 	import type { MonthSummary } from '$lib/domain/month-summary';
+	import type { RecurringRule, RecurringFrequency } from '$lib/domain/recurring';
+	import type { Goal } from '$lib/domain/goals';
+	import type { NetWorthSnapshot } from '$lib/domain/net-worth';
+	import type { AddableTransactionType } from '$lib/domain/transaction-rules';
 	import { formatMinor } from '$lib/domain/money';
 
 	type Props = {
@@ -20,11 +25,34 @@
 		transactions: LedgerTransaction[];
 		categoriesById: Record<string, CategoryRow>;
 		monthSummary: MonthSummary | null;
+		recurringRules: RecurringRule[];
+		goals: Goal[];
+		snapshots: NetWorthSnapshot[];
+		expenseCategories: CategoryRow[];
+		incomeCategories: CategoryRow[];
+		lockEnabled: boolean;
 		themePreference: ThemePreference;
 		onThemePreferenceChange: (next: ThemePreference) => void;
 		onRefreshLedger: () => void | Promise<void>;
 		onPrevMonth: () => void | Promise<void>;
 		onNextMonth: () => void | Promise<void>;
+		onExport: () => void | Promise<void>;
+		onImportFile: (file: File) => void | Promise<void>;
+		onCreateRecurring: (input: {
+			type: AddableTransactionType;
+			amountRaw: string;
+			categoryId: string;
+			frequency: RecurringFrequency;
+			note: string;
+		}) => void | Promise<void>;
+		onToggleRecurring: (id: string, active: boolean) => void | Promise<void>;
+		onDeleteRecurring: (id: string) => void | Promise<void>;
+		onCreateGoal: (name: string, targetRaw: string) => void | Promise<void>;
+		onUpdateGoalSaved: (id: string, savedRaw: string) => void | Promise<void>;
+		onDeleteGoal: (id: string) => void | Promise<void>;
+		onCaptureNetWorth: () => void | Promise<void>;
+		onEnableLock: (passphrase: string) => void | Promise<void>;
+		onDisableLock: (passphrase: string) => void | Promise<void>;
 		ready: boolean;
 		error: string | null;
 	};
@@ -36,11 +64,28 @@
 		transactions,
 		categoriesById,
 		monthSummary,
+		recurringRules,
+		goals,
+		snapshots,
+		expenseCategories,
+		incomeCategories,
+		lockEnabled,
 		themePreference,
 		onThemePreferenceChange,
 		onRefreshLedger,
 		onPrevMonth,
 		onNextMonth,
+		onExport,
+		onImportFile,
+		onCreateRecurring,
+		onToggleRecurring,
+		onDeleteRecurring,
+		onCreateGoal,
+		onUpdateGoalSaved,
+		onDeleteGoal,
+		onCaptureNetWorth,
+		onEnableLock,
+		onDisableLock,
 		ready,
 		error
 	}: Props = $props();
@@ -81,29 +126,31 @@
 				</Card.Header>
 			</Card.Root>
 		{:else}
-			<Card.Root>
-				<Card.Header>
-					<Card.Title>Balance</Card.Title>
-					<Card.Description>
-						{#if isSinglePot}
-							Single-pot mode · {account?.currencyLabel}
-						{:else}
-							Multi-account · {account?.currencyLabel}
-						{/if}
-					</Card.Description>
-				</Card.Header>
-				<Card.Content>
-					<p class="text-3xl font-semibold tracking-tight" data-testid="account-balance">
-						{formatMinor(balanceMinor, account?.currencyLabel ?? 'IDR')}
-					</p>
-				</Card.Content>
-			</Card.Root>
+			{#if tab !== 'more'}
+				<Card.Root>
+					<Card.Header>
+						<Card.Title>Balance</Card.Title>
+						<Card.Description>
+							{#if isSinglePot}
+								Single-pot mode · {account?.currencyLabel}
+							{:else}
+								Multi-account · {account?.currencyLabel}
+							{/if}
+						</Card.Description>
+					</Card.Header>
+					<Card.Content>
+						<p class="text-3xl font-semibold tracking-tight" data-testid="account-balance">
+							{formatMinor(balanceMinor, account?.currencyLabel ?? 'IDR')}
+						</p>
+					</Card.Content>
+				</Card.Root>
+			{/if}
 
 			<Tabs.Root bind:value={tab} class="w-full">
 				<Tabs.List class="grid w-full grid-cols-3">
 					<Tabs.Trigger value="home">Home</Tabs.Trigger>
 					<Tabs.Trigger value="activity">Activity</Tabs.Trigger>
-					<Tabs.Trigger value="more" disabled>More</Tabs.Trigger>
+					<Tabs.Trigger value="more">More</Tabs.Trigger>
 				</Tabs.List>
 				<Tabs.Content value="home" class="mt-4 space-y-3">
 					{#if monthSummary}
@@ -145,7 +192,10 @@
 					{#if transactions.length === 0}
 						<p class="text-muted-foreground text-sm">No transactions yet. Add your first one.</p>
 					{:else}
-						<ul class="divide-border border-border divide-y rounded-lg border" data-testid="activity-list">
+						<ul
+							class="divide-border border-border divide-y rounded-lg border"
+							data-testid="activity-list"
+						>
 							{#each transactions as tx (tx.id)}
 								<li class="flex items-start justify-between gap-3 px-3 py-3 text-sm">
 									<div class="min-w-0">
@@ -166,6 +216,28 @@
 							{/each}
 						</ul>
 					{/if}
+				</Tabs.Content>
+				<Tabs.Content value="more" class="mt-4">
+					<MorePanel
+						currencyLabel={account?.currencyLabel ?? 'IDR'}
+						{recurringRules}
+						{goals}
+						{snapshots}
+						{expenseCategories}
+						{incomeCategories}
+						{lockEnabled}
+						{onExport}
+						{onImportFile}
+						{onCreateRecurring}
+						{onToggleRecurring}
+						{onDeleteRecurring}
+						{onCreateGoal}
+						{onUpdateGoalSaved}
+						{onDeleteGoal}
+						{onCaptureNetWorth}
+						{onEnableLock}
+						{onDisableLock}
+					/>
 				</Tabs.Content>
 			</Tabs.Root>
 		{/if}
