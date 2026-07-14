@@ -12,7 +12,7 @@ Offline-first personal finance tracker. Mobile-first PWA, data stays on your dev
 - vite-plugin-pwa
 - Vitest + Playwright
 - Spec-Driven Development + TDD + GitHub Flow
-- Hosting: **Cloudflare Pages** (Git-connected to this repo)
+- Hosting: **Cloudflare Workers** static assets (Git-connected to this repo)
 
 ## Quick start
 
@@ -49,7 +49,7 @@ Read these before changing behavior:
 | [docs/PRODUCT.md](docs/PRODUCT.md) | Locked product decisions |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layered client architecture |
 | [docs/PROCESS.md](docs/PROCESS.md) | SDD + TDD + GitHub Flow |
-| [docs/HOSTING.md](docs/HOSTING.md) | Cloudflare Pages |
+| [docs/HOSTING.md](docs/HOSTING.md) | Cloudflare Workers deploy |
 | [docs/FIRST_WORK.md](docs/FIRST_WORK.md) | Scaffold scope |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Feature order |
 | [specs/](specs/) | Living behavior specs |
