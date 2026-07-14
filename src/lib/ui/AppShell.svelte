@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -17,6 +18,7 @@
 	import type { NetWorthSnapshot } from '$lib/domain/net-worth';
 	import type { AddableTransactionType } from '$lib/domain/transaction-rules';
 	import { formatMinor } from '$lib/domain/money';
+	import { isAppRoute, parseHash, routeToHash, type AppRoute } from '$lib/shared/router';
 
 	type Props = {
 		account: Account | null;
@@ -91,12 +93,33 @@
 	}: Props = $props();
 
 	let addOpen = $state(false);
-	let tab = $state('home');
+	let tab = $state<AppRoute>('home');
 
 	function categoryName(categoryId: string | null): string {
 		if (!categoryId) return 'Uncategorized';
 		return categoriesById[categoryId]?.name ?? 'Category';
 	}
+
+	function setRoute(next: string) {
+		if (!isAppRoute(next)) return;
+		tab = next;
+		const hash = routeToHash(next);
+		if (typeof location !== 'undefined' && location.hash !== hash) {
+			location.hash = hash;
+		}
+	}
+
+	onMount(() => {
+		tab = parseHash(location.hash);
+		const onHashChange = () => {
+			tab = parseHash(location.hash);
+		};
+		window.addEventListener('hashchange', onHashChange);
+		if (!location.hash || location.hash === '#') {
+			history.replaceState(null, '', routeToHash('home'));
+		}
+		return () => window.removeEventListener('hashchange', onHashChange);
+	});
 </script>
 
 <div class="bg-background text-foreground flex min-h-svh flex-col">
@@ -146,7 +169,12 @@
 				</Card.Root>
 			{/if}
 
-			<Tabs.Root bind:value={tab} class="w-full">
+			<Tabs.Root
+				value={tab}
+				onValueChange={setRoute}
+				class="w-full"
+				data-testid="app-tabs"
+			>
 				<Tabs.List class="grid w-full grid-cols-3">
 					<Tabs.Trigger value="home">Home</Tabs.Trigger>
 					<Tabs.Trigger value="activity">Activity</Tabs.Trigger>
