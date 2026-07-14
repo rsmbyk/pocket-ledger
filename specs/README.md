@@ -24,3 +24,4 @@ Living behavior contracts for Pocket Ledger.
 | [006](006-net-worth.md) | Net worth snapshots | Accepted |
 | [007](007-passphrase-lock.md) | Optional passphrase lock | Accepted |
 | [008](008-more-tab.md) | More tab hub | Accepted |
+| [009](009-router.md) | Hash router for shell panels | Accepted |
