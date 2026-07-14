@@ -1,7 +1,8 @@
 # Cloudflare Workers (Git-connected) serving the Vite static build.
 # Dashboard build settings should be:
 #   Build command:  npm run build
-#   Deploy command: npx wrangler deploy
+#   Deploy command: npx wrangler deploy && npm run report:github-deployment
+# Build secret: GITHUB_DEPLOYMENTS_TOKEN (deployments:write) — see docs/HOSTING.md
 name = "pocket-ledger"
 compatibility_date = "2026-07-13"
 
