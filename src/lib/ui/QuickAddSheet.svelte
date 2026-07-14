@@ -4,7 +4,13 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import type { CategoryRow } from '$lib/data/db';
-	import { addTransaction, getCategoriesForType } from '$lib/application/transactions';
+	import type { LedgerTransaction } from '$lib/domain/transaction';
+	import {
+		addTransaction,
+		getCategoriesForType,
+		removeTransaction,
+		updateTransaction
+	} from '$lib/application/transactions';
 	import {
 		todayOccurredOn,
 		type AddableTransactionType
@@ -14,11 +20,12 @@
 		open: boolean;
 		accountId: string;
 		currencyLabel: string;
+		editing?: LedgerTransaction | null;
 		onOpenChange: (open: boolean) => void;
 		onSaved: () => void | Promise<void>;
 	};
 
-	let { open, accountId, currencyLabel, onOpenChange, onSaved }: Props = $props();
+	let { open, accountId, currencyLabel, editing = null, onOpenChange, onSaved }: Props = $props();
 
 	let type = $state<AddableTransactionType>('expense');
 	let amountRaw = $state('');
@@ -28,11 +35,32 @@
 	let categories = $state<CategoryRow[]>([]);
 	let error = $state<string | null>(null);
 	let saving = $state(false);
+	let seeded = $state(false);
 
-	// Load expense categories once on mount (sheet is remounted each open).
-	void getCategoriesForType('expense').then((rows) => {
-		categories = rows;
-		categoryId = rows[0]?.id ?? '';
+	const isEdit = $derived(Boolean(editing));
+
+	$effect(() => {
+		void open;
+		void editing;
+		void (async () => {
+			error = null;
+			if (editing) {
+				type = editing.type === 'income' ? 'income' : 'expense';
+				amountRaw = String(editing.amountMinor);
+				note = editing.note;
+				occurredOn = editing.occurredOn;
+				categories = await getCategoriesForType(type);
+				categoryId = editing.categoryId ?? categories[0]?.id ?? '';
+			} else if (!seeded) {
+				type = 'expense';
+				amountRaw = '';
+				note = '';
+				occurredOn = todayOccurredOn();
+				categories = await getCategoriesForType('expense');
+				categoryId = categories[0]?.id ?? '';
+				seeded = true;
+			}
+		})();
 	});
 
 	async function onTypeChange(next: AddableTransactionType) {
@@ -46,14 +74,26 @@
 		saving = true;
 		error = null;
 		try {
-			await addTransaction({
-				accountId,
-				type,
-				amountRaw,
-				categoryId,
-				note,
-				occurredOn
-			});
+			if (editing) {
+				await updateTransaction({
+					id: editing.id,
+					accountId,
+					type,
+					amountRaw,
+					categoryId,
+					note,
+					occurredOn
+				});
+			} else {
+				await addTransaction({
+					accountId,
+					type,
+					amountRaw,
+					categoryId,
+					note,
+					occurredOn
+				});
+			}
 			onOpenChange(false);
 			await onSaved();
 		} catch (err) {
@@ -62,13 +102,34 @@
 			saving = false;
 		}
 	}
+
+	async function onDelete() {
+		if (!editing) return;
+		if (!confirm('Delete this transaction?')) return;
+		saving = true;
+		error = null;
+		try {
+			await removeTransaction(editing.id);
+			onOpenChange(false);
+			await onSaved();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Could not delete transaction';
+		} finally {
+			saving = false;
+		}
+	}
 </script>
 
 <Sheet.Root {open} onOpenChange={onOpenChange}>
-	<Sheet.Content side="bottom" class="mx-auto max-h-[90svh] w-full max-w-lg gap-0 rounded-t-2xl p-0">
+	<Sheet.Content
+		side="bottom"
+		class="mx-auto max-h-[90svh] w-full max-w-lg gap-0 rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+	>
 		<Sheet.Header class="border-border border-b px-4 py-3 text-left">
-			<Sheet.Title>Add transaction</Sheet.Title>
-			<Sheet.Description>Quick add for {currencyLabel} on this account.</Sheet.Description>
+			<Sheet.Title>{isEdit ? 'Edit transaction' : 'Add transaction'}</Sheet.Title>
+			<Sheet.Description>
+				{isEdit ? 'Update or delete this entry.' : `Quick add for ${currencyLabel} on this account.`}
+			</Sheet.Description>
 		</Sheet.Header>
 
 		<form
@@ -136,9 +197,21 @@
 			{/if}
 
 			<Sheet.Footer class="gap-2 p-0 pt-2 sm:flex-col">
-				<Button type="submit" class="w-full" disabled={saving}>
+				<Button type="submit" class="w-full" disabled={saving} data-testid="tx-save">
 					{saving ? 'Saving…' : 'Save'}
 				</Button>
+				{#if isEdit}
+					<Button
+						type="button"
+						variant="destructive"
+						class="w-full"
+						disabled={saving}
+						data-testid="tx-delete"
+						onclick={() => void onDelete()}
+					>
+						Delete
+					</Button>
+				{/if}
 			</Sheet.Footer>
 		</form>
 	</Sheet.Content>

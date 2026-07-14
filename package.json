@@ -12,6 +12,7 @@
 		"format": "prettier --write .",
 		"icons": "node scripts/generate-icons.mjs",
 		"report:github-deployment": "node scripts/report-github-deployment.mjs",
+		"deploy": "wrangler deploy && npm run report:github-deployment",
 		"test:unit": "vitest",
 		"test:unit:run": "vitest run",
 		"test:e2e": "playwright test",

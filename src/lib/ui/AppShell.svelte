@@ -99,12 +99,23 @@
 		error
 	}: Props = $props();
 
-	let addOpen = $state(false);
+	let sheetOpen = $state(false);
+	let editing = $state<LedgerTransaction | null>(null);
 	let tab = $state<AppRoute>('home');
 
 	function categoryName(categoryId: string | null): string {
 		if (!categoryId) return 'Uncategorized';
 		return categoriesById[categoryId]?.name ?? 'Category';
+	}
+
+	function openAdd() {
+		editing = null;
+		sheetOpen = true;
+	}
+
+	function openEdit(tx: LedgerTransaction) {
+		editing = tx;
+		sheetOpen = true;
 	}
 
 	function setRoute(next: string) {
@@ -131,7 +142,7 @@
 
 <div class="bg-background text-foreground flex min-h-svh flex-col">
 	<header
-		class="border-border/80 bg-background/90 sticky top-0 z-10 flex items-center justify-between gap-3 border-b px-4 py-3 backdrop-blur"
+		class="border-border/80 bg-background/90 sticky top-0 z-10 flex items-center justify-between gap-3 border-b px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur"
 	>
 		<div class="min-w-0">
 			<p class="text-muted-foreground text-xs tracking-wide uppercase">Pocket Ledger</p>
@@ -140,7 +151,7 @@
 		<ThemeMenu preference={themePreference} onPreferenceChange={onThemePreferenceChange} />
 	</header>
 
-	<main class="mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 px-4 py-4 pb-28">
+	<main class="mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 px-4 py-4 pb-32">
 		{#if error}
 			<Card.Root class="border-destructive/40">
 				<Card.Header>
@@ -176,17 +187,12 @@
 				</Card.Root>
 			{/if}
 
-			<Tabs.Root
-				value={tab}
-				onValueChange={setRoute}
-				class="w-full"
-				data-testid="app-tabs"
-			>
+			<Tabs.Root value={tab} onValueChange={setRoute} class="w-full" data-testid="app-tabs">
 				<Tabs.List class="grid w-full grid-cols-4">
-					<Tabs.Trigger value="home">Home</Tabs.Trigger>
-					<Tabs.Trigger value="activity">Activity</Tabs.Trigger>
-					<Tabs.Trigger value="categories">Categories</Tabs.Trigger>
-					<Tabs.Trigger value="more">More</Tabs.Trigger>
+					<Tabs.Trigger value="home" class="px-1 text-xs sm:text-sm">Home</Tabs.Trigger>
+					<Tabs.Trigger value="activity" class="px-1 text-xs sm:text-sm">Activity</Tabs.Trigger>
+					<Tabs.Trigger value="categories" class="px-1 text-xs sm:text-sm">Categories</Tabs.Trigger>
+					<Tabs.Trigger value="more" class="px-1 text-xs sm:text-sm">More</Tabs.Trigger>
 				</Tabs.List>
 				<Tabs.Content value="home" class="mt-4 space-y-3">
 					{#if monthSummary}
@@ -198,56 +204,87 @@
 						/>
 					{/if}
 					{#if transactions[0]}
-						<Card.Root>
-							<Card.Header class="pb-2">
-								<Card.Title class="text-base">Latest</Card.Title>
-							</Card.Header>
-							<Card.Content class="text-sm">
-								<div class="flex items-start justify-between gap-3">
-									<div class="min-w-0">
-										<p class="font-medium">{categoryName(transactions[0].categoryId)}</p>
-										<p class="text-muted-foreground truncate">
-											{transactions[0].note || transactions[0].type}
-											· {transactions[0].occurredOn}
+						<button
+							type="button"
+							class="w-full text-left"
+							data-testid="latest-transaction"
+							onclick={() => openEdit(transactions[0]!)}
+						>
+							<Card.Root class="hover:bg-muted/40 transition-colors">
+								<Card.Header class="pb-2">
+									<Card.Title class="text-base">Latest</Card.Title>
+									<Card.Description>Tap to edit</Card.Description>
+								</Card.Header>
+								<Card.Content class="text-sm">
+									<div class="flex items-start justify-between gap-3">
+										<div class="min-w-0">
+											<p class="font-medium">{categoryName(transactions[0].categoryId)}</p>
+											<p class="text-muted-foreground truncate">
+												{transactions[0].note || transactions[0].type}
+												· {transactions[0].occurredOn}
+											</p>
+										</div>
+										<p
+											class={transactions[0].type === 'expense'
+												? 'text-destructive font-medium'
+												: 'font-medium text-emerald-600 dark:text-emerald-400'}
+										>
+											{transactions[0].type === 'expense' ? '−' : '+'}
+											{formatMinor(transactions[0].amountMinor, account?.currencyLabel ?? 'IDR')}
 										</p>
 									</div>
-									<p
-										class={transactions[0].type === 'expense'
-											? 'text-destructive font-medium'
-											: 'font-medium text-emerald-600 dark:text-emerald-400'}
-									>
-										{transactions[0].type === 'expense' ? '−' : '+'}
-										{formatMinor(transactions[0].amountMinor, account?.currencyLabel ?? 'IDR')}
-									</p>
-								</div>
+								</Card.Content>
+							</Card.Root>
+						</button>
+					{:else}
+						<Card.Root data-testid="home-empty">
+							<Card.Header>
+								<Card.Title class="text-base">No transactions yet</Card.Title>
+								<Card.Description>Add your first income or expense to get started.</Card.Description>
+							</Card.Header>
+							<Card.Content>
+								<Button type="button" class="w-full" onclick={openAdd} data-testid="home-empty-add">
+									Get started
+								</Button>
 							</Card.Content>
 						</Card.Root>
 					{/if}
 				</Tabs.Content>
 				<Tabs.Content value="activity" class="mt-4">
 					{#if transactions.length === 0}
-						<p class="text-muted-foreground text-sm">No transactions yet. Add your first one.</p>
+						<div class="space-y-3" data-testid="activity-empty">
+							<p class="text-muted-foreground text-sm">No transactions yet.</p>
+							<Button type="button" variant="outline" onclick={openAdd} data-testid="activity-empty-add">
+								Add your first one
+							</Button>
+						</div>
 					{:else}
 						<ul
 							class="divide-border border-border divide-y rounded-lg border"
 							data-testid="activity-list"
 						>
 							{#each transactions as tx (tx.id)}
-								<li class="flex items-start justify-between gap-3 px-3 py-3 text-sm">
-									<div class="min-w-0">
-										<p class="font-medium">{categoryName(tx.categoryId)}</p>
-										<p class="text-muted-foreground truncate">
-											{tx.note || tx.type} · {tx.occurredOn}
-										</p>
-									</div>
-									<p
-										class={tx.type === 'expense'
-											? 'text-destructive shrink-0 font-medium'
-											: 'shrink-0 font-medium text-emerald-600 dark:text-emerald-400'}
+								<li>
+									<button
+										type="button"
+										class="hover:bg-muted/40 flex w-full items-start justify-between gap-3 px-3 py-3 text-left text-sm transition-colors"
+										onclick={() => openEdit(tx)}
 									>
-										{tx.type === 'expense' ? '−' : '+'}
-										{formatMinor(tx.amountMinor, account?.currencyLabel ?? 'IDR')}
-									</p>
+										<div class="min-w-0">
+											<p class="font-medium">{categoryName(tx.categoryId)}</p>
+											<p class="text-muted-foreground truncate">
+												{tx.note || tx.type} · {tx.occurredOn}
+											</p>
+										</div>
+										<p
+											class={tx.type === 'expense'
+												? 'text-destructive shrink-0 font-medium'
+												: 'shrink-0 font-medium text-emerald-600 dark:text-emerald-400'}
+										>
+											{tx.type === 'expense' ? '−' : '+'}
+											{formatMinor(tx.amountMinor, account?.currencyLabel ?? 'IDR')}
+										</p>
+									</button>
 								</li>
 							{/each}
 						</ul>
@@ -288,14 +325,16 @@
 		{/if}
 	</main>
 
-	<div class="pointer-events-none fixed inset-x-0 bottom-0 z-10 px-4 pb-4">
+	<div
+		class="pointer-events-none fixed inset-x-0 bottom-0 z-10 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+	>
 		<div class="pointer-events-auto mx-auto flex max-w-lg justify-end">
 			<Button
 				size="lg"
 				class="rounded-full shadow-lg"
 				disabled={!ready || !account}
 				aria-label="Add transaction"
-				onclick={() => (addOpen = true)}
+				onclick={openAdd}
 			>
 				<PlusIcon class="size-5" />
 				Add
@@ -304,14 +343,20 @@
 	</div>
 </div>
 
-{#if account && addOpen}
-	<QuickAddSheet
-		open={true}
-		accountId={account.id}
-		currencyLabel={account.currencyLabel}
-		onOpenChange={(next) => {
-			if (!next) addOpen = false;
-		}}
-		onSaved={onRefreshLedger}
-	/>
+{#if account && sheetOpen}
+	{#key editing?.id ?? 'new'}
+		<QuickAddSheet
+			open={true}
+			accountId={account.id}
+			currencyLabel={account.currencyLabel}
+			{editing}
+			onOpenChange={(next) => {
+				if (!next) {
+					sheetOpen = false;
+					editing = null;
+				}
+			}}
+			onSaved={onRefreshLedger}
+		/>
+	{/key}
 {/if}

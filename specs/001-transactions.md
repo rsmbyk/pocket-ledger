@@ -21,7 +21,7 @@ Let the user record income and expenses on the default account from a mobile qui
 ### Out of scope
 
 - Transfers between accounts
-- Edit / delete transactions
+- Edit / delete transactions → `specs/012-polish.md`
 - Charts / month filters
 - Custom category management UI
 - Recurring, goals, export
