@@ -23,15 +23,16 @@ test.describe('003–008 base features', () => {
 
 	test('creates a goal with progress', async ({ page }) => {
 		await page.getByRole('tab', { name: 'More' }).click();
-		await page.getByPlaceholder('Name').fill('Emergency');
-		await page.getByPlaceholder('Target amount').fill('1000000');
-		await page.getByRole('button', { name: 'Add goal' }).click();
-		await expect(page.getByText('Emergency')).toBeVisible();
-		await expect(page.getByText(/0%/)).toBeVisible();
+		const more = page.getByTestId('more-panel');
+		await more.getByPlaceholder('Name').fill('Emergency');
+		await more.getByPlaceholder('Target amount').fill('1000000');
+		await more.getByRole('button', { name: 'Add goal' }).click();
+		await expect(more.getByText('Emergency')).toBeVisible();
+		await expect(more.getByText(/0%/)).toBeVisible();
 
-		await page.locator('form').filter({ hasText: 'Set saved' }).locator('input').fill('250000');
-		await page.getByRole('button', { name: 'Set saved' }).click();
-		await expect(page.getByText(/25%/)).toBeVisible();
+		await more.locator('form').filter({ hasText: 'Set saved' }).locator('input').fill('250000');
+		await more.getByRole('button', { name: 'Set saved' }).click();
+		await expect(more.getByText(/25%/)).toBeVisible();
 	});
 
 	test('captures net worth snapshot', async ({ page }) => {

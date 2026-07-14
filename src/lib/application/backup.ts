@@ -6,9 +6,13 @@ import type { RecurringRule } from '$lib/domain/recurring';
 import type { Goal } from '$lib/domain/goals';
 import type { NetWorthSnapshot } from '$lib/domain/net-worth';
 import {
+	SETTINGS_ENCRYPTION_ENABLED,
 	SETTINGS_LOCK_SALT,
 	SETTINGS_LOCK_VERIFIER
 } from '$lib/data/db';
+import { openField, sealAllSensitiveFields } from '$lib/application/field-crypto';
+import { isLockEnabled } from '$lib/application/lock';
+import { getDataKey } from '$lib/data/session-key';
 
 export const BACKUP_FORMAT_VERSION = 1 as const;
 
@@ -24,7 +28,11 @@ export type LedgerBackup = {
 	settings: { key: string; value: string }[];
 };
 
-const SECRET_SETTING_KEYS = new Set([SETTINGS_LOCK_SALT, SETTINGS_LOCK_VERIFIER]);
+const SECRET_SETTING_KEYS = new Set([
+	SETTINGS_LOCK_SALT,
+	SETTINGS_LOCK_VERIFIER,
+	SETTINGS_ENCRYPTION_ENABLED
+]);
 
 export async function buildBackup(): Promise<LedgerBackup> {
 	const [accounts, categories, transactions, recurringRules, goals, netWorthSnapshots, settings] =
@@ -42,10 +50,16 @@ export async function buildBackup(): Promise<LedgerBackup> {
 		formatVersion: BACKUP_FORMAT_VERSION,
 		exportedAt: new Date().toISOString(),
 		accounts,
-		categories,
-		transactions,
-		recurringRules,
-		goals,
+		categories: await Promise.all(
+			categories.map(async (c) => ({ ...c, name: await openField(c.name) }))
+		),
+		transactions: await Promise.all(
+			transactions.map(async (t) => ({ ...t, note: await openField(t.note) }))
+		),
+		recurringRules: await Promise.all(
+			recurringRules.map(async (r) => ({ ...r, note: await openField(r.note) }))
+		),
+		goals: await Promise.all(goals.map(async (g) => ({ ...g, name: await openField(g.name) }))),
 		netWorthSnapshots,
 		settings: settings.filter((s) => !SECRET_SETTING_KEYS.has(s.key))
 	};
@@ -113,6 +127,9 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 			await db.settings.bulkPut(normalized.settings);
 		}
 	);
+	if ((await isLockEnabled()) && getDataKey()) {
+		await sealAllSensitiveFields(getDataKey()!);
+	}
 }
 
 export function backupFilename(now = new Date()): string {

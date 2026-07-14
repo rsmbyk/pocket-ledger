@@ -10,6 +10,7 @@ import {
 	todayOccurredOn,
 	type AddableTransactionType
 } from '$lib/domain/transaction-rules';
+import { openField, sealField } from '$lib/application/field-crypto';
 
 export type AddTransactionInput = {
 	accountId: string;
@@ -24,28 +25,37 @@ function createId(): string {
 	return crypto.randomUUID();
 }
 
+async function revealCategories(rows: CategoryRow[]): Promise<CategoryRow[]> {
+	return Promise.all(
+		rows.map(async (c) => ({
+			...c,
+			name: await openField(c.name)
+		}))
+	);
+}
+
 export async function ensureSeedCategories(): Promise<CategoryRow[]> {
 	if ((await countCategories()) > 0) {
-		return listCategories();
+		return revealCategories(await listCategories());
 	}
 
 	const now = new Date().toISOString();
 	for (const seed of DEFAULT_CATEGORIES) {
 		await putCategory({
 			id: createId(),
-			name: seed.name,
+			name: await sealField(seed.name),
 			kind: seed.kind,
 			createdAt: now
 		});
 	}
-	return listCategories();
+	return revealCategories(await listCategories());
 }
 
 export async function getCategoriesForType(
 	type: AddableTransactionType
 ): Promise<CategoryRow[]> {
 	await ensureSeedCategories();
-	return listCategoriesByKind(type);
+	return revealCategories(await listCategoriesByKind(type));
 }
 
 export async function addTransaction(input: AddTransactionInput): Promise<LedgerTransaction> {
@@ -61,6 +71,7 @@ export async function addTransaction(input: AddTransactionInput): Promise<Ledger
 		throw new Error('Choose a category for this type');
 	}
 
+	const notePlain = (input.note ?? '').trim();
 	const tx: LedgerTransaction = {
 		id: createId(),
 		accountId: input.accountId,
@@ -68,17 +79,23 @@ export async function addTransaction(input: AddTransactionInput): Promise<Ledger
 		type: input.type,
 		amountMinor,
 		categoryId: category.id,
-		note: (input.note ?? '').trim(),
+		note: await sealField(notePlain),
 		occurredOn,
 		createdAt: new Date().toISOString()
 	};
 
 	await putTransaction(tx);
-	return tx;
+	return { ...tx, note: notePlain };
 }
 
 export async function listRecentTransactions(accountId: string): Promise<LedgerTransaction[]> {
-	return listTransactionsForAccount(accountId);
+	const rows = await listTransactionsForAccount(accountId);
+	return Promise.all(
+		rows.map(async (tx) => ({
+			...tx,
+			note: await openField(tx.note)
+		}))
+	);
 }
 
 export async function getAccountBalance(accountId: string): Promise<number> {

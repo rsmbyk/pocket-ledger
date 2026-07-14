@@ -13,6 +13,6 @@ Ordered slices after scaffold. Each slice gets a numbered spec before code.
 9. ~~**Import** — restore from export~~ → `specs/003-export-import.md`
 10. ~~**Router** — hash routes for shell panels~~ → `specs/009-router.md`
 11. ~~**Custom category management** — add/rename beyond seeds~~ → `specs/010-custom-categories.md`
-12. **Field-level at-rest encryption** — deepen beyond passphrase gate
+12. ~~**Field-level at-rest encryption** — deepen beyond passphrase gate~~ → `specs/011-field-encryption.md`
 
 Multi-account UI beyond the default pot can land whenever transfers/net-worth need it; storage already supports it.

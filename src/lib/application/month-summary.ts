@@ -1,4 +1,3 @@
-import { listCategories } from '$lib/data/category-repo';
 import { listTransactionsForAccount } from '$lib/data/transaction-repo';
 import {
 	buildMonthSummary,
@@ -6,6 +5,7 @@ import {
 	type MonthKey,
 	type MonthSummary
 } from '$lib/domain/month-summary';
+import { listCategories } from '$lib/application/categories';
 
 export async function getMonthSummary(
 	accountId: string,

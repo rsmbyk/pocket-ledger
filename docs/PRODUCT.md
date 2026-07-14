@@ -11,12 +11,12 @@ Personal finance app that works offline after first load, hosted on Cloudflare P
 | Area | Decision |
 |------|----------|
 | Name | `pocket-ledger` |
-| Hosting | Cloudflare Pages (Git → `main`); URL https://pocket-ledger.ronaldsumbayak611.workers.dev/ |
+| Hosting | Cloudflare Workers static assets (Git → `main`); URL https://pocket-ledger.ronaldsumbayak611.workers.dev/ |
 | Client | Svelte 5 runes + Vite + TypeScript |
 | UI kit | shadcn-svelte (Vega / Lucide) + Tailwind |
 | Theme | Dark mode from day one; default **system**; Light / Dark / System override |
 | Storage | IndexedDB via Dexie |
-| Encryption | Optional later; **off by default** |
+| Encryption | Optional; **off by default**; when lock is on, notes/names are AES-GCM at rest |
 | Ledger | Simple ledger now; schema open for double-entry later |
 | Accounts | Multi-account capable; **single-pot UX** when only one account; start with default `Main` |
 | Currency | Single currency; display label only (default `IDR`) |

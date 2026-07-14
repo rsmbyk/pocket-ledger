@@ -3,14 +3,13 @@
 	import { ModeWatcher, mode, setMode, userPrefersMode } from 'mode-watcher';
 	import AppShell from '$lib/ui/AppShell.svelte';
 	import UnlockScreen from '$lib/ui/UnlockScreen.svelte';
-	import { getAccountsOverview } from '$lib/application/accounts';
+	import { ensureDefaultAccount, getAccountsOverview } from '$lib/application/accounts';
 	import {
 		getAccountBalance,
 		getCategoriesForType,
 		listRecentTransactions
 	} from '$lib/application/transactions';
 	import { getMonthSummary } from '$lib/application/month-summary';
-	import { listCategories } from '$lib/data/category-repo';
 	import {
 		backupFilename,
 		buildBackup,
@@ -38,10 +37,11 @@
 		disableLock,
 		enableLock,
 		isLockEnabled,
-		verifyPassphrase
+		unlockWithPassphrase
 	} from '$lib/application/lock';
 	import {
 		createCategory,
+		listCategories,
 		removeCategory,
 		renameCategory
 	} from '$lib/application/categories';
@@ -107,14 +107,20 @@
 	}
 
 	async function bootstrap() {
-		await materializeDueRecurring();
+		lockEnabled = await isLockEnabled();
+		unlocked = !lockEnabled;
+		// Sealed category/note fields need the session key — stop before seeding/lists.
+		if (!unlocked) {
+			account = await ensureDefaultAccount();
+			isSinglePot = true;
+			return;
+		}
 		const overview = await getAccountsOverview();
 		const active = overview.accounts[0] ?? null;
 		account = active;
 		isSinglePot = overview.isSinglePot;
-		lockEnabled = await isLockEnabled();
-		unlocked = !lockEnabled;
-		if (active && unlocked) {
+		await materializeDueRecurring();
+		if (active) {
 			await refreshLedger(active);
 		}
 	}
@@ -156,7 +162,7 @@
 	}
 
 	async function onUnlock(passphrase: string) {
-		const ok = await verifyPassphrase(passphrase);
+		const ok = await unlockWithPassphrase(passphrase);
 		if (!ok) throw new Error('Incorrect passphrase');
 		unlocked = true;
 		if (account) await refreshLedger(account);

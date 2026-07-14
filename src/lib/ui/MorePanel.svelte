@@ -353,7 +353,8 @@
 		<Card.Header>
 			<Card.Title class="text-base">Privacy</Card.Title>
 			<Card.Description>
-				Optional passphrase lock (off by default). Forgotten passphrases cannot be recovered.
+				Optional passphrase lock (off by default). When on, notes and names are encrypted at rest
+				in this browser. Forgotten passphrases cannot be recovered.
 			</Card.Description>
 		</Card.Header>
 		<Card.Content class="space-y-2">

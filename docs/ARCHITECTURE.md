@@ -35,9 +35,9 @@ Simple ledger rows include:
 
 Do not invent a second parallel storage model when transfers arrive — extend this shape.
 
-## Encryption (later)
+## Encryption
 
-Optional encryption is a `data`-layer adapter concern. Use cases stay the same; settings key `encryption.enabled` is reserved (default off).
+Optional passphrase lock (`encryption.enabled`, default off) derives an in-memory AES-GCM key. Sensitive strings (notes, goal names, category names) are sealed in IndexedDB as `enc:v1:…` while amounts/dates/ids stay plaintext for ledger math. Export while unlocked emits plaintext JSON.
 
 ## Routing
 
