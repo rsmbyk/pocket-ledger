@@ -19,7 +19,7 @@ Optional privacy lock: when enabled, the ledger UI requires a passphrase after l
 
 ### Out of scope
 
-- Full field-level at-rest ciphertext for every IndexedDB row (follow-up)
+- Encrypting amounts/dates/ids (see spec 011 for free-text fields)
 - Biometrics / OS keychain
 - Password recovery (forgotten passphrase cannot unlock)
 
