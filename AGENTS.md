@@ -3,7 +3,7 @@
 ## Before coding
 
 1. Read `docs/PRODUCT.md`, `docs/ARCHITECTURE.md`, `docs/PROCESS.md`.
-2. For behavior changes: update or add a file under `specs/` first (SDD).
+2. Follow SDD: **plan → spec → tasks → wait for Ronald’s OK → then code** (see `docs/PROCESS.md`). Do not implement until he approves.
 3. Prefer TDD for `src/lib/domain` and `src/lib/application`.
 
 ## Hard constraints

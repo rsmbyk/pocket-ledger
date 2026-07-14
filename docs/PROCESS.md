@@ -2,12 +2,20 @@
 
 ## Spec-Driven Development (SDD)
 
-1. Write or update a spec under `specs/` **before** implementing behavior.
-2. Acceptance scenarios use Given / When / Then.
-3. Playwright covers acceptance; Vitest covers domain/use-case rules.
-4. PRs must link the spec. Behavior changes without a spec update are incomplete.
+Every behavior change follows this loop. Agents and humans both use it.
+
+1. **Plan** — what / why / scope / edges (short is fine).
+2. **Spec** — write or update `specs/NNN-….md` with Given / When / Then **before** any implementation.
+3. **Tasks** — checklist for the slice (domain/app tests → use cases → UI → Playwright).
+4. **Permission gate** — stop and wait for Ronald’s explicit OK. Do **not** start coding, scaffolding, or installing deps until he approves the plan/spec/tasks — even if the ask sounds like “do X” or “proceed.”
+5. **Execute** — TDD, one branch per spec, land via GitHub Flow.
+6. **Done** — PR links the spec; behavior changes without a matching spec update are incomplete.
+
+Playwright covers acceptance; Vitest covers domain/use-case rules.
 
 Do not spec pure CSS tweaks. Do spec any user-visible behavior or money rule change.
+
+Ops / docs-only / hotfix one-liners may skip a full numbered spec, but still get a short plan and OK when more than a trivial change.
 
 ## TDD
 
