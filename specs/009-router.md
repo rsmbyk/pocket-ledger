@@ -12,7 +12,7 @@ Give each primary shell panel a stable URL so refresh, back/forward, and Playwri
 
 ### In scope
 
-- Hash routes for existing panels: `#/` (home), `#/activity`, `#/more`
+- Hash routes for shell panels: `#/` (home), `#/activity`, `#/categories`, `#/more`
 - Bottom/tab navigation updates the hash
 - Hash changes (including browser back) update the visible panel
 - Unknown hashes fall back to home
@@ -22,11 +22,11 @@ Give each primary shell panel a stable URL so refresh, back/forward, and Playwri
 
 - Path-based history routing (`/activity`)
 - Nested routes / params (month keys, transaction ids)
-- Categories route (lands with spec 010)
+- Nested routes / query params beyond the panel id
 
 ## Domain rules
 
-- Route ids: `home` | `activity` | `more`
+- Route ids: `home` | `activity` | `categories` | `more`
 - Empty hash, `#`, and `#/` map to `home`
 - Parsing is case-sensitive path after `#/`
 

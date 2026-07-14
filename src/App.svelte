@@ -40,6 +40,11 @@
 		isLockEnabled,
 		verifyPassphrase
 	} from '$lib/application/lock';
+	import {
+		createCategory,
+		removeCategory,
+		renameCategory
+	} from '$lib/application/categories';
 	import type { Account } from '$lib/domain/account';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
@@ -258,6 +263,18 @@
 		onDisableLock={async (passphrase) => {
 			await disableLock(passphrase);
 			lockEnabled = false;
+		}}
+		onCreateCategory={async (name, kind) => {
+			await createCategory(name, kind);
+			await onRefreshLedger();
+		}}
+		onRenameCategory={async (id, name) => {
+			await renameCategory(id, name);
+			await onRefreshLedger();
+		}}
+		onDeleteCategory={async (id) => {
+			await removeCategory(id);
+			await onRefreshLedger();
 		}}
 		{ready}
 		{error}
