@@ -41,7 +41,7 @@ Optional encryption is a `data`-layer adapter concern. Use cases stay the same; 
 
 ## Routing
 
-Hash router in `src/lib/shared/router.ts` (no router package). Shell tabs sync with `#/`, `#/activity`, `#/more`. Unknown hashes fall back to home. Path-based history routing is out of scope until needed.
+Hash router in `src/lib/shared/router.ts` (no router package). Shell tabs sync with `#/`, `#/activity`, `#/categories`, `#/more`. Unknown hashes fall back to home. Path-based history routing is out of scope until needed.
 
 ## Testing map
 

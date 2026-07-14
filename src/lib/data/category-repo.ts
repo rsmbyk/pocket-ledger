@@ -14,6 +14,10 @@ export async function putCategory(category: CategoryRow): Promise<void> {
 	await db.categories.put(category);
 }
 
+export async function deleteCategory(id: string): Promise<void> {
+	await db.categories.delete(id);
+}
+
 export async function countCategories(): Promise<number> {
 	return db.categories.count();
 }

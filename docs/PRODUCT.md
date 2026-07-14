@@ -26,7 +26,8 @@ Personal finance app that works offline after first load, hosted on Cloudflare P
 | Features (planned) | Recurring, goals, net worth, charts, export — **shipped in specs 001–008** |
 | Import | JSON restore (full replace) via More → Backup |
 | Lock | Optional passphrase lock, **off by default** (spec 007) |
-| Router | Hash routes for Home / Activity / More (`#/`, `#/activity`, `#/more`) |
+| Router | Hash routes for Home / Activity / Categories / More |
+| Categories | Seed set plus user add / rename / delete (unused only) |
 | Tests | Vitest + Playwright from the start |
 | Process | Spec-Driven Development + TDD + GitHub Flow |
 | Desktop shell | No Tauri |

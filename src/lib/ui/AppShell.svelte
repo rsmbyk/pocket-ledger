@@ -8,6 +8,7 @@
 	import QuickAddSheet from '$lib/ui/QuickAddSheet.svelte';
 	import MonthSummaryCard from '$lib/ui/MonthSummary.svelte';
 	import MorePanel from '$lib/ui/MorePanel.svelte';
+	import CategoriesPanel from '$lib/ui/CategoriesPanel.svelte';
 	import type { Account } from '$lib/domain/account';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
@@ -55,6 +56,9 @@
 		onCaptureNetWorth: () => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
+		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
+		onRenameCategory: (id: string, name: string) => void | Promise<void>;
+		onDeleteCategory: (id: string) => void | Promise<void>;
 		ready: boolean;
 		error: string | null;
 	};
@@ -88,6 +92,9 @@
 		onCaptureNetWorth,
 		onEnableLock,
 		onDisableLock,
+		onCreateCategory,
+		onRenameCategory,
+		onDeleteCategory,
 		ready,
 		error
 	}: Props = $props();
@@ -149,7 +156,7 @@
 				</Card.Header>
 			</Card.Root>
 		{:else}
-			{#if tab !== 'more'}
+			{#if tab !== 'more' && tab !== 'categories'}
 				<Card.Root>
 					<Card.Header>
 						<Card.Title>Balance</Card.Title>
@@ -175,9 +182,10 @@
 				class="w-full"
 				data-testid="app-tabs"
 			>
-				<Tabs.List class="grid w-full grid-cols-3">
+				<Tabs.List class="grid w-full grid-cols-4">
 					<Tabs.Trigger value="home">Home</Tabs.Trigger>
 					<Tabs.Trigger value="activity">Activity</Tabs.Trigger>
+					<Tabs.Trigger value="categories">Categories</Tabs.Trigger>
 					<Tabs.Trigger value="more">More</Tabs.Trigger>
 				</Tabs.List>
 				<Tabs.Content value="home" class="mt-4 space-y-3">
@@ -244,6 +252,15 @@
 							{/each}
 						</ul>
 					{/if}
+				</Tabs.Content>
+				<Tabs.Content value="categories" class="mt-4">
+					<CategoriesPanel
+						{expenseCategories}
+						{incomeCategories}
+						{onCreateCategory}
+						{onRenameCategory}
+						{onDeleteCategory}
+					/>
 				</Tabs.Content>
 				<Tabs.Content value="more" class="mt-4">
 					<MorePanel
