@@ -61,6 +61,13 @@ export default defineConfig({
 			$lib: path.resolve('./src/lib')
 		}
 	},
+	// VirtualBox shared folders need polling for HMR inside docker-vm.
+	server: {
+		watch:
+			process.env.CHOKIDAR_USEPOLLING === 'true'
+				? { usePolling: true, interval: 300 }
+				: undefined
+	},
 	test: {
 		expect: { requireAssertions: true },
 		projects: [

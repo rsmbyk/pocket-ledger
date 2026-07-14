@@ -1,0 +1,16 @@
+node_modules
+dist
+.git
+.github
+.cursor
+.env
+.env.*
+!.env.example
+playwright-report
+test-results
+coverage
+.wrangler
+.dev.vars
+*.log
+.DS_Store
+Thumbs.db
