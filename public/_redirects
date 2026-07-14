@@ -1,2 +1,3 @@
-# Cloudflare Pages: SPA fallback (harmless while we have no client router).
+# Unused for Workers static assets (SPA fallback is wrangler.toml not_found_handling).
+# Kept so a future classic Pages move has an SPA rule ready.
 /*    /index.html   200

@@ -1,16 +1,21 @@
 # Hosting
 
-## Primary: Cloudflare Pages (Git-connected)
+## Primary: Cloudflare Workers + static assets (Git-connected)
 
 | Item | Value |
 |------|--------|
 | Production URL | https://pocket-ledger.ronaldsumbayak611.workers.dev/ |
 | Source | GitHub `rsmbyk/pocket-ledger` → `main` |
 | Build command | `npm run build` |
-| Output directory | `dist` |
+| Deploy command | `npx wrangler deploy` |
+| Assets | `wrangler.toml` → `[assets] directory = "./dist"` |
 | App `base` | `/` (site root) |
 
 Cloudflare builds on push — **GitHub Actions is not required** for deploys.
+
+`pages_build_output_dir` must **not** be set. That flag makes Wrangler treat the project as classic Pages and reject `wrangler deploy` (which is what the Git pipeline runs).
+
+SPA deep links use `not_found_handling = "single-page-application"` in `wrangler.toml` (not `public/_redirects`).
 
 ### Local / CLI (optional)
 
@@ -24,14 +29,14 @@ Get-Content .env.local | ForEach-Object {
   Set-Item -Path "Env:$k" -Value $v
 }
 npm run build
-npx wrangler pages deploy dist --project-name=pocket-ledger --branch main
+npx wrangler deploy
 ```
 
-Never commit tokens. Rotate the token in the Cloudflare dashboard if it was ever shared in chat or committed by mistake.
+Token needs **Workers Scripts Edit** (and account access). Never commit tokens. Rotate if a token was shared in chat.
 
-## Former: GitHub Pages
+## Former: GitHub Pages / classic Cloudflare Pages
 
-Deprecated for this project (account Actions billing blocked deploys). Workflow removed. Optional `GITHUB_PAGES` path builds are gone — always ship at `/`.
+Deprecated for this project. GitHub Actions billing blocked GH Pages; the live hostname is `*.workers.dev` via Workers static assets, not a separate Pages project.
 
 ## Origin / IndexedDB
 

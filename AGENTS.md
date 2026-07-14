@@ -19,4 +19,4 @@
 
 - UI: shadcn under `src/lib/components/ui`
 - Theme: `mode-watcher` + `pocket-ledger-theme` storage key
-- Hosting: Cloudflare Pages at site root (`base: '/'`) — see `docs/HOSTING.md`
+- Hosting: Cloudflare Workers static assets at site root (`base: '/'`) — see `docs/HOSTING.md`

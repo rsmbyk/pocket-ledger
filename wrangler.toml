@@ -1,6 +1,10 @@
-# Cloudflare Pages (Git-connected). Build settings in the dashboard should match:
-#   Build command: npm run build
-#   Output directory: dist
+# Cloudflare Workers (Git-connected) serving the Vite static build.
+# Dashboard build settings should be:
+#   Build command:  npm run build
+#   Deploy command: npx wrangler deploy
 name = "pocket-ledger"
 compatibility_date = "2026-07-13"
-pages_build_output_dir = "dist"
+
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
