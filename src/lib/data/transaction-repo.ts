@@ -20,3 +20,7 @@ export async function listTransactionsForAccount(
 export async function getTransaction(id: TransactionId): Promise<LedgerTransaction | undefined> {
 	return db.transactions.get(id);
 }
+
+export async function deleteTransaction(id: TransactionId): Promise<void> {
+	await db.transactions.delete(id);
+}

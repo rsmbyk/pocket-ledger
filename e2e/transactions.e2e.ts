@@ -7,7 +7,7 @@ test.describe('001 transactions', () => {
 	});
 
 	test('adds expense and updates balance and activity', async ({ page }) => {
-		await page.getByRole('button', { name: 'Add transaction' }).click();
+		await page.getByLabel('Add transaction').click();
 		await expect(page.getByRole('heading', { name: 'Add transaction' })).toBeVisible();
 
 		await page.getByRole('button', { name: 'Expense', exact: true }).click();
@@ -24,7 +24,7 @@ test.describe('001 transactions', () => {
 	});
 
 	test('adds income and increases balance', async ({ page }) => {
-		await page.getByRole('button', { name: 'Add transaction' }).click();
+		await page.getByLabel('Add transaction').click();
 		await page.getByRole('button', { name: 'Income', exact: true }).click();
 		await page.getByLabel(/amount/i).fill('100000');
 		await page.getByLabel('Category', { exact: true }).selectOption({ label: 'Salary' });
@@ -34,7 +34,7 @@ test.describe('001 transactions', () => {
 	});
 
 	test('rejects empty amount', async ({ page }) => {
-		await page.getByRole('button', { name: 'Add transaction' }).click();
+		await page.getByLabel('Add transaction').click();
 		await page.getByRole('button', { name: 'Save' }).click();
 		await expect(page.getByRole('alert')).toContainText(/amount/i);
 		await expect(page.getByRole('heading', { name: 'Add transaction' })).toBeVisible();

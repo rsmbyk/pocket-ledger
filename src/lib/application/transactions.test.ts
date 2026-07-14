@@ -6,7 +6,9 @@ import {
 	ensureSeedCategories,
 	getAccountBalance,
 	getCategoriesForType,
-	listRecentTransactions
+	listRecentTransactions,
+	removeTransaction,
+	updateTransaction
 } from './transactions';
 import { ensureDefaultAccount } from './accounts';
 
@@ -61,5 +63,34 @@ describe('transactions application', () => {
 				categoryId: incomeCats[0]!.id
 			})
 		).rejects.toThrow(/category/i);
+	});
+
+	it('updates and deletes a transaction', async () => {
+		const account = await ensureDefaultAccount();
+		const expenseCats = await getCategoriesForType('expense');
+		const created = await addTransaction({
+			accountId: account.id,
+			type: 'expense',
+			amountRaw: '15000',
+			categoryId: expenseCats[0]!.id,
+			note: 'lunch'
+		});
+
+		await updateTransaction({
+			id: created.id,
+			accountId: account.id,
+			type: 'expense',
+			amountRaw: '10000',
+			categoryId: expenseCats[0]!.id,
+			note: 'coffee'
+		});
+		expect(await getAccountBalance(account.id)).toBe(-10_000);
+		const listed = await listRecentTransactions(account.id);
+		expect(listed[0]?.note).toBe('coffee');
+		expect(listed[0]?.amountMinor).toBe(10_000);
+
+		await removeTransaction(created.id);
+		expect(await getAccountBalance(account.id)).toBe(0);
+		expect(await listRecentTransactions(account.id)).toHaveLength(0);
 	});
 });

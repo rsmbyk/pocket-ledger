@@ -14,5 +14,6 @@ Ordered slices after scaffold. Each slice gets a numbered spec before code.
 10. ~~**Router** — hash routes for shell panels~~ → `specs/009-router.md`
 11. ~~**Custom category management** — add/rename beyond seeds~~ → `specs/010-custom-categories.md`
 12. ~~**Field-level at-rest encryption** — deepen beyond passphrase gate~~ → `specs/011-field-encryption.md`
+13. ~~**Polish** — edit/delete transactions, empty CTAs, safe-area mobile tweaks~~ → `specs/012-polish.md`
 
 Multi-account UI beyond the default pot can land whenever transfers/net-worth need it; storage already supports it.

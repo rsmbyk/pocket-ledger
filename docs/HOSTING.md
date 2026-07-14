@@ -7,7 +7,7 @@
 | Production URL | https://pocket-ledger.ronaldsumbayak611.workers.dev/ |
 | Source | GitHub `rsmbyk/pocket-ledger` → `main` |
 | Build command | `npm run build` |
-| Deploy command | `npx wrangler deploy && npm run report:github-deployment` |
+| Deploy command | `npm run deploy` |
 | Assets | `wrangler.toml` → `[assets] directory = "./dist"` |
 | App `base` | `/` (site root) |
 
@@ -26,7 +26,7 @@ We report it after a successful Wrangler deploy via `npm run report:github-deplo
 **One-time Cloudflare dashboard setup** (Worker → Settings → Builds):
 
 1. Set **Deploy command** to:
-   `npx wrangler deploy && npm run report:github-deployment`
+   `npm run deploy`
 2. Under **Build variables and secrets**, add secret `GITHUB_DEPLOYMENTS_TOKEN`:
    - Fine-grained PAT on `rsmbyk/pocket-ledger` with **Deployments: Read and write** (Contents read is enough beside that), **or**
    - Classic PAT with `repo` scope (broader — prefer fine-grained)
