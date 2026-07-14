@@ -12,10 +12,9 @@ Status: implemented as the repository starting point.
 - Layered folders + `ensureDefaultAccount` use case
 - Vitest + Playwright + `specs/000-scaffold.md`
 - Docs (product, architecture, process, ADRs, roadmap)
-- GitHub Actions: CI (+ Pages deploy later replaced by Cloudflare)
 - Public GitHub repo
 
-**Follow-up:** hosting migrated to Cloudflare Pages (Git-connected); see ADR 0006.
+**Follow-up:** hosting migrated to Cloudflare Workers (Git-connected); see ADR 0006. GitHub Actions CI was removed after billing blocked workflow runs.
 
 ## Out of scope
 

@@ -23,7 +23,7 @@ UI wiring is thin; prefer testing rules below the Svelte boundary.
 
 1. `main` is always deployable (Cloudflare deploys from `main`).
 2. Feature work happens on short-lived branches (`feat/*`, `fix/*`, `chore/*`, `docs/*`).
-3. Open a PR into `main`; CI must pass when GitHub Actions is available.
+3. Open a PR into `main`. Verify locally (`npm run check`, unit, e2e) before merge — GitHub Actions CI is not used (account billing blocked workflows).
 4. Land the PR on `main` — that triggers Cloudflare production deploy.
 
 ### Merge style
