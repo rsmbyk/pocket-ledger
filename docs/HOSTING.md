@@ -52,6 +52,28 @@ npm run report:github-deployment
 
 Token needs **Workers Scripts Edit** (and account access). For GitHub reporting, also set `GITHUB_DEPLOYMENTS_TOKEN`. Never commit tokens. Rotate if a token was shared in chat.
 
+## Local Docker (optional)
+
+Compose runs Vite in the `docker-vm` so you do not need Node on the guest. Production is still Cloudflare — these containers are for local work only.
+
+From the VM (Windows tree `C:\Users\Javan\projects\pocket-ledger` → `/mnt/projects/projects/pocket-ledger`):
+
+```bash
+cd /mnt/projects/projects/pocket-ledger
+docker compose up          # Vite dev → http://localhost:5173
+docker compose --profile preview up preview   # built preview → :4173
+```
+
+`node_modules` lives in a named volume so the VirtualBox share does not fight npm installs. `CHOKIDAR_USEPOLLING=true` keeps HMR working on that share.
+
+On the Windows host, open **http://localhost:5173/**. That needs a VirtualBox NAT rule `5173 → 5173` on `docker-vm` (rule name `pocketledger` if you added it for this project). Without it, use an SSH tunnel:
+
+```powershell
+ssh -L 5173:localhost:5173 docker-vm
+```
+
+First `docker compose up` can take a minute (`npm ci` into the named volume). Later starts reuse that volume and are faster.
+
 ## Former: GitHub Pages / classic Cloudflare Pages
 
 Deprecated for this project. GitHub Actions billing blocked GH Pages; the live hostname is `*.workers.dev` via Workers static assets, not a separate Pages project.
