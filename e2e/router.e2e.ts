@@ -1,12 +1,15 @@
 import { expect, test } from '@playwright/test';
+import { goToNav } from './nav';
 
 test.describe('009 router', () => {
-	test('tab selection updates the URL hash', async ({ page }) => {
+	test('nav selection updates the URL hash', async ({ page }) => {
 		await page.goto('/');
 		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
-		await page.getByRole('tab', { name: 'Activity' }).click();
+		await goToNav(page, 'activity');
 		await expect(page).toHaveURL(/#\/activity$/);
-		await expect(page.getByTestId('activity-list').or(page.getByText(/No transactions/i))).toBeVisible();
+		await expect(
+			page.getByTestId('activity-list').or(page.getByTestId('activity-empty'))
+		).toBeVisible();
 	});
 
 	test('hash deep-link opens More', async ({ page }) => {

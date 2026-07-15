@@ -3,9 +3,8 @@
 	import SunIcon from '@lucide/svelte/icons/sun';
 	import MonitorIcon from '@lucide/svelte/icons/monitor';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import type { ThemePreference } from '$lib/shared/theme';
-	import { mode, setMode } from 'mode-watcher';
+	import { setMode } from 'mode-watcher';
 
 	type Props = {
 		preference: ThemePreference;
@@ -14,43 +13,33 @@
 
 	let { preference, onPreferenceChange }: Props = $props();
 
-	function choose(next: ThemePreference) {
-		setMode(next);
-		onPreferenceChange(next);
-	}
+	const order: ThemePreference[] = ['light', 'system', 'dark'];
 
 	const label = $derived(
 		preference === 'dark' ? 'Dark' : preference === 'light' ? 'Light' : 'System'
 	);
+
+	function cycle() {
+		const i = order.indexOf(preference);
+		const next = order[(i + 1) % order.length]!;
+		setMode(next);
+		onPreferenceChange(next);
+	}
 </script>
 
-<DropdownMenu.Root>
-	<DropdownMenu.Trigger>
-		{#snippet child({ props })}
-			<Button variant="outline" size="sm" aria-label="Theme: {label}" {...props}>
-				{#if preference === 'dark' || (preference === 'system' && mode.current === 'dark')}
-					<MoonIcon class="size-4" />
-				{:else if preference === 'light' || (preference === 'system' && mode.current === 'light')}
-					<SunIcon class="size-4" />
-				{:else}
-					<MonitorIcon class="size-4" />
-				{/if}
-				<span class="ml-1.5 hidden sm:inline">{label}</span>
-			</Button>
-		{/snippet}
-	</DropdownMenu.Trigger>
-	<DropdownMenu.Content align="end" class="min-w-40">
-		<DropdownMenu.Item onSelect={() => choose('system')}>
-			<MonitorIcon class="size-4" />
-			System
-		</DropdownMenu.Item>
-		<DropdownMenu.Item onSelect={() => choose('light')}>
-			<SunIcon class="size-4" />
-			Light
-		</DropdownMenu.Item>
-		<DropdownMenu.Item onSelect={() => choose('dark')}>
-			<MoonIcon class="size-4" />
-			Dark
-		</DropdownMenu.Item>
-	</DropdownMenu.Content>
-</DropdownMenu.Root>
+<Button
+	type="button"
+	variant="ghost"
+	size="icon-sm"
+	aria-label="Theme: {label}"
+	data-testid="theme-cycle"
+	onclick={cycle}
+>
+	{#if preference === 'dark'}
+		<MoonIcon class="size-4" />
+	{:else if preference === 'light'}
+		<SunIcon class="size-4" />
+	{:else}
+		<MonitorIcon class="size-4" />
+	{/if}
+</Button>

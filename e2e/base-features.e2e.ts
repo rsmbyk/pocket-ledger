@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { goToNav, openAdd } from './nav';
+
 
 test.describe('003–008 base features', () => {
 	test.beforeEach(async ({ page }) => {
@@ -7,14 +9,14 @@ test.describe('003–008 base features', () => {
 	});
 
 	test('More tab shows backup and privacy', async ({ page }) => {
-		await page.getByRole('tab', { name: 'More' }).click();
+		await goToNav(page, 'more');
 		await expect(page.getByTestId('more-panel')).toBeVisible();
 		await expect(page.getByTestId('export-backup')).toBeVisible();
 		await expect(page.getByTestId('lock-status')).toContainText(/off/i);
 	});
 
 	test('export downloads a JSON backup', async ({ page }) => {
-		await page.getByRole('tab', { name: 'More' }).click();
+		await goToNav(page, 'more');
 		const downloadPromise = page.waitForEvent('download');
 		await page.getByTestId('export-backup').click();
 		const download = await downloadPromise;
@@ -22,7 +24,7 @@ test.describe('003–008 base features', () => {
 	});
 
 	test('creates a goal with progress', async ({ page }) => {
-		await page.getByRole('tab', { name: 'More' }).click();
+		await goToNav(page, 'more');
 		const more = page.getByTestId('more-panel');
 		await more.getByPlaceholder('Name').fill('Emergency');
 		await more.getByPlaceholder('Target amount').fill('1000000');
@@ -36,20 +38,21 @@ test.describe('003–008 base features', () => {
 	});
 
 	test('captures net worth snapshot', async ({ page }) => {
-		await page.getByRole('button', { name: 'Add transaction' }).click();
+		await openAdd(page);
 		await page.getByRole('button', { name: 'Income', exact: true }).click();
 		await page.getByLabel(/amount/i).fill('85000');
 		await page.getByLabel('Category', { exact: true }).selectOption({ label: 'Salary' });
 		await page.getByRole('button', { name: 'Save' }).click();
 
-		await page.getByRole('tab', { name: 'More' }).click();
+
+		await goToNav(page, 'more');
 		await page.getByTestId('capture-net-worth').click();
 		await expect(page.getByTestId('net-worth-chart')).toBeVisible();
 		await expect(page.getByTestId('net-worth-list')).toContainText(/85/);
 	});
 
 	test('enables passphrase lock and requires unlock', async ({ page }) => {
-		await page.getByRole('tab', { name: 'More' }).click();
+		await goToNav(page, 'more');
 		await page.getByTestId('enable-lock-pass').fill('secret-pass');
 		await page.getByPlaceholder('Confirm passphrase').fill('secret-pass');
 		await page.getByTestId('enable-lock').click();
@@ -63,7 +66,7 @@ test.describe('003–008 base features', () => {
 	});
 
 	test('adds a recurring rule', async ({ page }) => {
-		await page.getByRole('tab', { name: 'More' }).click();
+		await goToNav(page, 'more');
 		await page.getByRole('textbox', { name: 'Amount', exact: true }).fill('50000');
 		await page.getByRole('button', { name: 'Add rule' }).click();
 		await expect(page.getByTestId('recurring-list')).toContainText(/monthly/i);

@@ -22,7 +22,7 @@ Personal finance app that works offline after first load, hosted on Cloudflare P
 | Currency | Single currency; display label only (default `IDR`) |
 | Budgets | None for now |
 | Multi-currency / FX | None |
-| UX | Mobile-first |
+| UX | **Desktop-first dashboard chrome**, responsive down to mobile (inset sidebar → sheet + stacked layouts below `md`) |
 | Features (planned) | Recurring, goals, net worth, charts, export — **shipped in specs 001–008** |
 | Import | JSON restore (full replace) via More → Backup |
 | Lock | Optional passphrase lock, **off by default** (spec 007) |
@@ -30,7 +30,7 @@ Personal finance app that works offline after first load, hosted on Cloudflare P
 | Categories | Seed set plus user add / rename / delete (unused only) |
 | Tests | Vitest + Playwright from the start |
 | Process | Spec-Driven Development + TDD + GitHub Flow |
-| Desktop shell | No Tauri |
+| Desktop shell | No Tauri; desktop-first dashboard shell (inset sidebar + KPI home + wide stage, spec 013) |
 | Insights / receipts / household sync | Out of scope for now |
 
 ## Non-goals (current)

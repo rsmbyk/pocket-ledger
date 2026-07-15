@@ -15,5 +15,6 @@ Ordered slices after scaffold. Each slice gets a numbered spec before code.
 11. ~~**Custom category management** — add/rename beyond seeds~~ → `specs/010-custom-categories.md`
 12. ~~**Field-level at-rest encryption** — deepen beyond passphrase gate~~ → `specs/011-field-encryption.md`
 13. ~~**Polish** — edit/delete transactions, empty CTAs, safe-area mobile tweaks~~ → `specs/012-polish.md`
+14. ~~**Desktop-first shell** — persistent rail, wide stage, responsive drawer on mobile~~ → `specs/013-desktop-layout.md`
 
 Multi-account UI beyond the default pot can land whenever transfers/net-worth need it; storage already supports it.
