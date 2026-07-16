@@ -7,8 +7,8 @@ import {
 	getAccountBalance,
 	getCategoriesForType,
 	listRecentTransactions,
-	removeTransaction,
-	updateTransaction
+	updateTransaction,
+	voidTransaction
 } from './transactions';
 import { ensureDefaultAccount } from './accounts';
 
@@ -65,7 +65,7 @@ describe('transactions application', () => {
 		).rejects.toThrow(/category/i);
 	});
 
-	it('updates and deletes a transaction', async () => {
+	it('updates and voids a transaction', async () => {
 		const account = await ensureDefaultAccount();
 		const expenseCats = await getCategoriesForType('expense');
 		const created = await addTransaction({
@@ -89,8 +89,20 @@ describe('transactions application', () => {
 		expect(listed[0]?.note).toBe('coffee');
 		expect(listed[0]?.amountMinor).toBe(10_000);
 
-		await removeTransaction(created.id);
+		await voidTransaction(created.id);
 		expect(await getAccountBalance(account.id)).toBe(0);
-		expect(await listRecentTransactions(account.id)).toHaveLength(0);
+		const afterVoid = await listRecentTransactions(account.id);
+		expect(afterVoid).toHaveLength(1);
+		expect(afterVoid[0]?.voidedAt).toBeTruthy();
+		await expect(voidTransaction(created.id)).rejects.toThrow(/already voided/i);
+		await expect(
+			updateTransaction({
+				id: created.id,
+				accountId: account.id,
+				type: 'expense',
+				amountRaw: '1000',
+				categoryId: expenseCats[0]!.id
+			})
+		).rejects.toThrow(/cannot be edited/i);
 	});
 });

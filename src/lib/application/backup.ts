@@ -54,7 +54,11 @@ export async function buildBackup(): Promise<LedgerBackup> {
 			categories.map(async (c) => ({ ...c, name: await openField(c.name) }))
 		),
 		transactions: await Promise.all(
-			transactions.map(async (t) => ({ ...t, note: await openField(t.note) }))
+			transactions.map(async (t) => ({
+				...t,
+				voidedAt: t.voidedAt ?? null,
+				note: await openField(t.note)
+			}))
 		),
 		recurringRules: await Promise.all(
 			recurringRules.map(async (r) => ({ ...r, note: await openField(r.note) }))
@@ -120,7 +124,9 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 			]);
 			await db.accounts.bulkPut(normalized.accounts);
 			await db.categories.bulkPut(normalized.categories);
-			await db.transactions.bulkPut(normalized.transactions);
+			await db.transactions.bulkPut(
+				normalized.transactions.map((t) => ({ ...t, voidedAt: t.voidedAt ?? null }))
+			);
 			await db.recurringRules.bulkPut(normalized.recurringRules);
 			await db.goals.bulkPut(normalized.goals);
 			await db.netWorthSnapshots.bulkPut(normalized.netWorthSnapshots);

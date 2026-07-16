@@ -99,7 +99,8 @@ export async function materializeDueRecurring(today = todayOccurredOn()): Promis
 				categoryId: working.categoryId,
 				note: await sealField(notePlain),
 				occurredOn: next,
-				createdAt: new Date().toISOString()
+				createdAt: new Date().toISOString(),
+				voidedAt: null
 			});
 			created += 1;
 			next = advanceOccurredOn(next, working.frequency);

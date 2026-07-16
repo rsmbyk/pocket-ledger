@@ -18,8 +18,11 @@ export function parseAmountInput(raw: string): MinorUnits {
 	return assertMinorUnits(value);
 }
 
-/** Balance delta for a stored transaction row. */
-export function balanceDelta(tx: Pick<LedgerTransaction, 'type' | 'amountMinor'>): MinorUnits {
+/** Balance delta for a stored transaction row (voided → 0). */
+export function balanceDelta(
+	tx: Pick<LedgerTransaction, 'type' | 'amountMinor'> & { voidedAt?: string | null }
+): MinorUnits {
+	if (tx.voidedAt) return 0;
 	assertMinorUnits(tx.amountMinor);
 	if (tx.amountMinor <= 0) {
 		throw new Error('Stored amount must be a positive integer');
@@ -29,7 +32,9 @@ export function balanceDelta(tx: Pick<LedgerTransaction, 'type' | 'amountMinor'>
 	return 0;
 }
 
-export function sumBalance(transactions: Pick<LedgerTransaction, 'type' | 'amountMinor'>[]): MinorUnits {
+export function sumBalance(
+	transactions: Array<Pick<LedgerTransaction, 'type' | 'amountMinor'> & { voidedAt?: string | null }>
+): MinorUnits {
 	return transactions.reduce((total, tx) => total + balanceDelta(tx), 0);
 }
 

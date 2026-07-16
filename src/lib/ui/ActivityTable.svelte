@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Table from '$lib/components/ui/table/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import type { LedgerTransaction } from '$lib/domain/transaction';
+	import { isVoided, type LedgerTransaction } from '$lib/domain/transaction';
 	import { formatMinor } from '$lib/domain/money';
 
 	type Props = {
@@ -35,8 +35,12 @@
 			</Table.Header>
 			<Table.Body>
 				{#each transactions as tx (tx.id)}
+					{@const voided = isVoided(tx)}
 					<Table.Row
-						class="hover:bg-muted/50 cursor-pointer"
+						class={[
+							'hover:bg-muted/50 cursor-pointer',
+							voided && 'text-muted-foreground opacity-70'
+						]}
 						role="button"
 						tabindex={0}
 						onclick={() => onEdit(tx)}
@@ -48,19 +52,32 @@
 						}}
 						data-testid={`activity-row-${tx.id}`}
 					>
-						<Table.Cell class="text-muted-foreground px-3 py-2 whitespace-nowrap tabular-nums">
+						<Table.Cell class="px-3 py-2 whitespace-nowrap tabular-nums">
 							{tx.occurredOn}
 						</Table.Cell>
-						<Table.Cell class="px-3 py-2 font-medium">{categoryName(tx.categoryId)}</Table.Cell>
-						<Table.Cell class="text-muted-foreground max-w-[14rem] truncate px-3 py-2">
+						<Table.Cell class="px-3 py-2 font-medium">
+							<span class="inline-flex flex-wrap items-center gap-1.5">
+								{categoryName(tx.categoryId)}
+								{#if voided}
+									<span
+										class="bg-muted text-muted-foreground inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium"
+									>
+										Void
+									</span>
+								{/if}
+							</span>
+						</Table.Cell>
+						<Table.Cell class="max-w-[14rem] truncate px-3 py-2">
 							{tx.note || tx.type}
 						</Table.Cell>
 						<Table.Cell
 							class={[
 								'px-3 py-2 text-right font-medium tabular-nums',
-								tx.type === 'expense'
-									? 'text-destructive'
-									: 'text-emerald-600 dark:text-emerald-400'
+								voided && 'line-through',
+								!voided &&
+									(tx.type === 'expense'
+										? 'text-destructive'
+										: 'text-emerald-600 dark:text-emerald-400')
 							]}
 						>
 							{tx.type === 'expense' ? '−' : '+'}{formatMinor(tx.amountMinor, currencyLabel)}

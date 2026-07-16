@@ -2,6 +2,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import type { CategoryRow } from '$lib/data/db';
 
 	type Props = {
@@ -20,12 +21,17 @@
 		onDeleteCategory
 	}: Props = $props();
 
-	let kind = $state<CategoryRow['kind']>('expense');
-	let name = $state('');
+	let addDialogOpen = $state(false);
+	let addKind = $state<CategoryRow['kind']>('expense');
+	let addName = $state('');
 	let busy = $state(false);
 	let message = $state<string | null>(null);
 	let error = $state<string | null>(null);
 	let renameDrafts = $state<Record<string, string>>({});
+
+	const addTitle = $derived(
+		addKind === 'expense' ? 'Add expense category' : 'Add income category'
+	);
 
 	async function wrap(action: () => void | Promise<void>, ok: string) {
 		busy = true;
@@ -44,6 +50,17 @@
 	function draftFor(cat: CategoryRow): string {
 		return renameDrafts[cat.id] ?? cat.name;
 	}
+
+	function openAdd(kind: CategoryRow['kind']) {
+		addKind = kind;
+		addName = '';
+		addDialogOpen = true;
+	}
+
+	async function confirmDelete(id: string, name: string) {
+		if (!confirm(`Delete category "${name}"? This cannot be undone.`)) return;
+		await wrap(() => onDeleteCategory(id), 'Deleted');
+	}
 </script>
 
 <div class="space-y-4" data-testid="categories-panel">
@@ -54,54 +71,20 @@
 		<p class="text-destructive text-sm" role="alert">{error}</p>
 	{/if}
 
-	<Card.Root>
-		<Card.Header>
-			<Card.Title class="text-base">Add category</Card.Title>
-			<Card.Description>Custom labels for income and expenses.</Card.Description>
-		</Card.Header>
-		<Card.Content>
-			<form
-				class="space-y-2"
-				onsubmit={(e) => {
-					e.preventDefault();
-					void wrap(async () => {
-						await onCreateCategory(name, kind);
-						name = '';
-					}, 'Category added');
-				}}
-			>
-				<div class="grid grid-cols-2 gap-2">
-					<Button
-						type="button"
-						size="sm"
-						variant={kind === 'expense' ? 'default' : 'outline'}
-						onclick={() => (kind = 'expense')}>Expense</Button
-					>
-					<Button
-						type="button"
-						size="sm"
-						variant={kind === 'income' ? 'default' : 'outline'}
-						onclick={() => (kind = 'income')}>Income</Button
-					>
-				</div>
-				<Input
-					placeholder="Name"
-					bind:value={name}
-					required
-					data-testid="category-name-input"
-				/>
-				<Button type="submit" class="w-full" disabled={busy} data-testid="category-add"
-					>Add category</Button
-				>
-			</form>
-		</Card.Content>
-	</Card.Root>
-
 	<div class="grid gap-4 md:grid-cols-2 md:items-start" data-testid="categories-desktop-grid">
-		{#each [{ title: 'Expense', rows: expenseCategories }, { title: 'Income', rows: incomeCategories }] as group (group.title)}
+		{#each [{ title: 'Expense', rows: expenseCategories, kind: 'expense' as const }, { title: 'Income', rows: incomeCategories, kind: 'income' as const }] as group (group.title)}
 			<Card.Root>
-				<Card.Header>
+				<Card.Header class="flex flex-row items-center justify-between gap-2 space-y-0">
 					<Card.Title class="text-base">{group.title}</Card.Title>
+					<Button
+						type="button"
+						size="sm"
+						disabled={busy}
+						data-testid={group.kind === 'expense' ? 'category-add-expense' : 'category-add-income'}
+						onclick={() => openAdd(group.kind)}
+					>
+						Add
+					</Button>
 				</Card.Header>
 				<Card.Content>
 					<ul
@@ -132,9 +115,9 @@
 									</Button>
 									<Button
 										size="sm"
-										variant="ghost"
+										variant="destructive"
 										disabled={busy}
-										onclick={() => void wrap(() => onDeleteCategory(cat.id), 'Deleted')}
+										onclick={() => void confirmDelete(cat.id, cat.name)}
 									>
 										Delete
 									</Button>
@@ -149,3 +132,36 @@
 		{/each}
 	</div>
 </div>
+
+<Dialog.Root bind:open={addDialogOpen}>
+	<Dialog.Content class="sm:max-w-md">
+		<Dialog.Header>
+			<Dialog.Title>{addTitle}</Dialog.Title>
+			<Dialog.Description>Custom labels for {addKind === 'expense' ? 'expenses' : 'income'}.</Dialog.Description>
+		</Dialog.Header>
+		<form
+			class="space-y-4"
+			onsubmit={(e) => {
+				e.preventDefault();
+				void wrap(async () => {
+					await onCreateCategory(addName, addKind);
+					addName = '';
+					addDialogOpen = false;
+				}, 'Category added');
+			}}
+		>
+			<Input
+				placeholder="Name"
+				bind:value={addName}
+				required
+				data-testid="category-name-input"
+			/>
+			<div class="flex justify-end gap-2">
+				<Button type="button" variant="outline" disabled={busy} onclick={() => (addDialogOpen = false)}>
+					Cancel
+				</Button>
+				<Button type="submit" disabled={busy} data-testid="category-add">Add category</Button>
+			</div>
+		</form>
+	</Dialog.Content>
+</Dialog.Root>

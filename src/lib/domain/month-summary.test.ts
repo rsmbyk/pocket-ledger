@@ -22,7 +22,8 @@ function tx(
 		createdAt: partial.createdAt ?? '2026-07-14T00:00:00.000Z',
 		type: partial.type,
 		amountMinor: partial.amountMinor,
-		occurredOn: partial.occurredOn
+		occurredOn: partial.occurredOn,
+		voidedAt: partial.voidedAt ?? null
 	};
 }
 
@@ -83,6 +84,29 @@ describe('month-summary', () => {
 		]);
 		expect(summary.openingMinor).toBe(-1_000);
 		expect(summary.endingMinor).toBe(91_000);
+	});
+
+	it('ignores voided transactions in totals and opening', () => {
+		const rows = [
+			tx({ type: 'expense', amountMinor: 15_000, occurredOn: '2026-07-02', categoryId: 'food' }),
+			tx({
+				type: 'expense',
+				amountMinor: 9_000,
+				occurredOn: '2026-07-03',
+				categoryId: 'food',
+				voidedAt: '2026-07-16T00:00:00.000Z'
+			}),
+			tx({
+				type: 'income',
+				amountMinor: 50_000,
+				occurredOn: '2026-06-01',
+				voidedAt: '2026-07-16T00:00:00.000Z'
+			})
+		];
+		const summary = buildMonthSummary(rows, '2026-07', { food: 'Food' });
+		expect(summary.expenseMinor).toBe(15_000);
+		expect(summary.openingMinor).toBe(0);
+		expect(summary.endingMinor).toBe(-15_000);
 	});
 
 	it('formats month labels', () => {
