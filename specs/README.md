@@ -10,7 +10,7 @@ Living behavior contracts for Pocket Ledger.
 4. Keep acceptance scenarios in Given / When / Then.
 5. Link Vitest and Playwright files under **Traceability**.
 6. Update the spec in the same PR as behavior changes.
-7. **One concern per spec** — do not mix unrelated features or fixes in the same numbered spec (separate Drafts / PRs).
+7. **One concern per spec** — do not mix **unrelated** features in one numbered spec. A single UI surface redesign (e.g. one modal or one menu) may be one spec with multiple acceptance scenarios.
 
 ## Index
 
@@ -47,3 +47,10 @@ Living behavior contracts for Pocket Ledger.
 | [028](028-month-summary-dividers.md) | Month summary section dividers | Accepted |
 | [029](029-more-single-column.md) | More panel one card per row | Accepted |
 | [030](030-remove-void-label.md) | Remove Void label from lists | Accepted |
+| [031](031-month-net-sign-color.md) | Month summary Net sign coloring | Draft |
+| [032](032-list-empty-states.md) | List empty states (no CTAs) | Draft |
+| [034](034-category-save-emphasis.md) | Emphasize active category save | Draft |
+| [035](035-filters-icon-button.md) | Icon-only Activity Filters button | Draft |
+| [036](036-activity-form-short-dates.md) | Short dates on Activity and tx form | Draft |
+| [037](037-transaction-sheet.md) | Transaction sheet redesign | Draft |
+| [038](038-categories-menu.md) | Categories menu redesign | Draft |
