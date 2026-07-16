@@ -1,9 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { goToNav, openAdd } from './nav';
 
 test.describe('011 field encryption', () => {
 	test('unlocked UI still shows plaintext notes after enabling lock', async ({ page }) => {
 		await page.goto('/');
-		await page.getByRole('button', { name: 'Add transaction' }).click();
+		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await openAdd(page);
 		const sheet = page.getByRole('dialog');
 		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
 		await sheet.getByLabel(/amount/i).fill('15000');
@@ -11,13 +13,13 @@ test.describe('011 field encryption', () => {
 		await sheet.getByLabel(/note/i).fill('secret lunch');
 		await sheet.getByRole('button', { name: 'Save' }).click();
 
-		await page.getByRole('tab', { name: 'More' }).click();
+		await goToNav(page, 'more');
 		await page.getByTestId('enable-lock-pass').fill('secret-pass');
 		await page.getByPlaceholder('Confirm passphrase').fill('secret-pass');
 		await page.getByTestId('enable-lock').click();
 		await expect(page.getByTestId('lock-status')).toContainText(/on/i);
 
-		await page.getByRole('tab', { name: 'Activity' }).click();
+		await goToNav(page, 'activity');
 		await expect(page.getByTestId('activity-list')).toContainText('secret lunch');
 	});
 });

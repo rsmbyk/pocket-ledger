@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { openAdd } from './nav';
 
 test.describe('010 custom categories', () => {
 	test('adds a category and shows it in quick-add', async ({ page }) => {
@@ -8,17 +9,15 @@ test.describe('010 custom categories', () => {
 		await page.getByTestId('category-add').click();
 		await expect(page.getByRole('textbox', { name: 'Rename Coffee' })).toBeVisible();
 
-		await page.getByRole('button', { name: 'Add transaction' }).click();
+		await openAdd(page);
 		const sheet = page.getByRole('dialog');
 		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
 		await expect(sheet.getByLabel('Category', { exact: true })).toContainText('Coffee');
 	});
 
-	test('deep-links to categories tab', async ({ page }) => {
+	test('deep-links to categories', async ({ page }) => {
 		await page.goto('/#/categories');
-		await expect(page.getByRole('tab', { name: 'Categories' })).toHaveAttribute(
-			'data-state',
-			'active'
-		);
+		await expect(page.getByTestId('categories-panel')).toBeVisible();
+		await expect(page.getByTestId('nav-categories')).toHaveAttribute('aria-current', 'page');
 	});
 });

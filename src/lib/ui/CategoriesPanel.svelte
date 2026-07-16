@@ -97,50 +97,55 @@
 		</Card.Content>
 	</Card.Root>
 
-	{#each [{ title: 'Expense', rows: expenseCategories }, { title: 'Income', rows: incomeCategories }] as group (group.title)}
-		<Card.Root>
-			<Card.Header>
-				<Card.Title class="text-base">{group.title}</Card.Title>
-			</Card.Header>
-			<Card.Content>
-				<ul class="divide-border divide-y text-sm" data-testid={`category-list-${group.title.toLowerCase()}`}>
-					{#each group.rows as cat (cat.id)}
-						<li class="flex flex-col gap-2 py-3 sm:flex-row sm:items-center">
-							<Input
-								aria-label={`Rename ${cat.name}`}
-								value={draftFor(cat)}
-								oninput={(e) => {
-									renameDrafts = {
-										...renameDrafts,
-										[cat.id]: (e.currentTarget as HTMLInputElement).value
-									};
-								}}
-							/>
-							<div class="flex shrink-0 gap-1">
-								<Button
-									size="sm"
-									variant="outline"
-									disabled={busy}
-									onclick={() =>
-										void wrap(() => onRenameCategory(cat.id, draftFor(cat)), 'Renamed')}
-								>
-									Rename
-								</Button>
-								<Button
-									size="sm"
-									variant="ghost"
-									disabled={busy}
-									onclick={() => void wrap(() => onDeleteCategory(cat.id), 'Deleted')}
-								>
-									Delete
-								</Button>
-							</div>
-						</li>
-					{:else}
-						<li class="text-muted-foreground py-2">No categories yet.</li>
-					{/each}
-				</ul>
-			</Card.Content>
-		</Card.Root>
-	{/each}
+	<div class="grid gap-4 md:grid-cols-2 md:items-start" data-testid="categories-desktop-grid">
+		{#each [{ title: 'Expense', rows: expenseCategories }, { title: 'Income', rows: incomeCategories }] as group (group.title)}
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="text-base">{group.title}</Card.Title>
+				</Card.Header>
+				<Card.Content>
+					<ul
+						class="divide-border divide-y text-sm"
+						data-testid={`category-list-${group.title.toLowerCase()}`}
+					>
+						{#each group.rows as cat (cat.id)}
+							<li class="flex flex-col gap-2 py-3 sm:flex-row sm:items-center">
+								<Input
+									aria-label={`Rename ${cat.name}`}
+									value={draftFor(cat)}
+									oninput={(e) => {
+										renameDrafts = {
+											...renameDrafts,
+											[cat.id]: (e.currentTarget as HTMLInputElement).value
+										};
+									}}
+								/>
+								<div class="flex shrink-0 gap-1">
+									<Button
+										size="sm"
+										variant="outline"
+										disabled={busy}
+										onclick={() =>
+											void wrap(() => onRenameCategory(cat.id, draftFor(cat)), 'Renamed')}
+									>
+										Rename
+									</Button>
+									<Button
+										size="sm"
+										variant="ghost"
+										disabled={busy}
+										onclick={() => void wrap(() => onDeleteCategory(cat.id), 'Deleted')}
+									>
+										Delete
+									</Button>
+								</div>
+							</li>
+						{:else}
+							<li class="text-muted-foreground py-2">No categories yet.</li>
+						{/each}
+					</ul>
+				</Card.Content>
+			</Card.Root>
+		{/each}
+	</div>
 </div>

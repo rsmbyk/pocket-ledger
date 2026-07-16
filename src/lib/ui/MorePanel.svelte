@@ -105,6 +105,7 @@
 		<p class="text-destructive text-sm" role="alert">{error}</p>
 	{/if}
 
+	<div class="grid gap-4 md:grid-cols-2 md:items-start xl:grid-cols-3" data-testid="more-desktop-grid">
 	<Card.Root>
 		<Card.Header>
 			<Card.Title class="text-base">Backup</Card.Title>
@@ -417,4 +418,5 @@
 			{/if}
 		</Card.Content>
 	</Card.Root>
+	</div>
 </div>

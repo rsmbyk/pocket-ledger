@@ -1,14 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import PlusIcon from '@lucide/svelte/icons/plus';
-	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import * as Tabs from '$lib/components/ui/tabs/index.js';
-	import ThemeMenu from '$lib/ui/ThemeMenu.svelte';
+	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import QuickAddSheet from '$lib/ui/QuickAddSheet.svelte';
-	import MonthSummaryCard from '$lib/ui/MonthSummary.svelte';
-	import MorePanel from '$lib/ui/MorePanel.svelte';
-	import CategoriesPanel from '$lib/ui/CategoriesPanel.svelte';
+	import AppShellChrome from '$lib/ui/AppShellChrome.svelte';
+	import AppCommandPalette from '$lib/ui/AppCommandPalette.svelte';
 	import type { Account } from '$lib/domain/account';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
@@ -18,7 +14,6 @@
 	import type { Goal } from '$lib/domain/goals';
 	import type { NetWorthSnapshot } from '$lib/domain/net-worth';
 	import type { AddableTransactionType } from '$lib/domain/transaction-rules';
-	import { formatMinor } from '$lib/domain/money';
 	import { isAppRoute, parseHash, routeToHash, type AppRoute } from '$lib/shared/router';
 
 	type Props = {
@@ -65,7 +60,7 @@
 
 	let {
 		account,
-		isSinglePot,
+		isSinglePot: _isSinglePot,
 		balanceMinor,
 		transactions,
 		categoriesById,
@@ -99,38 +94,47 @@
 		error
 	}: Props = $props();
 
-	let sheetOpen = $state(false);
+	let txSheetOpen = $state(false);
+	let commandOpen = $state(false);
 	let editing = $state<LedgerTransaction | null>(null);
-	let tab = $state<AppRoute>('home');
+	let route = $state<AppRoute>('home');
 
-	function categoryName(categoryId: string | null): string {
-		if (!categoryId) return 'Uncategorized';
-		return categoriesById[categoryId]?.name ?? 'Category';
-	}
+	const navItems: { id: AppRoute; label: string }[] = [
+		{ id: 'home', label: 'Home' },
+		{ id: 'activity', label: 'Activity' },
+		{ id: 'categories', label: 'Categories' },
+		{ id: 'more', label: 'More' }
+	];
+
+	const pageTitle = $derived(navItems.find((item) => item.id === route)?.label ?? 'Home');
 
 	function openAdd() {
 		editing = null;
-		sheetOpen = true;
+		txSheetOpen = true;
 	}
 
 	function openEdit(tx: LedgerTransaction) {
 		editing = tx;
-		sheetOpen = true;
+		txSheetOpen = true;
 	}
 
-	function setRoute(next: string) {
-		if (!isAppRoute(next)) return;
-		tab = next;
+	function setRoute(next: AppRoute) {
+		route = next;
 		const hash = routeToHash(next);
 		if (typeof location !== 'undefined' && location.hash !== hash) {
 			location.hash = hash;
 		}
 	}
 
+	function navigate(next: string) {
+		if (!isAppRoute(next)) return;
+		setRoute(next);
+	}
+
 	onMount(() => {
-		tab = parseHash(location.hash);
+		route = parseHash(location.hash);
 		const onHashChange = () => {
-			tab = parseHash(location.hash);
+			route = parseHash(location.hash);
 		};
 		window.addEventListener('hashchange', onHashChange);
 		if (!location.hash || location.hash === '#') {
@@ -140,210 +144,71 @@
 	});
 </script>
 
-<div class="bg-background text-foreground flex min-h-svh flex-col">
-	<header
-		class="border-border/80 bg-background/90 sticky top-0 z-10 flex items-center justify-between gap-3 border-b px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur"
-	>
-		<div class="min-w-0">
-			<p class="text-muted-foreground text-xs tracking-wide uppercase">Pocket Ledger</p>
-			<h1 class="truncate text-lg font-semibold">{account?.name ?? 'Loading…'}</h1>
-		</div>
-		<ThemeMenu preference={themePreference} onPreferenceChange={onThemePreferenceChange} />
-	</header>
-
-	<main class="mx-auto flex w-full max-w-lg flex-1 flex-col gap-4 px-4 py-4 pb-32">
-		{#if error}
+<div
+	class="text-foreground bg-background flex min-h-svh flex-col"
+	data-testid="app-shell"
+>
+	{#if error}
+		<main class="mx-auto w-full max-w-3xl px-6 py-8">
 			<Card.Root class="border-destructive/40">
 				<Card.Header>
 					<Card.Title>Something went wrong</Card.Title>
 					<Card.Description>{error}</Card.Description>
 				</Card.Header>
 			</Card.Root>
-		{:else if !ready}
+		</main>
+	{:else if !ready}
+		<main class="mx-auto w-full max-w-3xl px-6 py-8">
 			<Card.Root>
 				<Card.Header>
 					<Card.Title>Starting up</Card.Title>
 					<Card.Description>Preparing your local ledger…</Card.Description>
 				</Card.Header>
 			</Card.Root>
-		{:else}
-			{#if tab !== 'more' && tab !== 'categories'}
-				<Card.Root>
-					<Card.Header>
-						<Card.Title>Balance</Card.Title>
-						<Card.Description>
-							{#if isSinglePot}
-								Single-pot mode · {account?.currencyLabel}
-							{:else}
-								Multi-account · {account?.currencyLabel}
-							{/if}
-						</Card.Description>
-					</Card.Header>
-					<Card.Content>
-						<p class="text-3xl font-semibold tracking-tight" data-testid="account-balance">
-							{formatMinor(balanceMinor, account?.currencyLabel ?? 'IDR')}
-						</p>
-					</Card.Content>
-				</Card.Root>
-			{/if}
-
-			<Tabs.Root value={tab} onValueChange={setRoute} class="w-full" data-testid="app-tabs">
-				<Tabs.List class="grid w-full grid-cols-4">
-					<Tabs.Trigger value="home" class="px-1 text-xs sm:text-sm">Home</Tabs.Trigger>
-					<Tabs.Trigger value="activity" class="px-1 text-xs sm:text-sm">Activity</Tabs.Trigger>
-					<Tabs.Trigger value="categories" class="px-1 text-xs sm:text-sm">Categories</Tabs.Trigger>
-					<Tabs.Trigger value="more" class="px-1 text-xs sm:text-sm">More</Tabs.Trigger>
-				</Tabs.List>
-				<Tabs.Content value="home" class="mt-4 space-y-3">
-					{#if monthSummary}
-						<MonthSummaryCard
-							summary={monthSummary}
-							currencyLabel={account?.currencyLabel ?? 'IDR'}
-							onPrevMonth={() => void onPrevMonth()}
-							onNextMonth={() => void onNextMonth()}
-						/>
-					{/if}
-					{#if transactions[0]}
-						<button
-							type="button"
-							class="w-full text-left"
-							data-testid="latest-transaction"
-							onclick={() => openEdit(transactions[0]!)}
-						>
-							<Card.Root class="hover:bg-muted/40 transition-colors">
-								<Card.Header class="pb-2">
-									<Card.Title class="text-base">Latest</Card.Title>
-									<Card.Description>Tap to edit</Card.Description>
-								</Card.Header>
-								<Card.Content class="text-sm">
-									<div class="flex items-start justify-between gap-3">
-										<div class="min-w-0">
-											<p class="font-medium">{categoryName(transactions[0].categoryId)}</p>
-											<p class="text-muted-foreground truncate">
-												{transactions[0].note || transactions[0].type}
-												· {transactions[0].occurredOn}
-											</p>
-										</div>
-										<p
-											class={transactions[0].type === 'expense'
-												? 'text-destructive font-medium'
-												: 'font-medium text-emerald-600 dark:text-emerald-400'}
-										>
-											{transactions[0].type === 'expense' ? '−' : '+'}
-											{formatMinor(transactions[0].amountMinor, account?.currencyLabel ?? 'IDR')}
-										</p>
-									</div>
-								</Card.Content>
-							</Card.Root>
-						</button>
-					{:else}
-						<Card.Root data-testid="home-empty">
-							<Card.Header>
-								<Card.Title class="text-base">No transactions yet</Card.Title>
-								<Card.Description>Add your first income or expense to get started.</Card.Description>
-							</Card.Header>
-							<Card.Content>
-								<Button type="button" class="w-full" onclick={openAdd} data-testid="home-empty-add">
-									Get started
-								</Button>
-							</Card.Content>
-						</Card.Root>
-					{/if}
-				</Tabs.Content>
-				<Tabs.Content value="activity" class="mt-4">
-					{#if transactions.length === 0}
-						<div class="space-y-3" data-testid="activity-empty">
-							<p class="text-muted-foreground text-sm">No transactions yet.</p>
-							<Button type="button" variant="outline" onclick={openAdd} data-testid="activity-empty-add">
-								Add your first one
-							</Button>
-						</div>
-					{:else}
-						<ul
-							class="divide-border border-border divide-y rounded-lg border"
-							data-testid="activity-list"
-						>
-							{#each transactions as tx (tx.id)}
-								<li>
-									<button
-										type="button"
-										class="hover:bg-muted/40 flex w-full items-start justify-between gap-3 px-3 py-3 text-left text-sm transition-colors"
-										onclick={() => openEdit(tx)}
-									>
-										<div class="min-w-0">
-											<p class="font-medium">{categoryName(tx.categoryId)}</p>
-											<p class="text-muted-foreground truncate">
-												{tx.note || tx.type} · {tx.occurredOn}
-											</p>
-										</div>
-										<p
-											class={tx.type === 'expense'
-												? 'text-destructive shrink-0 font-medium'
-												: 'shrink-0 font-medium text-emerald-600 dark:text-emerald-400'}
-										>
-											{tx.type === 'expense' ? '−' : '+'}
-											{formatMinor(tx.amountMinor, account?.currencyLabel ?? 'IDR')}
-										</p>
-									</button>
-								</li>
-							{/each}
-						</ul>
-					{/if}
-				</Tabs.Content>
-				<Tabs.Content value="categories" class="mt-4">
-					<CategoriesPanel
-						{expenseCategories}
-						{incomeCategories}
-						{onCreateCategory}
-						{onRenameCategory}
-						{onDeleteCategory}
-					/>
-				</Tabs.Content>
-				<Tabs.Content value="more" class="mt-4">
-					<MorePanel
-						currencyLabel={account?.currencyLabel ?? 'IDR'}
-						{recurringRules}
-						{goals}
-						{snapshots}
-						{expenseCategories}
-						{incomeCategories}
-						{lockEnabled}
-						{onExport}
-						{onImportFile}
-						{onCreateRecurring}
-						{onToggleRecurring}
-						{onDeleteRecurring}
-						{onCreateGoal}
-						{onUpdateGoalSaved}
-						{onDeleteGoal}
-						{onCaptureNetWorth}
-						{onEnableLock}
-						{onDisableLock}
-					/>
-				</Tabs.Content>
-			</Tabs.Root>
-		{/if}
-	</main>
-
-	<div
-		class="pointer-events-none fixed inset-x-0 bottom-0 z-10 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
-	>
-		<div class="pointer-events-auto mx-auto flex max-w-lg justify-end">
-			<Button
-				size="lg"
-				class="rounded-full shadow-lg"
-				disabled={!ready || !account}
-				aria-label="Add transaction"
-				onclick={openAdd}
-			>
-				<PlusIcon class="size-5" />
-				Add
-			</Button>
-		</div>
-	</div>
+		</main>
+	{:else}
+		<Sidebar.Provider class="min-h-svh">
+			<AppShellChrome
+				{account}
+				{balanceMinor}
+				{transactions}
+				{categoriesById}
+				{monthSummary}
+				{recurringRules}
+				{goals}
+				{snapshots}
+				{expenseCategories}
+				{incomeCategories}
+				{lockEnabled}
+				{themePreference}
+				{route}
+				{pageTitle}
+				{onThemePreferenceChange}
+				{onPrevMonth}
+				{onNextMonth}
+				{onExport}
+				{onImportFile}
+				{onCreateRecurring}
+				{onToggleRecurring}
+				{onDeleteRecurring}
+				{onCreateGoal}
+				{onUpdateGoalSaved}
+				{onDeleteGoal}
+				{onCaptureNetWorth}
+				{onEnableLock}
+				{onDisableLock}
+				{onCreateCategory}
+				{onRenameCategory}
+				{onDeleteCategory}
+				onNavigate={navigate}
+				onOpenAdd={openAdd}
+				onOpenEdit={openEdit}
+			/>
+		</Sidebar.Provider>
+	{/if}
 </div>
 
-{#if account && sheetOpen}
+{#if account && txSheetOpen}
 	{#key editing?.id ?? 'new'}
 		<QuickAddSheet
 			open={true}
@@ -352,7 +217,7 @@
 			{editing}
 			onOpenChange={(next) => {
 				if (!next) {
-					sheetOpen = false;
+					txSheetOpen = false;
 					editing = null;
 				}
 			}}
@@ -360,3 +225,10 @@
 		/>
 	{/key}
 {/if}
+
+<AppCommandPalette
+	bind:open={commandOpen}
+	onOpenChange={(next) => (commandOpen = next)}
+	onNavigate={navigate}
+	onAdd={openAdd}
+/>

@@ -28,3 +28,4 @@ Living behavior contracts for Pocket Ledger.
 | [010](010-custom-categories.md) | Custom category management | Accepted |
 | [011](011-field-encryption.md) | Field-level at-rest encryption | Accepted |
 | [012](012-polish.md) | Polish: edit/delete tx + empty states | Accepted |
+| [013](013-desktop-layout.md) | Desktop-first shell (responsive drawer on mobile) | Accepted |

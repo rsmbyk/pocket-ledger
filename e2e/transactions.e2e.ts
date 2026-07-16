@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { goToNav, openAdd } from './nav';
 
 test.describe('001 transactions', () => {
 	test.beforeEach(async ({ page }) => {
@@ -7,7 +8,7 @@ test.describe('001 transactions', () => {
 	});
 
 	test('adds expense and updates balance and activity', async ({ page }) => {
-		await page.getByLabel('Add transaction').click();
+		await openAdd(page);
 		await expect(page.getByRole('heading', { name: 'Add transaction' })).toBeVisible();
 
 		await page.getByRole('button', { name: 'Expense', exact: true }).click();
@@ -18,13 +19,13 @@ test.describe('001 transactions', () => {
 		await expect(page.getByTestId('account-balance')).toContainText('15');
 		await expect(page.getByTestId('account-balance')).toContainText('-');
 
-		await page.getByRole('tab', { name: 'Activity' }).click();
+		await goToNav(page, 'activity');
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
 		await expect(page.getByTestId('activity-list')).toContainText('15');
 	});
 
 	test('adds income and increases balance', async ({ page }) => {
-		await page.getByLabel('Add transaction').click();
+		await openAdd(page);
 		await page.getByRole('button', { name: 'Income', exact: true }).click();
 		await page.getByLabel(/amount/i).fill('100000');
 		await page.getByLabel('Category', { exact: true }).selectOption({ label: 'Salary' });
@@ -34,7 +35,7 @@ test.describe('001 transactions', () => {
 	});
 
 	test('rejects empty amount', async ({ page }) => {
-		await page.getByLabel('Add transaction').click();
+		await openAdd(page);
 		await page.getByRole('button', { name: 'Save' }).click();
 		await expect(page.getByRole('alert')).toContainText(/amount/i);
 		await expect(page.getByRole('heading', { name: 'Add transaction' })).toBeVisible();
