@@ -16,5 +16,11 @@ Ordered slices after scaffold. Each slice gets a numbered spec before code.
 12. ~~**Field-level at-rest encryption** — deepen beyond passphrase gate~~ → `specs/011-field-encryption.md`
 13. ~~**Polish** — edit/delete transactions, empty CTAs, safe-area mobile tweaks~~ → `specs/012-polish.md`
 14. ~~**Desktop-first shell** — persistent rail, wide stage, responsive drawer on mobile~~ → `specs/013-desktop-layout.md`
+15. ~~**Void transactions** — irreversible void instead of hard delete~~ → `specs/014-void-transactions.md`
+16. ~~**Destructive confirms** — danger buttons + warns~~ → `specs/015-destructive-confirms.md`
+17. ~~**Activity without balance strip**~~ → `specs/016-activity-balance.md`
+18. ~~**Activity filters + search**~~ → `specs/017-activity-filters.md`
+19. ~~**Categories add modal**~~ → `specs/018-categories-add-modal.md`
+20. ~~**Drawer trigger morph**~~ → `specs/019-drawer-trigger-morph.md`
 
 Multi-account UI beyond the default pot can land whenever transfers/net-worth need it; storage already supports it.

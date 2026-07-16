@@ -29,3 +29,9 @@ Living behavior contracts for Pocket Ledger.
 | [011](011-field-encryption.md) | Field-level at-rest encryption | Accepted |
 | [012](012-polish.md) | Polish: edit/delete tx + empty states | Accepted |
 | [013](013-desktop-layout.md) | Desktop-first shell (responsive drawer on mobile) | Accepted |
+| [014](014-void-transactions.md) | Void transactions (replace hard delete) | Draft |
+| [015](015-destructive-confirms.md) | Destructive danger buttons + confirms | Draft |
+| [016](016-activity-balance.md) | Remove Activity compact balance | Draft |
+| [017](017-activity-filters.md) | Activity filters + search | Draft |
+| [018](018-categories-add-modal.md) | Categories add per-kind modal | Draft |
+| [019](019-drawer-trigger-morph.md) | Drawer trigger morphing panel icon | Draft |
