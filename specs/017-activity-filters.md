@@ -78,3 +78,4 @@ Help users find transactions on Activity by type, category, date range, and free
 - Playwright: new or extended Activity e2e
 - Implementation: domain filter helper; Activity UI in `ActivityTable.svelte` / `AppShellChrome.svelte`
 - Depends on: spec 014 for voided row appearance in filtered results; ideally 016 for Activity chrome
+- Layout note: Spec 020 moves advanced filters into a mobile bottom sheet; filter semantics unchanged

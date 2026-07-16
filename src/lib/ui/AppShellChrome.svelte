@@ -1,12 +1,15 @@
 <script lang="ts">
+	import { MediaQuery } from 'svelte/reactivity';
 	import HomeIcon from '@lucide/svelte/icons/house';
 	import ListIcon from '@lucide/svelte/icons/list';
 	import TagsIcon from '@lucide/svelte/icons/tags';
 	import MoreHorizontalIcon from '@lucide/svelte/icons/ellipsis';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
+	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import ThemeMenu from '$lib/ui/ThemeMenu.svelte';
 	import MonthSummaryCard from '$lib/ui/MonthSummary.svelte';
@@ -113,6 +116,9 @@
 
 	const sidebar = Sidebar.useSidebar();
 
+	/** Matches Tailwind `md` — desktop keeps the always-visible filter grid. */
+	const desktop = new MediaQuery('min-width: 768px');
+
 	const currencyLabel = $derived(account?.currencyLabel ?? 'IDR');
 	const recent = $derived(transactions.slice(0, 5));
 
@@ -121,9 +127,17 @@
 	let filterStart = $state('');
 	let filterEnd = $state('');
 	let filterSearch = $state('');
+	let filtersOpen = $state(false);
 
 	const filterCategories = $derived(
 		[...expenseCategories, ...incomeCategories].sort((a, b) => a.name.localeCompare(b.name))
+	);
+
+	const advancedFilterCount = $derived(
+		(filterType !== 'all' ? 1 : 0) +
+			(filterCategoryId !== '' ? 1 : 0) +
+			(filterStart !== '' ? 1 : 0) +
+			(filterEnd !== '' ? 1 : 0)
 	);
 
 	const filteredTransactions = $derived(
@@ -161,6 +175,13 @@
 	function openAdd() {
 		onOpenAdd();
 		sidebar.setOpenMobile(false);
+	}
+
+	function clearAdvancedFilters() {
+		filterType = 'all';
+		filterCategoryId = '';
+		filterStart = '';
+		filterEnd = '';
 	}
 </script>
 
@@ -332,10 +353,7 @@
 			</div>
 		{:else if route === 'activity'}
 			<div class="space-y-3" data-testid="activity-panel">
-				<div
-					class="border-border/80 bg-card/60 grid gap-3 rounded-lg border p-4 sm:grid-cols-2"
-					data-testid="activity-filters"
-				>
+				{#snippet advancedFilters()}
 					<div class="space-y-1">
 						<Label for="activity-filter-type">Type</Label>
 						<select
@@ -381,17 +399,95 @@
 							data-testid="activity-filter-end"
 						/>
 					</div>
-					<div class="space-y-1 sm:col-span-2">
-						<Label for="activity-filter-search">Search</Label>
-						<Input
-							id="activity-filter-search"
-							type="search"
-							placeholder="Note or amount"
-							bind:value={filterSearch}
-							data-testid="activity-filter-search"
-						/>
+				{/snippet}
+
+				{#if desktop.current}
+					<div
+						class="border-border/80 bg-card/60 grid gap-3 rounded-lg border p-4 sm:grid-cols-2"
+						data-testid="activity-filters"
+					>
+						{@render advancedFilters()}
+						<div class="space-y-1 sm:col-span-2">
+							<Label for="activity-filter-search">Search</Label>
+							<Input
+								id="activity-filter-search"
+								type="search"
+								placeholder="Note or amount"
+								bind:value={filterSearch}
+								data-testid="activity-filter-search"
+							/>
+						</div>
 					</div>
-				</div>
+				{:else}
+					<div
+						class="border-border/80 bg-card/60 flex items-end gap-2 rounded-lg border p-3"
+						data-testid="activity-filters"
+					>
+						<div class="min-w-0 flex-1 space-y-1">
+							<Label for="activity-filter-search">Search</Label>
+							<Input
+								id="activity-filter-search"
+								type="search"
+								placeholder="Note or amount"
+								bind:value={filterSearch}
+								data-testid="activity-filter-search"
+							/>
+						</div>
+						<Button
+							type="button"
+							variant="outline"
+							class="relative shrink-0"
+							data-testid="activity-filters-open"
+							onclick={() => (filtersOpen = true)}
+						>
+							<SlidersHorizontalIcon class="size-4" />
+							Filters
+							{#if advancedFilterCount > 0}
+								<span
+									class="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-medium tabular-nums"
+									data-testid="activity-filters-badge"
+								>
+									{advancedFilterCount}
+								</span>
+							{/if}
+						</Button>
+					</div>
+
+					<Sheet.Root open={filtersOpen} onOpenChange={(open) => (filtersOpen = open)}>
+						<Sheet.Content
+							side="bottom"
+							class="mx-auto max-h-[90svh] w-full max-w-lg gap-0 rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+							data-testid="activity-filters-sheet"
+						>
+							<Sheet.Header class="border-border border-b px-4 py-3 text-left">
+								<Sheet.Title>Filters</Sheet.Title>
+							</Sheet.Header>
+							<div class="grid gap-3 overflow-y-auto px-4 py-4">
+								{@render advancedFilters()}
+							</div>
+							<Sheet.Footer class="border-border flex-row gap-2 border-t px-4 py-3">
+								<Button
+									type="button"
+									variant="outline"
+									class="flex-1"
+									data-testid="activity-filters-clear"
+									onclick={clearAdvancedFilters}
+								>
+									Clear
+								</Button>
+								<Button
+									type="button"
+									class="flex-1"
+									data-testid="activity-filters-done"
+									onclick={() => (filtersOpen = false)}
+								>
+									Done
+								</Button>
+							</Sheet.Footer>
+						</Sheet.Content>
+					</Sheet.Root>
+				{/if}
+
 				<ActivityTable
 					transactions={filteredTransactions}
 					{currencyLabel}
