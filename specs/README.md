@@ -38,12 +38,12 @@ Living behavior contracts for Pocket Ledger.
 | [019](019-drawer-trigger-morph.md) | Drawer trigger morphing panel icon | Accepted |
 | [020](020-activity-filters-mobile.md) | Activity filters mobile compact layout | Accepted |
 | [021](021-categories-panel-order.md) | Categories Income first + right-aligned actions | Accepted |
-| [022](022-categories-icon-actions.md) | Categories icon-only row actions | Draft |
-| [023](023-recent-empty-notes.md) | Recent empty notes (no type filler) | Draft |
-| [024](024-reset-all.md) | Reset everything (More) | Draft |
-| [025](025-no-seed-categories.md) | No automatic seed categories | Draft |
-| [026](026-recent-short-dates.md) | Recent short date display | Draft |
-| [027](027-uncategorized-transactions.md) | Uncategorized transactions | Draft |
-| [028](028-month-summary-dividers.md) | Month summary section dividers | Draft |
-| [029](029-more-single-column.md) | More panel one card per row | Draft |
-| [030](030-remove-void-label.md) | Remove Void label from lists | Draft |
+| [022](022-categories-icon-actions.md) | Categories icon-only row actions | Accepted |
+| [023](023-recent-empty-notes.md) | Recent empty notes (no type filler) | Accepted |
+| [024](024-reset-all.md) | Reset everything (More) | Accepted |
+| [025](025-no-seed-categories.md) | No automatic seed categories | Accepted |
+| [026](026-recent-short-dates.md) | Recent short date display | Accepted |
+| [027](027-uncategorized-transactions.md) | Uncategorized transactions | Accepted |
+| [028](028-month-summary-dividers.md) | Month summary section dividers | Accepted |
+| [029](029-more-single-column.md) | More panel one card per row | Accepted |
+| [030](030-remove-void-label.md) | Remove Void label from lists | Accepted |

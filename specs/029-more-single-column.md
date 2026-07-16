@@ -1,7 +1,7 @@
 # Spec 029: More panel — one card per row
 
 - **ID:** 029
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

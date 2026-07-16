@@ -1,7 +1,7 @@
 # Spec 025: No automatic seed categories
 
 - **ID:** 025
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

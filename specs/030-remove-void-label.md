@@ -1,7 +1,7 @@
 # Spec 030: Remove Void label from lists
 
 - **ID:** 030
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

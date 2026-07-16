@@ -1,7 +1,7 @@
 # Spec 026: Recent card — short date display
 
 - **ID:** 026
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

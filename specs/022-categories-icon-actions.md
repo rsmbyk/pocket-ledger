@@ -1,7 +1,7 @@
 # Spec 022: Categories icon-only row actions
 
 - **ID:** 022
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

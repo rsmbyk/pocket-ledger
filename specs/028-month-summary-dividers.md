@@ -1,7 +1,7 @@
 # Spec 028: Month summary section dividers
 
 - **ID:** 028
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

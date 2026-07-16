@@ -1,7 +1,7 @@
 # Spec 027: Uncategorized transactions
 
 - **ID:** 027
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

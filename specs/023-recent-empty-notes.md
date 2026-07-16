@@ -1,7 +1,7 @@
 # Spec 023: Recent card — empty notes (no filler)
 
 - **ID:** 023
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent
