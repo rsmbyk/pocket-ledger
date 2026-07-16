@@ -1,7 +1,7 @@
 # Spec 038: Categories menu redesign
 
 - **ID:** 038
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

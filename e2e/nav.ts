@@ -33,25 +33,13 @@ export async function goToNav(
 	await rail.getByTestId(`nav-${dest}`).click();
 }
 
-/** Open add via Recent/empty CTAs or command palette (no mobile FAB). */
+/** Open add via Recent header or command palette (no empty-state CTAs). */
 export async function openAdd(page: Page): Promise<void> {
 	await page.getByTestId('app-shell').waitFor({ state: 'visible', timeout: 10_000 });
 
 	const recentAdd = page.getByTestId('recent-add');
 	if (await recentAdd.isVisible().catch(() => false)) {
 		await recentAdd.click();
-		return;
-	}
-
-	const emptyAdd = page.getByTestId('home-empty-add');
-	if (await emptyAdd.isVisible().catch(() => false)) {
-		await emptyAdd.click();
-		return;
-	}
-
-	const activityEmptyAdd = page.getByTestId('activity-empty-add');
-	if (await activityEmptyAdd.isVisible().catch(() => false)) {
-		await activityEmptyAdd.click();
 		return;
 	}
 

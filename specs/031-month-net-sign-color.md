@@ -1,7 +1,7 @@
 # Spec 031: Month summary Net sign coloring
 
 - **ID:** 031
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

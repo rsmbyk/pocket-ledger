@@ -1,13 +1,19 @@
 import { db, type CategoryRow } from '$lib/data/db';
+import { compareCategoriesBySortOrder } from '$lib/domain/category-order';
+
+function sortCategories(rows: CategoryRow[]): CategoryRow[] {
+	return [...rows].sort(compareCategoriesBySortOrder);
+}
 
 export async function listCategories(): Promise<CategoryRow[]> {
-	return db.categories.orderBy('name').toArray();
+	return sortCategories(await db.categories.toArray());
 }
 
 export async function listCategoriesByKind(
 	kind: CategoryRow['kind']
 ): Promise<CategoryRow[]> {
-	return db.categories.where('kind').equals(kind).sortBy('name');
+	const rows = await db.categories.where('kind').equals(kind).toArray();
+	return sortCategories(rows);
 }
 
 export async function putCategory(category: CategoryRow): Promise<void> {

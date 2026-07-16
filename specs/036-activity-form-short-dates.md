@@ -1,7 +1,7 @@
 # Spec 036: Short dates on Activity and transaction form
 
 - **ID:** 036
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

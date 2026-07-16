@@ -58,6 +58,7 @@
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
 		onRenameCategory: (id: string, name: string) => void | Promise<void>;
 		onDeleteCategory: (id: string) => void | Promise<void>;
+		onReorderCategory: (id: string, direction: 'up' | 'down') => void | Promise<void>;
 		ready: boolean;
 		error: string | null;
 	};
@@ -95,6 +96,7 @@
 		onCreateCategory,
 		onRenameCategory,
 		onDeleteCategory,
+		onReorderCategory,
 		ready,
 		error
 	}: Props = $props();
@@ -206,6 +208,7 @@
 				{onCreateCategory}
 				{onRenameCategory}
 				{onDeleteCategory}
+				{onReorderCategory}
 				onNavigate={navigate}
 				onOpenAdd={openAdd}
 				onOpenEdit={openEdit}

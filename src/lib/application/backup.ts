@@ -13,6 +13,7 @@ import {
 import { openField, sealAllSensitiveFields } from '$lib/application/field-crypto';
 import { isLockEnabled } from '$lib/application/lock';
 import { getDataKey } from '$lib/data/session-key';
+import { assignSortOrdersByName } from '$lib/domain/category-order';
 
 export const BACKUP_FORMAT_VERSION = 1 as const;
 
@@ -123,7 +124,13 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 				db.settings.clear()
 			]);
 			await db.accounts.bulkPut(normalized.accounts);
-			await db.categories.bulkPut(normalized.categories);
+			const categories = normalized.categories as Array<
+				CategoryRow & { sortOrder?: number }
+			>;
+			const toPut = categories.every((c) => typeof c.sortOrder === 'number')
+				? categories
+				: assignSortOrdersByName(categories);
+			await db.categories.bulkPut(toPut);
 			await db.transactions.bulkPut(
 				normalized.transactions.map((t) => ({ ...t, voidedAt: t.voidedAt ?? null }))
 			);

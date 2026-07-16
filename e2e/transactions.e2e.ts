@@ -36,9 +36,9 @@ test.describe('001 transactions', () => {
 		await expect(page.getByTestId('account-balance')).toContainText('100');
 	});
 
-	test('rejects empty amount', async ({ page }) => {
+	test('disables Save when amount is empty', async ({ page }) => {
 		await openAdd(page);
-		await page.getByRole('button', { name: 'Save' }).click();
-		await expect(page.getByRole('alert')).toContainText(/amount/i);
+		await expect(page.getByTestId('tx-save')).toBeDisabled();
+		await expect(page.getByTestId('tx-occurred-on-display')).toContainText(/\d{4}/);
 	});
 });

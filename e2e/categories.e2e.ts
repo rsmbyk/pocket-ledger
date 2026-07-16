@@ -10,6 +10,10 @@ test.describe('010 / 018 / 022 custom categories', () => {
 		await page.getByTestId('category-add').click();
 		await expect(page.getByRole('textbox', { name: 'Name for Coffee' })).toBeVisible();
 		await expect(page.getByTestId('category-save-name').first()).toBeDisabled();
+		await expect(page.getByTestId('category-add-expense')).toHaveAttribute(
+			'aria-label',
+			'Add expense category'
+		);
 
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');

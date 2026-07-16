@@ -8,10 +8,10 @@ test.describe('012 polish / 014 void / 030', () => {
 		await ensureCategory(page, 'Food', 'expense');
 	});
 
-	test('empty home offers add CTA', async ({ page }) => {
-		await expect(page.getByTestId('home-empty')).toBeVisible();
-		await page.getByTestId('home-empty-add').click();
-		await expect(page.getByRole('heading', { name: 'Add transaction' })).toBeVisible();
+	test('empty home shows designed empty without CTA', async ({ page }) => {
+		await expect(page.getByTestId('recent-empty')).toBeVisible();
+		await expect(page.getByTestId('recent-empty').getByRole('button')).toHaveCount(0);
+		await expect(page.getByTestId('recent-add')).toBeVisible();
 	});
 
 	test('edits and voids a transaction from activity', async ({ page }) => {

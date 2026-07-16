@@ -1,7 +1,7 @@
 # Spec 035: Icon-only Activity Filters button
 
 - **ID:** 035
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

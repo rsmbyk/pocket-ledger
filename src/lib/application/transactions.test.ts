@@ -115,4 +115,25 @@ describe('transactions application', () => {
 			})
 		).rejects.toThrow(/cannot be edited/i);
 	});
+
+	it('rejects changing transaction type on update', async () => {
+		const account = await ensureDefaultAccount();
+		const expense = await createCategory('Food', 'expense');
+		const income = await createCategory('Salary', 'income');
+		const created = await addTransaction({
+			accountId: account.id,
+			type: 'expense',
+			amountRaw: '5000',
+			categoryId: expense.id
+		});
+		await expect(
+			updateTransaction({
+				id: created.id,
+				accountId: account.id,
+				type: 'income',
+				amountRaw: '5000',
+				categoryId: income.id
+			})
+		).rejects.toThrow(/type cannot be changed/i);
+	});
 });

@@ -7,6 +7,7 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
+	import InboxIcon from '@lucide/svelte/icons/inbox';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
@@ -16,6 +17,7 @@
 	import MorePanel from '$lib/ui/MorePanel.svelte';
 	import CategoriesPanel from '$lib/ui/CategoriesPanel.svelte';
 	import ActivityTable from '$lib/ui/ActivityTable.svelte';
+	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import type { Account } from '$lib/domain/account';
 	import { isVoided, type LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
@@ -78,6 +80,7 @@
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
 		onRenameCategory: (id: string, name: string) => void | Promise<void>;
 		onDeleteCategory: (id: string) => void | Promise<void>;
+		onReorderCategory: (id: string, direction: 'up' | 'down') => void | Promise<void>;
 		onNavigate: (route: AppRoute) => void;
 		onOpenAdd: () => void;
 		onOpenEdit: (tx: LedgerTransaction) => void;
@@ -116,6 +119,7 @@
 		onCreateCategory,
 		onRenameCategory,
 		onDeleteCategory,
+		onReorderCategory,
 		onNavigate,
 		onOpenAdd,
 		onOpenEdit
@@ -299,12 +303,16 @@
 					</Card.Header>
 					<Card.Content class="px-2 pb-2">
 						{#if recent.length === 0}
-							<div class="space-y-3 px-2 pb-2" data-testid="home-empty">
-								<p class="text-muted-foreground text-sm">No transactions yet.</p>
-								<Button type="button" onclick={openAdd} data-testid="home-empty-add"
-									>Get started</Button
-								>
-							</div>
+							<EmptyState
+								testid="recent-empty"
+								title="No recent activity"
+								description="Transactions you add will show up here."
+								class="px-2 pb-2"
+							>
+								{#snippet icon()}
+									<InboxIcon class="size-5" />
+								{/snippet}
+							</EmptyState>
 						{:else}
 							<ul class="divide-border divide-y" data-testid="recent-list">
 								{#each recent as tx (tx.id)}
@@ -441,12 +449,13 @@
 						<Button
 							type="button"
 							variant="outline"
+							size="icon"
 							class="relative shrink-0"
+							aria-label="Filters"
 							data-testid="activity-filters-open"
 							onclick={() => (filtersOpen = true)}
 						>
 							<SlidersHorizontalIcon class="size-4" />
-							Filters
 							{#if advancedFilterCount > 0}
 								<span
 									class="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-medium tabular-nums"
@@ -495,10 +504,10 @@
 
 				<ActivityTable
 					transactions={filteredTransactions}
+					totalCount={transactions.length}
 					{currencyLabel}
 					{categoryName}
 					onEdit={onOpenEdit}
-					onAdd={openAdd}
 				/>
 			</div>
 		{:else if route === 'categories'}
@@ -508,6 +517,7 @@
 				{onCreateCategory}
 				{onRenameCategory}
 				{onDeleteCategory}
+				{onReorderCategory}
 			/>
 		{:else}
 			<MorePanel

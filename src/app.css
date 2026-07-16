@@ -132,3 +132,17 @@
 		@apply min-h-svh;
 	}
 }
+
+@keyframes panel-emphasize-pulse {
+	0%,
+	100% {
+		box-shadow: 0 0 0 0 transparent;
+	}
+	50% {
+		box-shadow: 0 0 0 3px var(--ring);
+	}
+}
+
+.panel-emphasize {
+	animation: panel-emphasize-pulse 0.4s ease;
+}

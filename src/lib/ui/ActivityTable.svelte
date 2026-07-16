@@ -1,27 +1,44 @@
 <script lang="ts">
+	import InboxIcon from '@lucide/svelte/icons/inbox';
+	import SearchXIcon from '@lucide/svelte/icons/search-x';
 	import * as Table from '$lib/components/ui/table/index.js';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import { isVoided, type LedgerTransaction } from '$lib/domain/transaction';
 	import { formatMinor } from '$lib/domain/money';
+	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
 
 	type Props = {
 		transactions: LedgerTransaction[];
+		/** Total ledger rows before filters (for empty vs filtered-empty). */
+		totalCount: number;
 		currencyLabel: string;
 		categoryName: (categoryId: string | null) => string;
 		onEdit: (tx: LedgerTransaction) => void;
-		onAdd: () => void;
 	};
 
-	let { transactions, currencyLabel, categoryName, onEdit, onAdd }: Props = $props();
+	let { transactions, totalCount, currencyLabel, categoryName, onEdit }: Props = $props();
 </script>
 
-{#if transactions.length === 0}
-	<div class="space-y-3" data-testid="activity-empty">
-		<p class="text-muted-foreground text-sm">No transactions yet.</p>
-		<Button type="button" variant="outline" size="sm" onclick={onAdd} data-testid="activity-empty-add">
-			Add your first one
-		</Button>
-	</div>
+{#if transactions.length === 0 && totalCount === 0}
+	<EmptyState
+		testid="activity-empty"
+		title="No transactions yet"
+		description="Your ledger is empty for now."
+	>
+		{#snippet icon()}
+			<InboxIcon class="size-5" />
+		{/snippet}
+	</EmptyState>
+{:else if transactions.length === 0}
+	<EmptyState
+		testid="activity-empty-filtered"
+		title="No matching transactions"
+		description="Try clearing filters or search."
+	>
+		{#snippet icon()}
+			<SearchXIcon class="size-5" />
+		{/snippet}
+	</EmptyState>
 {:else}
 	<div class="border-border overflow-hidden rounded-lg border" data-testid="activity-list">
 		<Table.Root class="text-sm">
@@ -53,7 +70,7 @@
 						data-testid={`activity-row-${tx.id}`}
 					>
 						<Table.Cell class="px-3 py-2 whitespace-nowrap tabular-nums">
-							{tx.occurredOn}
+							{formatOccurredOnDisplay(tx.occurredOn)}
 						</Table.Cell>
 						<Table.Cell class="px-3 py-2 font-medium">
 							{categoryName(tx.categoryId)}

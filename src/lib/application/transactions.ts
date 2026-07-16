@@ -86,6 +86,9 @@ export async function updateTransaction(input: UpdateTransactionInput): Promise<
 	const existing = await getTransaction(input.id);
 	if (!existing) throw new Error('Transaction not found');
 	if (isVoided(existing)) throw new Error('Voided transactions cannot be edited');
+	if (input.type !== existing.type) {
+		throw new Error('Transaction type cannot be changed');
+	}
 
 	const amountMinor = parseAmountInput(input.amountRaw);
 	const occurredOn = input.occurredOn ?? existing.occurredOn;
@@ -93,13 +96,13 @@ export async function updateTransaction(input: UpdateTransactionInput): Promise<
 		throw new Error('Date must be YYYY-MM-DD');
 	}
 
-	const categoryId = await resolveCategoryId(input.type, input.categoryId);
+	const categoryId = await resolveCategoryId(existing.type, input.categoryId);
 
 	const notePlain = (input.note ?? '').trim();
 	const tx: LedgerTransaction = {
 		...existing,
 		accountId: input.accountId,
-		type: input.type,
+		type: existing.type,
 		amountMinor,
 		categoryId,
 		note: await sealField(notePlain),

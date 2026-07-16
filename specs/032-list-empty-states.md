@@ -1,7 +1,7 @@
 # Spec 032: List empty states (no CTAs)
 
 - **ID:** 032
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

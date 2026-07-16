@@ -1,7 +1,7 @@
 # Spec 034: Emphasize active category save
 
 - **ID:** 034
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

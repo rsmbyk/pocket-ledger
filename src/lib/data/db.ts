@@ -4,11 +4,13 @@ import type { LedgerTransaction } from '$lib/domain/transaction';
 import type { RecurringRule } from '$lib/domain/recurring';
 import type { Goal } from '$lib/domain/goals';
 import type { NetWorthSnapshot } from '$lib/domain/net-worth';
+import { assignSortOrdersByName } from '$lib/domain/category-order';
 
 export type CategoryRow = {
 	id: string;
 	name: string;
 	kind: 'income' | 'expense';
+	sortOrder: number;
 	createdAt: string;
 };
 
@@ -46,6 +48,30 @@ export class PocketLedgerDb extends Dexie {
 			})
 			.upgrade(async () => {
 				/* new tables only */
+			});
+		this.version(3)
+			.stores({
+				accounts: 'id, name',
+				categories: 'id, kind, name, sortOrder',
+				transactions: 'id, accountId, type, occurredOn, categoryId',
+				settings: 'key',
+				recurringRules: 'id, accountId, nextOccurredOn, active',
+				goals: 'id, name',
+				netWorthSnapshots: 'id, capturedOn'
+			})
+			.upgrade(async (tx) => {
+				const table = tx.table('categories');
+				const rows = (await table.toArray()) as Array<{
+					id: string;
+					name: string;
+					kind: 'income' | 'expense';
+					createdAt: string;
+					sortOrder?: number;
+				}>;
+				const assigned = assignSortOrdersByName(rows);
+				for (const row of assigned) {
+					await table.put(row);
+				}
 			});
 	}
 }

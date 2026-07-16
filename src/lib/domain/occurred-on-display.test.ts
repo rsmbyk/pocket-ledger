@@ -10,4 +10,13 @@ describe('formatOccurredOnDisplay', () => {
 	it('includes year when different from today', () => {
 		expect(formatOccurredOnDisplay('2025-12-25', '2026-07-16')).toBe('Dec 25, 2025');
 	});
+
+	it('always includes year when year: always', () => {
+		expect(formatOccurredOnDisplay('2026-07-06', '2026-07-16', { year: 'always' })).toBe(
+			'Jul 06, 2026'
+		);
+		expect(formatOccurredOnDisplay('2025-12-25', '2026-07-16', { year: 'always' })).toBe(
+			'Dec 25, 2025'
+		);
+	});
 });

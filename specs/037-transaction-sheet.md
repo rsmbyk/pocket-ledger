@@ -1,7 +1,7 @@
 # Spec 037: Transaction sheet redesign
 
 - **ID:** 037
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent
