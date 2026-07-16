@@ -29,8 +29,10 @@
 	import { isAppRoute, type AppRoute } from '$lib/shared/router';
 	import {
 		filterTransactions,
+		UNCATEGORIZED_FILTER,
 		type ActivityTypeFilter
 	} from '$lib/domain/activity-filters';
+	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 
@@ -54,6 +56,10 @@
 		onNextMonth: () => void | Promise<void>;
 		onExport: () => void | Promise<void>;
 		onImportFile: (file: File) => void | Promise<void>;
+		onResetLocalData: (options: {
+			preserveCategories: boolean;
+			preservePassphrase: boolean;
+		}) => void | Promise<void>;
 		onCreateRecurring: (input: {
 			type: AddableTransactionType;
 			amountRaw: string;
@@ -97,6 +103,7 @@
 		onNextMonth,
 		onExport,
 		onImportFile,
+		onResetLocalData,
 		onCreateRecurring,
 		onToggleRecurring,
 		onDeleteRecurring,
@@ -315,16 +322,13 @@
 											<div class="min-w-0 flex-1">
 												<p class="inline-flex flex-wrap items-center gap-1.5 font-medium">
 													{categoryName(tx.categoryId)}
-													{#if voided}
-														<span
-															class="bg-muted text-muted-foreground inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium"
-														>
-															Void
-														</span>
-													{/if}
 												</p>
 												<p class="truncate text-xs">
-													{tx.note || tx.type} · {tx.occurredOn}
+													{#if tx.note?.trim()}
+														{tx.note.trim()} · {formatOccurredOnDisplay(tx.occurredOn)}
+													{:else}
+														{formatOccurredOnDisplay(tx.occurredOn)}
+													{/if}
 												</p>
 											</div>
 											<p
@@ -376,6 +380,7 @@
 							data-testid="activity-filter-category"
 						>
 							<option value="">All</option>
+							<option value={UNCATEGORIZED_FILTER}>Uncategorized</option>
 							{#each filterCategories as category (category.id)}
 								<option value={category.id}>{category.name}</option>
 							{/each}
@@ -515,6 +520,7 @@
 				{lockEnabled}
 				{onExport}
 				{onImportFile}
+				{onResetLocalData}
 				{onCreateRecurring}
 				{onToggleRecurring}
 				{onDeleteRecurring}

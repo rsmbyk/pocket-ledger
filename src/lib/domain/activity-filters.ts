@@ -1,10 +1,14 @@
 import type { LedgerTransaction } from '$lib/domain/transaction';
 import type { AddableTransactionType } from '$lib/domain/transaction-rules';
 
+/** Sentinel for Activity filter: only transactions with null categoryId. */
+export const UNCATEGORIZED_FILTER = '__uncategorized__';
+
 export type ActivityTypeFilter = 'all' | AddableTransactionType;
 
 export type ActivityFilterCriteria = {
 	type?: ActivityTypeFilter;
+	/** Empty/omitted = All; `UNCATEGORIZED_FILTER` = null categoryId; else category id. */
 	categoryId?: string | null;
 	startDate?: string | null;
 	endDate?: string | null;
@@ -39,7 +43,11 @@ export function filterTransactions(
 
 	return transactions.filter((tx) => {
 		if (type !== 'all' && tx.type !== type) return false;
-		if (categoryId && tx.categoryId !== categoryId) return false;
+		if (categoryId === UNCATEGORIZED_FILTER) {
+			if (tx.categoryId != null) return false;
+		} else if (categoryId && tx.categoryId !== categoryId) {
+			return false;
+		}
 		if (start && tx.occurredOn < start) return false;
 		if (end && tx.occurredOn > end) return false;
 		if (search) {

@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '$lib/data/db';
 import { ensureDefaultAccount } from '$lib/application/accounts';
-import { getCategoriesForType } from '$lib/application/transactions';
+import { createCategory } from '$lib/application/categories';
 import { createRecurringRule, materializeDueRecurring } from './recurring';
 
 describe('recurring application', () => {
@@ -13,12 +13,12 @@ describe('recurring application', () => {
 
 	it('materializes a due monthly expense and advances next date', async () => {
 		const account = await ensureDefaultAccount();
-		const expenseCats = await getCategoriesForType('expense');
+		const food = await createCategory('Food', 'expense');
 		await createRecurringRule({
 			accountId: account.id,
 			type: 'expense',
 			amountMinor: 50_000,
-			categoryId: expenseCats[0]!.id,
+			categoryId: food.id,
 			frequency: 'monthly',
 			nextOccurredOn: '2026-07-01',
 			note: 'rent'

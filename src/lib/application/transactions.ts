@@ -1,10 +1,9 @@
-import { countCategories, listCategories, listCategoriesByKind, putCategory } from '$lib/data/category-repo';
+import { countCategories, listCategories, listCategoriesByKind } from '$lib/data/category-repo';
 import {
 	getTransaction,
 	listTransactionsForAccount,
 	putTransaction
 } from '$lib/data/transaction-repo';
-import { DEFAULT_CATEGORIES } from '$lib/domain/categories';
 import type { CategoryRow } from '$lib/data/db';
 import { isVoided, type LedgerTransaction, type TransactionId } from '$lib/domain/transaction';
 import {
@@ -20,7 +19,8 @@ export type AddTransactionInput = {
 	accountId: string;
 	type: AddableTransactionType;
 	amountRaw: string;
-	categoryId: string;
+	/** Empty / omitted → uncategorized (`categoryId: null`). */
+	categoryId?: string | null;
 	note?: string;
 	occurredOn?: string;
 };
@@ -42,20 +42,9 @@ async function revealCategories(rows: CategoryRow[]): Promise<CategoryRow[]> {
 	);
 }
 
+/** Lists categories; never auto-inserts defaults when empty (spec 025). */
 export async function ensureSeedCategories(): Promise<CategoryRow[]> {
-	if ((await countCategories()) > 0) {
-		return revealCategories(await listCategories());
-	}
-
-	const now = new Date().toISOString();
-	for (const seed of DEFAULT_CATEGORIES) {
-		await putCategory({
-			id: createId(),
-			name: await sealField(seed.name),
-			kind: seed.kind,
-			createdAt: now
-		});
-	}
+	if ((await countCategories()) === 0) return [];
 	return revealCategories(await listCategories());
 }
 
@@ -73,11 +62,7 @@ export async function addTransaction(input: AddTransactionInput): Promise<Ledger
 		throw new Error('Date must be YYYY-MM-DD');
 	}
 
-	const categories = await getCategoriesForType(input.type);
-	const category = categories.find((c) => c.id === input.categoryId);
-	if (!category) {
-		throw new Error('Choose a category for this type');
-	}
+	const categoryId = await resolveCategoryId(input.type, input.categoryId);
 
 	const notePlain = (input.note ?? '').trim();
 	const tx: LedgerTransaction = {
@@ -86,7 +71,7 @@ export async function addTransaction(input: AddTransactionInput): Promise<Ledger
 		counterAccountId: null,
 		type: input.type,
 		amountMinor,
-		categoryId: category.id,
+		categoryId,
 		note: await sealField(notePlain),
 		occurredOn,
 		createdAt: new Date().toISOString(),
@@ -108,11 +93,7 @@ export async function updateTransaction(input: UpdateTransactionInput): Promise<
 		throw new Error('Date must be YYYY-MM-DD');
 	}
 
-	const categories = await getCategoriesForType(input.type);
-	const category = categories.find((c) => c.id === input.categoryId);
-	if (!category) {
-		throw new Error('Choose a category for this type');
-	}
+	const categoryId = await resolveCategoryId(input.type, input.categoryId);
 
 	const notePlain = (input.note ?? '').trim();
 	const tx: LedgerTransaction = {
@@ -120,13 +101,27 @@ export async function updateTransaction(input: UpdateTransactionInput): Promise<
 		accountId: input.accountId,
 		type: input.type,
 		amountMinor,
-		categoryId: category.id,
+		categoryId,
 		note: await sealField(notePlain),
 		occurredOn,
 		voidedAt: null
 	};
 	await putTransaction(tx);
 	return { ...tx, note: notePlain };
+}
+
+async function resolveCategoryId(
+	type: AddableTransactionType,
+	raw: string | null | undefined
+): Promise<string | null> {
+	const trimmed = (raw ?? '').trim();
+	if (!trimmed) return null;
+	const categories = await getCategoriesForType(type);
+	const category = categories.find((c) => c.id === trimmed);
+	if (!category) {
+		throw new Error('Choose a category for this type');
+	}
+	return category.id;
 }
 
 /** Irreversibly void a transaction (keeps the row; excludes from balances). */

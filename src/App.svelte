@@ -16,6 +16,7 @@
 		parseBackupJson,
 		restoreBackup
 	} from '$lib/application/backup';
+	import { resetLocalData } from '$lib/application/reset';
 	import {
 		createRecurringRule,
 		listRecurringRules,
@@ -187,6 +188,15 @@
 		if (account && unlocked) await refreshLedger(account);
 	}
 
+	async function onResetLocalData(options: {
+		preserveCategories: boolean;
+		preservePassphrase: boolean;
+	}) {
+		await resetLocalData(options);
+		await bootstrap();
+		if (account && unlocked) await refreshLedger(account);
+	}
+
 	$effect(() => {
 		themePreference = parseThemePreference(userPrefersMode.current);
 		void mode.current;
@@ -226,6 +236,7 @@
 		{onNextMonth}
 		{onExport}
 		{onImportFile}
+		{onResetLocalData}
 		onCreateRecurring={async (input) => {
 			if (!account) return;
 			await createRecurringRule({

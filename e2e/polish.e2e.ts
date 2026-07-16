@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { goToNav, openAdd } from './nav';
+import { ensureCategory, goToNav, openAdd } from './nav';
 
-test.describe('012 polish / 014 void', () => {
+test.describe('012 polish / 014 void / 030', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
 		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await ensureCategory(page, 'Food', 'expense');
 	});
 
 	test('empty home offers add CTA', async ({ page }) => {
@@ -37,8 +38,11 @@ test.describe('012 polish / 014 void', () => {
 		await expect(page.getByTestId('activity-list')).toContainText('10');
 		await page.getByTestId('activity-list').locator('[data-testid^="activity-row-"]').first().click();
 		await page.getByTestId('tx-void').click();
-		await expect(page.getByTestId('activity-list')).toContainText(/void/i);
+		await expect(page.getByTestId('activity-list')).not.toContainText(/^Void$/);
 		await expect(page.getByTestId('activity-empty')).toHaveCount(0);
+		await expect(page.getByTestId('activity-list').locator('[data-testid^="activity-row-"]').first()).toHaveClass(
+			/opacity-70/
+		);
 
 		await goToNav(page, 'home');
 		await expect(page.getByTestId('account-balance')).toContainText('0');

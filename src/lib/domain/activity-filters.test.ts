@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LedgerTransaction } from '$lib/domain/transaction';
-import { amountDigitsMatch, filterTransactions } from './activity-filters';
+import { amountDigitsMatch, filterTransactions, UNCATEGORIZED_FILTER } from './activity-filters';
 
 function tx(
 	partial: Partial<LedgerTransaction> &
@@ -43,18 +43,12 @@ describe('activity-filters', () => {
 		expect(filterTransactions(rows, { search: '100,000' })).toHaveLength(1);
 	});
 
-	it('keeps voided rows when they match', () => {
-		const withVoid = [
+	it('filters uncategorized via sentinel', () => {
+		const mixed = [
 			...rows,
-			tx({
-				type: 'expense',
-				amountMinor: 1_000,
-				occurredOn: '2026-07-16',
-				categoryId: 'food',
-				note: 'voided snack',
-				voidedAt: '2026-07-16T12:00:00.000Z'
-			})
+			tx({ type: 'expense', amountMinor: 9, occurredOn: '2026-07-16', categoryId: null, note: 'bare' })
 		];
-		expect(filterTransactions(withVoid, { search: 'voided' })).toHaveLength(1);
+		expect(filterTransactions(mixed, { categoryId: UNCATEGORIZED_FILTER })).toHaveLength(1);
+		expect(filterTransactions(mixed, { categoryId: UNCATEGORIZED_FILTER })[0]?.note).toBe('bare');
 	});
 });

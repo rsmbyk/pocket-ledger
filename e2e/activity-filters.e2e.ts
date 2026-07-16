@@ -1,7 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
-import { goToNav, openAdd } from './nav';
+import { ensureCategory, goToNav, openAdd } from './nav';
 
 async function seedIncomeAndExpense(page: Page): Promise<void> {
+	await ensureCategory(page, 'Salary', 'income');
+	await ensureCategory(page, 'Food', 'expense');
 	await openAdd(page);
 	const sheet = page.getByTestId('tx-sheet');
 	const dialog = page.getByTestId('tx-dialog');

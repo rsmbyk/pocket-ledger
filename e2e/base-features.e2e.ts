@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { goToNav, openAdd } from './nav';
+import { ensureCategory, goToNav, openAdd } from './nav';
 
 
 test.describe('003–008 base features', () => {
@@ -11,7 +11,9 @@ test.describe('003–008 base features', () => {
 	test('More tab shows backup and privacy', async ({ page }) => {
 		await goToNav(page, 'more');
 		await expect(page.getByTestId('more-panel')).toBeVisible();
+		await expect(page.getByTestId('more-sections')).toBeVisible();
 		await expect(page.getByTestId('export-backup')).toBeVisible();
+		await expect(page.getByTestId('reset-all')).toBeVisible();
 		await expect(page.getByTestId('lock-status')).toContainText(/off/i);
 	});
 
@@ -38,6 +40,7 @@ test.describe('003–008 base features', () => {
 	});
 
 	test('captures net worth snapshot', async ({ page }) => {
+		await ensureCategory(page, 'Salary', 'income');
 		await openAdd(page);
 		await page.getByRole('button', { name: 'Income', exact: true }).click();
 		await page.getByLabel(/amount/i).fill('85000');
@@ -66,6 +69,7 @@ test.describe('003–008 base features', () => {
 	});
 
 	test('adds a recurring rule', async ({ page }) => {
+		await ensureCategory(page, 'Food', 'expense');
 		await goToNav(page, 'more');
 		await page.getByRole('textbox', { name: 'Amount', exact: true }).fill('50000');
 		await page.getByRole('button', { name: 'Add rule' }).click();

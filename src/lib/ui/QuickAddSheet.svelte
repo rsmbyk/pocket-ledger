@@ -66,7 +66,7 @@
 				note = editing.note;
 				occurredOn = editing.occurredOn;
 				categories = await getCategoriesForType(type);
-				categoryId = editing.categoryId ?? categories[0]?.id ?? '';
+				categoryId = editing.categoryId ?? '';
 			} else if (!seeded) {
 				type = 'expense';
 				amountRaw = '';
@@ -187,6 +187,7 @@
 				bind:value={categoryId}
 				disabled={isVoidedView || saving}
 			>
+				<option value="">Uncategorized</option>
 				{#each categories as category (category.id)}
 					<option value={category.id}>{category.name}</option>
 				{/each}
