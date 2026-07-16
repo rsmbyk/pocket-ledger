@@ -6,12 +6,12 @@
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import type { CategoryRow } from '$lib/data/db';
-	import type { LedgerTransaction } from '$lib/domain/transaction';
+	import { isVoided, type LedgerTransaction } from '$lib/domain/transaction';
 	import {
 		addTransaction,
 		getCategoriesForType,
-		removeTransaction,
-		updateTransaction
+		updateTransaction,
+		voidTransaction
 	} from '$lib/application/transactions';
 	import {
 		todayOccurredOn,
@@ -43,6 +43,17 @@
 	let seeded = $state(false);
 
 	const isEdit = $derived(Boolean(editing));
+	const isVoidedView = $derived(Boolean(editing && isVoided(editing)));
+	const sheetTitle = $derived(
+		isVoidedView ? 'Voided transaction' : isEdit ? 'Edit transaction' : 'Add transaction'
+	);
+	const sheetDescription = $derived(
+		isVoidedView
+			? 'This transaction was voided and cannot be edited.'
+			: isEdit
+				? 'Update or void this entry.'
+				: `Quick add for ${currencyLabel} on this account.`
+	);
 
 	$effect(() => {
 		void open;
@@ -69,6 +80,7 @@
 	});
 
 	async function onTypeChange(next: AddableTransactionType) {
+		if (isVoidedView) return;
 		type = next;
 		error = null;
 		categories = await getCategoriesForType(next);
@@ -76,6 +88,7 @@
 	}
 
 	async function save() {
+		if (isVoidedView) return;
 		saving = true;
 		error = null;
 		try {
@@ -108,17 +121,17 @@
 		}
 	}
 
-	async function onDelete() {
-		if (!editing) return;
-		if (!confirm('Delete this transaction?')) return;
+	async function onVoid() {
+		if (!editing || isVoidedView) return;
+		if (!confirm('Void this transaction permanently? This cannot be undone.')) return;
 		saving = true;
 		error = null;
 		try {
-			await removeTransaction(editing.id);
+			await voidTransaction(editing.id);
 			onOpenChange(false);
 			await onSaved();
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Could not delete transaction';
+			error = err instanceof Error ? err.message : 'Could not void transaction';
 		} finally {
 			saving = false;
 		}
@@ -137,6 +150,7 @@
 			<Button
 				type="button"
 				variant={type === 'expense' ? 'default' : 'outline'}
+				disabled={isVoidedView || saving}
 				onclick={() => void onTypeChange('expense')}
 			>
 				Expense
@@ -144,6 +158,7 @@
 			<Button
 				type="button"
 				variant={type === 'income' ? 'default' : 'outline'}
+				disabled={isVoidedView || saving}
 				onclick={() => void onTypeChange('income')}
 			>
 				Income
@@ -159,6 +174,7 @@
 				autocomplete="off"
 				placeholder="15000"
 				bind:value={amountRaw}
+				disabled={isVoidedView || saving}
 				aria-invalid={error ? true : undefined}
 			/>
 		</div>
@@ -167,8 +183,9 @@
 			<Label for="category">Category</Label>
 			<select
 				id="category"
-				class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none"
+				class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 				bind:value={categoryId}
+				disabled={isVoidedView || saving}
 			>
 				{#each categories as category (category.id)}
 					<option value={category.id}>{category.name}</option>
@@ -178,35 +195,49 @@
 
 		<div class="space-y-2">
 			<Label for="occurredOn">Date</Label>
-			<Input id="occurredOn" name="occurredOn" type="date" bind:value={occurredOn} />
+			<Input
+				id="occurredOn"
+				name="occurredOn"
+				type="date"
+				bind:value={occurredOn}
+				disabled={isVoidedView || saving}
+			/>
 		</div>
 
 		<div class="space-y-2">
 			<Label for="note">Note</Label>
-			<Input id="note" name="note" placeholder="Optional" bind:value={note} />
+			<Input
+				id="note"
+				name="note"
+				placeholder="Optional"
+				bind:value={note}
+				disabled={isVoidedView || saving}
+			/>
 		</div>
 
 		{#if error}
 			<p class="text-destructive text-sm" role="alert">{error}</p>
 		{/if}
 
-		<div class="flex flex-col gap-2 pt-2">
-			<Button type="submit" class="w-full" disabled={saving} data-testid="tx-save">
-				{saving ? 'Saving…' : 'Save'}
-			</Button>
-			{#if isEdit}
-				<Button
-					type="button"
-					variant="destructive"
-					class="w-full"
-					disabled={saving}
-					data-testid="tx-delete"
-					onclick={() => void onDelete()}
-				>
-					Delete
+		{#if !isVoidedView}
+			<div class="flex flex-col gap-2 pt-2">
+				<Button type="submit" class="w-full" disabled={saving} data-testid="tx-save">
+					{saving ? 'Saving…' : 'Save'}
 				</Button>
-			{/if}
-		</div>
+				{#if isEdit}
+					<Button
+						type="button"
+						variant="destructive"
+						class="w-full"
+						disabled={saving}
+						data-testid="tx-void"
+						onclick={() => void onVoid()}
+					>
+						Void
+					</Button>
+				{/if}
+			</div>
+		{/if}
 	</form>
 {/snippet}
 
@@ -214,12 +245,8 @@
 	<Dialog.Root {open} onOpenChange={onOpenChange}>
 		<Dialog.Content class="gap-0 p-0" data-testid="tx-dialog">
 			<Dialog.Header class="border-border border-b px-4 py-3 text-left">
-				<Dialog.Title>{isEdit ? 'Edit transaction' : 'Add transaction'}</Dialog.Title>
-				<Dialog.Description>
-					{isEdit
-						? 'Update or delete this entry.'
-						: `Quick add for ${currencyLabel} on this account.`}
-				</Dialog.Description>
+				<Dialog.Title>{sheetTitle}</Dialog.Title>
+				<Dialog.Description>{sheetDescription}</Dialog.Description>
 			</Dialog.Header>
 			{@render txForm()}
 		</Dialog.Content>
@@ -232,12 +259,8 @@
 			data-testid="tx-sheet"
 		>
 			<Sheet.Header class="border-border border-b px-4 py-3 text-left">
-				<Sheet.Title>{isEdit ? 'Edit transaction' : 'Add transaction'}</Sheet.Title>
-				<Sheet.Description>
-					{isEdit
-						? 'Update or delete this entry.'
-						: `Quick add for ${currencyLabel} on this account.`}
-				</Sheet.Description>
+				<Sheet.Title>{sheetTitle}</Sheet.Title>
+				<Sheet.Description>{sheetDescription}</Sheet.Description>
 			</Sheet.Header>
 			{@render txForm()}
 		</Sheet.Content>

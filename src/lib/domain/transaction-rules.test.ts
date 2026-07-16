@@ -22,13 +22,17 @@ describe('transaction-rules', () => {
 	it('maps income and expense to balance deltas', () => {
 		expect(balanceDelta({ type: 'income', amountMinor: 100 })).toBe(100);
 		expect(balanceDelta({ type: 'expense', amountMinor: 40 })).toBe(-40);
+		expect(
+			balanceDelta({ type: 'expense', amountMinor: 40, voidedAt: '2026-07-16T00:00:00.000Z' })
+		).toBe(0);
 	});
 
-	it('sums account balance', () => {
+	it('sums account balance ignoring voided', () => {
 		expect(
 			sumBalance([
 				{ type: 'income', amountMinor: 100_000 },
-				{ type: 'expense', amountMinor: 15_000 }
+				{ type: 'expense', amountMinor: 15_000 },
+				{ type: 'expense', amountMinor: 5_000, voidedAt: '2026-07-16T00:00:00.000Z' }
 			])
 		).toBe(85_000);
 	});

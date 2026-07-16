@@ -1,4 +1,5 @@
 import type { LedgerTransaction } from '$lib/domain/transaction';
+import { isVoided } from '$lib/domain/transaction';
 import { assertMinorUnits, type MinorUnits } from '$lib/domain/money';
 
 export type MonthKey = string; // YYYY-MM
@@ -102,6 +103,7 @@ export function buildMonthSummary(
 
 	for (const tx of transactions) {
 		assertMinorUnits(tx.amountMinor);
+		if (isVoided(tx)) continue;
 
 		if (tx.occurredOn < monthStart) {
 			openingMinor += signedAmount(tx);

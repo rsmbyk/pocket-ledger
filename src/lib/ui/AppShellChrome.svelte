@@ -14,7 +14,7 @@
 	import CategoriesPanel from '$lib/ui/CategoriesPanel.svelte';
 	import ActivityTable from '$lib/ui/ActivityTable.svelte';
 	import type { Account } from '$lib/domain/account';
-	import type { LedgerTransaction } from '$lib/domain/transaction';
+	import { isVoided, type LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
 	import type { ThemePreference } from '$lib/shared/theme';
 	import type { MonthSummary } from '$lib/domain/month-summary';
@@ -24,6 +24,12 @@
 	import type { AddableTransactionType } from '$lib/domain/transaction-rules';
 	import { formatMinor } from '$lib/domain/money';
 	import { isAppRoute, type AppRoute } from '$lib/shared/router';
+	import {
+		filterTransactions,
+		type ActivityTypeFilter
+	} from '$lib/domain/activity-filters';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
 
 	type Props = {
 		account: Account | null;
@@ -110,6 +116,26 @@
 	const currencyLabel = $derived(account?.currencyLabel ?? 'IDR');
 	const recent = $derived(transactions.slice(0, 5));
 
+	let filterType = $state<ActivityTypeFilter>('all');
+	let filterCategoryId = $state('');
+	let filterStart = $state('');
+	let filterEnd = $state('');
+	let filterSearch = $state('');
+
+	const filterCategories = $derived(
+		[...expenseCategories, ...incomeCategories].sort((a, b) => a.name.localeCompare(b.name))
+	);
+
+	const filteredTransactions = $derived(
+		filterTransactions(transactions, {
+			type: filterType,
+			categoryId: filterCategoryId || null,
+			startDate: filterStart || null,
+			endDate: filterEnd || null,
+			search: filterSearch || null
+		})
+	);
+
 	const navItems: {
 		id: AppRoute;
 		label: string;
@@ -187,7 +213,7 @@
 	<header
 		class="bg-background sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4 md:px-6"
 	>
-		<Sidebar.Trigger data-testid="open-menu" aria-label="Open menu" />
+		<Sidebar.Trigger data-testid="open-menu" />
 		<div class="min-w-0 flex-1">
 			<p class="text-base font-semibold tracking-tight md:text-lg" data-testid="page-title">
 				{pageTitle}
@@ -254,25 +280,40 @@
 						{:else}
 							<ul class="divide-border divide-y" data-testid="recent-list">
 								{#each recent as tx (tx.id)}
+									{@const voided = isVoided(tx)}
 									<li>
 										<button
 											type="button"
-											class="hover:bg-muted/60 flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left text-sm transition-colors"
+											class={[
+												'hover:bg-muted/60 flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left text-sm transition-colors',
+												voided && 'text-muted-foreground opacity-70'
+											]}
 											data-testid={`recent-row-${tx.id}`}
 											onclick={() => onOpenEdit(tx)}
 										>
 											<div class="min-w-0 flex-1">
-												<p class="font-medium">{categoryName(tx.categoryId)}</p>
-												<p class="text-muted-foreground truncate text-xs">
+												<p class="inline-flex flex-wrap items-center gap-1.5 font-medium">
+													{categoryName(tx.categoryId)}
+													{#if voided}
+														<span
+															class="bg-muted text-muted-foreground inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium"
+														>
+															Void
+														</span>
+													{/if}
+												</p>
+												<p class="truncate text-xs">
 													{tx.note || tx.type} · {tx.occurredOn}
 												</p>
 											</div>
 											<p
 												class={[
 													'shrink-0 font-medium tabular-nums',
-													tx.type === 'expense'
-														? 'text-destructive'
-														: 'text-emerald-600 dark:text-emerald-400'
+													voided && 'line-through',
+													!voided &&
+														(tx.type === 'expense'
+															? 'text-destructive'
+															: 'text-emerald-600 dark:text-emerald-400')
 												]}
 											>
 												{tx.type === 'expense' ? '−' : '+'}{formatMinor(
@@ -290,18 +331,69 @@
 				</Card.Root>
 			</div>
 		{:else if route === 'activity'}
-			<div class="space-y-3">
+			<div class="space-y-3" data-testid="activity-panel">
 				<div
-					class="border-border/80 bg-card/60 flex items-baseline justify-between gap-3 rounded-lg border px-4 py-3"
-					data-testid="balance-compact"
+					class="border-border/80 bg-card/60 grid gap-3 rounded-lg border p-4 sm:grid-cols-2"
+					data-testid="activity-filters"
 				>
-					<p class="text-muted-foreground text-sm">Balance</p>
-					<p class="text-xl font-semibold tracking-tight" data-testid="account-balance">
-						{formatMinor(balanceMinor, currencyLabel)}
-					</p>
+					<div class="space-y-1">
+						<Label for="activity-filter-type">Type</Label>
+						<select
+							id="activity-filter-type"
+							class="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+							bind:value={filterType}
+							data-testid="activity-filter-type"
+						>
+							<option value="all">All</option>
+							<option value="income">Income</option>
+							<option value="expense">Expense</option>
+						</select>
+					</div>
+					<div class="space-y-1">
+						<Label for="activity-filter-category">Category</Label>
+						<select
+							id="activity-filter-category"
+							class="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+							bind:value={filterCategoryId}
+							data-testid="activity-filter-category"
+						>
+							<option value="">All</option>
+							{#each filterCategories as category (category.id)}
+								<option value={category.id}>{category.name}</option>
+							{/each}
+						</select>
+					</div>
+					<div class="space-y-1">
+						<Label for="activity-filter-start">From</Label>
+						<Input
+							id="activity-filter-start"
+							type="date"
+							bind:value={filterStart}
+							data-testid="activity-filter-start"
+						/>
+					</div>
+					<div class="space-y-1">
+						<Label for="activity-filter-end">To</Label>
+						<Input
+							id="activity-filter-end"
+							type="date"
+							bind:value={filterEnd}
+							data-testid="activity-filter-end"
+						/>
+					</div>
+					<div class="space-y-1 sm:col-span-2">
+						<Label for="activity-filter-search">Search</Label>
+						<Input
+							id="activity-filter-search"
+							type="search"
+							placeholder="Note or amount"
+							bind:value={filterSearch}
+							data-testid="activity-filter-search"
+						/>
+					</div>
 				</div>
 				<ActivityTable
-					{transactions}
+					transactions={filteredTransactions}
 					{currencyLabel}
 					{categoryName}
 					onEdit={onOpenEdit}

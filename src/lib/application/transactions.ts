@@ -1,13 +1,12 @@
 import { countCategories, listCategories, listCategoriesByKind, putCategory } from '$lib/data/category-repo';
 import {
-	deleteTransaction as deleteTransactionRow,
 	getTransaction,
 	listTransactionsForAccount,
 	putTransaction
 } from '$lib/data/transaction-repo';
 import { DEFAULT_CATEGORIES } from '$lib/domain/categories';
 import type { CategoryRow } from '$lib/data/db';
-import type { LedgerTransaction, TransactionId } from '$lib/domain/transaction';
+import { isVoided, type LedgerTransaction, type TransactionId } from '$lib/domain/transaction';
 import {
 	isValidOccurredOn,
 	parseAmountInput,
@@ -90,7 +89,8 @@ export async function addTransaction(input: AddTransactionInput): Promise<Ledger
 		categoryId: category.id,
 		note: await sealField(notePlain),
 		occurredOn,
-		createdAt: new Date().toISOString()
+		createdAt: new Date().toISOString(),
+		voidedAt: null
 	};
 
 	await putTransaction(tx);
@@ -100,6 +100,7 @@ export async function addTransaction(input: AddTransactionInput): Promise<Ledger
 export async function updateTransaction(input: UpdateTransactionInput): Promise<LedgerTransaction> {
 	const existing = await getTransaction(input.id);
 	if (!existing) throw new Error('Transaction not found');
+	if (isVoided(existing)) throw new Error('Voided transactions cannot be edited');
 
 	const amountMinor = parseAmountInput(input.amountRaw);
 	const occurredOn = input.occurredOn ?? existing.occurredOn;
@@ -121,16 +122,27 @@ export async function updateTransaction(input: UpdateTransactionInput): Promise<
 		amountMinor,
 		categoryId: category.id,
 		note: await sealField(notePlain),
-		occurredOn
+		occurredOn,
+		voidedAt: null
 	};
 	await putTransaction(tx);
 	return { ...tx, note: notePlain };
 }
 
-export async function removeTransaction(id: TransactionId): Promise<void> {
+/** Irreversibly void a transaction (keeps the row; excludes from balances). */
+export async function voidTransaction(id: TransactionId): Promise<void> {
 	const existing = await getTransaction(id);
 	if (!existing) throw new Error('Transaction not found');
-	await deleteTransactionRow(id);
+	if (isVoided(existing)) throw new Error('Transaction is already voided');
+	await putTransaction({
+		...existing,
+		voidedAt: new Date().toISOString()
+	});
+}
+
+/** @deprecated Use voidTransaction — hard delete removed from UI. */
+export async function removeTransaction(id: TransactionId): Promise<void> {
+	await voidTransaction(id);
 }
 
 export async function listRecentTransactions(accountId: string): Promise<LedgerTransaction[]> {
