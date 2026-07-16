@@ -38,6 +38,8 @@ playwright/.cache
 *.tsbuildinfo
 .DS_Store
 
-# Cursor (local IDE)
-.cursor/
+# Cursor (local IDE) — keep shared agent rules in git
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 

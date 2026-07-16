@@ -3,8 +3,9 @@
 ## Before coding
 
 1. Read `docs/PRODUCT.md`, `docs/ARCHITECTURE.md`, `docs/PROCESS.md`.
-2. Follow SDD: **plan → spec → tasks → wait for Ronald’s OK → then code** (see `docs/PROCESS.md`). Do not implement until he approves.
-3. Prefer TDD for `src/lib/domain` and `src/lib/application`.
+2. Follow SDD: **plan → Draft spec → tasks → wait for Ronald’s OK/Accept → then code** (see `docs/PROCESS.md` and `.cursor/rules/sdd-gate.mdc`).
+3. **Permission gate:** Do not edit `src/**` or install deps for a behavior/UI change until he Accepts the Draft (or explicitly OKs that slice). “Proceed” on a new ask ≠ implement — it means advance the current SDD step.
+4. Prefer TDD for `src/lib/domain` and `src/lib/application`.
 
 ## Hard constraints
 
