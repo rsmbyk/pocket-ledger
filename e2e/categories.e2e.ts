@@ -21,4 +21,16 @@ test.describe('010 / 018 custom categories', () => {
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
 		await expect(page.getByTestId('nav-categories')).toHaveAttribute('aria-current', 'page');
 	});
+
+	test('021 shows income list before expense list', async ({ page }) => {
+		await page.goto('/#/categories');
+		await expect(page.getByTestId('categories-panel')).toBeVisible();
+		const incomeBeforeExpense = await page.evaluate(() => {
+			const income = document.querySelector('[data-testid="category-list-income"]');
+			const expense = document.querySelector('[data-testid="category-list-expense"]');
+			if (!income || !expense) return false;
+			return Boolean(income.compareDocumentPosition(expense) & Node.DOCUMENT_POSITION_FOLLOWING);
+		});
+		expect(incomeBeforeExpense).toBe(true);
+	});
 });

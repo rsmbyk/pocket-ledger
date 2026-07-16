@@ -72,7 +72,7 @@
 	{/if}
 
 	<div class="grid gap-4 md:grid-cols-2 md:items-start" data-testid="categories-desktop-grid">
-		{#each [{ title: 'Expense', rows: expenseCategories, kind: 'expense' as const }, { title: 'Income', rows: incomeCategories, kind: 'income' as const }] as group (group.title)}
+		{#each [{ title: 'Income', rows: incomeCategories, kind: 'income' as const }, { title: 'Expense', rows: expenseCategories, kind: 'expense' as const }] as group (group.title)}
 			<Card.Root>
 				<Card.Header class="flex flex-row items-center justify-between gap-2 space-y-0">
 					<Card.Title class="text-base">{group.title}</Card.Title>
@@ -92,8 +92,9 @@
 						data-testid={`category-list-${group.title.toLowerCase()}`}
 					>
 						{#each group.rows as cat (cat.id)}
-							<li class="flex flex-col gap-2 py-3 sm:flex-row sm:items-center">
+							<li class="flex items-center gap-2 py-3">
 								<Input
+									class="min-w-0 flex-1"
 									aria-label={`Rename ${cat.name}`}
 									value={draftFor(cat)}
 									oninput={(e) => {
@@ -103,7 +104,7 @@
 										};
 									}}
 								/>
-								<div class="flex shrink-0 gap-1">
+								<div class="flex shrink-0 justify-end gap-1">
 									<Button
 										size="sm"
 										variant="outline"

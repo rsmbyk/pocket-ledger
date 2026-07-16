@@ -1,0 +1,37 @@
+---
+description: Hard gate — Spec-Driven Development before any implementation
+alwaysApply: true
+---
+
+# SDD permission gate (non-negotiable)
+
+Pocket Ledger uses Spec-Driven Development. This overrides “just do it” instincts.
+
+## Required loop
+
+1. **Plan** (short) — what / why / scope
+2. **Draft spec** — `specs/NNN-….md` with Given/When/Then **before** code
+3. **Tasks** checklist
+4. **STOP** — wait for Ronald’s explicit OK / Accept
+5. **Then** implement (TDD for domain/app), branch, PR linking the spec
+
+## Do NOT
+
+- Edit `src/**`, add deps, or scaffold when the ask is a behavior/UI change and there is no **Accepted** spec (or explicit OK on a Draft)
+- Treat “proceed”, “do it”, “fix X”, or “move Y” as coding permission unless Ronald already Accepted the plan/spec for that slice
+- Retrofit specs after coding except to recover from a gate miss Ronald already acknowledged
+
+## Exceptions (still need a short plan + OK if non-trivial)
+
+- Pure CSS with **no** user-visible behavior/order/copy change (`docs/PROCESS.md`)
+- Ops / docs-only / hotfix one-liners
+
+## When Ronald says proceed
+
+- If the latest ask is **Accept / OK / proceed on a Draft** → implement that spec only
+- If the ask is a **new** change → start at Plan/Draft, do not code yet
+- If unsure whether a change needs a spec → **ask**, do not code
+
+## Recovery
+
+If you already coded without a spec: stop, Draft the missing spec, wait for Accept, then continue. Say so plainly.
