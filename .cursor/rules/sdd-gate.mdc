@@ -15,10 +15,16 @@ Pocket Ledger uses Spec-Driven Development. This overrides “just do it” inst
 4. **STOP** — wait for Ronald’s explicit OK / Accept
 5. **Then** implement (TDD for domain/app), branch, PR linking the spec
 
+## One concern per spec
+
+- Do not mix unrelated features or fixes in one numbered spec
+- Split into separate Drafts (and usually separate PRs)
+
 ## Do NOT
 
 - Edit `src/**`, add deps, or scaffold when the ask is a behavior/UI change and there is no **Accepted** spec (or explicit OK on a Draft)
 - Treat “proceed”, “do it”, “fix X”, or “move Y” as coding permission unless Ronald already Accepted the plan/spec for that slice
+- Treat “proceed to draft” as permission to implement — that means write Draft specs only
 - Retrofit specs after coding except to recover from a gate miss Ronald already acknowledged
 
 ## Exceptions (still need a short plan + OK if non-trivial)
@@ -29,6 +35,7 @@ Pocket Ledger uses Spec-Driven Development. This overrides “just do it” inst
 ## When Ronald says proceed
 
 - If the latest ask is **Accept / OK / proceed on a Draft** → implement that spec only
+- If the ask is **draft specs** → write Draft markdown only; do not code
 - If the ask is a **new** change → start at Plan/Draft, do not code yet
 - If unsure whether a change needs a spec → **ask**, do not code
 
