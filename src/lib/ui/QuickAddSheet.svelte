@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { MediaQuery } from 'svelte/reactivity';
+	import BanIcon from '@lucide/svelte/icons/ban';
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
+	import * as InputGroup from '$lib/components/ui/input-group/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
-	import BanIcon from '@lucide/svelte/icons/ban';
 	import type { CategoryRow } from '$lib/data/db';
 	import { isVoided, type LedgerTransaction } from '$lib/domain/transaction';
 	import {
@@ -14,16 +17,18 @@
 		updateTransaction,
 		voidTransaction
 	} from '$lib/application/transactions';
-	import { formatOccurredOnDisplay, todayYmd } from '$lib/domain/occurred-on-display';
 	import {
 		amountDigitsOnly,
 		formatAmountDigitsDisplay,
+		isBlockedAmountKey,
 		isCreateTxDirty,
 		isEditTxDirty,
 		todayOccurredOn,
 		type AddableTransactionType,
 		type TxFormBaseline
 	} from '$lib/domain/transaction-rules';
+	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
+	import DateField from '$lib/ui/DateField.svelte';
 	import { cn } from '$lib/utils.js';
 
 	type Props = {
@@ -52,6 +57,8 @@
 	let createBaseline = $state<TxFormBaseline | null>(null);
 	let editBaseline = $state<Omit<TxFormBaseline, 'type'> | null>(null);
 	let panelEmphasize = $state(false);
+	let voidConfirmOpen = $state(false);
+	let discardConfirmOpen = $state(false);
 
 	const isEdit = $derived(Boolean(editing));
 	const isVoidedView = $derived(Boolean(editing && isVoided(editing)));
@@ -66,8 +73,10 @@
 				: 'Add an income or expense to this account.'
 	);
 	const amountDisplay = $derived(formatAmountDigitsDisplay(amountRaw));
-	const occurredOnDisplay = $derived(
-		formatOccurredOnDisplay(occurredOn, todayYmd(), { year: 'always' })
+	const selectedCategoryLabel = $derived(
+		categoryId
+			? (categories.find((category) => category.id === categoryId)?.name ?? 'Uncategorized')
+			: 'Uncategorized'
 	);
 
 	const isDirty = $derived(
@@ -146,14 +155,30 @@
 			onOpenChange(true);
 			return;
 		}
-		if (isDirty && !confirm('Discard unsaved changes?')) {
+		if (isDirty) {
+			discardConfirmOpen = true;
 			return;
 		}
 		onOpenChange(false);
 	}
 
+	function confirmDiscard() {
+		onOpenChange(false);
+	}
+
 	function onAmountInput(value: string) {
 		amountRaw = amountDigitsOnly(value);
+	}
+
+	function onAmountPaste(event: ClipboardEvent) {
+		event.preventDefault();
+		amountRaw = amountDigitsOnly(event.clipboardData?.getData('text') ?? '');
+	}
+
+	function onAmountKeydown(event: KeyboardEvent) {
+		if (isBlockedAmountKey(event)) {
+			event.preventDefault();
+		}
 	}
 
 	function emphasizePanel() {
@@ -210,9 +235,8 @@
 		}
 	}
 
-	async function onVoid() {
+	async function confirmVoid() {
 		if (!editing || isVoidedView) return;
-		if (!confirm('Void this transaction permanently? This cannot be undone.')) return;
 		saving = true;
 		error = null;
 		try {
@@ -237,14 +261,14 @@
 			<Button
 				type="button"
 				variant="destructive"
-				size="icon-sm"
-				class="shrink-0"
+				size="sm"
+				class="shrink-0 gap-1.5"
 				disabled={saving}
 				data-testid="tx-void"
-				aria-label="Void transaction"
-				onclick={() => void onVoid()}
+				onclick={() => (voidConfirmOpen = true)}
 			>
-				<BanIcon />
+				<BanIcon class="size-4" />
+				Void
 			</Button>
 		{/if}
 	</div>
@@ -259,52 +283,23 @@
 		}}
 	>
 		{#if isEdit || isVoidedView}
-			<div class="grid grid-cols-2 gap-2" aria-readonly="true">
-				<div
-					class={cn(
-						'flex h-12 items-center justify-center rounded-md border text-sm font-semibold',
-						type === 'expense'
-							? 'border-destructive/40 bg-destructive/15 text-destructive'
-							: 'border-border bg-muted/20 text-muted-foreground opacity-50'
-					)}
-					aria-current={type === 'expense' ? 'true' : undefined}
-				>
-					Expense
-				</div>
-				<div
-					class={cn(
-						'flex h-12 items-center justify-center rounded-md border text-sm font-semibold',
-						type === 'income'
-							? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-							: 'border-border bg-muted/20 text-muted-foreground opacity-50'
-					)}
-					aria-current={type === 'income' ? 'true' : undefined}
-				>
-					Income
-				</div>
+			<div
+				class={cn(
+					'flex h-9 w-full items-center justify-center rounded-md border text-sm font-semibold',
+					type === 'expense'
+						? 'border-destructive/40 bg-destructive/15 text-destructive'
+						: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+				)}
+				aria-readonly="true"
+			>
+				{type === 'expense' ? 'Expense' : 'Income'}
 			</div>
 		{:else}
 			<div class="grid grid-cols-2 gap-2">
 				<Button
 					type="button"
-					size="lg"
 					class={cn(
-						'h-12 w-full border font-semibold',
-						type === 'expense'
-							? 'border-destructive/40 bg-destructive/15 text-destructive hover:bg-destructive/20'
-							: 'border-border bg-background text-muted-foreground hover:bg-muted/50'
-					)}
-					disabled={saving}
-					aria-pressed={type === 'expense'}
-					onclick={() => void onTypeChange('expense')}
-				>
-					Expense
-				</Button>
-				<Button
-					type="button"
-					size="lg"
-					class={cn(
-						'h-12 w-full border font-semibold',
+						'h-9 w-full border font-semibold',
 						type === 'income'
 							? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400'
 							: 'border-border bg-background text-muted-foreground hover:bg-muted/50'
@@ -315,52 +310,78 @@
 				>
 					Income
 				</Button>
+				<Button
+					type="button"
+					class={cn(
+						'h-9 w-full border font-semibold',
+						type === 'expense'
+							? 'border-destructive/40 bg-destructive/15 text-destructive hover:bg-destructive/20'
+							: 'border-border bg-background text-muted-foreground hover:bg-muted/50'
+					)}
+					disabled={saving}
+					aria-pressed={type === 'expense'}
+					onclick={() => void onTypeChange('expense')}
+				>
+					Expense
+				</Button>
 			</div>
 		{/if}
 
 		<div class="space-y-2">
-			<Label for="amount">Amount ({currencyLabel})</Label>
-			<Input
-				id="amount"
-				name="amount"
-				inputmode="numeric"
-				autocomplete="off"
-				placeholder="15,000"
-				value={amountDisplay}
-				oninput={(e) => onAmountInput(e.currentTarget.value)}
-				disabled={isVoidedView || saving}
-				aria-invalid={error ? true : undefined}
-			/>
+			<Label for="amount">Amount</Label>
+			<InputGroup.Root>
+				<InputGroup.Addon>
+					<InputGroup.Text>{currencyLabel}</InputGroup.Text>
+				</InputGroup.Addon>
+				<InputGroup.Input
+					id="amount"
+					name="amount"
+					inputmode="numeric"
+					autocomplete="off"
+					placeholder="15,000"
+					value={amountDisplay}
+					onkeydown={onAmountKeydown}
+					onpaste={onAmountPaste}
+					oninput={(e) => onAmountInput(e.currentTarget.value)}
+					disabled={isVoidedView || saving}
+					aria-invalid={error ? true : undefined}
+				/>
+			</InputGroup.Root>
 		</div>
 
 		<div class="space-y-2">
 			<Label for="category">Category</Label>
-			<select
-				id="category"
-				class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-				bind:value={categoryId}
-				disabled={isVoidedView || saving}
-			>
-				{#each categories as category (category.id)}
-					<option value={category.id}>{category.name}</option>
-				{/each}
-				<option disabled>────────</option>
-				<option value="">Uncategorized</option>
-			</select>
+			<DropdownMenu.Root>
+				<DropdownMenu.Trigger
+					id="category"
+					class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full items-center justify-between rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+					disabled={isVoidedView || saving}
+					data-testid="tx-category"
+				>
+					<span class="truncate">{selectedCategoryLabel}</span>
+					<ChevronDownIcon class="text-muted-foreground size-4 shrink-0" />
+				</DropdownMenu.Trigger>
+				<DropdownMenu.Content class="max-h-60 w-(--bits-dropdown-menu-anchor-width)">
+					{#each categories as category (category.id)}
+						<DropdownMenu.Item onclick={() => (categoryId = category.id)}>
+							{category.name}
+						</DropdownMenu.Item>
+					{/each}
+					<DropdownMenu.Separator />
+					<DropdownMenu.Item onclick={() => (categoryId = '')}>Uncategorized</DropdownMenu.Item>
+				</DropdownMenu.Content>
+			</DropdownMenu.Root>
 		</div>
 
 		<div class="space-y-2">
 			<Label for="occurredOn">Date</Label>
-			<Input
+			<DateField
 				id="occurredOn"
-				name="occurredOn"
-				type="date"
-				bind:value={occurredOn}
+				value={occurredOn}
+				onValueChange={(next) => (occurredOn = next)}
 				disabled={isVoidedView || saving}
+				testid="tx-occurred-on"
 			/>
-			<p class="text-muted-foreground text-xs" data-testid="tx-occurred-on-display">
-				{occurredOnDisplay}
-			</p>
 		</div>
 
 		<div class="space-y-2">
@@ -380,12 +401,7 @@
 
 		<div class="flex flex-col gap-2 pt-2">
 			{#if !isVoidedView}
-				<Button
-					type="submit"
-					class="w-full"
-					disabled={saveDisabled}
-					data-testid="tx-save"
-				>
+				<Button type="submit" class="w-full" disabled={saveDisabled} data-testid="tx-save">
 					{saving ? 'Saving…' : 'Save'}
 				</Button>
 			{/if}
@@ -409,6 +425,7 @@
 			class={cn('gap-0 p-0', panelEmphasize && 'panel-emphasize')}
 			data-testid="tx-dialog"
 			showCloseButton={false}
+			interactOutsideBehavior="ignore"
 			onInteractOutside={onInteractOutside}
 		>
 			<Dialog.Header class="border-border border-b px-4 py-3 text-left">
@@ -427,6 +444,7 @@
 			)}
 			data-testid="tx-sheet"
 			showCloseButton={false}
+			interactOutsideBehavior="ignore"
 			onInteractOutside={onInteractOutside}
 		>
 			<Sheet.Header class="border-border border-b px-4 py-3 text-left">
@@ -437,18 +455,24 @@
 	</Sheet.Root>
 {/if}
 
-<style>
-	:global(.panel-emphasize) {
-		animation: panel-emphasize 0.45s ease;
-	}
+<ConfirmDialog
+	open={voidConfirmOpen}
+	title="Void transaction?"
+	description="This action is permanent and cannot be undone. The transaction will remain visible but will no longer affect your balance."
+	confirmLabel="Void"
+	destructive
+	confirmTestId="tx-void-confirm"
+	onOpenChange={(next) => (voidConfirmOpen = next)}
+	onConfirm={confirmVoid}
+/>
 
-	@keyframes panel-emphasize {
-		0%,
-		100% {
-			box-shadow: 0 0 0 0 color-mix(in oklch, var(--ring) 0%, transparent);
-		}
-		50% {
-			box-shadow: 0 0 0 3px color-mix(in oklch, var(--ring) 55%, transparent);
-		}
-	}
-</style>
+<ConfirmDialog
+	open={discardConfirmOpen}
+	title="Discard unsaved changes?"
+	description="Your edits will be lost if you leave without saving."
+	confirmLabel="Discard"
+	destructive
+	confirmTestId="tx-discard-confirm"
+	onOpenChange={(next) => (discardConfirmOpen = next)}
+	onConfirm={confirmDiscard}
+/>

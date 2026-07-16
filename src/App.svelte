@@ -45,7 +45,7 @@
 		listCategories,
 		removeCategory,
 		renameCategory,
-		reorderCategory
+		reorderCategories
 	} from '$lib/application/categories';
 	import type { Account } from '$lib/domain/account';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
@@ -65,6 +65,7 @@
 		THEME_STORAGE_KEY,
 		type ThemePreference
 	} from '$lib/shared/theme';
+	import { Toaster } from 'svelte-sonner';
 
 	let account = $state<Account | null>(null);
 	let isSinglePot = $state(true);
@@ -209,6 +210,7 @@
 	modeStorageKey={THEME_STORAGE_KEY}
 	themeColors={{ dark: '#0a0a0a', light: '#ffffff' }}
 />
+<Toaster richColors closeButton position="top-center" />
 
 {#if !ready}
 	<div class="text-muted-foreground flex min-h-svh items-center justify-center text-sm">
@@ -294,8 +296,8 @@
 			await removeCategory(id);
 			await onRefreshLedger();
 		}}
-		onReorderCategory={async (id, direction) => {
-			await reorderCategory(id, direction);
+		onReorderCategories={async (kind, orderedIds) => {
+			await reorderCategories(kind, orderedIds);
 			await onRefreshLedger();
 		}}
 		{ready}

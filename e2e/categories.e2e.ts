@@ -18,7 +18,8 @@ test.describe('010 / 018 / 022 custom categories', () => {
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
 		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
-		await expect(sheet.getByLabel('Category', { exact: true })).toContainText('Coffee');
+		await sheet.getByTestId('tx-category').click();
+		await expect(page.getByRole('menuitem', { name: 'Coffee', exact: true })).toBeVisible();
 	});
 
 	test('deep-links to categories', async ({ page }) => {

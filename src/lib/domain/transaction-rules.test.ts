@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	balanceDelta,
 	formatAmountDigitsDisplay,
+	isBlockedAmountKey,
 	isCreateTxDirty,
 	isEditTxDirty,
 	isValidOccurredOn,
@@ -20,6 +21,13 @@ describe('transaction-rules', () => {
 		expect(formatAmountDigitsDisplay('15000')).toBe('15,000');
 		expect(formatAmountDigitsDisplay('15,000')).toBe('15,000');
 		expect(formatAmountDigitsDisplay('')).toBe('');
+	});
+
+	it('blocks non-digit amount keys', () => {
+		expect(isBlockedAmountKey({ key: 'a' } as KeyboardEvent)).toBe(true);
+		expect(isBlockedAmountKey({ key: '5' } as KeyboardEvent)).toBe(false);
+		expect(isBlockedAmountKey({ key: 'Backspace' } as KeyboardEvent)).toBe(false);
+		expect(isBlockedAmountKey({ key: 'a', ctrlKey: true } as KeyboardEvent)).toBe(false);
 	});
 
 	it('detects create and edit dirty state', () => {

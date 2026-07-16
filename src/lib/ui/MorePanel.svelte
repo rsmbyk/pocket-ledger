@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
@@ -12,6 +13,7 @@
 	import { formatMinor } from '$lib/domain/money';
 	import type { AddableTransactionType } from '$lib/domain/transaction-rules';
 	import type { RecurringFrequency } from '$lib/domain/recurring';
+	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 
 	type Props = {
 		currencyLabel: string;
@@ -66,9 +68,6 @@
 		onDisableLock
 	}: Props = $props();
 
-	let message = $state<string | null>(null);
-	let error = $state<string | null>(null);
-
 	let recType = $state<AddableTransactionType>('expense');
 	let recAmount = $state('');
 	let recCategoryId = $state('');
@@ -80,9 +79,16 @@
 
 	let lockPass = $state('');
 	let lockPassConfirm = $state('');
+	let lockPassError = $state<string | null>(null);
 	let resetOpen = $state(false);
 	let preserveCategories = $state(false);
 	let preservePassphrase = $state(false);
+
+	let pendingDeleteRecurringId = $state<string | null>(null);
+	let pendingDeleteGoal = $state<{ id: string; name: string } | null>(null);
+	let importConfirmOpen = $state(false);
+	let pendingImportFile = $state<File | null>(null);
+	let disableLockConfirmOpen = $state(false);
 
 	const recCategories = $derived(recType === 'expense' ? expenseCategories : incomeCategories);
 
@@ -95,35 +101,24 @@
 	const maxSnap = $derived(Math.max(...snapshots.map((s) => Math.abs(s.totalMinor)), 1));
 
 	async function wrap(action: () => void | Promise<void>, ok: string) {
-		error = null;
-		message = null;
 		try {
 			await action();
-			message = ok;
+			toast.success(ok);
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Something went wrong';
+			toast.error(err instanceof Error ? err.message : 'Something went wrong');
 		}
 	}
 
-	function confirmDeleteRecurring(id: string) {
-		if (!confirm('Delete this recurring rule permanently? This cannot be undone.')) return;
-		void wrap(() => onDeleteRecurring(id), 'Deleted');
+	function requestDeleteRecurring(id: string) {
+		pendingDeleteRecurringId = id;
 	}
 
-	function confirmDeleteGoal(id: string, name: string) {
-		if (!confirm(`Delete goal "${name}" permanently? This cannot be undone.`)) return;
-		void wrap(() => onDeleteGoal(id), 'Goal deleted');
+	function requestDeleteGoal(id: string, name: string) {
+		pendingDeleteGoal = { id, name };
 	}
 </script>
 
 <div class="space-y-4" data-testid="more-panel">
-	{#if message}
-		<p class="text-sm text-emerald-600 dark:text-emerald-400" role="status">{message}</p>
-	{/if}
-	{#if error}
-		<p class="text-destructive text-sm" role="alert">{error}</p>
-	{/if}
-
 	<div class="flex flex-col gap-4" data-testid="more-sections">
 	<Card.Root>
 		<Card.Header>
@@ -148,15 +143,8 @@
 					onchange={(e) => {
 						const file = (e.currentTarget as HTMLInputElement).files?.[0];
 						if (!file) return;
-						if (
-							!confirm(
-								'Import replaces all local data with this backup. This cannot be undone. Continue?'
-							)
-						) {
-							e.currentTarget.value = '';
-							return;
-						}
-						void wrap(() => onImportFile(file), 'Backup imported');
+						pendingImportFile = file;
+						importConfirmOpen = true;
 						e.currentTarget.value = '';
 					}}
 				/>
@@ -262,7 +250,7 @@
 							<Button
 								size="sm"
 								variant="destructive"
-								onclick={() => confirmDeleteRecurring(rule.id)}
+								onclick={() => requestDeleteRecurring(rule.id)}
 							>
 								Delete
 							</Button>
@@ -313,7 +301,7 @@
 							<Button
 								size="sm"
 								variant="destructive"
-								onclick={() => confirmDeleteGoal(goal.id, goal.name)}
+								onclick={() => requestDeleteGoal(goal.id, goal.name)}
 								>Delete</Button
 							>
 						</div>
@@ -399,9 +387,10 @@
 					onsubmit={(e) => {
 						e.preventDefault();
 						if (lockPass !== lockPassConfirm) {
-							error = 'Passphrases do not match';
+							lockPassError = 'Passphrases do not match';
 							return;
 						}
+						lockPassError = null;
 						void wrap(async () => {
 							await onEnableLock(lockPass);
 							lockPass = '';
@@ -422,6 +411,9 @@
 						bind:value={lockPassConfirm}
 						autocomplete="new-password"
 					/>
+					{#if lockPassError}
+						<p class="text-destructive text-sm" role="alert">{lockPassError}</p>
+					{/if}
 					<Button type="submit" class="w-full" data-testid="enable-lock">Enable lock</Button>
 				</form>
 			{:else}
@@ -429,17 +421,7 @@
 					class="space-y-2"
 					onsubmit={(e) => {
 						e.preventDefault();
-						if (
-							!confirm(
-								'Disable lock? Passphrase protection will be removed from this browser. Continue?'
-							)
-						) {
-							return;
-						}
-						void wrap(async () => {
-							await onDisableLock(lockPass);
-							lockPass = '';
-						}, 'Lock disabled');
+						disableLockConfirmOpen = true;
 					}}
 				>
 					<Input
@@ -504,3 +486,76 @@
 		</div>
 	</Dialog.Content>
 </Dialog.Root>
+
+<ConfirmDialog
+	open={pendingDeleteRecurringId !== null}
+	title="Delete recurring rule?"
+	description="Delete this recurring rule permanently? This cannot be undone."
+	confirmLabel="Delete"
+	destructive
+	confirmTestId="recurring-delete-confirm"
+	onOpenChange={(open) => {
+		if (!open) pendingDeleteRecurringId = null;
+	}}
+	onConfirm={async () => {
+		if (!pendingDeleteRecurringId) return;
+		const id = pendingDeleteRecurringId;
+		pendingDeleteRecurringId = null;
+		await wrap(() => onDeleteRecurring(id), 'Deleted');
+	}}
+/>
+
+<ConfirmDialog
+	open={pendingDeleteGoal !== null}
+	title="Delete goal?"
+	description={pendingDeleteGoal
+		? `Delete goal "${pendingDeleteGoal.name}" permanently? This cannot be undone.`
+		: 'This cannot be undone.'}
+	confirmLabel="Delete"
+	destructive
+	confirmTestId="goal-delete-confirm"
+	onOpenChange={(open) => {
+		if (!open) pendingDeleteGoal = null;
+	}}
+	onConfirm={async () => {
+		if (!pendingDeleteGoal) return;
+		const { id } = pendingDeleteGoal;
+		pendingDeleteGoal = null;
+		await wrap(() => onDeleteGoal(id), 'Goal deleted');
+	}}
+/>
+
+<ConfirmDialog
+	open={importConfirmOpen}
+	title="Import backup?"
+	description="Import replaces all local data with this backup. This cannot be undone."
+	confirmLabel="Import"
+	destructive
+	confirmTestId="import-backup-confirm"
+	onOpenChange={(open) => {
+		importConfirmOpen = open;
+		if (!open) pendingImportFile = null;
+	}}
+	onConfirm={async () => {
+		if (!pendingImportFile) return;
+		const file = pendingImportFile;
+		pendingImportFile = null;
+		await wrap(() => onImportFile(file), 'Backup imported');
+	}}
+/>
+
+<ConfirmDialog
+	open={disableLockConfirmOpen}
+	title="Disable lock?"
+	description="Passphrase protection will be removed from this browser. Continue?"
+	confirmLabel="Disable"
+	destructive
+	confirmTestId="disable-lock-confirm"
+	onOpenChange={(open) => (disableLockConfirmOpen = open)}
+	onConfirm={async () => {
+		await wrap(async () => {
+			await onDisableLock(lockPass);
+			lockPass = '';
+		}, 'Lock disabled');
+	}}
+/>

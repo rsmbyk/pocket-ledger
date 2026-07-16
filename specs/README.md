@@ -54,7 +54,7 @@ Living behavior contracts for Pocket Ledger.
 | [036](036-activity-form-short-dates.md) | Short dates on Activity and tx form | Accepted |
 | [037](037-transaction-sheet.md) | Transaction sheet redesign | Accepted |
 | [038](038-categories-menu.md) | Categories menu redesign | Accepted |
-| [039](039-transaction-sheet-polish.md) | Transaction sheet polish | Draft |
-| [040](040-activity-add-categories-dnd.md) | Activity Add + Categories DnD polish | Draft |
-| [041](041-modal-platform.md) | Modal platform (lifecycle, emphasize, confirms) | Draft |
-| [042](042-dates-and-toasts.md) | Dates YY Mon DD, DateField, toasts | Draft |
+| [039](039-transaction-sheet-polish.md) | Transaction sheet polish | Accepted |
+| [040](040-activity-add-categories-dnd.md) | Activity Add + Categories DnD polish | Accepted |
+| [041](041-modal-platform.md) | Modal platform (lifecycle, emphasize, confirms) | Accepted |
+| [042](042-dates-and-toasts.md) | Dates YY Mon DD, DateField, toasts | Accepted |

@@ -23,6 +23,27 @@ export function amountDigitsOnly(raw: string): string {
 	return raw.replace(/\D/g, '');
 }
 
+/** True when a keydown should be blocked for amount digit entry (allows control keys). */
+export function isBlockedAmountKey(event: KeyboardEvent): boolean {
+	if (event.ctrlKey || event.metaKey || event.altKey) return false;
+	const allow = [
+		'Backspace',
+		'Delete',
+		'Tab',
+		'Escape',
+		'Enter',
+		'ArrowLeft',
+		'ArrowRight',
+		'ArrowUp',
+		'ArrowDown',
+		'Home',
+		'End'
+	];
+	if (allow.includes(event.key)) return false;
+	if (event.key.length === 1 && /^\d$/.test(event.key)) return false;
+	return true;
+}
+
 /** Thousand-grouped display for digit-only amount input (e.g. `15000` → `15,000`). */
 export function formatAmountDigitsDisplay(raw: string): string {
 	const digits = amountDigitsOnly(raw);

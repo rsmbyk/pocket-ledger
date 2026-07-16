@@ -87,3 +87,27 @@ export async function reorderCategory(
 	await putCategory({ ...rawCurrent, sortOrder: rawNeighbor.sortOrder });
 	await putCategory({ ...rawNeighbor, sortOrder: rawCurrent.sortOrder });
 }
+
+/** Persist a full sibling order for a kind (drag-and-drop). */
+export async function reorderCategories(
+	kind: CategoryRow['kind'],
+	orderedIds: string[]
+): Promise<void> {
+	const existing = await listCategories();
+	const siblings = existing.filter((c) => c.kind === kind);
+	if (orderedIds.length !== siblings.length) {
+		throw new Error('Category order is incomplete');
+	}
+	const idSet = new Set(siblings.map((c) => c.id));
+	for (const id of orderedIds) {
+		if (!idSet.has(id)) throw new Error('Unknown category in order');
+	}
+	await Promise.all(
+		orderedIds.map(async (id, index) => {
+			const raw = await db.categories.get(id);
+			if (!raw) throw new Error('Category not found');
+			if (raw.sortOrder === index) return;
+			await putCategory({ ...raw, sortOrder: index });
+		})
+	);
+}

@@ -18,6 +18,7 @@
 	import CategoriesPanel from '$lib/ui/CategoriesPanel.svelte';
 	import ActivityTable from '$lib/ui/ActivityTable.svelte';
 	import EmptyState from '$lib/ui/EmptyState.svelte';
+	import DateField from '$lib/ui/DateField.svelte';
 	import type { Account } from '$lib/domain/account';
 	import { isVoided, type LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
@@ -80,7 +81,10 @@
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
 		onRenameCategory: (id: string, name: string) => void | Promise<void>;
 		onDeleteCategory: (id: string) => void | Promise<void>;
-		onReorderCategory: (id: string, direction: 'up' | 'down') => void | Promise<void>;
+		onReorderCategories: (
+			kind: CategoryRow['kind'],
+			orderedIds: string[]
+		) => void | Promise<void>;
 		onNavigate: (route: AppRoute) => void;
 		onOpenAdd: () => void;
 		onOpenEdit: (tx: LedgerTransaction) => void;
@@ -119,7 +123,7 @@
 		onCreateCategory,
 		onRenameCategory,
 		onDeleteCategory,
-		onReorderCategory,
+		onReorderCategories,
 		onNavigate,
 		onOpenAdd,
 		onOpenEdit
@@ -365,6 +369,18 @@
 			</div>
 		{:else if route === 'activity'}
 			<div class="space-y-3" data-testid="activity-panel">
+				<div class="flex items-center justify-end">
+					<Button
+						type="button"
+						size="sm"
+						disabled={!account}
+						onclick={openAdd}
+						data-testid="activity-add"
+					>
+						<PlusIcon class="size-4" />
+						Add
+					</Button>
+				</div>
 				{#snippet advancedFilters()}
 					<div class="space-y-1">
 						<Label for="activity-filter-type">Type</Label>
@@ -396,20 +412,22 @@
 					</div>
 					<div class="space-y-1">
 						<Label for="activity-filter-start">From</Label>
-						<Input
+						<DateField
 							id="activity-filter-start"
-							type="date"
-							bind:value={filterStart}
-							data-testid="activity-filter-start"
+							value={filterStart}
+							aria-label="From date"
+							testid="activity-filter-start"
+							onValueChange={(next) => (filterStart = next)}
 						/>
 					</div>
 					<div class="space-y-1">
 						<Label for="activity-filter-end">To</Label>
-						<Input
+						<DateField
 							id="activity-filter-end"
-							type="date"
-							bind:value={filterEnd}
-							data-testid="activity-filter-end"
+							value={filterEnd}
+							aria-label="To date"
+							testid="activity-filter-end"
+							onValueChange={(next) => (filterEnd = next)}
 						/>
 					</div>
 				{/snippet}
@@ -517,7 +535,7 @@
 				{onCreateCategory}
 				{onRenameCategory}
 				{onDeleteCategory}
-				{onReorderCategory}
+				{onReorderCategories}
 			/>
 		{:else}
 			<MorePanel

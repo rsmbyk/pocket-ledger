@@ -58,7 +58,10 @@
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
 		onRenameCategory: (id: string, name: string) => void | Promise<void>;
 		onDeleteCategory: (id: string) => void | Promise<void>;
-		onReorderCategory: (id: string, direction: 'up' | 'down') => void | Promise<void>;
+		onReorderCategories: (
+			kind: CategoryRow['kind'],
+			orderedIds: string[]
+		) => void | Promise<void>;
 		ready: boolean;
 		error: string | null;
 	};
@@ -96,7 +99,7 @@
 		onCreateCategory,
 		onRenameCategory,
 		onDeleteCategory,
-		onReorderCategory,
+		onReorderCategories,
 		ready,
 		error
 	}: Props = $props();
@@ -208,7 +211,7 @@
 				{onCreateCategory}
 				{onRenameCategory}
 				{onDeleteCategory}
-				{onReorderCategory}
+				{onReorderCategories}
 				onNavigate={navigate}
 				onOpenAdd={openAdd}
 				onOpenEdit={openEdit}
@@ -217,22 +220,22 @@
 	{/if}
 </div>
 
-{#if account && txSheetOpen}
-	{#key editing?.id ?? 'new'}
-		<QuickAddSheet
-			open={true}
-			accountId={account.id}
-			currencyLabel={account.currencyLabel}
-			{editing}
-			onOpenChange={(next) => {
-				if (!next) {
-					txSheetOpen = false;
+{#if account}
+	<QuickAddSheet
+		open={txSheetOpen}
+		accountId={account.id}
+		currencyLabel={account.currencyLabel}
+		{editing}
+		onOpenChange={(next) => {
+			txSheetOpen = next;
+			if (!next) {
+				window.setTimeout(() => {
 					editing = null;
-				}
-			}}
-			onSaved={onRefreshLedger}
-		/>
-	{/key}
+				}, 320);
+			}
+		}}
+		onSaved={onRefreshLedger}
+	/>
 {/if}
 
 <AppCommandPalette

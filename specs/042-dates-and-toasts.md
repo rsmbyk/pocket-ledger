@@ -1,7 +1,7 @@
 # Spec 042: Date format YY Mon DD, DateField, and toasts
 
 - **ID:** 042
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

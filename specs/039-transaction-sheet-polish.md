@@ -1,7 +1,7 @@
 # Spec 039: Transaction sheet polish
 
 - **ID:** 039
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

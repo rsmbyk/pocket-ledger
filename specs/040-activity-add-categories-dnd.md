@@ -1,7 +1,7 @@
 # Spec 040: Activity Add + Categories interaction polish
 
 - **ID:** 040
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

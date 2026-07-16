@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /** Navigate via the app drawer (desktop rail) or overlay sheet (mobile). */
 export async function goToNav(
@@ -46,6 +46,22 @@ export async function openAdd(page: Page): Promise<void> {
 	await page.keyboard.press('Control+K');
 	await page.getByTestId('command-palette').waitFor({ state: 'visible', timeout: 5_000 });
 	await page.getByTestId('cmd-add').click();
+}
+
+/** Pick a category from the custom tx category dropdown. */
+export async function selectTxCategory(
+	page: Page,
+	name: string,
+	root?: Locator
+): Promise<void> {
+	const scope = root ?? page;
+	await scope.getByTestId('tx-category').click();
+	await page.getByRole('menuitem', { name, exact: true }).click();
+}
+
+/** Confirm the in-app void ConfirmDialog. */
+export async function confirmVoid(page: Page): Promise<void> {
+	await page.getByTestId('tx-void-confirm').click();
 }
 
 /** Create a category via Categories UI (no auto-seeds). Uses hash nav (mobile-safe). */

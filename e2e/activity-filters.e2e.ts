@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd } from './nav';
+import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
 
 async function seedIncomeAndExpense(page: Page): Promise<void> {
 	await ensureCategory(page, 'Salary', 'income');
@@ -11,14 +11,14 @@ async function seedIncomeAndExpense(page: Page): Promise<void> {
 
 	await form.getByRole('button', { name: 'Income', exact: true }).click();
 	await form.getByLabel(/amount/i).fill('100000');
-	await form.getByLabel('Category', { exact: true }).selectOption({ label: 'Salary' });
+	await selectTxCategory(page, 'Salary', form);
 	await form.getByRole('button', { name: 'Save' }).click();
 
 	await openAdd(page);
 	form = (await sheet.isVisible().catch(() => false)) ? sheet : dialog;
 	await form.getByRole('button', { name: 'Expense', exact: true }).click();
 	await form.getByLabel(/amount/i).fill('15000');
-	await form.getByLabel('Category', { exact: true }).selectOption({ label: 'Food' });
+	await selectTxCategory(page, 'Food', form);
 	await form.getByLabel(/note/i).fill('secret lunch');
 	await form.getByRole('button', { name: 'Save' }).click();
 }

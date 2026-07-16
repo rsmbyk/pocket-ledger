@@ -2,21 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { formatOccurredOnDisplay } from './occurred-on-display';
 
 describe('formatOccurredOnDisplay', () => {
-	it('omits year when same calendar year as today', () => {
-		expect(formatOccurredOnDisplay('2026-07-06', '2026-07-16')).toBe('Jul 06');
-		expect(formatOccurredOnDisplay('2026-07-16', '2026-12-01')).toBe('Jul 16');
+	it('formats as YY Mon DD', () => {
+		expect(formatOccurredOnDisplay('2026-06-16')).toBe('26 Jun 16');
+		expect(formatOccurredOnDisplay('2026-07-06')).toBe('26 Jul 06');
+		expect(formatOccurredOnDisplay('2025-12-25')).toBe('25 Dec 25');
 	});
 
-	it('includes year when different from today', () => {
-		expect(formatOccurredOnDisplay('2025-12-25', '2026-07-16')).toBe('Dec 25, 2025');
-	});
-
-	it('always includes year when year: always', () => {
-		expect(formatOccurredOnDisplay('2026-07-06', '2026-07-16', { year: 'always' })).toBe(
-			'Jul 06, 2026'
-		);
-		expect(formatOccurredOnDisplay('2025-12-25', '2026-07-16', { year: 'always' })).toBe(
-			'Dec 25, 2025'
-		);
+	it('returns raw string when invalid', () => {
+		expect(formatOccurredOnDisplay('not-a-date')).toBe('not-a-date');
 	});
 });

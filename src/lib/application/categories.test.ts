@@ -3,7 +3,14 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '$lib/data/db';
 import { ensureDefaultAccount } from '$lib/application/accounts';
 import { addTransaction, getCategoriesForType } from '$lib/application/transactions';
-import { createCategory, listCategories, removeCategory, renameCategory, reorderCategory } from './categories';
+import {
+	createCategory,
+	listCategories,
+	removeCategory,
+	renameCategory,
+	reorderCategory,
+	reorderCategories
+} from './categories';
 
 describe('categories application', () => {
 	beforeEach(async () => {
@@ -50,5 +57,15 @@ describe('categories application', () => {
 		expect(after.find((c) => c.id === b.id)!.sortOrder).toBeLessThan(
 			after.find((c) => c.id === a.id)!.sortOrder
 		);
+	});
+
+	it('reorders categories by ordered ids', async () => {
+		const a = await createCategory('Alpha', 'expense');
+		const b = await createCategory('Beta', 'expense');
+		const c = await createCategory('Gamma', 'expense');
+		await reorderCategories('expense', [c.id, a.id, b.id]);
+		expect(
+			(await listCategories()).filter((row) => row.kind === 'expense').map((row) => row.name)
+		).toEqual(['Gamma', 'Alpha', 'Beta']);
 	});
 });

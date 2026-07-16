@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, openAdd } from './nav';
+import { ensureCategory, openAdd, selectTxCategory } from './nav';
 
 test.describe('002 month charts', () => {
 	test.beforeEach(async ({ page }) => {
@@ -27,14 +27,14 @@ test.describe('002 month charts', () => {
 		const incomeDialog = page.getByRole('dialog');
 		await incomeDialog.getByRole('button', { name: 'Income', exact: true }).click();
 		await incomeDialog.getByLabel(/amount/i).fill('100000');
-		await incomeDialog.getByLabel('Category', { exact: true }).selectOption({ label: 'Salary' });
+		await selectTxCategory(page, 'Salary', incomeDialog);
 		await incomeDialog.getByRole('button', { name: 'Save' }).click();
 
 		await openAdd(page);
 		const expenseDialog = page.getByRole('dialog');
 		await expenseDialog.getByRole('button', { name: 'Expense', exact: true }).click();
 		await expenseDialog.getByLabel(/amount/i).fill('15000');
-		await expenseDialog.getByLabel('Category', { exact: true }).selectOption({ label: 'Food' });
+		await selectTxCategory(page, 'Food', expenseDialog);
 		await expenseDialog.getByRole('button', { name: 'Save' }).click();
 
 		await expect(page.getByTestId('month-income')).toContainText('100');

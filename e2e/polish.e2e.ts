@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd } from './nav';
+import { confirmVoid, ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
 
 test.describe('012 polish / 014 void / 030', () => {
 	test.beforeEach(async ({ page }) => {
@@ -15,13 +15,11 @@ test.describe('012 polish / 014 void / 030', () => {
 	});
 
 	test('edits and voids a transaction from activity', async ({ page }) => {
-		page.on('dialog', (dialog) => dialog.accept());
-
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
 		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
 		await sheet.getByLabel(/amount/i).fill('15000');
-		await sheet.getByLabel('Category', { exact: true }).selectOption({ label: 'Food' });
+		await selectTxCategory(page, 'Food', sheet);
 		await sheet.getByTestId('tx-save').click();
 
 		await goToNav(page, 'activity');
@@ -38,6 +36,7 @@ test.describe('012 polish / 014 void / 030', () => {
 		await expect(page.getByTestId('activity-list')).toContainText('10');
 		await page.getByTestId('activity-list').locator('[data-testid^="activity-row-"]').first().click();
 		await page.getByTestId('tx-void').click();
+		await confirmVoid(page);
 		await expect(page.getByTestId('activity-list')).not.toContainText(/^Void$/);
 		await expect(page.getByTestId('activity-empty')).toHaveCount(0);
 		await expect(page.getByTestId('activity-list').locator('[data-testid^="activity-row-"]').first()).toHaveClass(
@@ -53,7 +52,7 @@ test.describe('012 polish / 014 void / 030', () => {
 		const sheet = page.getByRole('dialog');
 		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
 		await sheet.getByLabel(/amount/i).fill('15000');
-		await sheet.getByLabel('Category', { exact: true }).selectOption({ label: 'Food' });
+		await selectTxCategory(page, 'Food', sheet);
 		await sheet.getByTestId('tx-save').click();
 
 		await page.getByTestId('recent-list').locator('[data-testid^="recent-row-"]').first().click();
@@ -61,16 +60,16 @@ test.describe('012 polish / 014 void / 030', () => {
 	});
 
 	test('voided transaction opens read-only', async ({ page }) => {
-		page.on('dialog', (dialog) => dialog.accept());
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
 		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
 		await sheet.getByLabel(/amount/i).fill('15000');
-		await sheet.getByLabel('Category', { exact: true }).selectOption({ label: 'Food' });
+		await selectTxCategory(page, 'Food', sheet);
 		await sheet.getByTestId('tx-save').click();
 
 		await page.getByTestId('recent-list').locator('[data-testid^="recent-row-"]').first().click();
 		await page.getByTestId('tx-void').click();
+		await confirmVoid(page);
 		await page.getByTestId('recent-list').locator('[data-testid^="recent-row-"]').first().click();
 		await expect(page.getByRole('heading', { name: 'Voided transaction' })).toBeVisible();
 		await expect(page.getByTestId('tx-save')).toHaveCount(0);

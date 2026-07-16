@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd } from './nav';
+import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
 
 test.describe('013 desktop layout', () => {
 	test('wide viewport uses app rail, page title, and dialog add', async ({ page }) => {
@@ -107,7 +107,7 @@ test.describe('013 desktop layout', () => {
 		const dialog = page.getByTestId('tx-dialog');
 		await dialog.getByRole('button', { name: 'Expense', exact: true }).click();
 		await dialog.getByLabel(/amount/i).fill('15000');
-		await dialog.getByLabel('Category', { exact: true }).selectOption({ label: 'Food' });
+		await selectTxCategory(page, 'Food', dialog);
 		await dialog.getByTestId('tx-save').click();
 
 		await goToNav(page, 'activity');

@@ -1,7 +1,7 @@
 # Spec 041: Modal platform (open lifecycle, emphasize, confirms)
 
 - **ID:** 041
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd } from './nav';
+import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
 
 test.describe('001 transactions', () => {
 	test.beforeEach(async ({ page }) => {
@@ -14,7 +14,7 @@ test.describe('001 transactions', () => {
 
 		await page.getByRole('button', { name: 'Expense', exact: true }).click();
 		await page.getByLabel(/amount/i).fill('15000');
-		await page.getByLabel('Category', { exact: true }).selectOption({ label: 'Food' });
+		await selectTxCategory(page, 'Food');
 		await page.getByRole('button', { name: 'Save' }).click();
 
 		await expect(page.getByTestId('account-balance')).toContainText('15');
@@ -30,7 +30,7 @@ test.describe('001 transactions', () => {
 		await openAdd(page);
 		await page.getByRole('button', { name: 'Income', exact: true }).click();
 		await page.getByLabel(/amount/i).fill('100000');
-		await page.getByLabel('Category', { exact: true }).selectOption({ label: 'Salary' });
+		await selectTxCategory(page, 'Salary');
 		await page.getByRole('button', { name: 'Save' }).click();
 
 		await expect(page.getByTestId('account-balance')).toContainText('100');
@@ -39,6 +39,6 @@ test.describe('001 transactions', () => {
 	test('disables Save when amount is empty', async ({ page }) => {
 		await openAdd(page);
 		await expect(page.getByTestId('tx-save')).toBeDisabled();
-		await expect(page.getByTestId('tx-occurred-on-display')).toContainText(/\d{4}/);
+		await expect(page.getByTestId('tx-occurred-on')).toContainText(/\d{2} \w{3} \d{2}/);
 	});
 });
