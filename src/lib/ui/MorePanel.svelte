@@ -3,6 +3,7 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import type { RecurringRule } from '$lib/domain/recurring';
 	import type { Goal } from '$lib/domain/goals';
 	import type { NetWorthSnapshot } from '$lib/domain/net-worth';
@@ -22,6 +23,10 @@
 		lockEnabled: boolean;
 		onExport: () => void | Promise<void>;
 		onImportFile: (file: File) => void | Promise<void>;
+		onResetLocalData: (options: {
+			preserveCategories: boolean;
+			preservePassphrase: boolean;
+		}) => void | Promise<void>;
 		onCreateRecurring: (input: {
 			type: AddableTransactionType;
 			amountRaw: string;
@@ -49,6 +54,7 @@
 		lockEnabled,
 		onExport,
 		onImportFile,
+		onResetLocalData,
 		onCreateRecurring,
 		onToggleRecurring,
 		onDeleteRecurring,
@@ -74,6 +80,9 @@
 
 	let lockPass = $state('');
 	let lockPassConfirm = $state('');
+	let resetOpen = $state(false);
+	let preserveCategories = $state(false);
+	let preservePassphrase = $state(false);
 
 	const recCategories = $derived(recType === 'expense' ? expenseCategories : incomeCategories);
 
@@ -115,7 +124,7 @@
 		<p class="text-destructive text-sm" role="alert">{error}</p>
 	{/if}
 
-	<div class="grid gap-4 md:grid-cols-2 md:items-start xl:grid-cols-3" data-testid="more-desktop-grid">
+	<div class="flex flex-col gap-4" data-testid="more-sections">
 	<Card.Root>
 		<Card.Header>
 			<Card.Title class="text-base">Backup</Card.Title>
@@ -152,6 +161,18 @@
 					}}
 				/>
 			</div>
+			<Button
+				type="button"
+				variant="destructive"
+				data-testid="reset-all"
+				onclick={() => {
+					preserveCategories = false;
+					preservePassphrase = false;
+					resetOpen = true;
+				}}
+			>
+				Reset everything
+			</Button>
 		</Card.Content>
 	</Card.Root>
 
@@ -437,3 +458,49 @@
 	</Card.Root>
 	</div>
 </div>
+
+<Dialog.Root bind:open={resetOpen}>
+	<Dialog.Content class="sm:max-w-md" data-testid="reset-dialog">
+		<Dialog.Header>
+			<Dialog.Title>Reset everything?</Dialog.Title>
+			<Dialog.Description>
+				This permanently deletes transactions, recurring rules, goals, and net-worth snapshots.
+				Export a backup first if you might need the data. Cannot be undone.
+			</Dialog.Description>
+		</Dialog.Header>
+		<div class="space-y-3 py-2">
+			<label class="flex items-center gap-2 text-sm">
+				<input
+					type="checkbox"
+					bind:checked={preserveCategories}
+					data-testid="reset-preserve-categories"
+				/>
+				Keep categories
+			</label>
+			<label class="flex items-center gap-2 text-sm">
+				<input
+					type="checkbox"
+					bind:checked={preservePassphrase}
+					data-testid="reset-preserve-passphrase"
+				/>
+				Keep passphrase lock
+			</label>
+		</div>
+		<div class="flex justify-end gap-2">
+			<Button type="button" variant="outline" onclick={() => (resetOpen = false)}>Cancel</Button>
+			<Button
+				type="button"
+				variant="destructive"
+				data-testid="reset-all-confirm"
+				onclick={() =>
+					void wrap(async () => {
+						await onResetLocalData({ preserveCategories, preservePassphrase });
+						resetOpen = false;
+					}, 'Reset complete')
+				}
+			>
+				Reset
+			</Button>
+		</div>
+	</Dialog.Content>
+</Dialog.Root>

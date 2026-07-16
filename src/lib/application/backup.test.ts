@@ -2,7 +2,8 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '$lib/data/db';
 import { ensureDefaultAccount } from '$lib/application/accounts';
-import { addTransaction, getCategoriesForType } from '$lib/application/transactions';
+import { createCategory } from '$lib/application/categories';
+import { addTransaction } from '$lib/application/transactions';
 import {
 	BACKUP_FORMAT_VERSION,
 	backupFilename,
@@ -19,12 +20,12 @@ describe('backup', () => {
 
 	it('builds and restores a round-trip backup', async () => {
 		const account = await ensureDefaultAccount();
-		const expenseCats = await getCategoriesForType('expense');
+		const food = await createCategory('Food', 'expense');
 		await addTransaction({
 			accountId: account.id,
 			type: 'expense',
 			amountRaw: '15000',
-			categoryId: expenseCats[0]!.id,
+			categoryId: food.id,
 			note: 'lunch'
 		});
 

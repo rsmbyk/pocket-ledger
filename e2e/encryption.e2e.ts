@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { goToNav, openAdd } from './nav';
+import { ensureCategory, goToNav, openAdd } from './nav';
 
 test.describe('011 field encryption', () => {
 	test('unlocked UI still shows plaintext notes after enabling lock', async ({ page }) => {
 		await page.goto('/');
 		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await ensureCategory(page, 'Food', 'expense');
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
 		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();

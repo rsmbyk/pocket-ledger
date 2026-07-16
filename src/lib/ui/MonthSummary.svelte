@@ -40,50 +40,56 @@
 			</Button>
 		</div>
 	</Card.Header>
-	<Card.Content class="space-y-4 px-4 pb-4">
-		<div class="grid grid-cols-3 gap-2 text-center text-sm">
-			<div class="bg-muted/40 rounded-md px-2 py-2">
-				<p class="text-muted-foreground text-[11px]">Income</p>
-				<p
-					class="mt-1 font-semibold text-emerald-600 dark:text-emerald-400"
-					data-testid="month-income"
-				>
-					{formatMinor(summary.incomeMinor, currencyLabel)}
-				</p>
-			</div>
-			<div class="bg-muted/40 rounded-md px-2 py-2">
-				<p class="text-muted-foreground text-[11px]">Expense</p>
-				<p class="text-destructive mt-1 font-semibold" data-testid="month-expense">
-					{formatMinor(summary.expenseMinor, currencyLabel)}
-				</p>
-			</div>
-			<div class="bg-muted/40 rounded-md px-2 py-2">
-				<p class="text-muted-foreground text-[11px]">Net</p>
-				<p class="mt-1 font-semibold" data-testid="month-net">
-					{formatMinor(summary.netMinor, currencyLabel)}
-				</p>
+	<Card.Content class="p-0">
+		<div class="border-border border-t px-4 py-3">
+			<div class="grid grid-cols-3 gap-2 text-center text-sm">
+				<div class="bg-muted/40 rounded-md px-2 py-2">
+					<p class="text-muted-foreground text-[11px]">Income</p>
+					<p
+						class="mt-1 font-semibold text-emerald-600 dark:text-emerald-400"
+						data-testid="month-income"
+					>
+						{formatMinor(summary.incomeMinor, currencyLabel)}
+					</p>
+				</div>
+				<div class="bg-muted/40 rounded-md px-2 py-2">
+					<p class="text-muted-foreground text-[11px]">Expense</p>
+					<p class="text-destructive mt-1 font-semibold" data-testid="month-expense">
+						{formatMinor(summary.expenseMinor, currencyLabel)}
+					</p>
+				</div>
+				<div class="bg-muted/40 rounded-md px-2 py-2">
+					<p class="text-muted-foreground text-[11px]">Net</p>
+					<p class="mt-1 font-semibold" data-testid="month-net">
+						{formatMinor(summary.netMinor, currencyLabel)}
+					</p>
+				</div>
 			</div>
 		</div>
 
-		<CategoryBreakdownChart
-			title="Income by category"
-			rows={summary.incomeByCategory}
-			{currencyLabel}
-			emptyLabel="No income this month."
-			barClass="bg-emerald-500"
-			testid="income-category-chart"
-		/>
-		<CategoryBreakdownChart
-			title="Expenses by category"
-			rows={summary.expenseByCategory}
-			{currencyLabel}
-			emptyLabel="No expenses this month."
-			barClass="bg-destructive/80"
-			testid="category-chart"
-		/>
+		<div class="border-border border-t px-4 py-3">
+			<CategoryBreakdownChart
+				title="Income by category"
+				rows={summary.incomeByCategory}
+				{currencyLabel}
+				emptyLabel="No income this month."
+				barClass="bg-emerald-500"
+				testid="income-category-chart"
+			/>
+		</div>
+		<div class="border-border border-t px-4 py-3">
+			<CategoryBreakdownChart
+				title="Expenses by category"
+				rows={summary.expenseByCategory}
+				{currencyLabel}
+				emptyLabel="No expenses this month."
+				barClass="bg-destructive/80"
+				testid="category-chart"
+			/>
+		</div>
 
 		<div
-			class="border-border space-y-1.5 border-t pt-3 text-sm"
+			class="border-border space-y-1.5 border-t px-4 py-3 text-sm"
 			data-testid="month-balance-footer"
 		>
 			<div class="flex justify-between gap-2">

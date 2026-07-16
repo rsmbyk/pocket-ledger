@@ -36,6 +36,10 @@
 		onNextMonth: () => void | Promise<void>;
 		onExport: () => void | Promise<void>;
 		onImportFile: (file: File) => void | Promise<void>;
+		onResetLocalData: (options: {
+			preserveCategories: boolean;
+			preservePassphrase: boolean;
+		}) => void | Promise<void>;
 		onCreateRecurring: (input: {
 			type: AddableTransactionType;
 			amountRaw: string;
@@ -78,6 +82,7 @@
 		onNextMonth,
 		onExport,
 		onImportFile,
+		onResetLocalData,
 		onCreateRecurring,
 		onToggleRecurring,
 		onDeleteRecurring,
@@ -188,6 +193,7 @@
 				{onNextMonth}
 				{onExport}
 				{onImportFile}
+				{onResetLocalData}
 				{onCreateRecurring}
 				{onToggleRecurring}
 				{onDeleteRecurring}

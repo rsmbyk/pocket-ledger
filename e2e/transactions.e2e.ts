@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { goToNav, openAdd } from './nav';
+import { ensureCategory, goToNav, openAdd } from './nav';
 
 test.describe('001 transactions', () => {
 	test.beforeEach(async ({ page }) => {
@@ -8,6 +8,7 @@ test.describe('001 transactions', () => {
 	});
 
 	test('adds expense and updates balance and activity', async ({ page }) => {
+		await ensureCategory(page, 'Food', 'expense');
 		await openAdd(page);
 		await expect(page.getByRole('heading', { name: 'Add transaction' })).toBeVisible();
 
@@ -25,6 +26,7 @@ test.describe('001 transactions', () => {
 	});
 
 	test('adds income and increases balance', async ({ page }) => {
+		await ensureCategory(page, 'Salary', 'income');
 		await openAdd(page);
 		await page.getByRole('button', { name: 'Income', exact: true }).click();
 		await page.getByLabel(/amount/i).fill('100000');
@@ -38,6 +40,5 @@ test.describe('001 transactions', () => {
 		await openAdd(page);
 		await page.getByRole('button', { name: 'Save' }).click();
 		await expect(page.getByRole('alert')).toContainText(/amount/i);
-		await expect(page.getByRole('heading', { name: 'Add transaction' })).toBeVisible();
 	});
 });

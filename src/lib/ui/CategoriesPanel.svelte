@@ -1,4 +1,6 @@
 <script lang="ts">
+	import CheckIcon from '@lucide/svelte/icons/check';
+	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -95,7 +97,7 @@
 							<li class="flex items-center gap-2 py-3">
 								<Input
 									class="min-w-0 flex-1"
-									aria-label={`Rename ${cat.name}`}
+									aria-label={`Name for ${cat.name}`}
 									value={draftFor(cat)}
 									oninput={(e) => {
 										renameDrafts = {
@@ -106,21 +108,29 @@
 								/>
 								<div class="flex shrink-0 justify-end gap-1">
 									<Button
-										size="sm"
+										size="icon"
 										variant="outline"
-										disabled={busy}
+										aria-label={`Save name for ${cat.name}`}
+										data-testid="category-save-name"
+										disabled={
+											busy ||
+											draftFor(cat).trim() === cat.name ||
+											draftFor(cat).trim() === ''
+										}
 										onclick={() =>
 											void wrap(() => onRenameCategory(cat.id, draftFor(cat)), 'Renamed')}
 									>
-										Rename
+										<CheckIcon class="size-4" />
 									</Button>
 									<Button
-										size="sm"
+										size="icon"
 										variant="destructive"
+										aria-label={`Delete ${cat.name}`}
+										data-testid="category-delete"
 										disabled={busy}
 										onclick={() => void confirmDelete(cat.id, cat.name)}
 									>
-										Delete
+										<Trash2Icon class="size-4" />
 									</Button>
 								</div>
 							</li>

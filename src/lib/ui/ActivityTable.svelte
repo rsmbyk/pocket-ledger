@@ -56,19 +56,10 @@
 							{tx.occurredOn}
 						</Table.Cell>
 						<Table.Cell class="px-3 py-2 font-medium">
-							<span class="inline-flex flex-wrap items-center gap-1.5">
-								{categoryName(tx.categoryId)}
-								{#if voided}
-									<span
-										class="bg-muted text-muted-foreground inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium"
-									>
-										Void
-									</span>
-								{/if}
-							</span>
+							{categoryName(tx.categoryId)}
 						</Table.Cell>
 						<Table.Cell class="max-w-[14rem] truncate px-3 py-2">
-							{tx.note || tx.type}
+							{tx.note}
 						</Table.Cell>
 						<Table.Cell
 							class={[

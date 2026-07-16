@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 /** Navigate via the app drawer (desktop rail) or overlay sheet (mobile). */
 export async function goToNav(
@@ -58,4 +58,22 @@ export async function openAdd(page: Page): Promise<void> {
 	await page.keyboard.press('Control+K');
 	await page.getByTestId('command-palette').waitFor({ state: 'visible', timeout: 5_000 });
 	await page.getByTestId('cmd-add').click();
+}
+
+/** Create a category via Categories UI (no auto-seeds). Uses hash nav (mobile-safe). */
+export async function ensureCategory(
+	page: Page,
+	name: string,
+	kind: 'expense' | 'income'
+): Promise<void> {
+	await page.goto(`/#/categories`);
+	await expect(page.getByTestId('categories-panel')).toBeVisible();
+	await page
+		.getByTestId(kind === 'expense' ? 'category-add-expense' : 'category-add-income')
+		.click();
+	await page.getByTestId('category-name-input').fill(name);
+	await page.getByTestId('category-add').click();
+	await expect(page.getByRole('textbox', { name: `Name for ${name}` })).toBeVisible();
+	await page.goto('/#/');
+	await expect(page.getByTestId('home-panel')).toBeVisible();
 }

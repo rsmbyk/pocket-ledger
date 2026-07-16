@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openAdd } from './nav';
+import { ensureCategory, openAdd } from './nav';
 
 test.describe('002 month charts', () => {
 	test.beforeEach(async ({ page }) => {
@@ -19,6 +19,8 @@ test.describe('002 month charts', () => {
 	});
 
 	test('updates month totals after income and expense', async ({ page }) => {
+		await ensureCategory(page, 'Salary', 'income');
+		await ensureCategory(page, 'Food', 'expense');
 		await openAdd(page);
 		const incomeDialog = page.getByRole('dialog');
 		await incomeDialog.getByRole('button', { name: 'Income', exact: true }).click();

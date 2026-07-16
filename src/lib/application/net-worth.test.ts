@@ -2,7 +2,8 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '$lib/data/db';
 import { ensureDefaultAccount } from '$lib/application/accounts';
-import { addTransaction, getCategoriesForType } from '$lib/application/transactions';
+import { createCategory } from '$lib/application/categories';
+import { addTransaction } from '$lib/application/transactions';
 import { captureNetWorth, listNetWorthSnapshots } from './net-worth';
 
 describe('net worth', () => {
@@ -13,12 +14,12 @@ describe('net worth', () => {
 
 	it('captures current balance as a snapshot', async () => {
 		const account = await ensureDefaultAccount();
-		const incomeCats = await getCategoriesForType('income');
+		const salary = await createCategory('Salary', 'income');
 		await addTransaction({
 			accountId: account.id,
 			type: 'income',
 			amountRaw: '85000',
-			categoryId: incomeCats[0]!.id
+			categoryId: salary.id
 		});
 
 		const snap = await captureNetWorth('2026-07-14');
