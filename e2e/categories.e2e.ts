@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { openAdd } from './nav';
 
-test.describe('010 custom categories', () => {
-	test('adds a category and shows it in quick-add', async ({ page }) => {
+test.describe('010 / 018 custom categories', () => {
+	test('adds a category from expense card modal and shows it in quick-add', async ({ page }) => {
 		await page.goto('/#/categories');
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
+		await page.getByTestId('category-add-expense').click();
 		await page.getByTestId('category-name-input').fill('Coffee');
 		await page.getByTestId('category-add').click();
 		await expect(page.getByRole('textbox', { name: 'Rename Coffee' })).toBeVisible();

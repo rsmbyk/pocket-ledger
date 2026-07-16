@@ -95,6 +95,16 @@
 			error = err instanceof Error ? err.message : 'Something went wrong';
 		}
 	}
+
+	function confirmDeleteRecurring(id: string) {
+		if (!confirm('Delete this recurring rule permanently? This cannot be undone.')) return;
+		void wrap(() => onDeleteRecurring(id), 'Deleted');
+	}
+
+	function confirmDeleteGoal(id: string, name: string) {
+		if (!confirm(`Delete goal "${name}" permanently? This cannot be undone.`)) return;
+		void wrap(() => onDeleteGoal(id), 'Goal deleted');
+	}
 </script>
 
 <div class="space-y-4" data-testid="more-panel">
@@ -131,7 +141,7 @@
 						if (!file) return;
 						if (
 							!confirm(
-								'Import replaces all local data with the backup. Continue?'
+								'Import replaces all local data with this backup. This cannot be undone. Continue?'
 							)
 						) {
 							e.currentTarget.value = '';
@@ -230,8 +240,8 @@
 							</Button>
 							<Button
 								size="sm"
-								variant="ghost"
-								onclick={() => void wrap(() => onDeleteRecurring(rule.id), 'Deleted')}
+								variant="destructive"
+								onclick={() => confirmDeleteRecurring(rule.id)}
 							>
 								Delete
 							</Button>
@@ -281,8 +291,8 @@
 							</div>
 							<Button
 								size="sm"
-								variant="ghost"
-								onclick={() => void wrap(() => onDeleteGoal(goal.id), 'Goal deleted')}
+								variant="destructive"
+								onclick={() => confirmDeleteGoal(goal.id, goal.name)}
 								>Delete</Button
 							>
 						</div>
@@ -398,6 +408,13 @@
 					class="space-y-2"
 					onsubmit={(e) => {
 						e.preventDefault();
+						if (
+							!confirm(
+								'Disable lock? Passphrase protection will be removed from this browser. Continue?'
+							)
+						) {
+							return;
+						}
 						void wrap(async () => {
 							await onDisableLock(lockPass);
 							lockPass = '';
@@ -411,7 +428,7 @@
 						autocomplete="current-password"
 						data-testid="disable-lock-pass"
 					/>
-					<Button type="submit" variant="outline" class="w-full" data-testid="disable-lock"
+					<Button type="submit" variant="destructive" class="w-full" data-testid="disable-lock"
 						>Disable lock</Button
 					>
 				</form>
