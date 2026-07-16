@@ -58,3 +58,7 @@ Living behavior contracts for Pocket Ledger.
 | [040](040-activity-add-categories-dnd.md) | Activity Add + Categories DnD polish | Accepted |
 | [041](041-modal-platform.md) | Modal platform (lifecycle, emphasize, confirms) | Accepted |
 | [042](042-dates-and-toasts.md) | Dates YY Mon DD, DateField, toasts | Accepted |
+| [043](043-dates-uncategorized-month-order.md) | Dates DD MMM YYYY, Uncategorized marker, month order | Draft |
+| [044](044-tx-sheet-chrome-dismiss.md) | Transaction sheet chrome and outside dismiss | Draft |
+| [045](045-home-activity-filters.md) | Home polish and Activity filters overhaul | Draft |
+| [046](046-categories-density-no-toasts.md) | Categories density and remove toasts | Draft |
