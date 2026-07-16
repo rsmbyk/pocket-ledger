@@ -65,7 +65,6 @@
 		THEME_STORAGE_KEY,
 		type ThemePreference
 	} from '$lib/shared/theme';
-	import { Toaster } from 'svelte-sonner';
 
 	let account = $state<Account | null>(null);
 	let isSinglePot = $state(true);
@@ -210,7 +209,6 @@
 	modeStorageKey={THEME_STORAGE_KEY}
 	themeColors={{ dark: '#0a0a0a', light: '#ffffff' }}
 />
-<Toaster richColors closeButton position="top-center" />
 
 {#if !ready}
 	<div class="text-muted-foreground flex min-h-svh items-center justify-center text-sm">

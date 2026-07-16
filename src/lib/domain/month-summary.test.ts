@@ -65,10 +65,10 @@ describe('month-summary', () => {
 		];
 
 		const summary = buildMonthSummary(rows, '2026-07', {
-			food: 'Food',
-			ride: 'Transport',
-			sal: 'Salary',
-			side: 'Side'
+			food: { name: 'Food', sortOrder: 0 },
+			ride: { name: 'Transport', sortOrder: 1 },
+			sal: { name: 'Salary', sortOrder: 0 },
+			side: { name: 'Side', sortOrder: 1 }
 		});
 
 		expect(summary.incomeMinor).toBe(120_000);
@@ -84,6 +84,23 @@ describe('month-summary', () => {
 		]);
 		expect(summary.openingMinor).toBe(-1_000);
 		expect(summary.endingMinor).toBe(91_000);
+	});
+
+	it('orders categories by sortOrder with Uncategorized last', () => {
+		const rows = [
+			tx({ type: 'expense', amountMinor: 5_000, occurredOn: '2026-07-02', categoryId: 'b' }),
+			tx({ type: 'expense', amountMinor: 50_000, occurredOn: '2026-07-02', categoryId: 'a' }),
+			tx({ type: 'expense', amountMinor: 1_000, occurredOn: '2026-07-02', categoryId: null })
+		];
+		const summary = buildMonthSummary(rows, '2026-07', {
+			a: { name: 'Alpha', sortOrder: 1 },
+			b: { name: 'Beta', sortOrder: 0 }
+		});
+		expect(summary.expenseByCategory.map((r) => r.label)).toEqual([
+			'Beta',
+			'Alpha',
+			'Uncategorized'
+		]);
 	});
 
 	it('ignores voided transactions in totals and opening', () => {
@@ -103,7 +120,7 @@ describe('month-summary', () => {
 				voidedAt: '2026-07-16T00:00:00.000Z'
 			})
 		];
-		const summary = buildMonthSummary(rows, '2026-07', { food: 'Food' });
+		const summary = buildMonthSummary(rows, '2026-07', { food: { name: 'Food', sortOrder: 0 } });
 		expect(summary.expenseMinor).toBe(15_000);
 		expect(summary.openingMinor).toBe(0);
 		expect(summary.endingMinor).toBe(-15_000);

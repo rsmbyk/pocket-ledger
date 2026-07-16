@@ -1,7 +1,7 @@
 # Spec 044: Transaction sheet chrome and outside dismiss
 
 - **ID:** 044
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

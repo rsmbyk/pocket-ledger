@@ -23,8 +23,8 @@ export function todayYmd(now = new Date()): string {
 }
 
 /**
- * Display an ISO `YYYY-MM-DD` occurred-on date as `YY Mon DD`
- * (e.g. `2026-06-16` → `26 Jun 16`).
+ * Display an ISO `YYYY-MM-DD` occurred-on date as `DD MMM YYYY`
+ * (e.g. `2026-06-16` → `16 Jun 2026`).
  */
 export function formatOccurredOnDisplay(occurredOn: string): string {
 	const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(occurredOn);
@@ -34,6 +34,5 @@ export function formatOccurredOnDisplay(occurredOn: string): string {
 	const day = match[3]!;
 	if (month < 1 || month > 12) return occurredOn;
 	const mon = MONTH_ABBREV[month - 1]!;
-	const yy = year.slice(-2);
-	return `${yy} ${mon} ${day}`;
+	return `${day} ${mon} ${year}`;
 }

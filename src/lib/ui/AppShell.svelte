@@ -108,6 +108,8 @@
 	let commandOpen = $state(false);
 	let editing = $state<LedgerTransaction | null>(null);
 	let route = $state<AppRoute>('home');
+	/** Clears `editing` after close animation; must cancel if reopened quickly. */
+	let clearEditingTimer: ReturnType<typeof setTimeout> | null = null;
 
 	const navItems: { id: AppRoute; label: string }[] = [
 		{ id: 'home', label: 'Home' },
@@ -118,12 +120,21 @@
 
 	const pageTitle = $derived(navItems.find((item) => item.id === route)?.label ?? 'Home');
 
+	function cancelClearEditing() {
+		if (clearEditingTimer != null) {
+			clearTimeout(clearEditingTimer);
+			clearEditingTimer = null;
+		}
+	}
+
 	function openAdd() {
+		cancelClearEditing();
 		editing = null;
 		txSheetOpen = true;
 	}
 
 	function openEdit(tx: LedgerTransaction) {
+		cancelClearEditing();
 		editing = tx;
 		txSheetOpen = true;
 	}
@@ -229,9 +240,13 @@
 		onOpenChange={(next) => {
 			txSheetOpen = next;
 			if (!next) {
-				window.setTimeout(() => {
+				cancelClearEditing();
+				clearEditingTimer = window.setTimeout(() => {
 					editing = null;
+					clearEditingTimer = null;
 				}, 320);
+			} else {
+				cancelClearEditing();
 			}
 		}}
 		onSaved={onRefreshLedger}

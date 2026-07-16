@@ -15,6 +15,8 @@ export async function getMonthSummary(
 		listTransactionsForAccount(accountId),
 		listCategories()
 	]);
-	const names = Object.fromEntries(categories.map((c) => [c.id, c.name]));
-	return buildMonthSummary(transactions, monthKey, names);
+	const categoryMeta = Object.fromEntries(
+		categories.map((c) => [c.id, { name: c.name, sortOrder: c.sortOrder }])
+	);
+	return buildMonthSummary(transactions, monthKey, categoryMeta);
 }

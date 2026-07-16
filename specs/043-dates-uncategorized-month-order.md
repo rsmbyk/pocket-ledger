@@ -1,7 +1,7 @@
 # Spec 043: Dates DD MMM YYYY, Uncategorized marker, month chart order
 
 - **ID:** 043
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

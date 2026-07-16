@@ -1,15 +1,22 @@
 <script lang="ts">
 	import InboxIcon from '@lucide/svelte/icons/inbox';
 	import SearchXIcon from '@lucide/svelte/icons/search-x';
+	import ArrowDownWideNarrowIcon from '@lucide/svelte/icons/arrow-down-wide-narrow';
+	import ArrowUpWideNarrowIcon from '@lucide/svelte/icons/arrow-up-wide-narrow';
 	import * as Table from '$lib/components/ui/table/index.js';
 	import EmptyState from '$lib/ui/EmptyState.svelte';
+	import UncategorizedLabel from '$lib/ui/UncategorizedLabel.svelte';
 	import { isVoided, type LedgerTransaction } from '$lib/domain/transaction';
 	import { formatMinor } from '$lib/domain/money';
 	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
+	import {
+		nextActivityDateSort,
+		sortTransactionsByDate,
+		type ActivityDateSort
+	} from '$lib/domain/activity-filters';
 
 	type Props = {
 		transactions: LedgerTransaction[];
-		/** Total ledger rows before filters (for empty vs filtered-empty). */
 		totalCount: number;
 		currencyLabel: string;
 		categoryName: (categoryId: string | null) => string;
@@ -17,6 +24,22 @@
 	};
 
 	let { transactions, totalCount, currencyLabel, categoryName, onEdit }: Props = $props();
+
+	let dateSort = $state<ActivityDateSort>('createdAt-desc');
+
+	const sorted = $derived(sortTransactionsByDate(transactions, dateSort));
+
+	function cycleDateSort() {
+		dateSort = nextActivityDateSort(dateSort);
+	}
+
+	const dateSortLabel = $derived(
+		dateSort === 'createdAt-desc'
+			? 'Sorted by created date, newest first'
+			: dateSort === 'occurredOn-desc'
+				? 'Sorted by date, newest first'
+				: 'Sorted by date, oldest first'
+	);
 </script>
 
 {#if transactions.length === 0 && totalCount === 0}
@@ -44,14 +67,29 @@
 		<Table.Root class="text-sm">
 			<Table.Header class="bg-muted/40">
 				<Table.Row class="hover:bg-transparent">
-					<Table.Head class="h-9 px-3 font-medium">Date</Table.Head>
+					<Table.Head class="h-9 px-3 font-medium">
+						<button
+							type="button"
+							class="hover:text-foreground inline-flex cursor-pointer items-center gap-1"
+							aria-label={dateSortLabel}
+							data-testid="activity-sort-date"
+							onclick={cycleDateSort}
+						>
+							Date
+							{#if dateSort === 'occurredOn-asc'}
+								<ArrowUpWideNarrowIcon class="size-3.5" aria-hidden="true" />
+							{:else}
+								<ArrowDownWideNarrowIcon class="size-3.5" aria-hidden="true" />
+							{/if}
+						</button>
+					</Table.Head>
 					<Table.Head class="h-9 px-3 font-medium">Category</Table.Head>
 					<Table.Head class="h-9 px-3 font-medium">Note</Table.Head>
 					<Table.Head class="h-9 px-3 text-right font-medium">Amount</Table.Head>
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
-				{#each transactions as tx (tx.id)}
+				{#each sorted as tx (tx.id)}
 					{@const voided = isVoided(tx)}
 					<Table.Row
 						class={[
@@ -73,7 +111,11 @@
 							{formatOccurredOnDisplay(tx.occurredOn)}
 						</Table.Cell>
 						<Table.Cell class="px-3 py-2 font-medium">
-							{categoryName(tx.categoryId)}
+							{#if tx.categoryId == null}
+								<UncategorizedLabel />
+							{:else}
+								{categoryName(tx.categoryId)}
+							{/if}
 						</Table.Cell>
 						<Table.Cell class="max-w-[14rem] truncate px-3 py-2">
 							{tx.note}

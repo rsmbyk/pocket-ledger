@@ -1,6 +1,8 @@
 <script lang="ts">
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
+	import ShoppingBagIcon from '@lucide/svelte/icons/shopping-bag';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import CategoryBreakdownChart from '$lib/ui/CategoryBreakdownChart.svelte';
@@ -11,11 +13,17 @@
 	type Props = {
 		summary: MonthSummary;
 		currencyLabel: string;
+		hideAmounts?: boolean;
 		onPrevMonth: () => void;
 		onNextMonth: () => void;
 	};
 
-	let { summary, currencyLabel, onPrevMonth, onNextMonth }: Props = $props();
+	let { summary, currencyLabel, hideAmounts = false, onPrevMonth, onNextMonth }: Props =
+		$props();
+
+	function money(amount: number): string {
+		return hideAmounts ? '••••' : formatMinor(amount, currencyLabel);
+	}
 </script>
 
 <Card.Root class="gap-0 py-0" data-testid="month-summary">
@@ -44,18 +52,28 @@
 		<div class="border-border border-t px-4 py-3">
 			<div class="grid grid-cols-3 gap-2 text-center text-sm">
 				<div class="bg-muted/40 rounded-md px-2 py-2">
-					<p class="text-muted-foreground text-[11px]">Income</p>
+					<p
+						class="text-muted-foreground inline-flex items-center justify-center gap-1 text-[11px]"
+					>
+						<TrendingUpIcon class="size-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+						Income
+					</p>
 					<p
 						class="mt-1 font-semibold text-emerald-600 dark:text-emerald-400"
 						data-testid="month-income"
 					>
-						{formatMinor(summary.incomeMinor, currencyLabel)}
+						{money(summary.incomeMinor)}
 					</p>
 				</div>
 				<div class="bg-muted/40 rounded-md px-2 py-2">
-					<p class="text-muted-foreground text-[11px]">Expense</p>
+					<p
+						class="text-muted-foreground inline-flex items-center justify-center gap-1 text-[11px]"
+					>
+						<ShoppingBagIcon class="text-destructive size-3.5" aria-hidden="true" />
+						Expenses
+					</p>
 					<p class="text-destructive mt-1 font-semibold" data-testid="month-expense">
-						{formatMinor(summary.expenseMinor, currencyLabel)}
+						{money(summary.expenseMinor)}
 					</p>
 				</div>
 				<div class="bg-muted/40 rounded-md px-2 py-2">
@@ -69,7 +87,7 @@
 						]}
 						data-testid="month-net"
 					>
-						{formatMinor(summary.netMinor, currencyLabel)}
+						{money(summary.netMinor)}
 					</p>
 				</div>
 			</div>
@@ -83,6 +101,7 @@
 				emptyLabel="No income this month."
 				barClass="bg-emerald-500"
 				testid="income-category-chart"
+				{hideAmounts}
 			/>
 		</div>
 		<div class="border-border border-t px-4 py-3">
@@ -93,6 +112,7 @@
 				emptyLabel="No expenses this month."
 				barClass="bg-destructive/80"
 				testid="category-chart"
+				{hideAmounts}
 			/>
 		</div>
 
@@ -102,9 +122,7 @@
 		>
 			<div class="flex justify-between gap-2">
 				<span class="text-muted-foreground">Opening</span>
-				<span class="tabular-nums" data-testid="month-opening"
-					>{formatMinor(summary.openingMinor, currencyLabel)}</span
-				>
+				<span class="tabular-nums" data-testid="month-opening">{money(summary.openingMinor)}</span>
 			</div>
 			<div class="flex justify-between gap-2">
 				<span class="text-muted-foreground">Net</span>
@@ -116,14 +134,12 @@
 						summary.netMinor === 0 && 'text-muted-foreground'
 					]}
 					data-testid="month-footer-net"
-					>{formatMinor(summary.netMinor, currencyLabel)}</span
+					>{money(summary.netMinor)}</span
 				>
 			</div>
 			<div class="flex justify-between gap-2 font-medium">
 				<span>Ending</span>
-				<span class="tabular-nums" data-testid="month-ending"
-					>{formatMinor(summary.endingMinor, currencyLabel)}</span
-				>
+				<span class="tabular-nums" data-testid="month-ending">{money(summary.endingMinor)}</span>
 			</div>
 		</div>
 	</Card.Content>

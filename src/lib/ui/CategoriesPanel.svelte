@@ -7,7 +7,6 @@
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 	import { flip } from 'svelte/animate';
 	import { dragHandle, dragHandleZone, type DndEvent } from 'svelte-dnd-action';
-	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -44,14 +43,12 @@
 	let addKind = $state<CategoryRow['kind']>('expense');
 	let addName = $state('');
 	let busy = $state(false);
+	let error = $state('');
 	let renameDrafts = $state<Record<string, string>>({});
-	let dialogEmphasizing = $state(false);
 	let deleteTarget = $state<{ id: string; name: string } | null>(null);
 
 	let incomeItems = $state<CategoryRow[]>([]);
 	let expenseItems = $state<CategoryRow[]>([]);
-
-	let emphasizeTimeout: ReturnType<typeof setTimeout> | undefined;
 
 	$effect(() => {
 		incomeItems = [...incomeCategories];
@@ -124,13 +121,13 @@
 		}
 	}
 
-	async function runAction(action: () => void | Promise<void>, successMessage: string) {
+	async function runAction(action: () => void | Promise<void>) {
 		busy = true;
+		error = '';
 		try {
 			await action();
-			toast.success(successMessage);
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Something went wrong');
+			error = e instanceof Error ? e.message : 'Something went wrong';
 			throw e;
 		} finally {
 			busy = false;
@@ -151,15 +148,6 @@
 		addDialogOpen = true;
 	}
 
-	function handleInteractOutside(e: Event) {
-		e.preventDefault();
-		dialogEmphasizing = true;
-		clearTimeout(emphasizeTimeout);
-		emphasizeTimeout = setTimeout(() => {
-			dialogEmphasizing = false;
-		}, 400);
-	}
-
 	function handleConsider(kind: CategoryRow['kind'], e: CustomEvent<DndEvent<CategoryRow>>) {
 		setItemsForKind(kind, e.detail.items);
 	}
@@ -167,16 +155,16 @@
 	async function handleFinalize(kind: CategoryRow['kind'], e: CustomEvent<DndEvent<CategoryRow>>) {
 		const items = e.detail.items;
 		setItemsForKind(kind, items);
+		busy = true;
+		error = '';
 		try {
-			busy = true;
 			await onReorderCategories(
 				kind,
 				items.map((item) => item.id)
 			);
-			toast.success('Reordered');
 		} catch (err) {
 			revertItemsForKind(kind);
-			toast.error(err instanceof Error ? err.message : 'Something went wrong');
+			error = err instanceof Error ? err.message : 'Something went wrong';
 		} finally {
 			busy = false;
 		}
@@ -188,13 +176,16 @@
 </script>
 
 <div class="space-y-4" data-testid="categories-panel">
+	{#if error}
+		<p class="text-destructive text-sm" role="alert">{error}</p>
+	{/if}
 	<div class="grid gap-4 md:grid-cols-2 md:items-start" data-testid="categories-desktop-grid">
 		{#each groups as group (group.kind)}
 			{@const items = itemsForKind(group.kind)}
-			<Card.Root class={cn('gap-0 py-0', group.cardClass)}>
+			<Card.Root class={cn('gap-0 overflow-hidden py-0', group.cardClass)}>
 				<Card.Header
 					class={cn(
-						'flex flex-row items-center justify-between gap-2 space-y-0 border-b px-6 py-4',
+						'flex flex-row items-center justify-between gap-2 space-y-0 border-b px-4 py-3',
 						group.headerClass
 					)}
 				>
@@ -208,7 +199,7 @@
 					</div>
 					<Button
 						type="button"
-						size="icon"
+						size="icon-sm"
 						variant="outline"
 						disabled={busy}
 						aria-label={group.addAriaLabel}
@@ -250,7 +241,7 @@
 								>
 									{#each items as cat (cat.id)}
 										<li
-											class="flex items-center gap-2 px-6 py-3"
+											class="flex items-center gap-2 px-4 py-2.5"
 											animate:flip={{ duration: flipDurationMs }}
 											aria-label={draftFor(cat)}
 										>
@@ -275,22 +266,20 @@
 											/>
 											<div class="flex shrink-0 justify-end gap-1">
 												<Button
-													size="icon"
-													variant={saveDisabled(cat) ? 'outline' : 'default'}
+													size="icon-sm"
+													variant="outline"
 													aria-label={`Save name for ${cat.name}`}
 													data-testid="category-save-name"
 													disabled={saveDisabled(cat)}
 													onclick={() =>
-														void runAction(
-															() => onRenameCategory(cat.id, draftFor(cat)),
-															'Renamed'
-														)}
+														void runAction(() => onRenameCategory(cat.id, draftFor(cat)))}
 												>
 													<CheckIcon class="size-4" />
 												</Button>
 												<Button
-													size="icon"
-													variant="destructive"
+													size="icon-sm"
+													variant="outline"
+													class="text-destructive"
 													aria-label={`Delete ${cat.name}`}
 													data-testid="category-delete"
 													disabled={busy}
@@ -313,13 +302,8 @@
 
 <Dialog.Root bind:open={addDialogOpen}>
 	<Dialog.Content
-		class={cn(
-			'sm:max-w-md overflow-hidden p-0',
-			activeDialogGroup.dialogClass,
-			dialogEmphasizing && 'panel-emphasize'
-		)}
+		class={cn('sm:max-w-md overflow-hidden p-0', activeDialogGroup.dialogClass)}
 		showCloseButton={false}
-		onInteractOutside={handleInteractOutside}
 	>
 		<Dialog.Header
 			class={cn('gap-1 space-y-0 border-b px-6 py-3', activeDialogGroup.dialogHeaderClass)}
@@ -350,7 +334,7 @@
 					await onCreateCategory(addName, addKind);
 					addName = '';
 					addDialogOpen = false;
-				}, 'Category added');
+				});
 			}}
 		>
 			<Input
@@ -389,28 +373,7 @@
 	onConfirm={async () => {
 		if (!deleteTarget) return;
 		const { id } = deleteTarget;
-		await runAction(() => onDeleteCategory(id), 'Deleted');
+		await runAction(() => onDeleteCategory(id));
 		deleteTarget = null;
 	}}
 />
-
-<style>
-	:global(.panel-emphasize) {
-		animation: panel-emphasize 0.4s ease;
-	}
-
-	@keyframes panel-emphasize {
-		0%,
-		100% {
-			box-shadow:
-				0 0 0 0 color-mix(in oklch, var(--ring) 0%, transparent),
-				0 0 0 0 transparent;
-		}
-
-		50% {
-			box-shadow:
-				0 0 0 3px color-mix(in oklch, var(--ring) 45%, transparent),
-				0 0 0 1px var(--ring);
-		}
-	}
-</style>

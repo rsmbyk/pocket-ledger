@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
@@ -89,6 +88,7 @@
 	let importConfirmOpen = $state(false);
 	let pendingImportFile = $state<File | null>(null);
 	let disableLockConfirmOpen = $state(false);
+	let error = $state<string | null>(null);
 
 	const recCategories = $derived(recType === 'expense' ? expenseCategories : incomeCategories);
 
@@ -100,12 +100,12 @@
 
 	const maxSnap = $derived(Math.max(...snapshots.map((s) => Math.abs(s.totalMinor)), 1));
 
-	async function wrap(action: () => void | Promise<void>, ok: string) {
+	async function wrap(action: () => void | Promise<void>) {
 		try {
+			error = null;
 			await action();
-			toast.success(ok);
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : 'Something went wrong');
+			error = err instanceof Error ? err.message : 'Something went wrong';
 		}
 	}
 
@@ -119,6 +119,9 @@
 </script>
 
 <div class="space-y-4" data-testid="more-panel">
+	{#if error}
+		<p class="text-destructive text-sm" role="alert">{error}</p>
+	{/if}
 	<div class="flex flex-col gap-4" data-testid="more-sections">
 	<Card.Root>
 		<Card.Header>
@@ -128,7 +131,7 @@
 		<Card.Content class="flex flex-col gap-2">
 			<Button
 				type="button"
-				onclick={() => void wrap(onExport, 'Backup downloaded')}
+				onclick={() => void wrap(onExport)}
 				data-testid="export-backup"
 			>
 				Export JSON
@@ -174,16 +177,14 @@
 				class="space-y-2"
 				onsubmit={(e) => {
 					e.preventDefault();
-					void wrap(
-						() =>
-							onCreateRecurring({
-								type: recType,
-								amountRaw: recAmount,
-								categoryId: recCategoryId,
-								frequency: recFrequency,
-								note: recNote
-							}),
-						'Recurring rule added'
+					void wrap(() =>
+						onCreateRecurring({
+							type: recType,
+							amountRaw: recAmount,
+							categoryId: recCategoryId,
+							frequency: recFrequency,
+							note: recNote
+						})
 					);
 					recAmount = '';
 					recNote = '';
@@ -240,10 +241,7 @@
 								size="sm"
 								variant="outline"
 								onclick={() =>
-									void wrap(
-										() => onToggleRecurring(rule.id, !rule.active),
-										rule.active ? 'Paused' : 'Resumed'
-									)}
+									void wrap(() => onToggleRecurring(rule.id, !rule.active))}
 							>
 								{rule.active ? 'Pause' : 'Resume'}
 							</Button>
@@ -273,7 +271,7 @@
 				class="space-y-2"
 				onsubmit={(e) => {
 					e.preventDefault();
-					void wrap(() => onCreateGoal(goalName, goalTarget), 'Goal created');
+					void wrap(() => onCreateGoal(goalName, goalTarget));
 					goalName = '';
 					goalTarget = '';
 				}}
@@ -317,7 +315,7 @@
 								e.preventDefault();
 								const fd = new FormData(e.currentTarget);
 								const saved = String(fd.get('saved') ?? '0');
-								void wrap(() => onUpdateGoalSaved(goal.id, saved), 'Progress updated');
+								void wrap(() => onUpdateGoalSaved(goal.id, saved));
 							}}
 						>
 							<Input name="saved" inputmode="numeric" value={String(goal.savedMinor)} />
@@ -341,7 +339,7 @@
 				type="button"
 				class="w-full"
 				data-testid="capture-net-worth"
-				onclick={() => void wrap(onCaptureNetWorth, 'Snapshot saved')}
+				onclick={() => void wrap(onCaptureNetWorth)}
 			>
 				Capture now
 			</Button>
@@ -395,7 +393,7 @@
 							await onEnableLock(lockPass);
 							lockPass = '';
 							lockPassConfirm = '';
-						}, 'Lock enabled');
+						});
 					}}
 				>
 					<Input
@@ -478,7 +476,7 @@
 					void wrap(async () => {
 						await onResetLocalData({ preserveCategories, preservePassphrase });
 						resetOpen = false;
-					}, 'Reset complete')
+					})
 				}
 			>
 				Reset
@@ -501,7 +499,7 @@
 		if (!pendingDeleteRecurringId) return;
 		const id = pendingDeleteRecurringId;
 		pendingDeleteRecurringId = null;
-		await wrap(() => onDeleteRecurring(id), 'Deleted');
+		await wrap(() => onDeleteRecurring(id));
 	}}
 />
 
@@ -521,7 +519,7 @@
 		if (!pendingDeleteGoal) return;
 		const { id } = pendingDeleteGoal;
 		pendingDeleteGoal = null;
-		await wrap(() => onDeleteGoal(id), 'Goal deleted');
+		await wrap(() => onDeleteGoal(id));
 	}}
 />
 
@@ -540,7 +538,7 @@
 		if (!pendingImportFile) return;
 		const file = pendingImportFile;
 		pendingImportFile = null;
-		await wrap(() => onImportFile(file), 'Backup imported');
+		await wrap(() => onImportFile(file));
 	}}
 />
 
@@ -556,6 +554,6 @@
 		await wrap(async () => {
 			await onDisableLock(lockPass);
 			lockPass = '';
-		}, 'Lock disabled');
+		});
 	}}
 />

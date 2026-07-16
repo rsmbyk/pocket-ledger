@@ -1,4 +1,5 @@
 <script lang="ts">
+	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
 	import { cn } from '$lib/utils.js';
 
@@ -41,12 +42,16 @@
 	<button
 		type="button"
 		{id}
-		class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full items-center rounded-md border px-3 text-left text-sm focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+		class={cn(
+			'border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border px-3 text-left text-sm shadow-xs focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+			disabled && 'shadow-none'
+		)}
 		{disabled}
 		aria-label={ariaLabel}
 		data-testid={testid}
 		onclick={openPicker}
 	>
+		<CalendarIcon class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
 		{#if display}
 			<span class="tabular-nums">{display}</span>
 		{:else}

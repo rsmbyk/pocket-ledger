@@ -1,7 +1,7 @@
 # Spec 045: Home polish and Activity filters overhaul
 
 - **ID:** 045
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

@@ -23,22 +23,42 @@ async function seedIncomeAndExpense(page: Page): Promise<void> {
 	await form.getByRole('button', { name: 'Save' }).click();
 }
 
-test.describe('017 activity filters', () => {
+/** Filters surface is bottom sheet, right sheet, or xl drawer depending on viewport. */
+function filtersSurface(page: Page) {
+	return page.locator(
+		'[data-testid="activity-filters-sheet"], [data-testid="activity-filters-drawer"]'
+	);
+}
+
+async function openAndApplyType(page: Page, type: 'all' | 'income' | 'expense'): Promise<void> {
+	await page.getByTestId('activity-filters-open').click();
+	await expect(filtersSurface(page)).toBeVisible();
+	await page.getByTestId('activity-filter-type').selectOption(type);
+	await page.getByTestId('activity-filters-apply').click();
+	await expect(filtersSurface(page)).toBeHidden();
+}
+
+test.describe('017 / 045 activity filters', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
 		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
 	});
 
-	test('filters by type and searches amount with separators', async ({ page }) => {
+	test('filters by type via Apply and searches amount with separators', async ({ page }) => {
 		await seedIncomeAndExpense(page);
 
 		await goToNav(page, 'activity');
 		await expect(page.getByTestId('activity-filters')).toBeVisible();
-		await page.getByTestId('activity-filter-type').selectOption('expense');
+		await expect(page.getByTestId('activity-filters-open')).toBeVisible();
+		await expect(page.getByTestId('activity-filter-type')).toHaveCount(0);
+
+		await openAndApplyType(page, 'expense');
+		await expect(page.getByTestId('activity-filters-badge')).toHaveText('1');
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
 		await expect(page.getByTestId('activity-list')).not.toContainText('Salary');
 
-		await page.getByTestId('activity-filter-type').selectOption('all');
+		await openAndApplyType(page, 'all');
+		await expect(page.getByTestId('activity-filters-badge')).toHaveCount(0);
 		await page.getByTestId('activity-filter-search').fill('100,000');
 		await expect(page.getByTestId('activity-list')).toContainText('Salary');
 		await expect(page.getByTestId('activity-list')).not.toContainText('Food');
@@ -46,9 +66,23 @@ test.describe('017 activity filters', () => {
 		await page.getByTestId('activity-filter-search').fill('lunch');
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
 	});
+
+	test('dirty close warns and keeps applied filters', async ({ page }) => {
+		await seedIncomeAndExpense(page);
+		await goToNav(page, 'activity');
+
+		await page.getByTestId('activity-filters-open').click();
+		await page.getByTestId('activity-filter-type').selectOption('expense');
+		await page.getByTestId('activity-filters-close').click();
+		await expect(page.getByRole('heading', { name: 'Discard filter changes?' })).toBeVisible();
+		await page.getByTestId('activity-filters-discard-confirm').click();
+		await expect(filtersSurface(page)).toBeHidden();
+		await expect(page.getByTestId('activity-list')).toContainText('Salary');
+		await expect(page.getByTestId('activity-list')).toContainText('Food');
+	});
 });
 
-test.describe('020 activity filters mobile', () => {
+test.describe('020 / 045 activity filters mobile', () => {
 	test.use({ viewport: { width: 390, height: 844 } });
 
 	test.beforeEach(async ({ page }) => {
@@ -57,7 +91,7 @@ test.describe('020 activity filters mobile', () => {
 		await expect(page.getByTestId('app-shell')).toBeVisible();
 	});
 
-	test('opens sheet for type filter; search stays on chrome', async ({ page }) => {
+	test('opens bottom sheet; Apply commits; Clear then Apply resets', async ({ page }) => {
 		test.setTimeout(60_000);
 		await seedIncomeAndExpense(page);
 
@@ -72,7 +106,7 @@ test.describe('020 activity filters mobile', () => {
 		await page.getByTestId('activity-filters-open').click();
 		await expect(page.getByTestId('activity-filters-sheet')).toBeVisible();
 		await page.getByTestId('activity-filter-type').selectOption('expense');
-		await page.getByTestId('activity-filters-done').click();
+		await page.getByTestId('activity-filters-apply').click();
 		await expect(page.getByTestId('activity-filters-sheet')).toBeHidden();
 		await expect(page.getByTestId('activity-filters-badge')).toHaveText('1');
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
@@ -83,7 +117,7 @@ test.describe('020 activity filters mobile', () => {
 
 		await page.getByTestId('activity-filters-open').click();
 		await page.getByTestId('activity-filters-clear').click();
-		await page.getByTestId('activity-filters-done').click();
+		await page.getByTestId('activity-filters-apply').click();
 		await expect(page.getByTestId('activity-filters-badge')).toHaveCount(0);
 		await page.getByTestId('activity-filter-search').fill('');
 		await expect(page.getByTestId('activity-list')).toContainText('Salary');

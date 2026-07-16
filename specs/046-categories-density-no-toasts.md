@@ -1,7 +1,7 @@
 # Spec 046: Categories density and remove toasts
 
 - **ID:** 046
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 
 ## Intent

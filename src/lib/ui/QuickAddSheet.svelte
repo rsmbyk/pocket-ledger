@@ -29,6 +29,7 @@
 	} from '$lib/domain/transaction-rules';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import DateField from '$lib/ui/DateField.svelte';
+	import UncategorizedLabel from '$lib/ui/UncategorizedLabel.svelte';
 	import { cn } from '$lib/utils.js';
 
 	type Props = {
@@ -56,7 +57,6 @@
 	let seeded = $state(false);
 	let createBaseline = $state<TxFormBaseline | null>(null);
 	let editBaseline = $state<Omit<TxFormBaseline, 'type'> | null>(null);
-	let panelEmphasize = $state(false);
 	let voidConfirmOpen = $state(false);
 	let discardConfirmOpen = $state(false);
 
@@ -181,18 +181,6 @@
 		}
 	}
 
-	function emphasizePanel() {
-		panelEmphasize = true;
-		setTimeout(() => {
-			panelEmphasize = false;
-		}, 450);
-	}
-
-	function onInteractOutside(e: Event) {
-		e.preventDefault();
-		emphasizePanel();
-	}
-
 	async function onTypeChange(next: AddableTransactionType) {
 		if (isEdit || isVoidedView) return;
 		type = next;
@@ -283,17 +271,16 @@
 		}}
 	>
 		{#if isEdit || isVoidedView}
-			<div
+			<span
 				class={cn(
-					'flex h-9 w-full items-center justify-center rounded-md border text-sm font-semibold',
+					'inline-flex w-fit rounded-md px-2 py-0.5 text-xs font-medium',
 					type === 'expense'
-						? 'border-destructive/40 bg-destructive/15 text-destructive'
-						: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+						? 'bg-destructive/10 text-destructive'
+						: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
 				)}
-				aria-readonly="true"
 			>
 				{type === 'expense' ? 'Expense' : 'Income'}
-			</div>
+			</span>
 		{:else}
 			<div class="grid grid-cols-2 gap-2">
 				<Button
@@ -329,8 +316,11 @@
 
 		<div class="space-y-2">
 			<Label for="amount">Amount</Label>
-			<InputGroup.Root>
-				<InputGroup.Addon>
+			<InputGroup.Root
+				data-disabled={isVoidedView || saving ? true : undefined}
+				class={cn((isVoidedView || saving) && 'shadow-none')}
+			>
+				<InputGroup.Addon class="bg-muted/60 border-input border-r">
 					<InputGroup.Text>{currencyLabel}</InputGroup.Text>
 				</InputGroup.Addon>
 				<InputGroup.Input
@@ -344,6 +334,7 @@
 					onpaste={onAmountPaste}
 					oninput={(e) => onAmountInput(e.currentTarget.value)}
 					disabled={isVoidedView || saving}
+					class={cn((isVoidedView || saving) && 'shadow-none')}
 					aria-invalid={error ? true : undefined}
 				/>
 			</InputGroup.Root>
@@ -358,7 +349,11 @@
 					disabled={isVoidedView || saving}
 					data-testid="tx-category"
 				>
-					<span class="truncate">{selectedCategoryLabel}</span>
+					{#if categoryId}
+						<span class="truncate">{selectedCategoryLabel}</span>
+					{:else}
+						<UncategorizedLabel system />
+					{/if}
 					<ChevronDownIcon class="text-muted-foreground size-4 shrink-0" />
 				</DropdownMenu.Trigger>
 				<DropdownMenu.Content class="max-h-60 w-(--bits-dropdown-menu-anchor-width)">
@@ -368,7 +363,9 @@
 						</DropdownMenu.Item>
 					{/each}
 					<DropdownMenu.Separator />
-					<DropdownMenu.Item onclick={() => (categoryId = '')}>Uncategorized</DropdownMenu.Item>
+					<DropdownMenu.Item onclick={() => (categoryId = '')}>
+						<UncategorizedLabel system />
+					</DropdownMenu.Item>
 				</DropdownMenu.Content>
 			</DropdownMenu.Root>
 		</div>
@@ -421,13 +418,7 @@
 
 {#if desktop.current}
 	<Dialog.Root {open} onOpenChange={handleOpenChange}>
-		<Dialog.Content
-			class={cn('gap-0 p-0', panelEmphasize && 'panel-emphasize')}
-			data-testid="tx-dialog"
-			showCloseButton={false}
-			interactOutsideBehavior="ignore"
-			onInteractOutside={onInteractOutside}
-		>
+		<Dialog.Content class="gap-0 p-0" data-testid="tx-dialog" showCloseButton={false}>
 			<Dialog.Header class="border-border border-b px-4 py-3 text-left">
 				{@render txHeader(Dialog.Title, Dialog.Description)}
 			</Dialog.Header>
@@ -438,14 +429,9 @@
 	<Sheet.Root {open} onOpenChange={handleOpenChange}>
 		<Sheet.Content
 			side="bottom"
-			class={cn(
-				'mx-auto max-h-[90svh] w-full max-w-lg gap-0 rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]',
-				panelEmphasize && 'panel-emphasize'
-			)}
+			class="mx-auto max-h-[90svh] w-full max-w-lg gap-0 rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
 			data-testid="tx-sheet"
 			showCloseButton={false}
-			interactOutsideBehavior="ignore"
-			onInteractOutside={onInteractOutside}
 		>
 			<Sheet.Header class="border-border border-b px-4 py-3 text-left">
 				{@render txHeader(Sheet.Title, Sheet.Description)}

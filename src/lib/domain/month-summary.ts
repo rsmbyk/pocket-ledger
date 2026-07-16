@@ -69,26 +69,38 @@ function signedAmount(tx: Pick<LedgerTransaction, 'type' | 'amountMinor'>): numb
 	return 0;
 }
 
+export type CategoryMeta = {
+	name: string;
+	sortOrder: number;
+};
+
 function categoryTotals(
 	map: Map<string, MinorUnits>,
-	categoryNames: Record<string, string>
+	categoryMeta: Record<string, CategoryMeta>
 ): CategoryTotal[] {
 	return [...map.entries()]
 		.map(([key, amount]) => ({
 			categoryId: key === '' ? null : key,
-			label: key === '' ? 'Uncategorized' : (categoryNames[key] ?? 'Category'),
-			amountMinor: amount
+			label: key === '' ? 'Uncategorized' : (categoryMeta[key]?.name ?? 'Category'),
+			amountMinor: amount,
+			sortOrder: key === '' ? Number.POSITIVE_INFINITY : (categoryMeta[key]?.sortOrder ?? 0)
 		}))
-		.sort((a, b) => b.amountMinor - a.amountMinor || a.label.localeCompare(b.label));
+		.sort((a, b) => {
+			const byOrder = a.sortOrder - b.sortOrder;
+			if (byOrder !== 0) return byOrder;
+			return a.label.localeCompare(b.label);
+		})
+		.map(({ categoryId, label, amountMinor }) => ({ categoryId, label, amountMinor }));
 }
 
 /**
  * Build month totals, category breakdowns, and opening/ending balances.
+ * @param categoryMeta Map of category id → name + sortOrder (Categories menu order).
  */
 export function buildMonthSummary(
 	transactions: LedgerTransaction[],
 	monthKey: MonthKey,
-	categoryNames: Record<string, string>
+	categoryMeta: Record<string, CategoryMeta>
 ): MonthSummary {
 	if (!isValidMonthKey(monthKey)) {
 		throw new Error('Invalid month key');
@@ -129,8 +141,8 @@ export function buildMonthSummary(
 		incomeMinor,
 		expenseMinor,
 		netMinor,
-		incomeByCategory: categoryTotals(incomeMap, categoryNames),
-		expenseByCategory: categoryTotals(expenseMap, categoryNames),
+		incomeByCategory: categoryTotals(incomeMap, categoryMeta),
+		expenseByCategory: categoryTotals(expenseMap, categoryMeta),
 		openingMinor,
 		endingMinor: openingMinor + netMinor
 	};
