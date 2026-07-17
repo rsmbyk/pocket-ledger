@@ -1,30 +1,25 @@
 # Plan 057: ConfirmDialog danger chrome
 
-- **Status:** Accepted
+- **Status:** Accepted (amended)
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 
 ## Why
 
-DB-level destructive confirms look the same as mild “discard edits” confirms. Stronger chrome (header bar + alert icon) should reserve for irreversible data actions; discard stays plain.
+DB-level destructive confirms need stronger chrome (header + icon). Discard is still irreversible at a lower level — keep a destructive confirm **button**, but no danger header.
 
 ## Scope / edges
 
-**In:** When `destructive` is true, ConfirmDialog shows flush danger header + TriangleAlert + title; body/description + destructive confirm button below. Audit call sites so discard flows drop `destructive`.
+**In:** Split `destructive` (button) vs `dangerChrome` (header). Unify Button `destructive` variant to Void outline+soft-fill. Discard keeps `destructive` only.
 
-**Out:** Per-call-site custom icons; copy changes; in-use category warn chrome (056 stays non-destructive).
+**Out:** Per-call-site custom icons; copy changes; in-use warn (056).
 
 ## Approach
 
-- [`ConfirmDialog.svelte`](../../src/lib/ui/ConfirmDialog.svelte): if `destructive`, match Categories add-dialog header pattern (`p-0` content, `border-b bg-destructive/5` header with icon).
-- Drop `destructive` on: Activity discard filters; tx discard unsaved.
-- Keep `destructive` on: category/recurring/goal delete, import backup, void, disable lock, reset local data (if ConfirmDialog).
+- ConfirmDialog: `destructive` → `variant="destructive"` on confirm; `dangerChrome` → flush header + TriangleAlert
+- buttonVariants.destructive matches Void (`border-destructive/40 bg-destructive/10 …`)
+- Discard call sites: `destructive` without `dangerChrome`
 
 ## TDD
 
-- Vitest: none
-- Playwright: category delete confirm shows danger header testid; discard-filters confirm has no danger header
-
-## Out of scope
-
-AlertDialog redesign; toast system.
+- Playwright: discard has destructive button, no danger header; category delete has danger header

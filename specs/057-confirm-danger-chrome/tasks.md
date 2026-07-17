@@ -1,19 +1,17 @@
 # Tasks 057: ConfirmDialog danger chrome
 
-- **Status:** Accepted
+- **Status:** Accepted (amend in progress on PR #23)
 - **Plan:** [./plan.md](./plan.md)
 - **Spec:** [./spec.md](./spec.md)
 
 ## Checklist
 
-- [ ] Spec Accepted by Ronald
-- [ ] Branch `feat/051-057-ui-polish` (shared pack)
-- [ ] Red Playwright:
-  - [ ] Category delete confirm → `confirm-dialog-danger-header` visible
-  - [ ] Discard filters confirm → danger header absent; confirm not destructive variant
-  - [ ] Discard unsaved (optional) → danger header absent
-- [ ] Green UI: `ConfirmDialog.svelte` danger header layout
-- [ ] Call-site audit: drop `destructive` on discard filters + discard unsaved
-- [ ] `npm run check` + e2e
-- [ ] Traceability in `./spec.md`
-- [ ] Note on Spec 015 that danger chrome is delivered by 057
+- [x] Spec Accepted by Ronald
+- [ ] Amend ConfirmDialog: `destructive` vs `dangerChrome`
+- [ ] Restore `destructive` on discard filters + discard unsaved
+- [ ] Add `dangerChrome` on high-severity confirms
+- [ ] Align `buttonVariants.destructive` to Void; simplify Void / category delete classes
+- [ ] Playwright: discard → no danger header + destructive button classes
+- [ ] Playwright: category delete → danger header present
+- [ ] Note on Spec 015
+- [ ] Commit + update PR #23

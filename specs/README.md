@@ -73,3 +73,4 @@ Living behavior contracts for Pocket Ledger.
 | [055](055-confirm-above-tx-modal/spec.md) | Confirm above transaction modal | Accepted |
 | [056](056-category-in-use-warn/spec.md) | Category in-use warn dialog | Accepted |
 | [057](057-confirm-danger-chrome/spec.md) | ConfirmDialog danger chrome | Accepted |
+| [058](058-activity-filters-always-drawer/spec.md) | Always-on Activity filters drawer | Draft |
