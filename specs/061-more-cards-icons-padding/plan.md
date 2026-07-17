@@ -1,6 +1,6 @@
 # Plan 061: More cards padding + icons
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 

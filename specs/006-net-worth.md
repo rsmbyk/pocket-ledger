@@ -1,7 +1,7 @@
 # Spec 006: Net worth snapshots
 
 - **ID:** 006
-- **Status:** Accepted
+- **Status:** Superseded by [059](059-remove-net-worth/spec.md)
 
 ## Intent
 

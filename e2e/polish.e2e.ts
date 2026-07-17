@@ -26,8 +26,9 @@ test.describe('012 polish / 014 void / 030', () => {
 		await expect(page.getByTestId('balance-compact')).toHaveCount(0);
 		await page.getByTestId('activity-list').locator('[data-testid^="activity-row-"]').first().click();
 		await expect(page.getByRole('heading', { name: 'Edit transaction' })).toBeVisible();
-		await page.getByRole('textbox', { name: 'Amount' }).fill('10000');
-		await page.getByTestId('tx-save').click();
+		const edit = page.getByTestId('tx-dialog');
+		await edit.getByRole('textbox', { name: 'Amount' }).fill('10000');
+		await edit.getByTestId('tx-save').click();
 
 		await goToNav(page, 'home');
 		await expect(page.getByTestId('account-balance')).toContainText('10');

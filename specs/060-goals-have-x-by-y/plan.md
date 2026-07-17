@@ -1,6 +1,6 @@
 # Plan 060: Goals have X by Y
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Supersedes Spec 005 saved-amount progress model

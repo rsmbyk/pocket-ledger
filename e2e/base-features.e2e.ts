@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
+import { ensureCategory, goToNav } from './nav';
 
 
 test.describe('003–008 base features', () => {
@@ -25,33 +25,17 @@ test.describe('003–008 base features', () => {
 		expect(download.suggestedFilename()).toMatch(/pocket-ledger-.*\.json/);
 	});
 
-	test('creates a goal with progress', async ({ page }) => {
+	test('creates a goal with deadline', async ({ page }) => {
 		await goToNav(page, 'more');
-		const more = page.getByTestId('more-panel');
+		const more = page.getByTestId('more-section-goals');
 		await more.getByPlaceholder('Name').fill('Emergency');
 		await more.getByPlaceholder('Target amount').fill('1000000');
+		await more.locator('input[type="date"]').fill('2026-12-31');
 		await more.getByRole('button', { name: 'Add goal' }).click();
-		await expect(more.getByText('Emergency')).toBeVisible();
-		await expect(more.getByText(/0%/)).toBeVisible();
-
-		await more.locator('form').filter({ hasText: 'Set saved' }).locator('input').fill('250000');
-		await more.getByRole('button', { name: 'Set saved' }).click();
-		await expect(more.getByText(/25%/)).toBeVisible();
-	});
-
-	test('captures net worth snapshot', async ({ page }) => {
-		await ensureCategory(page, 'Salary', 'income');
-		await openAdd(page);
-		await page.getByRole('button', { name: 'Income', exact: true }).click();
-		await page.getByLabel(/amount/i).fill('85000');
-		await selectTxCategory(page, 'Salary');
-		await page.getByRole('button', { name: 'Save' }).click();
-
-
-		await goToNav(page, 'more');
-		await page.getByTestId('capture-net-worth').click();
-		await expect(page.getByTestId('net-worth-chart')).toBeVisible();
-		await expect(page.getByTestId('net-worth-list')).toContainText(/85/);
+		await expect(page.getByTestId('goals-list')).toContainText('Emergency');
+		await expect(page.getByTestId('more-section-backup')).toBeVisible();
+		await expect(page.getByTestId('more-section-privacy')).toBeVisible();
+		await expect(page.getByTestId('capture-net-worth')).toHaveCount(0);
 	});
 
 	test('enables passphrase lock and requires unlock', async ({ page }) => {

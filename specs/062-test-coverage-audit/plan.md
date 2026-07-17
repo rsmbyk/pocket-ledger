@@ -1,6 +1,6 @@
 # Plan 062: Codebase test coverage audit
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 

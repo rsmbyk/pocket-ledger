@@ -1,6 +1,6 @@
 # Plan 059: Remove Net worth
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 

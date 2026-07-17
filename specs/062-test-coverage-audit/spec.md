@@ -1,7 +1,7 @@
 # Spec 062: Codebase test coverage audit
 
 - **ID:** 062
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

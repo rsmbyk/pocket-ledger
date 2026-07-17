@@ -34,8 +34,15 @@
 	import type { MonthSummary } from '$lib/domain/month-summary';
 	import type { RecurringRule, RecurringFrequency } from '$lib/domain/recurring';
 	import type { Goal } from '$lib/domain/goals';
-	import type { NetWorthSnapshot } from '$lib/domain/net-worth';
-	import type { AddableTransactionType } from '$lib/domain/transaction-rules';
+	import {
+		daysRemaining,
+		goalProgressPercent,
+		sortGoalsByNearestDeadline
+	} from '$lib/domain/goals';
+	import {
+		todayOccurredOn,
+		type AddableTransactionType
+	} from '$lib/domain/transaction-rules';
 	import { formatMinor } from '$lib/domain/money';
 	import { isAppRoute, type AppRoute } from '$lib/shared/router';
 	import {
@@ -58,7 +65,6 @@
 		monthSummary: MonthSummary | null;
 		recurringRules: RecurringRule[];
 		goals: Goal[];
-		snapshots: NetWorthSnapshot[];
 		expenseCategories: CategoryRow[];
 		incomeCategories: CategoryRow[];
 		lockEnabled: boolean;
@@ -83,10 +89,8 @@
 		}) => void | Promise<void>;
 		onToggleRecurring: (id: string, active: boolean) => void | Promise<void>;
 		onDeleteRecurring: (id: string) => void | Promise<void>;
-		onCreateGoal: (name: string, targetRaw: string) => void | Promise<void>;
-		onUpdateGoalSaved: (id: string, savedRaw: string) => void | Promise<void>;
+		onCreateGoal: (name: string, targetRaw: string, targetOn: string) => void | Promise<void>;
 		onDeleteGoal: (id: string) => void | Promise<void>;
-		onCaptureNetWorth: () => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
@@ -109,7 +113,6 @@
 		monthSummary,
 		recurringRules,
 		goals,
-		snapshots,
 		expenseCategories,
 		incomeCategories,
 		lockEnabled,
@@ -126,9 +129,7 @@
 		onToggleRecurring,
 		onDeleteRecurring,
 		onCreateGoal,
-		onUpdateGoalSaved,
 		onDeleteGoal,
-		onCaptureNetWorth,
 		onEnableLock,
 		onDisableLock,
 		onCreateCategory,
@@ -241,6 +242,12 @@
 
 	function homeMoney(amount: number): string {
 		return hideHomeAmounts ? '••••' : formatMinor(amount, currencyLabel);
+	}
+
+	function daysLeftLabel(days: number): string {
+		if (days > 0) return `${days} days left`;
+		if (days === 0) return 'Due today';
+		return `Overdue by ${Math.abs(days)} days`;
 	}
 
 	function navigate(next: string) {
@@ -409,6 +416,25 @@
 						{homeMoney(balanceMinor)}
 					</p>
 				</section>
+
+				{#if goals.length > 0}
+					{@const sorted = sortGoalsByNearestDeadline(goals, balanceMinor)}
+					{@const top = sorted[0]}
+					{@const days = daysRemaining(top.targetOn, todayOccurredOn())}
+					{@const percent = goalProgressPercent(top.targetMinor, balanceMinor)}
+					<button
+						type="button"
+						class="border-border/80 bg-card hover:bg-muted/40 flex w-full flex-col gap-0.5 rounded-xl border px-4 py-3 text-left shadow-xs transition-colors"
+						data-testid="home-goal-strip"
+						onclick={() => navigate('more')}
+					>
+						<p class="text-muted-foreground text-sm">Nearest goal</p>
+						<p class="font-medium">{top.name}</p>
+						<p class="text-muted-foreground text-sm">
+							{percent}% · {daysLeftLabel(days)}
+						</p>
+					</button>
+				{/if}
 
 				{#if monthSummary}
 					<MonthSummaryCard
@@ -761,9 +787,9 @@
 		{:else}
 			<MorePanel
 				{currencyLabel}
+				{balanceMinor}
 				{recurringRules}
 				{goals}
-				{snapshots}
 				{expenseCategories}
 				{incomeCategories}
 				{lockEnabled}
@@ -774,9 +800,7 @@
 				{onToggleRecurring}
 				{onDeleteRecurring}
 				{onCreateGoal}
-				{onUpdateGoalSaved}
 				{onDeleteGoal}
-				{onCaptureNetWorth}
 				{onEnableLock}
 				{onDisableLock}
 			/>

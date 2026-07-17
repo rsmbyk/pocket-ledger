@@ -22,7 +22,7 @@ Living behavior contracts for Pocket Ledger.
 | [003](003-export-import.md) | Export & import JSON backup | Accepted |
 | [004](004-recurring.md) | Recurring transactions | Accepted |
 | [005](005-goals.md) | Goals | Accepted — progress model superseded by [060](060-goals-have-x-by-y/spec.md) |
-| [006](006-net-worth.md) | Net worth snapshots | Accepted — superseded by [059](059-remove-net-worth/spec.md) (Draft) |
+| [006](006-net-worth.md) | Net worth snapshots | Superseded by [059](059-remove-net-worth/spec.md) |
 | [007](007-passphrase-lock.md) | Optional passphrase lock | Accepted |
 | [008](008-more-tab.md) | More tab hub | Accepted |
 | [009](009-router.md) | Hash router for shell panels | Accepted |
@@ -74,7 +74,7 @@ Living behavior contracts for Pocket Ledger.
 | [056](056-category-in-use-warn/spec.md) | Category in-use warn dialog | Accepted |
 | [057](057-confirm-danger-chrome/spec.md) | ConfirmDialog danger chrome | Accepted |
 | [058](058-activity-filters-always-drawer/spec.md) | Always-on Activity filters drawer | Accepted |
-| [059](059-remove-net-worth/spec.md) | Remove Net worth | Draft |
-| [060](060-goals-have-x-by-y/spec.md) | Goals — have X by Y + Home strip | Draft |
-| [061](061-more-cards-icons-padding/spec.md) | More cards padding + icons | Draft |
-| [062](062-test-coverage-audit/spec.md) | Codebase test coverage audit | Draft |
+| [059](059-remove-net-worth/spec.md) | Remove Net worth | Accepted |
+| [060](060-goals-have-x-by-y/spec.md) | Goals — have X by Y + Home strip | Accepted |
+| [061](061-more-cards-icons-padding/spec.md) | More cards padding + icons | Accepted |
+| [062](062-test-coverage-audit/spec.md) | Codebase test coverage audit | Accepted |
