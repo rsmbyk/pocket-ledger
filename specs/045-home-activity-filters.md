@@ -13,14 +13,14 @@ Polish Home chrome and amount privacy; overhaul Activity filters into a draft/ap
 ### In scope — Home
 
 1. **Title icons** — Balance and Recent card titles include icons
-2. **Month summary** — Income / **Expenses** tile labels (Expense → Expenses); icons on Income and Expenses tiles
-3. **Amount visibility** — toolbar control show/hide money values on Home (Balance, Recent amounts, Month summary figures) for the current session only (not persisted)
+2. **Month summary** — Income / **Expenses** tile labels (Expense → Expenses); icons on Income and Expenses tiles — **superseded for icon placement by [048](048-home-amount-hide-icons/spec.md)** (icons belong on “… by category” titles)
+3. **Amount visibility** — toolbar control show/hide money values on Home (Balance, Recent amounts, Month summary figures) for the current session only (not persisted) — **superseded by [048](048-home-amount-hide-icons/spec.md)** (hide signs/colors + `localStorage` persistence)
 
 ### In scope — Activity layout
 
 4. **Search** — search section has an icon
-5. **Add placement** — Add sits **below** the search bar
-6. **Filters control** — all advanced filters collapse into a single Filters button (no always-visible desktop filter grid)
+5. **Add placement** — Add sits **below** the search bar — **toolbar adjacency refined by [049](049-activity-toolbar-drawer/spec.md)** (Filters beside search; Add right-aligned)
+6. **Filters control** — all advanced filters collapse into a single Filters button (no always-visible desktop filter grid) — **layout refined by [049](049-activity-toolbar-drawer/spec.md)**
 
 ### In scope — Filter contents
 
@@ -33,7 +33,7 @@ Polish Home chrome and amount privacy; overhaul Activity filters into a draft/ap
 10. **Responsive surfaces**
     - `< 768px`: bottom sheet
     - `768–1279px`: right sheet (overlay)
-    - `≥ 1280px`: right collapsible drawer (own expand/collapse state, independent of nav drawer)
+    - `≥ 1280px`: right collapsible drawer (own expand/collapse state, independent of nav drawer) — **true in-layout drawer delivery: [049](049-activity-toolbar-drawer/spec.md)**
 11. **Draft vs applied** — edits in the surface are draft; list uses applied filters only after **Apply**
 12. **Apply** — footer button label **Apply** (was Done); disabled when draft equals applied
 13. **Close** — footer **Close** replaces Clear in the footer; closing without Apply discards draft visually on next open (re-sync from applied) unless dirty-close warn applies
@@ -45,7 +45,8 @@ Polish Home chrome and amount privacy; overhaul Activity filters into a draft/ap
 
 ### Out of scope
 
-- Persisting filters or amount-hide across sessions
+- Persisting Activity filters across sessions
+- Persisting amount-hide — **moved to [048](048-home-amount-hide-icons/spec.md)**
 - Spec 043 Uncategorized icon details (shared component may be used)
 - Spec 046 Categories toast removal
 

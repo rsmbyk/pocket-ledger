@@ -12,9 +12,9 @@ Tighten Categories card spacing and button sizing, outline save/delete actions, 
 
 ### In scope
 
-1. **Card padding** — reduce Categories card padding; top and bottom padding match (no uneven vertical padding)
+1. **Card padding** — reduce Categories card padding; top and bottom padding match (no uneven vertical padding) — **corrected by [050](050-categories-header-delete/spec.md)** (density targets the **header** only; restore card body feel)
 2. **Add size** — header Add icon button matches save/delete control size (`icon-sm` or equivalent)
-3. **Save / Delete** — both use **outlined** variants (save no longer fills primary when enabled; delete outlined destructive or outline + destructive text per design tokens)
+3. **Save / Delete** — both use **outlined** variants (save no longer fills primary when enabled; delete outlined destructive or outline + destructive text per design tokens) — **delete chrome tightened by [050](050-categories-header-delete/spec.md)** (outlined danger, Void-aligned)
 4. **Remove toasts** — remove `svelte-sonner` Toaster from `App.svelte` and all `toast.*` calls in Categories and More
 5. **More feedback** — success actions are silent; failures show inline `role="alert"` (no toast)
 

@@ -5,10 +5,10 @@ Living behavior contracts for Pocket Ledger.
 ## Rules
 
 1. Spec **before** implementation for user-visible behavior or money rules.
-2. Use the [template](_template.md).
-3. Number specs: `000-scaffold.md`, `001-…`.
+2. Use the [template](_template.md) (or `spec.md` inside a slice folder).
+3. Number specs: `000-scaffold.md`, `001-…`. From **047** onward use a folder: `NNN-slug/{plan,spec,tasks}.md`.
 4. Keep acceptance scenarios in Given / When / Then.
-5. Link Vitest and Playwright files under **Traceability**.
+5. Link Vitest and Playwright files under **Traceability**; tasks list those paths for TDD.
 6. Update the spec in the same PR as behavior changes.
 7. **One concern per spec** — do not mix **unrelated** features in one numbered spec. A single UI surface redesign (e.g. one modal or one menu) may be one spec with multiple acceptance scenarios.
 
@@ -62,3 +62,7 @@ Living behavior contracts for Pocket Ledger.
 | [044](044-tx-sheet-chrome-dismiss.md) | Transaction sheet chrome and outside dismiss | Accepted |
 | [045](045-home-activity-filters.md) | Home polish and Activity filters overhaul | Accepted |
 | [046](046-categories-density-no-toasts.md) | Categories density and remove toasts | Accepted |
+| [047](047-tx-sheet-polish/spec.md) | Transaction sheet polish | Draft |
+| [048](048-home-amount-hide-icons/spec.md) | Home amount hide + by-category icons | Draft |
+| [049](049-activity-toolbar-drawer/spec.md) | Activity toolbar, drawer, sort icons, Clear | Draft |
+| [050](050-categories-header-delete/spec.md) | Categories header density + delete outline | Draft |
