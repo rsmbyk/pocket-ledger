@@ -21,9 +21,7 @@ test.describe('011 field encryption', () => {
 		await expect(page.getByTestId('lock-status')).toContainText(/on/i);
 
 		await goToNav(page, 'activity');
-		await expect(page.getByTestId('activity-list').getByRole('columnheader', { name: 'Note' })).toHaveCount(
-			0
-		);
+		await expect(page.getByTestId('activity-list').getByRole('columnheader')).toHaveCount(0);
 		await page.getByTestId('activity-list').locator('[data-testid^="activity-row-"]').first().click();
 		await expect(page.getByRole('dialog').getByLabel(/note/i)).toHaveValue('secret lunch');
 	});

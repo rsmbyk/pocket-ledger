@@ -5,7 +5,7 @@
 	import TagsIcon from '@lucide/svelte/icons/tags';
 	import MoreHorizontalIcon from '@lucide/svelte/icons/ellipsis';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import ArrowUpDownIcon from '@lucide/svelte/icons/arrow-up-down';
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import InboxIcon from '@lucide/svelte/icons/inbox';
 	import SearchIcon from '@lucide/svelte/icons/search';
@@ -14,6 +14,7 @@
 	import WalletIcon from '@lucide/svelte/icons/wallet';
 	import HistoryIcon from '@lucide/svelte/icons/history';
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
+	import CheckIcon from '@lucide/svelte/icons/check';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
@@ -23,12 +24,12 @@
 	import MorePanel from '$lib/ui/MorePanel.svelte';
 	import CategoriesPanel from '$lib/ui/CategoriesPanel.svelte';
 	import ActivityTable from '$lib/ui/ActivityTable.svelte';
+	import TransactionListRow from '$lib/ui/TransactionListRow.svelte';
 	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import DateField from '$lib/ui/DateField.svelte';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
-	import UncategorizedLabel from '$lib/ui/UncategorizedLabel.svelte';
 	import type { Account } from '$lib/domain/account';
-	import { isVoided, type LedgerTransaction } from '$lib/domain/transaction';
+	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
 	import type { ThemePreference } from '$lib/shared/theme';
 	import type { MonthSummary } from '$lib/domain/month-summary';
@@ -47,12 +48,14 @@
 	import { isAppRoute, type AppRoute } from '$lib/shared/router';
 	import {
 		DEFAULT_ACTIVITY_FILTERS,
+		DEFAULT_ACTIVITY_SORT,
 		filterTransactions,
 		isDefaultActivityFilters,
 		UNCATEGORIZED_FILTER,
-		type ActivityFilterCriteria
+		type ActivityFilterCriteria,
+		type ActivitySortMode,
+		type CategorySortMeta
 	} from '$lib/domain/activity-filters';
-	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
 	import { readHideAmounts, writeHideAmounts } from '$lib/shared/hide-amounts';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
@@ -156,10 +159,20 @@
 	let applied = $state<ActivityFilterCriteria>({ ...DEFAULT_ACTIVITY_FILTERS });
 	let draft = $state<ActivityFilterCriteria>({ ...DEFAULT_ACTIVITY_FILTERS });
 	let filtersOpen = $state(false);
+	let sortOpen = $state(false);
 	let discardWarnOpen = $state(false);
+	let activitySort = $state<ActivitySortMode>(DEFAULT_ACTIVITY_SORT);
 
 	const filterCategories = $derived(
 		[...expenseCategories, ...incomeCategories].sort((a, b) => a.name.localeCompare(b.name))
+	);
+
+	const categorySortMeta = $derived<CategorySortMeta[]>(
+		[...incomeCategories, ...expenseCategories].map((c) => ({
+			id: c.id,
+			kind: c.kind,
+			sortOrder: c.sortOrder
+		}))
 	);
 
 	const filtersSheetSide = $derived<'bottom' | 'right'>(
@@ -170,6 +183,8 @@
 			? 'mx-auto max-h-[90svh] w-full max-w-lg gap-0 rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
 			: 'w-full gap-0 p-0 sm:max-w-sm'
 	);
+	const sortSheetSide = $derived(filtersSheetSide);
+	const sortSheetClass = $derived(filtersSheetClass);
 	const activityStageWide = $derived(route === 'activity' && xlWide.current);
 
 	const advancedFilterCount = $derived(countAdvancedFilters(applied));
@@ -265,6 +280,22 @@
 		draft = cloneFilters(applied);
 		filtersOpen = true;
 	}
+
+	function openSort() {
+		sortOpen = true;
+	}
+
+	function selectActivitySort(mode: ActivitySortMode) {
+		activitySort = mode;
+		sortOpen = false;
+	}
+
+	const sortOptions: { mode: ActivitySortMode; label: string; testid: string }[] = [
+		{ mode: 'createdAt-desc', label: 'Default', testid: 'activity-sort-createdAt-desc' },
+		{ mode: 'occurredOn-desc', label: 'Date (descending)', testid: 'activity-sort-occurredOn-desc' },
+		{ mode: 'occurredOn-asc', label: 'Date (ascending)', testid: 'activity-sort-occurredOn-asc' },
+		{ mode: 'category', label: 'Categories', testid: 'activity-sort-category' }
+	];
 
 	function applyFilters() {
 		applied = { ...cloneFilters(draft), search: applied.search ?? '' };
@@ -480,56 +511,16 @@
 						{:else}
 							<ul class="divide-border divide-y" data-testid="recent-list">
 								{#each recent as tx (tx.id)}
-									{@const voided = isVoided(tx)}
 									<li>
-										<button
-											type="button"
-											class={[
-												'hover:bg-muted/60 flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left text-sm transition-colors',
-												voided && 'text-muted-foreground opacity-70'
-											]}
-											data-testid={`recent-row-${tx.id}`}
-											onclick={() => onOpenEdit(tx)}
-										>
-											<div class="min-w-0 flex-1">
-												<p class="font-medium">
-													{#if tx.categoryId == null}
-														<UncategorizedLabel />
-													{:else}
-														{categoryName(tx.categoryId)}
-													{/if}
-												</p>
-												<p class="truncate text-xs">
-													{#if tx.note?.trim()}
-														{tx.note.trim()} · {formatOccurredOnDisplay(tx.occurredOn)}
-													{:else}
-														{formatOccurredOnDisplay(tx.occurredOn)}
-													{/if}
-												</p>
-											</div>
-											<p
-												class={[
-													'shrink-0 font-medium tabular-nums',
-													hideHomeAmounts
-														? 'text-muted-foreground'
-														: [
-																voided && 'line-through',
-																!voided &&
-																	(tx.type === 'expense'
-																		? 'text-destructive'
-																		: 'text-emerald-600 dark:text-emerald-400')
-															]
-												]}
-											>
-												{#if hideHomeAmounts}
-													••••
-												{:else}
-													{tx.type === 'expense' ? '−' : '+'}
-													{formatMinor(tx.amountMinor, currencyLabel)}
-												{/if}
-											</p>
-											<ChevronRightIcon class="text-muted-foreground size-4 shrink-0" />
-										</button>
+										<TransactionListRow
+											{tx}
+											{currencyLabel}
+											categoryLabel={categoryName(tx.categoryId)}
+											uncategorized={tx.categoryId == null}
+											hideAmount={hideHomeAmounts}
+											testid={`recent-row-${tx.id}`}
+											onOpen={() => onOpenEdit(tx)}
+										/>
 									</li>
 								{/each}
 							</ul>
@@ -695,27 +686,40 @@
 								oninput={(e) => updateAppliedSearch(e.currentTarget.value)}
 							/>
 						</div>
-						{#if !xlWide.current}
+						<div class="flex shrink-0 items-center gap-2">
 							<Button
 								type="button"
 								variant="outline"
-								class="relative shrink-0"
-								aria-label="Filters"
-								data-testid="activity-filters-open"
-								onclick={openFilters}
+								size="icon"
+								class="shrink-0"
+								aria-label="Sort"
+								data-testid="activity-sort-open"
+								onclick={openSort}
 							>
-								<SlidersHorizontalIcon class="size-4" />
-								Filters
-								{#if hasAdvancedFilters}
-									<span
-										class="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-medium tabular-nums"
-										data-testid="activity-filters-badge"
-									>
-										{advancedFilterCount}
-									</span>
-								{/if}
+								<ArrowUpDownIcon class="size-4" />
 							</Button>
-						{/if}
+							{#if !xlWide.current}
+								<Button
+									type="button"
+									variant="outline"
+									size="icon"
+									class="relative shrink-0"
+									aria-label="Filters"
+									data-testid="activity-filters-open"
+									onclick={openFilters}
+								>
+									<SlidersHorizontalIcon class="size-4" />
+									{#if hasAdvancedFilters}
+										<span
+											class="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-medium tabular-nums"
+											data-testid="activity-filters-badge"
+										>
+											{advancedFilterCount}
+										</span>
+									{/if}
+								</Button>
+							{/if}
+						</div>
 					</div>
 
 					<div class="flex justify-end">
@@ -730,6 +734,54 @@
 							Add
 						</Button>
 					</div>
+
+					<Sheet.Root open={sortOpen} onOpenChange={(open) => (sortOpen = open)}>
+						<Sheet.Content
+							side={sortSheetSide}
+							class={sortSheetClass}
+							data-testid="activity-sort-sheet"
+							showCloseButton={false}
+						>
+							<Sheet.Title class="sr-only">Sort</Sheet.Title>
+							<div class="border-border flex items-center justify-between border-b px-4 py-3">
+								<p class="inline-flex items-center gap-2 text-base font-semibold">
+									<ArrowUpDownIcon class="size-4" aria-hidden="true" />
+									Sort
+								</p>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									data-testid="activity-sort-close"
+									onclick={() => (sortOpen = false)}
+								>
+									Close
+								</Button>
+							</div>
+							<ul class="grid gap-1 px-2 py-3" role="listbox" aria-label="Sort options">
+								{#each sortOptions as option (option.mode)}
+									<li>
+										<button
+											type="button"
+											role="option"
+											aria-selected={activitySort === option.mode}
+											class={[
+												'hover:bg-muted/60 flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left text-sm',
+												activitySort === option.mode && 'bg-muted'
+											]}
+											data-testid={option.testid}
+											onclick={() => selectActivitySort(option.mode)}
+										>
+											<span>{option.label}</span>
+											{#if activitySort === option.mode}
+												<CheckIcon class="size-4 shrink-0" aria-hidden="true" />
+											{/if}
+										</button>
+									</li>
+								{/each}
+							</ul>
+						</Sheet.Content>
+					</Sheet.Root>
 
 					{#if !xlWide.current}
 						<Sheet.Root open={filtersOpen} onOpenChange={onFiltersOpenChange}>
@@ -762,6 +814,8 @@
 						totalCount={transactions.length}
 						{currencyLabel}
 						{categoryName}
+						sortMode={activitySort}
+						categoryMeta={categorySortMeta}
 						onEdit={onOpenEdit}
 					/>
 				</div>

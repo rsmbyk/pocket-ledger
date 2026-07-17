@@ -4,7 +4,7 @@ import {
 	amountDigitsMatch,
 	filterTransactions,
 	isDefaultActivityFilters,
-	nextActivityDateSort,
+	sortTransactions,
 	sortTransactionsByDate,
 	UNCATEGORIZED_FILTER
 } from './activity-filters';
@@ -82,12 +82,9 @@ describe('activity-filters', () => {
 		]);
 	});
 
-	it('detects default filters and cycles date sort', () => {
+	it('detects default filters', () => {
 		expect(isDefaultActivityFilters({})).toBe(true);
 		expect(isDefaultActivityFilters({ type: 'expense' })).toBe(false);
-		expect(nextActivityDateSort('createdAt-desc')).toBe('occurredOn-desc');
-		expect(nextActivityDateSort('occurredOn-desc')).toBe('occurredOn-asc');
-		expect(nextActivityDateSort('occurredOn-asc')).toBe('createdAt-desc');
 	});
 
 	it('sorts by createdAt then occurredOn', () => {
@@ -112,5 +109,28 @@ describe('activity-filters', () => {
 		expect(sortTransactionsByDate(mixed, 'createdAt-desc')[0]?.id).toBe('1');
 		expect(sortTransactionsByDate(mixed, 'occurredOn-desc')[0]?.id).toBe('2');
 		expect(sortTransactionsByDate(mixed, 'occurredOn-asc')[0]?.id).toBe('1');
+	});
+
+	it('sorts by category set order with incomes first', () => {
+		const cats = [
+			{ id: 'sal', kind: 'income' as const, sortOrder: 1 },
+			{ id: 'bonus', kind: 'income' as const, sortOrder: 0 },
+			{ id: 'food', kind: 'expense' as const, sortOrder: 0 },
+			{ id: 'rent', kind: 'expense' as const, sortOrder: 1 }
+		];
+		const mixed = [
+			tx({ id: 'u', type: 'expense', amountMinor: 1, occurredOn: '2026-07-01', categoryId: null }),
+			tx({ id: 'f', type: 'expense', amountMinor: 1, occurredOn: '2026-07-01', categoryId: 'food' }),
+			tx({ id: 'r', type: 'expense', amountMinor: 1, occurredOn: '2026-07-01', categoryId: 'rent' }),
+			tx({ id: 's', type: 'income', amountMinor: 1, occurredOn: '2026-07-01', categoryId: 'sal' }),
+			tx({ id: 'b', type: 'income', amountMinor: 1, occurredOn: '2026-07-01', categoryId: 'bonus' })
+		];
+		expect(sortTransactions(mixed, 'category', cats).map((t) => t.id)).toEqual([
+			'b',
+			's',
+			'f',
+			'r',
+			'u'
+		]);
 	});
 });

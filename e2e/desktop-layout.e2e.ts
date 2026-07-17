@@ -99,7 +99,7 @@ test.describe('013 desktop layout', () => {
 		await expect(page.getByTestId('tx-dialog')).toBeVisible();
 	});
 
-	test('activity uses a table', async ({ page }) => {
+	test('activity uses a stacked list', async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 800 });
 		await page.goto('/');
 		await ensureCategory(page, 'Food', 'expense');
@@ -111,7 +111,9 @@ test.describe('013 desktop layout', () => {
 		await dialog.getByTestId('tx-save').click();
 
 		await goToNav(page, 'activity');
-		await expect(page.getByTestId('activity-list').getByRole('columnheader', { name: 'Date' })).toBeVisible();
+		await expect(page.getByTestId('activity-list').getByRole('columnheader')).toHaveCount(0);
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
+		await expect(page.getByTestId('activity-sort-open')).toBeVisible();
+		await expect(page.getByTestId('activity-filters-open')).toHaveCount(0);
 	});
 });

@@ -78,3 +78,5 @@ Living behavior contracts for Pocket Ledger.
 | [060](060-goals-have-x-by-y/spec.md) | Goals — have X by Y + Home strip | Accepted |
 | [061](061-more-cards-icons-padding/spec.md) | More cards padding + icons | Accepted |
 | [062](062-test-coverage-audit/spec.md) | Codebase test coverage audit | Accepted |
+| [063](063-activity-list-rows/spec.md) | Activity list rows like Recent | Accepted |
+| [064](064-activity-sort-sheet/spec.md) | Activity Sort sheet + icon Filters | Accepted |
