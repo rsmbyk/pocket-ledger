@@ -80,3 +80,4 @@ Living behavior contracts for Pocket Ledger.
 | [062](062-test-coverage-audit/spec.md) | Codebase test coverage audit | Accepted |
 | [063](063-activity-list-rows/spec.md) | Activity list rows like Recent | Accepted |
 | [064](064-activity-sort-sheet/spec.md) | Activity Sort sheet + icon Filters | Accepted |
+| [065](065-activity-active-toolbar-icons/spec.md) | Active Sort/Filters icon chrome | Accepted |

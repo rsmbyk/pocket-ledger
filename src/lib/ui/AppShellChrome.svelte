@@ -189,6 +189,9 @@
 
 	const advancedFilterCount = $derived(countAdvancedFilters(applied));
 	const hasAdvancedFilters = $derived(advancedFilterCount > 0);
+	const sortActive = $derived(activitySort !== DEFAULT_ACTIVITY_SORT);
+	const toolbarActiveChrome =
+		'border-primary text-primary bg-primary/10 hover:bg-primary/15 hover:text-primary dark:bg-primary/15 dark:hover:bg-primary/20 shadow-xs';
 	const draftDirty = $derived(!activityFiltersEqual(draft, applied, { ignoreSearch: true }));
 	const canApplyDraft = $derived(draftDirty);
 	const canClearDraft = $derived(!isDefaultActivityFilters({ ...draft, search: '' }));
@@ -691,9 +694,11 @@
 								type="button"
 								variant="outline"
 								size="icon"
-								class="shrink-0"
+								class={['shrink-0', sortActive && toolbarActiveChrome]}
 								aria-label="Sort"
+								aria-pressed={sortActive}
 								data-testid="activity-sort-open"
+								data-active={sortActive ? 'true' : undefined}
 								onclick={openSort}
 							>
 								<ArrowUpDownIcon class="size-4" />
@@ -703,9 +708,11 @@
 									type="button"
 									variant="outline"
 									size="icon"
-									class="relative shrink-0"
+									class={['relative shrink-0', hasAdvancedFilters && toolbarActiveChrome]}
 									aria-label="Filters"
+									aria-pressed={hasAdvancedFilters}
 									data-testid="activity-filters-open"
+									data-active={hasAdvancedFilters ? 'true' : undefined}
 									onclick={openFilters}
 								>
 									<SlidersHorizontalIcon class="size-4" />

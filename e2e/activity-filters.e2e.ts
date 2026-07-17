@@ -110,6 +110,32 @@ test.describe('017 / 045 activity filters', () => {
 		await expect(page.getByTestId('activity-sort-sheet')).toBeHidden();
 	});
 
+	test('065 primary-outline when sort or filters active', async ({ page }) => {
+		await seedIncomeAndExpense(page);
+		await goToNav(page, 'activity');
+
+		const sortBtn = page.getByTestId('activity-sort-open');
+		const filtersBtn = page.getByTestId('activity-filters-open');
+		await expect(sortBtn).not.toHaveAttribute('data-active', 'true');
+		await expect(filtersBtn).not.toHaveAttribute('data-active', 'true');
+
+		await sortBtn.click();
+		await page.getByTestId('activity-sort-occurredOn-desc').click();
+		await expect(sortBtn).toHaveAttribute('data-active', 'true');
+		await expect(sortBtn).toHaveAttribute('aria-pressed', 'true');
+		await expect(sortBtn).toHaveClass(/border-primary/);
+
+		await openAndApplyType(page, 'expense');
+		await expect(filtersBtn).toHaveAttribute('data-active', 'true');
+		await expect(filtersBtn).toHaveAttribute('aria-pressed', 'true');
+		await expect(filtersBtn).toHaveClass(/border-primary/);
+		await expect(page.getByTestId('activity-filters-badge')).toBeVisible();
+
+		await openAndApplyType(page, 'all');
+		await expect(filtersBtn).not.toHaveAttribute('data-active', 'true');
+		await expect(sortBtn).toHaveAttribute('data-active', 'true');
+	});
+
 	test('064 Categories sort puts income before expense; note is own line', async ({ page }) => {
 		await seedIncomeAndExpense(page);
 		await goToNav(page, 'activity');
