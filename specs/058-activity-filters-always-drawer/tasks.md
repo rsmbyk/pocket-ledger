@@ -1,6 +1,6 @@
 # Tasks 058: Always-on Activity filters drawer
 
-- **Status:** Draft (blocked on Accept)
+- **Status:** Accepted
 - **Plan:** [./plan.md](./plan.md)
 - **Spec:** [./spec.md](./spec.md)
 

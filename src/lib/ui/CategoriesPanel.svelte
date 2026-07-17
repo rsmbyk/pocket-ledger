@@ -289,8 +289,7 @@
 												</Button>
 												<Button
 													size="icon-sm"
-													variant="outline"
-													class="border-destructive/40 text-destructive hover:bg-destructive/10"
+													variant="destructive"
 													aria-label={`Delete ${cat.name}`}
 													data-testid="category-delete"
 													disabled={busy}
@@ -377,6 +376,7 @@
 		: 'This cannot be undone.'}
 	confirmLabel="Delete"
 	destructive
+	dangerChrome
 	confirmTestId="category-delete-confirm"
 	onOpenChange={(open) => {
 		if (!open) deleteTarget = null;

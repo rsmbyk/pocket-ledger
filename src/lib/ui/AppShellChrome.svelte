@@ -261,7 +261,7 @@
 
 	function applyFilters() {
 		applied = { ...cloneFilters(draft), search: applied.search ?? '' };
-		filtersOpen = false;
+		if (!xlWide.current) filtersOpen = false;
 	}
 
 	function requestCloseFilters() {
@@ -298,6 +298,11 @@
 	function updateAppliedSearch(next: string) {
 		applied = { ...applied, search: next };
 	}
+
+	$effect(() => {
+		if (route !== 'activity' || !xlWide.current) return;
+		draft = cloneFilters(applied);
+	});
 </script>
 
 <Sidebar.Root collapsible="offcanvas">
@@ -383,7 +388,7 @@
 	<div
 		class={[
 			'mx-auto flex w-full flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8',
-			activityStageWide ? 'max-w-5xl' : 'max-w-3xl'
+			activityStageWide ? 'max-w-none' : 'max-w-3xl'
 		]}
 		data-testid="app-stage"
 	>
@@ -509,7 +514,7 @@
 		{:else if route === 'activity'}
 			<div
 				data-testid="activity-panel"
-				class={xlWide.current && filtersOpen ? 'flex gap-4' : 'space-y-3'}
+				class={xlWide.current ? 'flex gap-4' : 'space-y-3'}
 			>
 				{#snippet filterFormFields()}
 					<div class="space-y-1">
@@ -595,13 +600,19 @@
 				{/snippet}
 
 				{#snippet filterPanel()}
+					{@const persistent = xlWide.current}
 					<div
-						class="border-border flex flex-row items-center justify-between gap-2 border-b px-4 py-3 text-left"
+						class={[
+							'border-border flex flex-row items-center gap-2 border-b px-4 py-3 text-left',
+							persistent ? 'justify-end' : 'justify-between'
+						]}
 					>
-						<p class="inline-flex items-center gap-2 text-base font-semibold">
-							<SlidersHorizontalIcon class="size-4" aria-hidden="true" />
-							Filters
-						</p>
+						{#if !persistent}
+							<p class="inline-flex items-center gap-2 text-base font-semibold">
+								<SlidersHorizontalIcon class="size-4" aria-hidden="true" />
+								Filters
+							</p>
+						{/if}
 						<Button
 							type="button"
 							variant="outline"
@@ -614,22 +625,24 @@
 							Clear
 						</Button>
 					</div>
-					<div class="grid flex-1 gap-3 overflow-y-auto px-4 py-4">
+					<div class="grid gap-3 overflow-y-auto px-4 py-4">
 						{@render filterFormFields()}
 					</div>
 					<div class="border-border flex flex-row gap-2 border-t px-4 py-3">
+						{#if !persistent}
+							<Button
+								type="button"
+								variant="outline"
+								class="flex-1"
+								data-testid="activity-filters-close"
+								onclick={requestCloseFilters}
+							>
+								Close
+							</Button>
+						{/if}
 						<Button
 							type="button"
-							variant="outline"
-							class="flex-1"
-							data-testid="activity-filters-close"
-							onclick={requestCloseFilters}
-						>
-							Close
-						</Button>
-						<Button
-							type="button"
-							class="flex-1"
+							class={persistent ? 'w-full' : 'flex-1'}
 							disabled={!canApplyDraft}
 							data-testid="activity-filters-apply"
 							onclick={applyFilters}
@@ -656,26 +669,27 @@
 								oninput={(e) => updateAppliedSearch(e.currentTarget.value)}
 							/>
 						</div>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							class="relative shrink-0"
-							aria-label="Filters"
-							data-testid="activity-filters-open"
-							onclick={openFilters}
-						>
-							<SlidersHorizontalIcon class="size-4" />
-							Filters
-							{#if hasAdvancedFilters}
-								<span
-									class="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-medium tabular-nums"
-									data-testid="activity-filters-badge"
-								>
-									{advancedFilterCount}
-								</span>
-							{/if}
-						</Button>
+						{#if !xlWide.current}
+							<Button
+								type="button"
+								variant="outline"
+								class="relative shrink-0"
+								aria-label="Filters"
+								data-testid="activity-filters-open"
+								onclick={openFilters}
+							>
+								<SlidersHorizontalIcon class="size-4" />
+								Filters
+								{#if hasAdvancedFilters}
+									<span
+										class="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-medium tabular-nums"
+										data-testid="activity-filters-badge"
+									>
+										{advancedFilterCount}
+									</span>
+								{/if}
+							</Button>
+						{/if}
 					</div>
 
 					<div class="flex justify-end">
@@ -711,6 +725,7 @@
 						description="Your filter changes have not been applied and will be lost."
 						confirmLabel="Discard"
 						cancelLabel="Keep editing"
+						destructive
 						confirmTestId="activity-filters-discard-confirm"
 						onOpenChange={(open) => (discardWarnOpen = open)}
 						onConfirm={confirmDiscardFilters}
@@ -725,7 +740,7 @@
 					/>
 				</div>
 
-				{#if xlWide.current && filtersOpen}
+				{#if xlWide.current}
 					<aside
 						data-testid="activity-filters-drawer"
 						class="border-border bg-card flex w-72 shrink-0 flex-col border-l"

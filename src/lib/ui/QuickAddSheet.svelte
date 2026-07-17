@@ -259,9 +259,9 @@
 		{#if isEdit && !isVoidedView}
 			<Button
 				type="button"
-				variant="outline"
+				variant="destructive"
 				size="sm"
-				class="border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 shrink-0 gap-1.5"
+				class="shrink-0 gap-1.5"
 				disabled={saving}
 				data-testid="tx-void"
 				onclick={() => (voidConfirmOpen = true)}
@@ -458,6 +458,7 @@
 	description="This action is permanent and cannot be undone. The transaction will remain visible but will no longer affect your balance."
 	confirmLabel="Void"
 	destructive
+	dangerChrome
 	confirmTestId="tx-void-confirm"
 	onOpenChange={(next) => (voidConfirmOpen = next)}
 	onConfirm={confirmVoid}
@@ -468,6 +469,7 @@
 	title="Discard unsaved changes?"
 	description="Your edits will be lost if you leave without saving."
 	confirmLabel="Discard"
+	destructive
 	confirmTestId="tx-discard-confirm"
 	onOpenChange={(next) => (discardConfirmOpen = next)}
 	onConfirm={confirmDiscard}

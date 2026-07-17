@@ -491,6 +491,7 @@
 	description="Delete this recurring rule permanently? This cannot be undone."
 	confirmLabel="Delete"
 	destructive
+	dangerChrome
 	confirmTestId="recurring-delete-confirm"
 	onOpenChange={(open) => {
 		if (!open) pendingDeleteRecurringId = null;
@@ -511,6 +512,7 @@
 		: 'This cannot be undone.'}
 	confirmLabel="Delete"
 	destructive
+	dangerChrome
 	confirmTestId="goal-delete-confirm"
 	onOpenChange={(open) => {
 		if (!open) pendingDeleteGoal = null;
@@ -529,6 +531,7 @@
 	description="Import replaces all local data with this backup. This cannot be undone."
 	confirmLabel="Import"
 	destructive
+	dangerChrome
 	confirmTestId="import-backup-confirm"
 	onOpenChange={(open) => {
 		importConfirmOpen = open;
@@ -548,6 +551,7 @@
 	description="Passphrase protection will be removed from this browser. Continue?"
 	confirmLabel="Disable"
 	destructive
+	dangerChrome
 	confirmTestId="disable-lock-confirm"
 	onOpenChange={(open) => (disableLockConfirmOpen = open)}
 	onConfirm={async () => {

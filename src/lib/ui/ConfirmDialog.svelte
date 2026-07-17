@@ -10,8 +10,10 @@
 		description: string;
 		confirmLabel?: string;
 		cancelLabel?: string;
-		/** Destructive styling + danger header chrome. */
+		/** Destructive styling on the confirm action. */
 		destructive?: boolean;
+		/** High-severity danger header + icon. */
+		dangerChrome?: boolean;
 		/** Hide Cancel; only the confirm/dismiss action is shown. */
 		hideCancel?: boolean;
 		confirmTestId?: string;
@@ -27,6 +29,7 @@
 		confirmLabel = 'Continue',
 		cancelLabel = 'Cancel',
 		destructive = false,
+		dangerChrome = false,
 		hideCancel = false,
 		confirmTestId = 'confirm-dialog-confirm',
 		contentTestId = 'confirm-dialog',
@@ -47,17 +50,37 @@
 	}
 </script>
 
+{#snippet actions()}
+	{#if !hideCancel}
+		<Button
+			type="button"
+			variant="outline"
+			disabled={busy}
+			data-testid="confirm-dialog-cancel"
+			onclick={() => onOpenChange(false)}
+		>
+			{cancelLabel}
+		</Button>
+	{/if}
+	<Button
+		type="button"
+		variant={destructive ? 'destructive' : 'default'}
+		disabled={busy}
+		data-testid={confirmTestId}
+		onclick={() => void confirm()}
+	>
+		{confirmLabel}
+	</Button>
+{/snippet}
+
 <Dialog.Root {open} onOpenChange={onOpenChange}>
 	<Dialog.Content
-		class={cn(
-			'sm:max-w-md z-[60]',
-			destructive && 'gap-0 overflow-hidden p-0'
-		)}
+		class={cn('sm:max-w-md z-[60]', dangerChrome && 'gap-0 overflow-hidden p-0')}
 		overlayClass="z-[60]"
 		data-testid={contentTestId}
 		showCloseButton={false}
 	>
-		{#if destructive}
+		{#if dangerChrome}
 			<Dialog.Header
 				class="gap-1 space-y-0 border-b border-destructive/20 bg-destructive/5 px-6 py-3"
 				data-testid="confirm-dialog-danger-header"
@@ -70,26 +93,7 @@
 			<div class="space-y-6 px-6 py-4">
 				<Dialog.Description>{description}</Dialog.Description>
 				<Dialog.Footer class="gap-2 sm:justify-end">
-					{#if !hideCancel}
-						<Button
-							type="button"
-							variant="outline"
-							disabled={busy}
-							data-testid="confirm-dialog-cancel"
-							onclick={() => onOpenChange(false)}
-						>
-							{cancelLabel}
-						</Button>
-					{/if}
-					<Button
-						type="button"
-						variant="destructive"
-						disabled={busy}
-						data-testid={confirmTestId}
-						onclick={() => void confirm()}
-					>
-						{confirmLabel}
-					</Button>
+					{@render actions()}
 				</Dialog.Footer>
 			</div>
 		{:else}
@@ -98,26 +102,7 @@
 				<Dialog.Description>{description}</Dialog.Description>
 			</Dialog.Header>
 			<Dialog.Footer class="gap-2 sm:justify-end">
-				{#if !hideCancel}
-					<Button
-						type="button"
-						variant="outline"
-						disabled={busy}
-						data-testid="confirm-dialog-cancel"
-						onclick={() => onOpenChange(false)}
-					>
-						{cancelLabel}
-					</Button>
-				{/if}
-				<Button
-					type="button"
-					variant="default"
-					disabled={busy}
-					data-testid={confirmTestId}
-					onclick={() => void confirm()}
-				>
-					{confirmLabel}
-				</Button>
+				{@render actions()}
 			</Dialog.Footer>
 		{/if}
 	</Dialog.Content>

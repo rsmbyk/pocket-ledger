@@ -1,6 +1,6 @@
 # Plan 058: Always-on Activity filters drawer
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Supersedes Spec 049 “open to show drawer” on ≥1280
