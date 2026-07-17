@@ -66,3 +66,10 @@ Living behavior contracts for Pocket Ledger.
 | [048](048-home-amount-hide-icons/spec.md) | Home amount hide + by-category icons | Accepted |
 | [049](049-activity-toolbar-drawer/spec.md) | Activity toolbar, drawer, sort icons, Clear | Accepted |
 | [050](050-categories-header-delete/spec.md) | Categories header density + delete outline | Accepted |
+| [051](051-activity-hide-note-column/spec.md) | Hide Activity Note column | Accepted |
+| [052](052-month-breakdown-titles/spec.md) | Month breakdown titles (Income / Expenses) | Accepted |
+| [053](053-void-outline-danger-fill/spec.md) | Void outline + danger fill | Accepted |
+| [054](054-tx-header-icon/spec.md) | Transaction header icons | Accepted |
+| [055](055-confirm-above-tx-modal/spec.md) | Confirm above transaction modal | Accepted |
+| [056](056-category-in-use-warn/spec.md) | Category in-use warn dialog | Accepted |
+| [057](057-confirm-danger-chrome/spec.md) | ConfirmDialog danger chrome | Accepted |

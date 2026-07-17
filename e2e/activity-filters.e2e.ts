@@ -75,7 +75,10 @@ test.describe('017 / 045 activity filters', () => {
 		await page.getByTestId('activity-filter-type').selectOption('expense');
 		await page.getByTestId('activity-filters-close').click();
 		await expect(page.getByRole('heading', { name: 'Discard filter changes?' })).toBeVisible();
-		await page.getByTestId('activity-filters-discard-confirm').click();
+		await expect(page.getByTestId('confirm-dialog-danger-header')).toHaveCount(0);
+		const discardConfirm = page.getByTestId('activity-filters-discard-confirm');
+		await expect(discardConfirm).not.toHaveClass(/bg-destructive/);
+		await discardConfirm.click();
 		await expect(filtersSurface(page)).toBeHidden();
 		await expect(page.getByTestId('activity-list')).toContainText('Salary');
 		await expect(page.getByTestId('activity-list')).toContainText('Food');

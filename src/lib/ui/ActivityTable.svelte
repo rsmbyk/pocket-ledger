@@ -99,7 +99,6 @@
 						</button>
 					</Table.Head>
 					<Table.Head class="h-9 px-3 font-medium">Category</Table.Head>
-					<Table.Head class="h-9 px-3 font-medium">Note</Table.Head>
 					<Table.Head class="h-9 px-3 text-right font-medium">Amount</Table.Head>
 				</Table.Row>
 			</Table.Header>
@@ -131,9 +130,6 @@
 							{:else}
 								{categoryName(tx.categoryId)}
 							{/if}
-						</Table.Cell>
-						<Table.Cell class="max-w-[14rem] truncate px-3 py-2">
-							{tx.note}
 						</Table.Cell>
 						<Table.Cell
 							class={[

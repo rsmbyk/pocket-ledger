@@ -53,13 +53,19 @@ export async function renameCategory(id: string, nameRaw: string): Promise<Categ
 	return { ...updated, name };
 }
 
+/** True when any transaction or recurring rule references this category. */
+export async function isCategoryInUse(id: string): Promise<boolean> {
+	const txCount = await db.transactions.filter((t) => t.categoryId === id).count();
+	if (txCount > 0) return true;
+	const ruleCount = await db.recurringRules.filter((r) => r.categoryId === id).count();
+	return ruleCount > 0;
+}
+
 export async function removeCategory(id: string): Promise<void> {
 	const current = await db.categories.get(id);
 	if (!current) throw new Error('Category not found');
 
-	const txCount = await db.transactions.filter((t) => t.categoryId === id).count();
-	const ruleCount = await db.recurringRules.filter((r) => r.categoryId === id).count();
-	if (txCount > 0 || ruleCount > 0) {
+	if (await isCategoryInUse(id)) {
 		throw new Error('Cannot delete a category that is still used');
 	}
 	await deleteCategory(id);

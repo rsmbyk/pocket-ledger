@@ -711,7 +711,6 @@
 						description="Your filter changes have not been applied and will be lost."
 						confirmLabel="Discard"
 						cancelLabel="Keep editing"
-						destructive
 						confirmTestId="activity-filters-discard-confirm"
 						onOpenChange={(open) => (discardWarnOpen = open)}
 						onConfirm={confirmDiscardFilters}

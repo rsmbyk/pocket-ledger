@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openAdd } from './nav';
+import { ensureCategory, openAdd, selectTxCategory } from './nav';
 
 test.describe('010 / 018 / 022 custom categories', () => {
 	test('adds a category from expense card modal and shows it in quick-add', async ({ page }) => {
@@ -49,5 +49,36 @@ test.describe('010 / 018 / 022 custom categories', () => {
 		const del = page.getByTestId('category-delete').first();
 		await expect(del).toHaveClass(/border-destructive/);
 		await expect(del).toHaveClass(/text-destructive/);
+	});
+
+	test('056 warns when category is in use; 057 danger chrome on unused delete', async ({ page }) => {
+		await page.goto('/');
+		await ensureCategory(page, 'Coffee', 'expense');
+		await openAdd(page);
+		const sheet = page.getByRole('dialog');
+		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
+		await sheet.getByLabel(/amount/i).fill('5000');
+		await selectTxCategory(page, 'Coffee', sheet);
+		await sheet.getByRole('button', { name: 'Save' }).click();
+
+		await page.goto('/#/categories');
+		const coffeeRow = page.locator('li', { has: page.getByRole('textbox', { name: 'Name for Coffee' }) });
+		await coffeeRow.getByTestId('category-delete').click();
+		await expect(page.getByTestId('category-in-use-dialog')).toBeVisible();
+		await expect(page.getByTestId('confirm-dialog-danger-header')).toHaveCount(0);
+		await page.getByTestId('category-in-use-dismiss').click();
+		await expect(page.getByRole('textbox', { name: 'Name for Coffee' })).toBeVisible();
+
+		await page.getByTestId('category-add-expense').click();
+		await page.getByTestId('category-name-input').fill('UnusedCat');
+		await page.getByTestId('category-add').click();
+		await expect(page.getByRole('textbox', { name: 'Name for UnusedCat' })).toBeVisible();
+		const unusedRow = page.locator('li', {
+			has: page.getByRole('textbox', { name: 'Name for UnusedCat' })
+		});
+		await unusedRow.getByTestId('category-delete').click();
+		await expect(page.getByTestId('confirm-dialog-danger-header')).toBeVisible();
+		await page.getByTestId('category-delete-confirm').click();
+		await expect(page.getByRole('textbox', { name: 'Name for UnusedCat' })).toHaveCount(0);
 	});
 });
