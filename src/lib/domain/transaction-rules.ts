@@ -18,6 +18,74 @@ export function parseAmountInput(raw: string): MinorUnits {
 	return assertMinorUnits(value);
 }
 
+/** Digits only from an amount field (strips grouping and other non-digits). */
+export function amountDigitsOnly(raw: string): string {
+	return raw.replace(/\D/g, '');
+}
+
+/** True when a keydown should be blocked for amount digit entry (allows control keys). */
+export function isBlockedAmountKey(event: KeyboardEvent): boolean {
+	if (event.ctrlKey || event.metaKey || event.altKey) return false;
+	const allow = [
+		'Backspace',
+		'Delete',
+		'Tab',
+		'Escape',
+		'Enter',
+		'ArrowLeft',
+		'ArrowRight',
+		'ArrowUp',
+		'ArrowDown',
+		'Home',
+		'End'
+	];
+	if (allow.includes(event.key)) return false;
+	if (event.key.length === 1 && /^\d$/.test(event.key)) return false;
+	return true;
+}
+
+/** Thousand-grouped display for digit-only amount input (e.g. `15000` → `15,000`). */
+export function formatAmountDigitsDisplay(raw: string): string {
+	const digits = amountDigitsOnly(raw);
+	if (!digits) return '';
+	return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+export type TxFormBaseline = {
+	type: AddableTransactionType;
+	amountDigits: string;
+	categoryId: string;
+	note: string;
+	occurredOn: string;
+};
+
+/** True when create form has any non-default user input vs initial baseline. */
+export function isCreateTxDirty(
+	current: TxFormBaseline,
+	baseline: TxFormBaseline
+): boolean {
+	return (
+		current.type !== baseline.type ||
+		current.amountDigits !== baseline.amountDigits ||
+		current.categoryId !== baseline.categoryId ||
+		current.note !== baseline.note ||
+		current.occurredOn !== baseline.occurredOn
+	);
+}
+
+/** True when edit form differs from values captured when the sheet opened. */
+export function isEditTxDirty(
+	current: Omit<TxFormBaseline, 'type'>,
+	baseline: Omit<TxFormBaseline, 'type'>
+): boolean {
+	return (
+		current.amountDigits !== baseline.amountDigits ||
+		current.categoryId !== baseline.categoryId ||
+		current.note !== baseline.note ||
+		current.occurredOn !== baseline.occurredOn
+	);
+}
+
 /** Balance delta for a stored transaction row (voided → 0). */
 export function balanceDelta(
 	tx: Pick<LedgerTransaction, 'type' | 'amountMinor'> & { voidedAt?: string | null }

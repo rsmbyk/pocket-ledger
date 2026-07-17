@@ -3,7 +3,14 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '$lib/data/db';
 import { ensureDefaultAccount } from '$lib/application/accounts';
 import { addTransaction, getCategoriesForType } from '$lib/application/transactions';
-import { createCategory, listCategories, removeCategory, renameCategory } from './categories';
+import {
+	createCategory,
+	listCategories,
+	removeCategory,
+	renameCategory,
+	reorderCategory,
+	reorderCategories
+} from './categories';
 
 describe('categories application', () => {
 	beforeEach(async () => {
@@ -34,5 +41,31 @@ describe('categories application', () => {
 		expect(await getCategoriesForType('expense')).toEqual(
 			expect.arrayContaining([expect.objectContaining({ id: created.id })])
 		);
+	});
+
+	it('reorders categories within a kind and persists sortOrder', async () => {
+		const a = await createCategory('Alpha', 'expense');
+		const b = await createCategory('Beta', 'expense');
+		expect((await listCategories()).filter((c) => c.kind === 'expense').map((c) => c.name)).toEqual([
+			'Alpha',
+			'Beta'
+		]);
+
+		await reorderCategory(b.id, 'up');
+		const after = await listCategories();
+		expect(after.filter((c) => c.kind === 'expense').map((c) => c.name)).toEqual(['Beta', 'Alpha']);
+		expect(after.find((c) => c.id === b.id)!.sortOrder).toBeLessThan(
+			after.find((c) => c.id === a.id)!.sortOrder
+		);
+	});
+
+	it('reorders categories by ordered ids', async () => {
+		const a = await createCategory('Alpha', 'expense');
+		const b = await createCategory('Beta', 'expense');
+		const c = await createCategory('Gamma', 'expense');
+		await reorderCategories('expense', [c.id, a.id, b.id]);
+		expect(
+			(await listCategories()).filter((row) => row.kind === 'expense').map((row) => row.name)
+		).toEqual(['Gamma', 'Alpha', 'Beta']);
 	});
 });

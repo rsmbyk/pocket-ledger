@@ -10,11 +10,16 @@ test.describe('010 / 018 / 022 custom categories', () => {
 		await page.getByTestId('category-add').click();
 		await expect(page.getByRole('textbox', { name: 'Name for Coffee' })).toBeVisible();
 		await expect(page.getByTestId('category-save-name').first()).toBeDisabled();
+		await expect(page.getByTestId('category-add-expense')).toHaveAttribute(
+			'aria-label',
+			'Add expense category'
+		);
 
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
 		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
-		await expect(sheet.getByLabel('Category', { exact: true })).toContainText('Coffee');
+		await sheet.getByTestId('tx-category').click();
+		await expect(page.getByRole('menuitem', { name: 'Coffee', exact: true })).toBeVisible();
 	});
 
 	test('deep-links to categories', async ({ page }) => {
@@ -33,5 +38,16 @@ test.describe('010 / 018 / 022 custom categories', () => {
 			return Boolean(income.compareDocumentPosition(expense) & Node.DOCUMENT_POSITION_FOLLOWING);
 		});
 		expect(incomeBeforeExpense).toBe(true);
+	});
+
+	test('050 delete is outlined danger', async ({ page }) => {
+		await page.goto('/#/categories');
+		await page.getByTestId('category-add-expense').click();
+		await page.getByTestId('category-name-input').fill('Snack');
+		await page.getByTestId('category-add').click();
+		await expect(page.getByRole('textbox', { name: 'Name for Snack' })).toBeVisible();
+		const del = page.getByTestId('category-delete').first();
+		await expect(del).toHaveClass(/border-destructive/);
+		await expect(del).toHaveClass(/text-destructive/);
 	});
 });

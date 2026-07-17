@@ -13,7 +13,7 @@ describe('category names', () => {
 
 	it('rejects duplicate names within kind', () => {
 		const existing: CategoryRow[] = [
-			{ id: '1', name: 'Coffee', kind: 'expense', createdAt: 't' }
+			{ id: '1', name: 'Coffee', kind: 'expense', sortOrder: 0, createdAt: 't' }
 		];
 		expect(() => assertUniqueCategoryName('coffee', 'expense', existing)).toThrow(/already exists/i);
 		expect(() => assertUniqueCategoryName('Coffee', 'income', existing)).not.toThrow();

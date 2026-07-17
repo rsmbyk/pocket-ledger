@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, openAdd } from './nav';
+import { ensureCategory, openAdd, selectTxCategory } from './nav';
 
 test.describe('002 month charts', () => {
 	test.beforeEach(async ({ page }) => {
@@ -12,6 +12,8 @@ test.describe('002 month charts', () => {
 		await expect(page.getByTestId('month-income')).toContainText('0');
 		await expect(page.getByTestId('month-expense')).toContainText('0');
 		await expect(page.getByTestId('month-net')).toContainText('0');
+		await expect(page.getByTestId('month-net')).toHaveClass(/text-muted-foreground/);
+		await expect(page.getByTestId('month-footer-net')).toHaveClass(/text-muted-foreground/);
 		await expect(page.getByTestId('month-opening')).toContainText('0');
 		await expect(page.getByTestId('month-ending')).toContainText('0');
 		await expect(page.getByTestId('income-category-chart')).toContainText(/no income/i);
@@ -25,19 +27,21 @@ test.describe('002 month charts', () => {
 		const incomeDialog = page.getByRole('dialog');
 		await incomeDialog.getByRole('button', { name: 'Income', exact: true }).click();
 		await incomeDialog.getByLabel(/amount/i).fill('100000');
-		await incomeDialog.getByLabel('Category', { exact: true }).selectOption({ label: 'Salary' });
+		await selectTxCategory(page, 'Salary', incomeDialog);
 		await incomeDialog.getByRole('button', { name: 'Save' }).click();
 
 		await openAdd(page);
 		const expenseDialog = page.getByRole('dialog');
 		await expenseDialog.getByRole('button', { name: 'Expense', exact: true }).click();
 		await expenseDialog.getByLabel(/amount/i).fill('15000');
-		await expenseDialog.getByLabel('Category', { exact: true }).selectOption({ label: 'Food' });
+		await selectTxCategory(page, 'Food', expenseDialog);
 		await expenseDialog.getByRole('button', { name: 'Save' }).click();
 
 		await expect(page.getByTestId('month-income')).toContainText('100');
 		await expect(page.getByTestId('month-expense')).toContainText('15');
 		await expect(page.getByTestId('month-net')).toContainText('85');
+		await expect(page.getByTestId('month-net')).toHaveClass(/text-emerald-600/);
+		await expect(page.getByTestId('month-footer-net')).toHaveClass(/text-emerald-600/);
 		await expect(page.getByTestId('income-category-chart')).toContainText('Salary');
 		await expect(page.getByTestId('category-chart')).toContainText('Food');
 		await expect(page.getByTestId('month-ending')).toContainText('85');

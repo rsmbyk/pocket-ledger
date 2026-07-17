@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd } from './nav';
+import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
 
 
 test.describe('003–008 base features', () => {
@@ -44,7 +44,7 @@ test.describe('003–008 base features', () => {
 		await openAdd(page);
 		await page.getByRole('button', { name: 'Income', exact: true }).click();
 		await page.getByLabel(/amount/i).fill('85000');
-		await page.getByLabel('Category', { exact: true }).selectOption({ label: 'Salary' });
+		await selectTxCategory(page, 'Salary');
 		await page.getByRole('button', { name: 'Save' }).click();
 
 

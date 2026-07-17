@@ -58,6 +58,10 @@
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
 		onRenameCategory: (id: string, name: string) => void | Promise<void>;
 		onDeleteCategory: (id: string) => void | Promise<void>;
+		onReorderCategories: (
+			kind: CategoryRow['kind'],
+			orderedIds: string[]
+		) => void | Promise<void>;
 		ready: boolean;
 		error: string | null;
 	};
@@ -95,6 +99,7 @@
 		onCreateCategory,
 		onRenameCategory,
 		onDeleteCategory,
+		onReorderCategories,
 		ready,
 		error
 	}: Props = $props();
@@ -103,6 +108,8 @@
 	let commandOpen = $state(false);
 	let editing = $state<LedgerTransaction | null>(null);
 	let route = $state<AppRoute>('home');
+	/** Clears `editing` after close animation; must cancel if reopened quickly. */
+	let clearEditingTimer: ReturnType<typeof setTimeout> | null = null;
 
 	const navItems: { id: AppRoute; label: string }[] = [
 		{ id: 'home', label: 'Home' },
@@ -113,12 +120,21 @@
 
 	const pageTitle = $derived(navItems.find((item) => item.id === route)?.label ?? 'Home');
 
+	function cancelClearEditing() {
+		if (clearEditingTimer != null) {
+			clearTimeout(clearEditingTimer);
+			clearEditingTimer = null;
+		}
+	}
+
 	function openAdd() {
+		cancelClearEditing();
 		editing = null;
 		txSheetOpen = true;
 	}
 
 	function openEdit(tx: LedgerTransaction) {
+		cancelClearEditing();
 		editing = tx;
 		txSheetOpen = true;
 	}
@@ -206,6 +222,7 @@
 				{onCreateCategory}
 				{onRenameCategory}
 				{onDeleteCategory}
+				{onReorderCategories}
 				onNavigate={navigate}
 				onOpenAdd={openAdd}
 				onOpenEdit={openEdit}
@@ -214,22 +231,26 @@
 	{/if}
 </div>
 
-{#if account && txSheetOpen}
-	{#key editing?.id ?? 'new'}
-		<QuickAddSheet
-			open={true}
-			accountId={account.id}
-			currencyLabel={account.currencyLabel}
-			{editing}
-			onOpenChange={(next) => {
-				if (!next) {
-					txSheetOpen = false;
+{#if account}
+	<QuickAddSheet
+		open={txSheetOpen}
+		accountId={account.id}
+		currencyLabel={account.currencyLabel}
+		{editing}
+		onOpenChange={(next) => {
+			txSheetOpen = next;
+			if (!next) {
+				cancelClearEditing();
+				clearEditingTimer = window.setTimeout(() => {
 					editing = null;
-				}
-			}}
-			onSaved={onRefreshLedger}
-		/>
-	{/key}
+					clearEditingTimer = null;
+				}, 320);
+			} else {
+				cancelClearEditing();
+			}
+		}}
+		onSaved={onRefreshLedger}
+	/>
 {/if}
 
 <AppCommandPalette

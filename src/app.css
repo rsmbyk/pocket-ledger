@@ -131,4 +131,37 @@
 	#app {
 		@apply min-h-svh;
 	}
+
+	button:not(:disabled),
+	[role='button']:not([aria-disabled='true']),
+	a[href],
+	select:not(:disabled),
+	summary,
+	label[for],
+	input[type='checkbox']:not(:disabled),
+	input[type='radio']:not(:disabled),
+	input[type='date']:not(:disabled) {
+		cursor: pointer;
+	}
+
+	button:disabled,
+	[aria-disabled='true'],
+	select:disabled,
+	input:disabled {
+		cursor: not-allowed;
+	}
+}
+
+@keyframes panel-emphasize-pulse {
+	0%,
+	100% {
+		box-shadow: 0 0 0 0 transparent;
+	}
+	50% {
+		box-shadow: 0 0 0 3px var(--ring);
+	}
+}
+
+.panel-emphasize {
+	animation: panel-emphasize-pulse 0.4s ease;
 }

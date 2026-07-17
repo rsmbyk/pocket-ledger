@@ -44,7 +44,8 @@
 		createCategory,
 		listCategories,
 		removeCategory,
-		renameCategory
+		renameCategory,
+		reorderCategories
 	} from '$lib/application/categories';
 	import type { Account } from '$lib/domain/account';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
@@ -291,6 +292,10 @@
 		}}
 		onDeleteCategory={async (id) => {
 			await removeCategory(id);
+			await onRefreshLedger();
+		}}
+		onReorderCategories={async (kind, orderedIds) => {
+			await reorderCategories(kind, orderedIds);
 			await onRefreshLedger();
 		}}
 		{ready}

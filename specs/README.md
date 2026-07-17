@@ -5,12 +5,12 @@ Living behavior contracts for Pocket Ledger.
 ## Rules
 
 1. Spec **before** implementation for user-visible behavior or money rules.
-2. Use the [template](_template.md).
-3. Number specs: `000-scaffold.md`, `001-…`.
+2. Use the [template](_template.md) (or `spec.md` inside a slice folder).
+3. Number specs: `000-scaffold.md`, `001-…`. From **047** onward use a folder: `NNN-slug/{plan,spec,tasks}.md`.
 4. Keep acceptance scenarios in Given / When / Then.
-5. Link Vitest and Playwright files under **Traceability**.
+5. Link Vitest and Playwright files under **Traceability**; tasks list those paths for TDD.
 6. Update the spec in the same PR as behavior changes.
-7. **One concern per spec** — do not mix unrelated features or fixes in the same numbered spec (separate Drafts / PRs).
+7. **One concern per spec** — do not mix **unrelated** features in one numbered spec. A single UI surface redesign (e.g. one modal or one menu) may be one spec with multiple acceptance scenarios.
 
 ## Index
 
@@ -47,3 +47,22 @@ Living behavior contracts for Pocket Ledger.
 | [028](028-month-summary-dividers.md) | Month summary section dividers | Accepted |
 | [029](029-more-single-column.md) | More panel one card per row | Accepted |
 | [030](030-remove-void-label.md) | Remove Void label from lists | Accepted |
+| [031](031-month-net-sign-color.md) | Month summary Net sign coloring | Accepted |
+| [032](032-list-empty-states.md) | List empty states (no CTAs) | Accepted |
+| [034](034-category-save-emphasis.md) | Emphasize active category save | Accepted |
+| [035](035-filters-icon-button.md) | Icon-only Activity Filters button | Accepted |
+| [036](036-activity-form-short-dates.md) | Short dates on Activity and tx form | Accepted |
+| [037](037-transaction-sheet.md) | Transaction sheet redesign | Accepted |
+| [038](038-categories-menu.md) | Categories menu redesign | Accepted |
+| [039](039-transaction-sheet-polish.md) | Transaction sheet polish | Accepted |
+| [040](040-activity-add-categories-dnd.md) | Activity Add + Categories DnD polish | Accepted |
+| [041](041-modal-platform.md) | Modal platform (lifecycle, emphasize, confirms) | Accepted |
+| [042](042-dates-and-toasts.md) | Dates YY Mon DD, DateField, toasts | Accepted |
+| [043](043-dates-uncategorized-month-order.md) | Dates DD MMM YYYY, Uncategorized marker, month order | Accepted |
+| [044](044-tx-sheet-chrome-dismiss.md) | Transaction sheet chrome and outside dismiss | Accepted |
+| [045](045-home-activity-filters.md) | Home polish and Activity filters overhaul | Accepted |
+| [046](046-categories-density-no-toasts.md) | Categories density and remove toasts | Accepted |
+| [047](047-tx-sheet-polish/spec.md) | Transaction sheet polish | Accepted |
+| [048](048-home-amount-hide-icons/spec.md) | Home amount hide + by-category icons | Accepted |
+| [049](049-activity-toolbar-drawer/spec.md) | Activity toolbar, drawer, sort icons, Clear | Accepted |
+| [050](050-categories-header-delete/spec.md) | Categories header density + delete outline | Accepted |

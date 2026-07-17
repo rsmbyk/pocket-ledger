@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
 	balanceDelta,
+	formatAmountDigitsDisplay,
+	isBlockedAmountKey,
+	isCreateTxDirty,
+	isEditTxDirty,
 	isValidOccurredOn,
 	parseAmountInput,
 	sumBalance,
@@ -11,6 +15,43 @@ describe('transaction-rules', () => {
 	it('parses whole-number amounts', () => {
 		expect(parseAmountInput('15000')).toBe(15000);
 		expect(parseAmountInput('15,000')).toBe(15000);
+	});
+
+	it('formats amount digits with thousand grouping', () => {
+		expect(formatAmountDigitsDisplay('15000')).toBe('15,000');
+		expect(formatAmountDigitsDisplay('15,000')).toBe('15,000');
+		expect(formatAmountDigitsDisplay('')).toBe('');
+	});
+
+	it('blocks non-digit amount keys', () => {
+		expect(isBlockedAmountKey({ key: 'a' } as KeyboardEvent)).toBe(true);
+		expect(isBlockedAmountKey({ key: '5' } as KeyboardEvent)).toBe(false);
+		expect(isBlockedAmountKey({ key: 'Backspace' } as KeyboardEvent)).toBe(false);
+		expect(isBlockedAmountKey({ key: 'a', ctrlKey: true } as KeyboardEvent)).toBe(false);
+	});
+
+	it('detects create and edit dirty state', () => {
+		const base = {
+			type: 'expense' as const,
+			amountDigits: '',
+			categoryId: '',
+			note: '',
+			occurredOn: '2026-07-16'
+		};
+		expect(isCreateTxDirty({ ...base, amountDigits: '100' }, base)).toBe(true);
+		expect(isCreateTxDirty(base, base)).toBe(false);
+		expect(
+			isEditTxDirty(
+				{ amountDigits: '100', categoryId: 'a', note: '', occurredOn: '2026-07-16' },
+				{ amountDigits: '100', categoryId: 'a', note: '', occurredOn: '2026-07-16' }
+			)
+		).toBe(false);
+		expect(
+			isEditTxDirty(
+				{ amountDigits: '200', categoryId: 'a', note: '', occurredOn: '2026-07-16' },
+				{ amountDigits: '100', categoryId: 'a', note: '', occurredOn: '2026-07-16' }
+			)
+		).toBe(true);
 	});
 
 	it('rejects empty, zero, and fractional amounts', () => {

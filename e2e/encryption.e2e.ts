@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd } from './nav';
+import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
 
 test.describe('011 field encryption', () => {
 	test('unlocked UI still shows plaintext notes after enabling lock', async ({ page }) => {
@@ -10,7 +10,7 @@ test.describe('011 field encryption', () => {
 		const sheet = page.getByRole('dialog');
 		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
 		await sheet.getByLabel(/amount/i).fill('15000');
-		await sheet.getByLabel('Category', { exact: true }).selectOption({ label: 'Food' });
+		await selectTxCategory(page, 'Food', sheet);
 		await sheet.getByLabel(/note/i).fill('secret lunch');
 		await sheet.getByRole('button', { name: 'Save' }).click();
 

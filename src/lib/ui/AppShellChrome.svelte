@@ -7,6 +7,13 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
+	import InboxIcon from '@lucide/svelte/icons/inbox';
+	import SearchIcon from '@lucide/svelte/icons/search';
+	import EyeIcon from '@lucide/svelte/icons/eye';
+	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
+	import WalletIcon from '@lucide/svelte/icons/wallet';
+	import HistoryIcon from '@lucide/svelte/icons/history';
+	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
@@ -16,6 +23,10 @@
 	import MorePanel from '$lib/ui/MorePanel.svelte';
 	import CategoriesPanel from '$lib/ui/CategoriesPanel.svelte';
 	import ActivityTable from '$lib/ui/ActivityTable.svelte';
+	import EmptyState from '$lib/ui/EmptyState.svelte';
+	import DateField from '$lib/ui/DateField.svelte';
+	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
+	import UncategorizedLabel from '$lib/ui/UncategorizedLabel.svelte';
 	import type { Account } from '$lib/domain/account';
 	import { isVoided, type LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
@@ -28,11 +39,14 @@
 	import { formatMinor } from '$lib/domain/money';
 	import { isAppRoute, type AppRoute } from '$lib/shared/router';
 	import {
+		DEFAULT_ACTIVITY_FILTERS,
 		filterTransactions,
+		isDefaultActivityFilters,
 		UNCATEGORIZED_FILTER,
-		type ActivityTypeFilter
+		type ActivityFilterCriteria
 	} from '$lib/domain/activity-filters';
 	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
+	import { readHideAmounts, writeHideAmounts } from '$lib/shared/hide-amounts';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 
@@ -78,6 +92,10 @@
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
 		onRenameCategory: (id: string, name: string) => void | Promise<void>;
 		onDeleteCategory: (id: string) => void | Promise<void>;
+		onReorderCategories: (
+			kind: CategoryRow['kind'],
+			orderedIds: string[]
+		) => void | Promise<void>;
 		onNavigate: (route: AppRoute) => void;
 		onOpenAdd: () => void;
 		onOpenEdit: (tx: LedgerTransaction) => void;
@@ -116,6 +134,7 @@
 		onCreateCategory,
 		onRenameCategory,
 		onDeleteCategory,
+		onReorderCategories,
 		onNavigate,
 		onOpenAdd,
 		onOpenEdit
@@ -123,39 +142,42 @@
 
 	const sidebar = Sidebar.useSidebar();
 
-	/** Matches Tailwind `md` — desktop keeps the always-visible filter grid. */
+	/** Matches Tailwind `md`. */
 	const desktop = new MediaQuery('min-width: 768px');
+	/** Matches Tailwind `xl` — wide layout uses a non-blocking filter drawer. */
+	const xlWide = new MediaQuery('min-width: 1280px');
 
 	const currencyLabel = $derived(account?.currencyLabel ?? 'IDR');
 	const recent = $derived(transactions.slice(0, 5));
 
-	let filterType = $state<ActivityTypeFilter>('all');
-	let filterCategoryId = $state('');
-	let filterStart = $state('');
-	let filterEnd = $state('');
-	let filterSearch = $state('');
+	let hideHomeAmounts = $state(readHideAmounts());
+
+	let applied = $state<ActivityFilterCriteria>({ ...DEFAULT_ACTIVITY_FILTERS });
+	let draft = $state<ActivityFilterCriteria>({ ...DEFAULT_ACTIVITY_FILTERS });
 	let filtersOpen = $state(false);
+	let discardWarnOpen = $state(false);
 
 	const filterCategories = $derived(
 		[...expenseCategories, ...incomeCategories].sort((a, b) => a.name.localeCompare(b.name))
 	);
 
-	const advancedFilterCount = $derived(
-		(filterType !== 'all' ? 1 : 0) +
-			(filterCategoryId !== '' ? 1 : 0) +
-			(filterStart !== '' ? 1 : 0) +
-			(filterEnd !== '' ? 1 : 0)
+	const filtersSheetSide = $derived<'bottom' | 'right'>(
+		desktop.current ? 'right' : 'bottom'
 	);
+	const filtersSheetClass = $derived(
+		filtersSheetSide === 'bottom'
+			? 'mx-auto max-h-[90svh] w-full max-w-lg gap-0 rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
+			: 'w-full gap-0 p-0 sm:max-w-sm'
+	);
+	const activityStageWide = $derived(route === 'activity' && xlWide.current);
 
-	const filteredTransactions = $derived(
-		filterTransactions(transactions, {
-			type: filterType,
-			categoryId: filterCategoryId || null,
-			startDate: filterStart || null,
-			endDate: filterEnd || null,
-			search: filterSearch || null
-		})
-	);
+	const advancedFilterCount = $derived(countAdvancedFilters(applied));
+	const hasAdvancedFilters = $derived(advancedFilterCount > 0);
+	const draftDirty = $derived(!activityFiltersEqual(draft, applied, { ignoreSearch: true }));
+	const canApplyDraft = $derived(draftDirty);
+	const canClearDraft = $derived(!isDefaultActivityFilters({ ...draft, search: '' }));
+
+	const filteredTransactions = $derived(filterTransactions(transactions, applied));
 
 	const navItems: {
 		id: AppRoute;
@@ -168,9 +190,57 @@
 		{ id: 'more', label: 'More', icon: MoreHorizontalIcon }
 	];
 
+	function countAdvancedFilters(criteria: ActivityFilterCriteria): number {
+		let count = 0;
+		if ((criteria.type ?? 'all') !== 'all') count++;
+		const categoryId = criteria.categoryId ?? '';
+		if (categoryId !== '' && categoryId != null) count++;
+		if (criteria.startDate?.trim()) count++;
+		if (criteria.endDate?.trim()) count++;
+		if (criteria.hideVoided) count++;
+		if ((criteria.amountOp ?? 'none') !== 'none') count++;
+		return count;
+	}
+
+	function activityFiltersEqual(
+		a: ActivityFilterCriteria,
+		b: ActivityFilterCriteria,
+		options?: { ignoreSearch?: boolean }
+	): boolean {
+		const ignoreSearch = options?.ignoreSearch ?? false;
+		return (
+			(a.type ?? 'all') === (b.type ?? 'all') &&
+			(a.categoryId ?? '') === (b.categoryId ?? '') &&
+			(a.startDate?.trim() ?? '') === (b.startDate?.trim() ?? '') &&
+			(a.endDate?.trim() ?? '') === (b.endDate?.trim() ?? '') &&
+			(ignoreSearch || (a.search?.trim() ?? '') === (b.search?.trim() ?? '')) &&
+			(a.hideVoided ?? false) === (b.hideVoided ?? false) &&
+			(a.amountOp ?? 'none') === (b.amountOp ?? 'none') &&
+			(a.amountRaw?.trim() ?? '') === (b.amountRaw?.trim() ?? '')
+		);
+	}
+
+	function cloneFilters(criteria: ActivityFilterCriteria): ActivityFilterCriteria {
+		// Shallow copy — $state proxies are not structuredClone-safe.
+		return {
+			type: criteria.type ?? 'all',
+			categoryId: criteria.categoryId ?? '',
+			startDate: criteria.startDate ?? '',
+			endDate: criteria.endDate ?? '',
+			search: criteria.search ?? '',
+			hideVoided: criteria.hideVoided ?? false,
+			amountOp: criteria.amountOp ?? 'none',
+			amountRaw: criteria.amountRaw ?? ''
+		};
+	}
+
 	function categoryName(categoryId: string | null): string {
 		if (!categoryId) return 'Uncategorized';
 		return categoriesById[categoryId]?.name ?? 'Category';
+	}
+
+	function homeMoney(amount: number): string {
+		return hideHomeAmounts ? '••••' : formatMinor(amount, currencyLabel);
 	}
 
 	function navigate(next: string) {
@@ -184,11 +254,49 @@
 		sidebar.setOpenMobile(false);
 	}
 
-	function clearAdvancedFilters() {
-		filterType = 'all';
-		filterCategoryId = '';
-		filterStart = '';
-		filterEnd = '';
+	function openFilters() {
+		draft = cloneFilters(applied);
+		filtersOpen = true;
+	}
+
+	function applyFilters() {
+		applied = { ...cloneFilters(draft), search: applied.search ?? '' };
+		filtersOpen = false;
+	}
+
+	function requestCloseFilters() {
+		if (draftDirty) {
+			discardWarnOpen = true;
+			return;
+		}
+		filtersOpen = false;
+	}
+
+	function onFiltersOpenChange(open: boolean) {
+		if (open) {
+			draft = cloneFilters(applied);
+			filtersOpen = true;
+			return;
+		}
+		if (draftDirty) {
+			discardWarnOpen = true;
+			filtersOpen = true;
+			return;
+		}
+		filtersOpen = false;
+	}
+
+	function confirmDiscardFilters() {
+		draft = cloneFilters(applied);
+		filtersOpen = false;
+	}
+
+	function clearDraftFilters() {
+		draft = { ...DEFAULT_ACTIVITY_FILTERS, search: applied.search ?? '' };
+	}
+
+	function updateAppliedSearch(next: string) {
+		applied = { ...applied, search: next };
 	}
 </script>
 
@@ -250,11 +358,33 @@
 				<span class="sr-only">Account </span>{account?.name ?? 'Loading…'}
 			</p>
 		</div>
+		{#if route === 'home'}
+			<Button
+				type="button"
+				variant="ghost"
+				size="icon-sm"
+				data-testid="toggle-home-amounts"
+				aria-label={hideHomeAmounts ? 'Show money' : 'Hide money'}
+				onclick={() => {
+					hideHomeAmounts = !hideHomeAmounts;
+					writeHideAmounts(hideHomeAmounts);
+				}}
+			>
+				{#if hideHomeAmounts}
+					<EyeOffIcon class="size-4" />
+				{:else}
+					<EyeIcon class="size-4" />
+				{/if}
+			</Button>
+		{/if}
 		<ThemeMenu preference={themePreference} onPreferenceChange={onThemePreferenceChange} />
 	</header>
 
 	<div
-		class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8"
+		class={[
+			'mx-auto flex w-full flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8',
+			activityStageWide ? 'max-w-5xl' : 'max-w-3xl'
+		]}
 		data-testid="app-stage"
 	>
 		{#if route === 'home'}
@@ -263,12 +393,15 @@
 					class="border-border/80 bg-card flex flex-col gap-1 rounded-xl border px-4 py-3 shadow-xs"
 					data-testid="balance-hero"
 				>
-					<p class="text-muted-foreground text-sm">Balance</p>
+					<p class="text-muted-foreground inline-flex items-center gap-1.5 text-sm">
+						<WalletIcon class="size-3.5" aria-hidden="true" />
+						Balance
+					</p>
 					<p
 						class="text-2xl font-semibold tracking-tight md:text-3xl"
 						data-testid="account-balance"
 					>
-						{formatMinor(balanceMinor, currencyLabel)}
+						{homeMoney(balanceMinor)}
 					</p>
 				</section>
 
@@ -276,6 +409,7 @@
 					<MonthSummaryCard
 						summary={monthSummary}
 						{currencyLabel}
+						hideAmounts={hideHomeAmounts}
 						onPrevMonth={() => void onPrevMonth()}
 						onNextMonth={() => void onNextMonth()}
 					/>
@@ -285,7 +419,10 @@
 					<Card.Header
 						class="flex flex-row items-center justify-between gap-2 space-y-0 px-4 py-3"
 					>
-						<Card.Title class="text-base">Recent</Card.Title>
+						<Card.Title class="inline-flex items-center gap-1.5 text-base">
+							<HistoryIcon class="size-4" aria-hidden="true" />
+							Recent
+						</Card.Title>
 						<Button
 							type="button"
 							size="sm"
@@ -299,12 +436,16 @@
 					</Card.Header>
 					<Card.Content class="px-2 pb-2">
 						{#if recent.length === 0}
-							<div class="space-y-3 px-2 pb-2" data-testid="home-empty">
-								<p class="text-muted-foreground text-sm">No transactions yet.</p>
-								<Button type="button" onclick={openAdd} data-testid="home-empty-add"
-									>Get started</Button
-								>
-							</div>
+							<EmptyState
+								testid="recent-empty"
+								title="No recent activity"
+								description="Transactions you add will show up here."
+								class="px-2 pb-2"
+							>
+								{#snippet icon()}
+									<InboxIcon class="size-5" />
+								{/snippet}
+							</EmptyState>
 						{:else}
 							<ul class="divide-border divide-y" data-testid="recent-list">
 								{#each recent as tx (tx.id)}
@@ -320,8 +461,12 @@
 											onclick={() => onOpenEdit(tx)}
 										>
 											<div class="min-w-0 flex-1">
-												<p class="inline-flex flex-wrap items-center gap-1.5 font-medium">
-													{categoryName(tx.categoryId)}
+												<p class="font-medium">
+													{#if tx.categoryId == null}
+														<UncategorizedLabel />
+													{:else}
+														{categoryName(tx.categoryId)}
+													{/if}
 												</p>
 												<p class="truncate text-xs">
 													{#if tx.note?.trim()}
@@ -334,17 +479,23 @@
 											<p
 												class={[
 													'shrink-0 font-medium tabular-nums',
-													voided && 'line-through',
-													!voided &&
-														(tx.type === 'expense'
-															? 'text-destructive'
-															: 'text-emerald-600 dark:text-emerald-400')
+													hideHomeAmounts
+														? 'text-muted-foreground'
+														: [
+																voided && 'line-through',
+																!voided &&
+																	(tx.type === 'expense'
+																		? 'text-destructive'
+																		: 'text-emerald-600 dark:text-emerald-400')
+															]
 												]}
 											>
-												{tx.type === 'expense' ? '−' : '+'}{formatMinor(
-													tx.amountMinor,
-													currencyLabel
-												)}
+												{#if hideHomeAmounts}
+													••••
+												{:else}
+													{tx.type === 'expense' ? '−' : '+'}
+													{formatMinor(tx.amountMinor, currencyLabel)}
+												{/if}
 											</p>
 											<ChevronRightIcon class="text-muted-foreground size-4 shrink-0" />
 										</button>
@@ -356,14 +507,17 @@
 				</Card.Root>
 			</div>
 		{:else if route === 'activity'}
-			<div class="space-y-3" data-testid="activity-panel">
-				{#snippet advancedFilters()}
+			<div
+				data-testid="activity-panel"
+				class={xlWide.current && filtersOpen ? 'flex gap-4' : 'space-y-3'}
+			>
+				{#snippet filterFormFields()}
 					<div class="space-y-1">
 						<Label for="activity-filter-type">Type</Label>
 						<select
 							id="activity-filter-type"
 							class="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
-							bind:value={filterType}
+							bind:value={draft.type}
 							data-testid="activity-filter-type"
 						>
 							<option value="all">All</option>
@@ -376,7 +530,7 @@
 						<select
 							id="activity-filter-category"
 							class="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
-							bind:value={filterCategoryId}
+							bind:value={draft.categoryId}
 							data-testid="activity-filter-category"
 						>
 							<option value="">All</option>
@@ -388,66 +542,132 @@
 					</div>
 					<div class="space-y-1">
 						<Label for="activity-filter-start">From</Label>
-						<Input
+						<DateField
 							id="activity-filter-start"
-							type="date"
-							bind:value={filterStart}
-							data-testid="activity-filter-start"
+							value={draft.startDate ?? ''}
+							aria-label="From date"
+							testid="activity-filter-start"
+							onValueChange={(next) => (draft.startDate = next)}
 						/>
 					</div>
 					<div class="space-y-1">
 						<Label for="activity-filter-end">To</Label>
-						<Input
+						<DateField
 							id="activity-filter-end"
-							type="date"
-							bind:value={filterEnd}
-							data-testid="activity-filter-end"
+							value={draft.endDate ?? ''}
+							aria-label="To date"
+							testid="activity-filter-end"
+							onValueChange={(next) => (draft.endDate = next)}
 						/>
 					</div>
-				{/snippet}
-
-				{#if desktop.current}
-					<div
-						class="border-border/80 bg-card/60 grid gap-3 rounded-lg border p-4 sm:grid-cols-2"
-						data-testid="activity-filters"
-					>
-						{@render advancedFilters()}
-						<div class="space-y-1 sm:col-span-2">
-							<Label for="activity-filter-search">Search</Label>
+					<label class="flex items-center gap-2 text-sm">
+						<input
+							type="checkbox"
+							bind:checked={draft.hideVoided}
+							data-testid="activity-filter-hide-voided"
+						/>
+						Hide voided
+					</label>
+					<div class="space-y-1">
+						<Label for="activity-filter-amount-op">Amount</Label>
+						<div class="flex gap-2">
+							<select
+								id="activity-filter-amount-op"
+								class="border-input bg-background flex h-9 min-w-0 flex-1 rounded-md border px-3 text-sm"
+								bind:value={draft.amountOp}
+								data-testid="activity-filter-amount-op"
+							>
+								<option value="none">Any</option>
+								<option value="lt">Less than</option>
+								<option value="gt">Greater than</option>
+							</select>
 							<Input
-								id="activity-filter-search"
-								type="search"
-								placeholder="Note or amount"
-								bind:value={filterSearch}
-								data-testid="activity-filter-search"
+								type="text"
+								inputmode="numeric"
+								placeholder="Amount"
+								class="min-w-0 flex-1"
+								disabled={(draft.amountOp ?? 'none') === 'none'}
+								bind:value={draft.amountRaw}
+								data-testid="activity-filter-amount"
 							/>
 						</div>
 					</div>
-				{:else}
+				{/snippet}
+
+				{#snippet filterPanel()}
 					<div
-						class="border-border/80 bg-card/60 flex items-end gap-2 rounded-lg border p-3"
-						data-testid="activity-filters"
+						class="border-border flex flex-row items-center justify-between gap-2 border-b px-4 py-3 text-left"
 					>
-						<div class="min-w-0 flex-1 space-y-1">
-							<Label for="activity-filter-search">Search</Label>
+						<p class="inline-flex items-center gap-2 text-base font-semibold">
+							<SlidersHorizontalIcon class="size-4" aria-hidden="true" />
+							Filters
+						</p>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							disabled={!canClearDraft}
+							data-testid="activity-filters-clear"
+							onclick={clearDraftFilters}
+						>
+							<RotateCcwIcon class="size-4" />
+							Clear
+						</Button>
+					</div>
+					<div class="grid flex-1 gap-3 overflow-y-auto px-4 py-4">
+						{@render filterFormFields()}
+					</div>
+					<div class="border-border flex flex-row gap-2 border-t px-4 py-3">
+						<Button
+							type="button"
+							variant="outline"
+							class="flex-1"
+							data-testid="activity-filters-close"
+							onclick={requestCloseFilters}
+						>
+							Close
+						</Button>
+						<Button
+							type="button"
+							class="flex-1"
+							disabled={!canApplyDraft}
+							data-testid="activity-filters-apply"
+							onclick={applyFilters}
+						>
+							Apply
+						</Button>
+					</div>
+				{/snippet}
+
+				<div class="min-w-0 flex-1 space-y-3">
+					<div class="flex items-center gap-2">
+						<div class="relative flex-1" data-testid="activity-filters">
+							<SearchIcon
+								class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+								aria-hidden="true"
+							/>
 							<Input
 								id="activity-filter-search"
 								type="search"
 								placeholder="Note or amount"
-								bind:value={filterSearch}
+								class="pl-9"
+								value={applied.search ?? ''}
 								data-testid="activity-filter-search"
+								oninput={(e) => updateAppliedSearch(e.currentTarget.value)}
 							/>
 						</div>
 						<Button
 							type="button"
 							variant="outline"
+							size="sm"
 							class="relative shrink-0"
+							aria-label="Filters"
 							data-testid="activity-filters-open"
-							onclick={() => (filtersOpen = true)}
+							onclick={openFilters}
 						>
 							<SlidersHorizontalIcon class="size-4" />
 							Filters
-							{#if advancedFilterCount > 0}
+							{#if hasAdvancedFilters}
 								<span
 									class="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-medium tabular-nums"
 									data-testid="activity-filters-badge"
@@ -458,48 +678,62 @@
 						</Button>
 					</div>
 
-					<Sheet.Root open={filtersOpen} onOpenChange={(open) => (filtersOpen = open)}>
-						<Sheet.Content
-							side="bottom"
-							class="mx-auto max-h-[90svh] w-full max-w-lg gap-0 rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
-							data-testid="activity-filters-sheet"
+					<div class="flex justify-end">
+						<Button
+							type="button"
+							size="sm"
+							disabled={!account}
+							onclick={openAdd}
+							data-testid="activity-add"
 						>
-							<Sheet.Header class="border-border border-b px-4 py-3 text-left">
-								<Sheet.Title>Filters</Sheet.Title>
-							</Sheet.Header>
-							<div class="grid gap-3 overflow-y-auto px-4 py-4">
-								{@render advancedFilters()}
-							</div>
-							<Sheet.Footer class="border-border flex-row gap-2 border-t px-4 py-3">
-								<Button
-									type="button"
-									variant="outline"
-									class="flex-1"
-									data-testid="activity-filters-clear"
-									onclick={clearAdvancedFilters}
-								>
-									Clear
-								</Button>
-								<Button
-									type="button"
-									class="flex-1"
-									data-testid="activity-filters-done"
-									onclick={() => (filtersOpen = false)}
-								>
-									Done
-								</Button>
-							</Sheet.Footer>
-						</Sheet.Content>
-					</Sheet.Root>
-				{/if}
+							<PlusIcon class="size-4" />
+							Add
+						</Button>
+					</div>
 
-				<ActivityTable
-					transactions={filteredTransactions}
-					{currencyLabel}
-					{categoryName}
-					onEdit={onOpenEdit}
-					onAdd={openAdd}
-				/>
+					{#if !xlWide.current}
+						<Sheet.Root open={filtersOpen} onOpenChange={onFiltersOpenChange}>
+							<Sheet.Content
+								side={filtersSheetSide}
+								class={filtersSheetClass}
+								data-testid="activity-filters-sheet"
+								showCloseButton={false}
+							>
+								<Sheet.Title class="sr-only">Filters</Sheet.Title>
+								{@render filterPanel()}
+							</Sheet.Content>
+						</Sheet.Root>
+					{/if}
+
+					<ConfirmDialog
+						open={discardWarnOpen}
+						title="Discard filter changes?"
+						description="Your filter changes have not been applied and will be lost."
+						confirmLabel="Discard"
+						cancelLabel="Keep editing"
+						destructive
+						confirmTestId="activity-filters-discard-confirm"
+						onOpenChange={(open) => (discardWarnOpen = open)}
+						onConfirm={confirmDiscardFilters}
+					/>
+
+					<ActivityTable
+						transactions={filteredTransactions}
+						totalCount={transactions.length}
+						{currencyLabel}
+						{categoryName}
+						onEdit={onOpenEdit}
+					/>
+				</div>
+
+				{#if xlWide.current && filtersOpen}
+					<aside
+						data-testid="activity-filters-drawer"
+						class="border-border bg-card flex w-72 shrink-0 flex-col border-l"
+					>
+						{@render filterPanel()}
+					</aside>
+				{/if}
 			</div>
 		{:else if route === 'categories'}
 			<CategoriesPanel
@@ -508,6 +742,7 @@
 				{onCreateCategory}
 				{onRenameCategory}
 				{onDeleteCategory}
+				{onReorderCategories}
 			/>
 		{:else}
 			<MorePanel
