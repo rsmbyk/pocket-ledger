@@ -185,7 +185,7 @@
 			<Card.Root class={cn('gap-0 overflow-hidden py-0', group.cardClass)}>
 				<Card.Header
 					class={cn(
-						'flex flex-row items-center justify-between gap-2 space-y-0 border-b px-4 py-3',
+						'flex flex-row items-center justify-between gap-2 space-y-0 border-b px-4 py-2 ![.border-b]:pb-2',
 						group.headerClass
 					)}
 				>
@@ -279,7 +279,7 @@
 												<Button
 													size="icon-sm"
 													variant="outline"
-													class="text-destructive"
+													class="border-destructive/40 text-destructive hover:bg-destructive/10"
 													aria-label={`Delete ${cat.name}`}
 													data-testid="category-delete"
 													disabled={busy}

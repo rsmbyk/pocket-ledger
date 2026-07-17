@@ -1,6 +1,6 @@
 # Plan 049: Activity toolbar, drawer, sort icons, Clear
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Corrects Spec 045 layout/drawer delivery (toolbar adjacency; true ≥1280 drawer)

@@ -1,7 +1,7 @@
 # Spec 047: Transaction sheet polish
 
 - **ID:** 047
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)
@@ -66,4 +66,4 @@ Make the add/edit transaction surface feel selectable and predictable: pointer o
 
 - Vitest: none
 - Playwright: `e2e/tx-sheet-polish.e2e.ts`
-- Implementation: (pending Accept)
+- Implementation: `src/lib/ui/QuickAddSheet.svelte`, `src/lib/ui/DateField.svelte`, `src/lib/components/ui/dropdown-menu/dropdown-menu-item.svelte`

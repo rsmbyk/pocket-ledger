@@ -1,6 +1,6 @@
 # Plan 048: Home amount hide + by-category icons
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Supersedes:** Spec 045 items 2–3 (month tile icons; session-only amount hide) — see cross-link on 045

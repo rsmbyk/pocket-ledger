@@ -1,7 +1,7 @@
 # Spec 048: Home amount hide + by-category icons
 
 - **ID:** 048
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)
@@ -56,7 +56,7 @@ Correct Spec 045 month-summary icon placement and deepen amount privacy: hide mo
 
 - Vitest: `src/lib/shared/hide-amounts.test.ts`
 - Playwright: `e2e/home-amounts.e2e.ts`
-- Implementation: (pending Accept)
+- Implementation: `src/lib/shared/hide-amounts.ts`, `src/lib/ui/AppShellChrome.svelte`, `src/lib/ui/MonthSummary.svelte`, `src/lib/ui/CategoryBreakdownChart.svelte`
 
 ## Supersedes
 

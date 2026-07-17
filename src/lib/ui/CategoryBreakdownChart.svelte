@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import type { MonthSummary } from '$lib/domain/month-summary';
 	import { formatMinor } from '$lib/domain/money';
 	import UncategorizedLabel from '$lib/ui/UncategorizedLabel.svelte';
@@ -6,6 +7,8 @@
 
 	type Props = {
 		title: string;
+		/** Optional icon rendered inline before the title text. */
+		titleIcon?: Snippet;
 		rows: MonthSummary['expenseByCategory'];
 		currencyLabel: string;
 		emptyLabel: string;
@@ -16,6 +19,7 @@
 
 	let {
 		title,
+		titleIcon,
 		rows,
 		currencyLabel,
 		emptyLabel,
@@ -33,7 +37,12 @@
 </script>
 
 <div class="space-y-3" data-testid={testid} aria-label={title}>
-	<p class="text-sm font-medium">{title}</p>
+	<p class="inline-flex items-center gap-1.5 text-sm font-medium">
+		{#if titleIcon}
+			{@render titleIcon()}
+		{/if}
+		{title}
+	</p>
 	{#if rows.length === 0}
 		<p class="text-muted-foreground text-sm">{emptyLabel}</p>
 	{:else}

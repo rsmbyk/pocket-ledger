@@ -24,17 +24,34 @@
 	}: Props = $props();
 
 	let nativeInput = $state<HTMLInputElement | null>(null);
+	let pickerOpen = $state(false);
 
 	const display = $derived(value ? formatOccurredOnDisplay(value) : '');
+
+	function closePicker() {
+		pickerOpen = false;
+		nativeInput?.blur();
+	}
 
 	function openPicker() {
 		if (disabled || !nativeInput) return;
 		try {
 			nativeInput.showPicker();
+			pickerOpen = true;
 		} catch {
 			nativeInput.focus();
 			nativeInput.click();
+			pickerOpen = true;
 		}
+	}
+
+	function onTriggerClick() {
+		if (disabled) return;
+		if (pickerOpen) {
+			closePicker();
+			return;
+		}
+		openPicker();
 	}
 </script>
 
@@ -48,8 +65,9 @@
 		)}
 		{disabled}
 		aria-label={ariaLabel}
+		aria-expanded={pickerOpen}
 		data-testid={testid}
-		onclick={openPicker}
+		onclick={onTriggerClick}
 	>
 		<CalendarIcon class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
 		{#if display}
@@ -65,7 +83,17 @@
 		tabindex={-1}
 		{disabled}
 		{value}
-		onchange={(e) => onValueChange((e.currentTarget as HTMLInputElement).value)}
+		onchange={(e) => {
+			onValueChange((e.currentTarget as HTMLInputElement).value);
+			closePicker();
+		}}
+		oncancel={() => closePicker()}
+		onblur={() => {
+			// Native picker may blur after selection; keep state honest.
+			window.setTimeout(() => {
+				if (document.activeElement !== nativeInput) closePicker();
+			}, 0);
+		}}
 		aria-hidden="true"
 	/>
 </div>

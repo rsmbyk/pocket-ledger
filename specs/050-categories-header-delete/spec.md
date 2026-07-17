@@ -1,7 +1,7 @@
 # Spec 050: Categories header density + delete outline
 
 - **ID:** 050
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)
@@ -45,8 +45,8 @@ Apply Spec 046 density to the **card header** only, restore the card body to its
 ## Traceability
 
 - Vitest: none
-- Playwright: `e2e/categories.e2e.ts` (extended)
-- Implementation: (pending Accept)
+- Playwright: `e2e/categories.e2e.ts`
+- Implementation: `src/lib/ui/CategoriesPanel.svelte`
 
 ## Related
 

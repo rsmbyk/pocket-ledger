@@ -1,7 +1,7 @@
 # Spec 049: Activity toolbar, drawer, sort icons, Clear
 
 - **ID:** 049
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)
@@ -60,9 +60,9 @@ Finish Activity chrome from Spec 045: restore Filters beside search, right-align
 
 ## Traceability
 
-- Vitest: none (or `src/lib/domain/activity-date-sort-icon.test.ts` if helper extracted)
-- Playwright: `e2e/activity-filters.e2e.ts` (extended); optional `e2e/activity-toolbar.e2e.ts`
-- Implementation: (pending Accept)
+- Vitest: none
+- Playwright: `e2e/activity-filters.e2e.ts`
+- Implementation: `src/lib/ui/AppShellChrome.svelte`, `src/lib/ui/ActivityTable.svelte`
 
 ## Related
 

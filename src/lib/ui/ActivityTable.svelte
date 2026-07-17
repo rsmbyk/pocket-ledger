@@ -1,6 +1,7 @@
 <script lang="ts">
 	import InboxIcon from '@lucide/svelte/icons/inbox';
 	import SearchXIcon from '@lucide/svelte/icons/search-x';
+	import HistoryIcon from '@lucide/svelte/icons/history';
 	import ArrowDownWideNarrowIcon from '@lucide/svelte/icons/arrow-down-wide-narrow';
 	import ArrowUpWideNarrowIcon from '@lucide/svelte/icons/arrow-up-wide-narrow';
 	import * as Table from '$lib/components/ui/table/index.js';
@@ -76,10 +77,24 @@
 							onclick={cycleDateSort}
 						>
 							Date
-							{#if dateSort === 'occurredOn-asc'}
-								<ArrowUpWideNarrowIcon class="size-3.5" aria-hidden="true" />
+							{#if dateSort === 'createdAt-desc'}
+								<HistoryIcon
+									class="size-3.5"
+									aria-hidden="true"
+									data-testid="activity-sort-icon-created"
+								/>
+							{:else if dateSort === 'occurredOn-desc'}
+								<ArrowDownWideNarrowIcon
+									class="size-3.5"
+									aria-hidden="true"
+									data-testid="activity-sort-icon-occurred-desc"
+								/>
 							{:else}
-								<ArrowDownWideNarrowIcon class="size-3.5" aria-hidden="true" />
+								<ArrowUpWideNarrowIcon
+									class="size-3.5"
+									aria-hidden="true"
+									data-testid="activity-sort-icon-occurred-asc"
+								/>
 							{/if}
 						</button>
 					</Table.Head>

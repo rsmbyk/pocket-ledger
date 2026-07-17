@@ -1,6 +1,6 @@
 # Tasks 050: Categories header density + delete outline
 
-- **Status:** Draft (blocked on Accept)
+- **Status:** Accepted (blocked on Accept)
 - **Plan:** [./plan.md](./plan.md)
 - **Spec:** [./spec.md](./spec.md)
 

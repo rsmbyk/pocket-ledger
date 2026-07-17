@@ -39,4 +39,15 @@ test.describe('010 / 018 / 022 custom categories', () => {
 		});
 		expect(incomeBeforeExpense).toBe(true);
 	});
+
+	test('050 delete is outlined danger', async ({ page }) => {
+		await page.goto('/#/categories');
+		await page.getByTestId('category-add-expense').click();
+		await page.getByTestId('category-name-input').fill('Snack');
+		await page.getByTestId('category-add').click();
+		await expect(page.getByRole('textbox', { name: 'Name for Snack' })).toBeVisible();
+		const del = page.getByTestId('category-delete').first();
+		await expect(del).toHaveClass(/border-destructive/);
+		await expect(del).toHaveClass(/text-destructive/);
+	});
 });

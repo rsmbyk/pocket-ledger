@@ -1,6 +1,6 @@
 # Plan 050: Categories header density + delete outline
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Corrects Spec 046 padding target (header only, not whole card)

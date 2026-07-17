@@ -26,6 +26,14 @@
 	}
 </script>
 
+{#snippet incomeTitleIcon()}
+	<TrendingUpIcon class="size-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+{/snippet}
+
+{#snippet expenseTitleIcon()}
+	<ShoppingBagIcon class="text-destructive size-3.5" aria-hidden="true" />
+{/snippet}
+
 <Card.Root class="gap-0 py-0" data-testid="month-summary">
 	<Card.Header class="gap-2 px-4 py-3">
 		<div class="flex items-center justify-between gap-2">
@@ -52,27 +60,28 @@
 		<div class="border-border border-t px-4 py-3">
 			<div class="grid grid-cols-3 gap-2 text-center text-sm">
 				<div class="bg-muted/40 rounded-md px-2 py-2">
+					<p class="text-muted-foreground text-[11px]">Income</p>
 					<p
-						class="text-muted-foreground inline-flex items-center justify-center gap-1 text-[11px]"
-					>
-						<TrendingUpIcon class="size-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-						Income
-					</p>
-					<p
-						class="mt-1 font-semibold text-emerald-600 dark:text-emerald-400"
+						class={[
+							'mt-1 font-semibold',
+							hideAmounts
+								? 'text-muted-foreground'
+								: 'text-emerald-600 dark:text-emerald-400'
+						]}
 						data-testid="month-income"
 					>
 						{money(summary.incomeMinor)}
 					</p>
 				</div>
 				<div class="bg-muted/40 rounded-md px-2 py-2">
+					<p class="text-muted-foreground text-[11px]">Expenses</p>
 					<p
-						class="text-muted-foreground inline-flex items-center justify-center gap-1 text-[11px]"
+						class={[
+							'mt-1 font-semibold',
+							hideAmounts ? 'text-muted-foreground' : 'text-destructive'
+						]}
+						data-testid="month-expense"
 					>
-						<ShoppingBagIcon class="text-destructive size-3.5" aria-hidden="true" />
-						Expenses
-					</p>
-					<p class="text-destructive mt-1 font-semibold" data-testid="month-expense">
 						{money(summary.expenseMinor)}
 					</p>
 				</div>
@@ -81,9 +90,10 @@
 					<p
 						class={[
 							'mt-1 font-semibold',
-							summary.netMinor > 0 && 'text-emerald-600 dark:text-emerald-400',
-							summary.netMinor < 0 && 'text-destructive',
-							summary.netMinor === 0 && 'text-muted-foreground'
+							hideAmounts && 'text-muted-foreground',
+							!hideAmounts && summary.netMinor > 0 && 'text-emerald-600 dark:text-emerald-400',
+							!hideAmounts && summary.netMinor < 0 && 'text-destructive',
+							!hideAmounts && summary.netMinor === 0 && 'text-muted-foreground'
 						]}
 						data-testid="month-net"
 					>
@@ -96,6 +106,7 @@
 		<div class="border-border border-t px-4 py-3">
 			<CategoryBreakdownChart
 				title="Income by category"
+				titleIcon={incomeTitleIcon}
 				rows={summary.incomeByCategory}
 				{currencyLabel}
 				emptyLabel="No income this month."
@@ -107,6 +118,7 @@
 		<div class="border-border border-t px-4 py-3">
 			<CategoryBreakdownChart
 				title="Expenses by category"
+				titleIcon={expenseTitleIcon}
 				rows={summary.expenseByCategory}
 				{currencyLabel}
 				emptyLabel="No expenses this month."
@@ -122,16 +134,20 @@
 		>
 			<div class="flex justify-between gap-2">
 				<span class="text-muted-foreground">Opening</span>
-				<span class="tabular-nums" data-testid="month-opening">{money(summary.openingMinor)}</span>
+				<span
+					class={['tabular-nums', hideAmounts && 'text-muted-foreground']}
+					data-testid="month-opening">{money(summary.openingMinor)}</span
+				>
 			</div>
 			<div class="flex justify-between gap-2">
 				<span class="text-muted-foreground">Net</span>
 				<span
 					class={[
 						'tabular-nums',
-						summary.netMinor > 0 && 'text-emerald-600 dark:text-emerald-400',
-						summary.netMinor < 0 && 'text-destructive',
-						summary.netMinor === 0 && 'text-muted-foreground'
+						hideAmounts && 'text-muted-foreground',
+						!hideAmounts && summary.netMinor > 0 && 'text-emerald-600 dark:text-emerald-400',
+						!hideAmounts && summary.netMinor < 0 && 'text-destructive',
+						!hideAmounts && summary.netMinor === 0 && 'text-muted-foreground'
 					]}
 					data-testid="month-footer-net"
 					>{money(summary.netMinor)}</span
@@ -139,7 +155,10 @@
 			</div>
 			<div class="flex justify-between gap-2 font-medium">
 				<span>Ending</span>
-				<span class="tabular-nums" data-testid="month-ending">{money(summary.endingMinor)}</span>
+				<span
+					class={['tabular-nums', hideAmounts && 'text-muted-foreground']}
+					data-testid="month-ending">{money(summary.endingMinor)}</span
+				>
 			</div>
 		</div>
 	</Card.Content>

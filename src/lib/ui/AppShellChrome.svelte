@@ -46,6 +46,7 @@
 		type ActivityFilterCriteria
 	} from '$lib/domain/activity-filters';
 	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
+	import { readHideAmounts, writeHideAmounts } from '$lib/shared/hide-amounts';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 
@@ -149,7 +150,7 @@
 	const currencyLabel = $derived(account?.currencyLabel ?? 'IDR');
 	const recent = $derived(transactions.slice(0, 5));
 
-	let hideHomeAmounts = $state(false);
+	let hideHomeAmounts = $state(readHideAmounts());
 
 	let applied = $state<ActivityFilterCriteria>({ ...DEFAULT_ACTIVITY_FILTERS });
 	let draft = $state<ActivityFilterCriteria>({ ...DEFAULT_ACTIVITY_FILTERS });
@@ -163,16 +164,12 @@
 	const filtersSheetSide = $derived<'bottom' | 'right'>(
 		desktop.current ? 'right' : 'bottom'
 	);
-	const filtersSheetTestId = $derived(
-		xlWide.current ? 'activity-filters-drawer' : 'activity-filters-sheet'
-	);
 	const filtersSheetClass = $derived(
 		filtersSheetSide === 'bottom'
 			? 'mx-auto max-h-[90svh] w-full max-w-lg gap-0 rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
-			: xlWide.current
-				? 'activity-filters-drawer w-72 max-w-sm gap-0 border-l p-0 shadow-none'
-				: 'w-full gap-0 p-0 sm:max-w-sm'
+			: 'w-full gap-0 p-0 sm:max-w-sm'
 	);
+	const activityStageWide = $derived(route === 'activity' && xlWide.current);
 
 	const advancedFilterCount = $derived(countAdvancedFilters(applied));
 	const hasAdvancedFilters = $derived(advancedFilterCount > 0);
@@ -368,7 +365,10 @@
 				size="icon-sm"
 				data-testid="toggle-home-amounts"
 				aria-label={hideHomeAmounts ? 'Show money' : 'Hide money'}
-				onclick={() => (hideHomeAmounts = !hideHomeAmounts)}
+				onclick={() => {
+					hideHomeAmounts = !hideHomeAmounts;
+					writeHideAmounts(hideHomeAmounts);
+				}}
 			>
 				{#if hideHomeAmounts}
 					<EyeOffIcon class="size-4" />
@@ -381,7 +381,10 @@
 	</header>
 
 	<div
-		class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8"
+		class={[
+			'mx-auto flex w-full flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8',
+			activityStageWide ? 'max-w-5xl' : 'max-w-3xl'
+		]}
 		data-testid="app-stage"
 	>
 		{#if route === 'home'}
@@ -476,17 +479,23 @@
 											<p
 												class={[
 													'shrink-0 font-medium tabular-nums',
-													voided && 'line-through',
-													!voided &&
-														(tx.type === 'expense'
-															? 'text-destructive'
-															: 'text-emerald-600 dark:text-emerald-400')
+													hideHomeAmounts
+														? 'text-muted-foreground'
+														: [
+																voided && 'line-through',
+																!voided &&
+																	(tx.type === 'expense'
+																		? 'text-destructive'
+																		: 'text-emerald-600 dark:text-emerald-400')
+															]
 												]}
 											>
-												{tx.type === 'expense' ? '−' : '+'}
-												{hideHomeAmounts
-													? '••••'
-													: formatMinor(tx.amountMinor, currencyLabel)}
+												{#if hideHomeAmounts}
+													••••
+												{:else}
+													{tx.type === 'expense' ? '−' : '+'}
+													{formatMinor(tx.amountMinor, currencyLabel)}
+												{/if}
 											</p>
 											<ChevronRightIcon class="text-muted-foreground size-4 shrink-0" />
 										</button>
@@ -498,56 +507,10 @@
 				</Card.Root>
 			</div>
 		{:else if route === 'activity'}
-			<div class="space-y-3" data-testid="activity-panel">
-				<div class="relative" data-testid="activity-filters">
-					<SearchIcon
-						class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-						aria-hidden="true"
-					/>
-					<Input
-						id="activity-filter-search"
-						type="search"
-						placeholder="Note or amount"
-						class="pl-9"
-						value={applied.search ?? ''}
-						data-testid="activity-filter-search"
-						oninput={(e) => updateAppliedSearch(e.currentTarget.value)}
-					/>
-				</div>
-
-				<Button
-					type="button"
-					size="sm"
-					disabled={!account}
-					class="w-full sm:w-auto"
-					onclick={openAdd}
-					data-testid="activity-add"
-				>
-					<PlusIcon class="size-4" />
-					Add
-				</Button>
-
-				<Button
-					type="button"
-					variant="outline"
-					size="sm"
-					class="relative"
-					aria-label="Filters"
-					data-testid="activity-filters-open"
-					onclick={openFilters}
-				>
-					<SlidersHorizontalIcon class="size-4" />
-					Filters
-					{#if hasAdvancedFilters}
-						<span
-							class="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-medium tabular-nums"
-							data-testid="activity-filters-badge"
-						>
-							{advancedFilterCount}
-						</span>
-					{/if}
-				</Button>
-
+			<div
+				data-testid="activity-panel"
+				class={xlWide.current && filtersOpen ? 'flex gap-4' : 'space-y-3'}
+			>
 				{#snippet filterFormFields()}
 					<div class="space-y-1">
 						<Label for="activity-filter-type">Type</Label>
@@ -631,77 +594,146 @@
 					</div>
 				{/snippet}
 
-				<Sheet.Root open={filtersOpen} onOpenChange={onFiltersOpenChange}>
-					<Sheet.Content
-						side={filtersSheetSide}
-						class={filtersSheetClass}
-						data-testid={filtersSheetTestId}
-						showCloseButton={false}
+				{#snippet filterPanel()}
+					<div
+						class="border-border flex flex-row items-center justify-between gap-2 border-b px-4 py-3 text-left"
 					>
-						<Sheet.Header
-							class="border-border flex flex-row items-center justify-between gap-2 border-b px-4 py-3 text-left"
+						<p class="inline-flex items-center gap-2 text-base font-semibold">
+							<SlidersHorizontalIcon class="size-4" aria-hidden="true" />
+							Filters
+						</p>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							disabled={!canClearDraft}
+							data-testid="activity-filters-clear"
+							onclick={clearDraftFilters}
 						>
-							<Sheet.Title class="inline-flex items-center gap-2">
-								<SlidersHorizontalIcon class="size-4" aria-hidden="true" />
-								Filters
-							</Sheet.Title>
-							<Button
-								type="button"
-								variant="ghost"
-								size="sm"
-								disabled={!canClearDraft}
-								data-testid="activity-filters-clear"
-								onclick={clearDraftFilters}
-							>
-								<RotateCcwIcon class="size-4" />
-								Clear
-							</Button>
-						</Sheet.Header>
-						<div class="grid flex-1 gap-3 overflow-y-auto px-4 py-4">
-							{@render filterFormFields()}
+							<RotateCcwIcon class="size-4" />
+							Clear
+						</Button>
+					</div>
+					<div class="grid flex-1 gap-3 overflow-y-auto px-4 py-4">
+						{@render filterFormFields()}
+					</div>
+					<div class="border-border flex flex-row gap-2 border-t px-4 py-3">
+						<Button
+							type="button"
+							variant="outline"
+							class="flex-1"
+							data-testid="activity-filters-close"
+							onclick={requestCloseFilters}
+						>
+							Close
+						</Button>
+						<Button
+							type="button"
+							class="flex-1"
+							disabled={!canApplyDraft}
+							data-testid="activity-filters-apply"
+							onclick={applyFilters}
+						>
+							Apply
+						</Button>
+					</div>
+				{/snippet}
+
+				<div class="min-w-0 flex-1 space-y-3">
+					<div class="flex items-center gap-2">
+						<div class="relative flex-1" data-testid="activity-filters">
+							<SearchIcon
+								class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+								aria-hidden="true"
+							/>
+							<Input
+								id="activity-filter-search"
+								type="search"
+								placeholder="Note or amount"
+								class="pl-9"
+								value={applied.search ?? ''}
+								data-testid="activity-filter-search"
+								oninput={(e) => updateAppliedSearch(e.currentTarget.value)}
+							/>
 						</div>
-						<Sheet.Footer class="border-border flex-row gap-2 border-t px-4 py-3">
-							<Button
-								type="button"
-								variant="outline"
-								class="flex-1"
-								data-testid="activity-filters-close"
-								onclick={requestCloseFilters}
-							>
-								Close
-							</Button>
-							<Button
-								type="button"
-								class="flex-1"
-								disabled={!canApplyDraft}
-								data-testid="activity-filters-apply"
-								onclick={applyFilters}
-							>
-								Apply
-							</Button>
-						</Sheet.Footer>
-					</Sheet.Content>
-				</Sheet.Root>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							class="relative shrink-0"
+							aria-label="Filters"
+							data-testid="activity-filters-open"
+							onclick={openFilters}
+						>
+							<SlidersHorizontalIcon class="size-4" />
+							Filters
+							{#if hasAdvancedFilters}
+								<span
+									class="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-medium tabular-nums"
+									data-testid="activity-filters-badge"
+								>
+									{advancedFilterCount}
+								</span>
+							{/if}
+						</Button>
+					</div>
 
-				<ConfirmDialog
-					open={discardWarnOpen}
-					title="Discard filter changes?"
-					description="Your filter changes have not been applied and will be lost."
-					confirmLabel="Discard"
-					cancelLabel="Keep editing"
-					destructive
-					confirmTestId="activity-filters-discard-confirm"
-					onOpenChange={(open) => (discardWarnOpen = open)}
-					onConfirm={confirmDiscardFilters}
-				/>
+					<div class="flex justify-end">
+						<Button
+							type="button"
+							size="sm"
+							disabled={!account}
+							onclick={openAdd}
+							data-testid="activity-add"
+						>
+							<PlusIcon class="size-4" />
+							Add
+						</Button>
+					</div>
 
-				<ActivityTable
-					transactions={filteredTransactions}
-					totalCount={transactions.length}
-					{currencyLabel}
-					{categoryName}
-					onEdit={onOpenEdit}
-				/>
+					{#if !xlWide.current}
+						<Sheet.Root open={filtersOpen} onOpenChange={onFiltersOpenChange}>
+							<Sheet.Content
+								side={filtersSheetSide}
+								class={filtersSheetClass}
+								data-testid="activity-filters-sheet"
+								showCloseButton={false}
+							>
+								<Sheet.Title class="sr-only">Filters</Sheet.Title>
+								{@render filterPanel()}
+							</Sheet.Content>
+						</Sheet.Root>
+					{/if}
+
+					<ConfirmDialog
+						open={discardWarnOpen}
+						title="Discard filter changes?"
+						description="Your filter changes have not been applied and will be lost."
+						confirmLabel="Discard"
+						cancelLabel="Keep editing"
+						destructive
+						confirmTestId="activity-filters-discard-confirm"
+						onOpenChange={(open) => (discardWarnOpen = open)}
+						onConfirm={confirmDiscardFilters}
+					/>
+
+					<ActivityTable
+						transactions={filteredTransactions}
+						totalCount={transactions.length}
+						{currencyLabel}
+						{categoryName}
+						onEdit={onOpenEdit}
+					/>
+				</div>
+
+				{#if xlWide.current && filtersOpen}
+					<aside
+						data-testid="activity-filters-drawer"
+						class="border-border bg-card flex w-72 shrink-0 flex-col border-l"
+					>
+						{@render filterPanel()}
+					</aside>
+				{/if}
 			</div>
 		{:else if route === 'categories'}
 			<CategoriesPanel
@@ -737,13 +769,3 @@
 		{/if}
 	</div>
 </Sidebar.Inset>
-
-<style>
-	:global(
-		body:has(.activity-filters-drawer[data-state='open']) [data-slot='sheet-overlay']
-	) {
-		background: transparent;
-		backdrop-filter: none;
-		pointer-events: none;
-	}
-</style>

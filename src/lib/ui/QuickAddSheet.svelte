@@ -240,7 +240,7 @@
 </script>
 
 {#snippet txHeader(Title: typeof Dialog.Title, Description: typeof Dialog.Description)}
-	<div class="flex items-start justify-between gap-3">
+	<div class="flex items-center justify-between gap-3">
 		<div class="min-w-0 flex-1">
 			<Title>{sheetTitle}</Title>
 			<Description>{sheetDescription}</Description>
@@ -248,9 +248,9 @@
 		{#if isEdit && !isVoidedView}
 			<Button
 				type="button"
-				variant="destructive"
+				variant="outline"
 				size="sm"
-				class="shrink-0 gap-1.5"
+				class="border-destructive/40 text-destructive hover:bg-destructive/10 shrink-0 gap-1.5"
 				disabled={saving}
 				data-testid="tx-void"
 				onclick={() => (voidConfirmOpen = true)}
@@ -315,16 +315,15 @@
 		{/if}
 
 		<div class="space-y-2">
-			<Label for="amount">Amount</Label>
+			<Label>Amount</Label>
 			<InputGroup.Root
 				data-disabled={isVoidedView || saving ? true : undefined}
 				class={cn((isVoidedView || saving) && 'shadow-none')}
 			>
-				<InputGroup.Addon class="bg-muted/60 border-input border-r">
+				<InputGroup.Addon class="bg-muted/60 border-input border-r px-2.5">
 					<InputGroup.Text>{currencyLabel}</InputGroup.Text>
 				</InputGroup.Addon>
 				<InputGroup.Input
-					id="amount"
 					name="amount"
 					inputmode="numeric"
 					autocomplete="off"
@@ -335,19 +334,20 @@
 					oninput={(e) => onAmountInput(e.currentTarget.value)}
 					disabled={isVoidedView || saving}
 					class={cn((isVoidedView || saving) && 'shadow-none')}
+					aria-label="Amount"
 					aria-invalid={error ? true : undefined}
 				/>
 			</InputGroup.Root>
 		</div>
 
 		<div class="space-y-2">
-			<Label for="category">Category</Label>
+			<Label>Category</Label>
 			<DropdownMenu.Root>
 				<DropdownMenu.Trigger
-					id="category"
 					class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full items-center justify-between rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
 					disabled={isVoidedView || saving}
 					data-testid="tx-category"
+					aria-label="Category"
 				>
 					{#if categoryId}
 						<span class="truncate">{selectedCategoryLabel}</span>
@@ -371,24 +371,24 @@
 		</div>
 
 		<div class="space-y-2">
-			<Label for="occurredOn">Date</Label>
+			<Label>Date</Label>
 			<DateField
-				id="occurredOn"
 				value={occurredOn}
 				onValueChange={(next) => (occurredOn = next)}
 				disabled={isVoidedView || saving}
+				aria-label="Date"
 				testid="tx-occurred-on"
 			/>
 		</div>
 
 		<div class="space-y-2">
-			<Label for="note">Note</Label>
+			<Label>Note</Label>
 			<Input
-				id="note"
 				name="note"
 				placeholder="Optional"
 				bind:value={note}
 				disabled={isVoidedView || saving}
+				aria-label="Note"
 			/>
 		</div>
 
