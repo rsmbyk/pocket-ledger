@@ -40,3 +40,7 @@ Capture point-in-time net worth (account balance total) and show a simple histor
 - Vitest: `src/lib/application/net-worth.test.ts`
 - Playwright: `e2e/net-worth.e2e.ts`
 - Implementation: `src/lib/application/net-worth.ts`
+
+## Related
+
+- Superseded by Draft Spec [059](059-remove-net-worth/spec.md) (feature removal; backup table retained)

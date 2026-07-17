@@ -41,3 +41,7 @@ Track savings-style goals with a target amount and progress toward that target.
 - Vitest: `src/lib/domain/goals.test.ts`
 - Playwright: `e2e/goals.e2e.ts`
 - Implementation: `src/lib/application/goals.ts`
+
+## Related
+
+- Progress / deadline model superseded by Draft Spec [060](060-goals-have-x-by-y/spec.md)
