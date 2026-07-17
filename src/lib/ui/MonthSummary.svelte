@@ -105,7 +105,7 @@
 
 		<div class="border-border border-t px-4 py-3">
 			<CategoryBreakdownChart
-				title="Income by category"
+				title="Income"
 				titleIcon={incomeTitleIcon}
 				rows={summary.incomeByCategory}
 				{currencyLabel}
@@ -117,7 +117,7 @@
 		</div>
 		<div class="border-border border-t px-4 py-3">
 			<CategoryBreakdownChart
-				title="Expenses by category"
+				title="Expenses"
 				titleIcon={expenseTitleIcon}
 				rows={summary.expenseByCategory}
 				{currencyLabel}

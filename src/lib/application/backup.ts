@@ -94,7 +94,11 @@ export function parseBackupJson(raw: string): LedgerBackup {
 		categories: backup.categories ?? [],
 		transactions: backup.transactions ?? [],
 		recurringRules: backup.recurringRules ?? [],
-		goals: backup.goals ?? [],
+		goals: (backup.goals ?? []).map((g) => ({
+			...g,
+			targetOn: typeof g.targetOn === 'string' && g.targetOn.trim() ? g.targetOn : '2099-12-31',
+			savedMinor: typeof g.savedMinor === 'number' ? g.savedMinor : 0
+		})),
 		netWorthSnapshots: backup.netWorthSnapshots ?? [],
 		settings: (backup.settings ?? []).filter((s) => !SECRET_SETTING_KEYS.has(s.key))
 	};

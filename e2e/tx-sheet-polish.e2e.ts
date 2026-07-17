@@ -14,14 +14,17 @@ test.describe('047 tx sheet polish', () => {
 		await dialog.getByRole('button', { name: 'Expense', exact: true }).click();
 		await dialog.getByRole('textbox', { name: 'Amount' }).fill('15000');
 		await selectTxCategory(page, 'Food', dialog);
+		await expect(page.getByTestId('tx-header-icon-add')).toBeVisible();
 		await dialog.getByTestId('tx-save').click();
 
 		await page.getByTestId('recent-list').locator('[data-testid^="recent-row-"]').first().click();
 		await expect(page.getByRole('heading', { name: 'Edit transaction' })).toBeVisible();
+		await expect(page.getByTestId('tx-header-icon-edit')).toBeVisible();
 
 		const voidBtn = page.getByTestId('tx-void');
 		await expect(voidBtn).toBeVisible();
 		await expect(voidBtn).toHaveClass(/border-destructive/);
+		await expect(voidBtn).toHaveClass(/bg-destructive\/10/);
 
 		const categoryTrigger = page.getByRole('button', { name: 'Category' });
 		await page.getByText('Category', { exact: true }).first().click({ force: true });

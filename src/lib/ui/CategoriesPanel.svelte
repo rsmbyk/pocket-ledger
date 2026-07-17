@@ -12,6 +12,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import type { CategoryRow } from '$lib/data/db';
+	import { isCategoryInUse } from '$lib/application/categories';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import { cn } from '$lib/utils.js';
@@ -46,6 +47,7 @@
 	let error = $state('');
 	let renameDrafts = $state<Record<string, string>>({});
 	let deleteTarget = $state<{ id: string; name: string } | null>(null);
+	let inUseTarget = $state<{ id: string; name: string } | null>(null);
 
 	let incomeItems = $state<CategoryRow[]>([]);
 	let expenseItems = $state<CategoryRow[]>([]);
@@ -170,22 +172,31 @@
 		}
 	}
 
-	function openDeleteConfirm(id: string, name: string) {
-		deleteTarget = { id, name };
+	async function openDeleteConfirm(id: string, name: string) {
+		busy = true;
+		error = '';
+		try {
+			if (await isCategoryInUse(id)) {
+				inUseTarget = { id, name };
+			} else {
+				deleteTarget = { id, name };
+			}
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Something went wrong';
+		} finally {
+			busy = false;
+		}
 	}
 </script>
 
 <div class="space-y-4" data-testid="categories-panel">
-	{#if error}
-		<p class="text-destructive text-sm" role="alert">{error}</p>
-	{/if}
 	<div class="grid gap-4 md:grid-cols-2 md:items-start" data-testid="categories-desktop-grid">
 		{#each groups as group (group.kind)}
 			{@const items = itemsForKind(group.kind)}
 			<Card.Root class={cn('gap-0 overflow-hidden py-0', group.cardClass)}>
 				<Card.Header
 					class={cn(
-						'flex flex-row items-center justify-between gap-2 space-y-0 border-b px-4 py-2 ![.border-b]:pb-2',
+						'flex flex-row items-center justify-between gap-2 space-y-0 border-b px-4 pt-2 !pb-2',
 						group.headerClass
 					)}
 				>
@@ -278,12 +289,11 @@
 												</Button>
 												<Button
 													size="icon-sm"
-													variant="outline"
-													class="border-destructive/40 text-destructive hover:bg-destructive/10"
+													variant="destructive"
 													aria-label={`Delete ${cat.name}`}
 													data-testid="category-delete"
 													disabled={busy}
-													onclick={() => openDeleteConfirm(cat.id, cat.name)}
+													onclick={() => void openDeleteConfirm(cat.id, cat.name)}
 												>
 													<Trash2Icon class="size-4" />
 												</Button>
@@ -366,6 +376,7 @@
 		: 'This cannot be undone.'}
 	confirmLabel="Delete"
 	destructive
+	dangerChrome
 	confirmTestId="category-delete-confirm"
 	onOpenChange={(open) => {
 		if (!open) deleteTarget = null;
@@ -375,5 +386,21 @@
 		const { id } = deleteTarget;
 		await runAction(() => onDeleteCategory(id));
 		deleteTarget = null;
+	}}
+/>
+
+<ConfirmDialog
+	open={inUseTarget !== null}
+	title="Category in use"
+	description="This category is still used by transactions or recurring rules and cannot be deleted."
+	confirmLabel="Got it"
+	hideCancel
+	confirmTestId="category-in-use-dismiss"
+	contentTestId="category-in-use-dialog"
+	onOpenChange={(open) => {
+		if (!open) inUseTarget = null;
+	}}
+	onConfirm={() => {
+		inUseTarget = null;
 	}}
 />

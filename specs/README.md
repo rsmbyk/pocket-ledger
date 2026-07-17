@@ -21,8 +21,8 @@ Living behavior contracts for Pocket Ledger.
 | [002](002-month-charts.md) | Month summary + charts | Accepted |
 | [003](003-export-import.md) | Export & import JSON backup | Accepted |
 | [004](004-recurring.md) | Recurring transactions | Accepted |
-| [005](005-goals.md) | Goals | Accepted |
-| [006](006-net-worth.md) | Net worth snapshots | Accepted |
+| [005](005-goals.md) | Goals | Accepted — progress model superseded by [060](060-goals-have-x-by-y/spec.md) |
+| [006](006-net-worth.md) | Net worth snapshots | Superseded by [059](059-remove-net-worth/spec.md) |
 | [007](007-passphrase-lock.md) | Optional passphrase lock | Accepted |
 | [008](008-more-tab.md) | More tab hub | Accepted |
 | [009](009-router.md) | Hash router for shell panels | Accepted |
@@ -66,3 +66,15 @@ Living behavior contracts for Pocket Ledger.
 | [048](048-home-amount-hide-icons/spec.md) | Home amount hide + by-category icons | Accepted |
 | [049](049-activity-toolbar-drawer/spec.md) | Activity toolbar, drawer, sort icons, Clear | Accepted |
 | [050](050-categories-header-delete/spec.md) | Categories header density + delete outline | Accepted |
+| [051](051-activity-hide-note-column/spec.md) | Hide Activity Note column | Accepted |
+| [052](052-month-breakdown-titles/spec.md) | Month breakdown titles (Income / Expenses) | Accepted |
+| [053](053-void-outline-danger-fill/spec.md) | Void outline + danger fill | Accepted |
+| [054](054-tx-header-icon/spec.md) | Transaction header icons | Accepted |
+| [055](055-confirm-above-tx-modal/spec.md) | Confirm above transaction modal | Accepted |
+| [056](056-category-in-use-warn/spec.md) | Category in-use warn dialog | Accepted |
+| [057](057-confirm-danger-chrome/spec.md) | ConfirmDialog danger chrome | Accepted |
+| [058](058-activity-filters-always-drawer/spec.md) | Always-on Activity filters drawer | Accepted |
+| [059](059-remove-net-worth/spec.md) | Remove Net worth | Accepted |
+| [060](060-goals-have-x-by-y/spec.md) | Goals — have X by Y + Home strip | Accepted |
+| [061](061-more-cards-icons-padding/spec.md) | More cards padding + icons | Accepted |
+| [062](062-test-coverage-audit/spec.md) | Codebase test coverage audit | Accepted |

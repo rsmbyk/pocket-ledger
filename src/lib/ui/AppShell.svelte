@@ -12,7 +12,6 @@
 	import type { MonthSummary } from '$lib/domain/month-summary';
 	import type { RecurringRule, RecurringFrequency } from '$lib/domain/recurring';
 	import type { Goal } from '$lib/domain/goals';
-	import type { NetWorthSnapshot } from '$lib/domain/net-worth';
 	import type { AddableTransactionType } from '$lib/domain/transaction-rules';
 	import { isAppRoute, parseHash, routeToHash, type AppRoute } from '$lib/shared/router';
 
@@ -25,7 +24,6 @@
 		monthSummary: MonthSummary | null;
 		recurringRules: RecurringRule[];
 		goals: Goal[];
-		snapshots: NetWorthSnapshot[];
 		expenseCategories: CategoryRow[];
 		incomeCategories: CategoryRow[];
 		lockEnabled: boolean;
@@ -49,10 +47,8 @@
 		}) => void | Promise<void>;
 		onToggleRecurring: (id: string, active: boolean) => void | Promise<void>;
 		onDeleteRecurring: (id: string) => void | Promise<void>;
-		onCreateGoal: (name: string, targetRaw: string) => void | Promise<void>;
-		onUpdateGoalSaved: (id: string, savedRaw: string) => void | Promise<void>;
+		onCreateGoal: (name: string, targetRaw: string, targetOn: string) => void | Promise<void>;
 		onDeleteGoal: (id: string) => void | Promise<void>;
-		onCaptureNetWorth: () => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
@@ -75,7 +71,6 @@
 		monthSummary,
 		recurringRules,
 		goals,
-		snapshots,
 		expenseCategories,
 		incomeCategories,
 		lockEnabled,
@@ -91,9 +86,7 @@
 		onToggleRecurring,
 		onDeleteRecurring,
 		onCreateGoal,
-		onUpdateGoalSaved,
 		onDeleteGoal,
-		onCaptureNetWorth,
 		onEnableLock,
 		onDisableLock,
 		onCreateCategory,
@@ -197,7 +190,6 @@
 				{monthSummary}
 				{recurringRules}
 				{goals}
-				{snapshots}
 				{expenseCategories}
 				{incomeCategories}
 				{lockEnabled}
@@ -214,9 +206,7 @@
 				{onToggleRecurring}
 				{onDeleteRecurring}
 				{onCreateGoal}
-				{onUpdateGoalSaved}
 				{onDeleteGoal}
-				{onCaptureNetWorth}
 				{onEnableLock}
 				{onDisableLock}
 				{onCreateCategory}

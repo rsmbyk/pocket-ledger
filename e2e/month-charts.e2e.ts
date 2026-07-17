@@ -44,6 +44,8 @@ test.describe('002 month charts', () => {
 		await expect(page.getByTestId('month-footer-net')).toHaveClass(/text-emerald-600/);
 		await expect(page.getByTestId('income-category-chart')).toContainText('Salary');
 		await expect(page.getByTestId('category-chart')).toContainText('Food');
+		await expect(page.getByTestId('income-category-chart').getByText('Income', { exact: true })).toBeVisible();
+		await expect(page.getByTestId('category-chart').getByText('Expenses', { exact: true })).toBeVisible();
 		await expect(page.getByTestId('month-ending')).toContainText('85');
 	});
 

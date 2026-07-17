@@ -27,13 +27,8 @@
 	import {
 		createGoal,
 		listGoals,
-		removeGoal,
-		updateGoalSaved
+		removeGoal
 	} from '$lib/application/goals';
-	import {
-		captureNetWorth,
-		listNetWorthSnapshots
-	} from '$lib/application/net-worth';
 	import {
 		disableLock,
 		enableLock,
@@ -52,7 +47,6 @@
 	import type { CategoryRow } from '$lib/data/db';
 	import type { RecurringRule } from '$lib/domain/recurring';
 	import type { Goal } from '$lib/domain/goals';
-	import type { NetWorthSnapshot } from '$lib/domain/net-worth';
 	import {
 		currentMonthKey,
 		shiftMonth,
@@ -77,7 +71,6 @@
 	let monthSummary = $state<MonthSummary | null>(null);
 	let recurringRules = $state<RecurringRule[]>([]);
 	let goals = $state<Goal[]>([]);
-	let snapshots = $state<NetWorthSnapshot[]>([]);
 	let lockEnabled = $state(false);
 	let unlocked = $state(true);
 	let ready = $state(false);
@@ -85,7 +78,7 @@
 	let themePreference = $state<ThemePreference>('system');
 
 	async function refreshLedger(active: Account, key: MonthKey = monthKey) {
-		const [balance, recent, categories, summary, rules, goalRows, snaps, exp, inc] =
+		const [balance, recent, categories, summary, rules, goalRows, exp, inc] =
 			await Promise.all([
 				getAccountBalance(active.id),
 				listRecentTransactions(active.id),
@@ -93,7 +86,6 @@
 				getMonthSummary(active.id, key),
 				listRecurringRules(),
 				listGoals(),
-				listNetWorthSnapshots(),
 				getCategoriesForType('expense'),
 				getCategoriesForType('income')
 			]);
@@ -103,7 +95,6 @@
 		monthSummary = summary;
 		recurringRules = rules;
 		goals = goalRows;
-		snapshots = snaps;
 		expenseCategories = exp;
 		incomeCategories = inc;
 	}
@@ -226,7 +217,6 @@
 		{monthSummary}
 		{recurringRules}
 		{goals}
-		{snapshots}
 		{expenseCategories}
 		{incomeCategories}
 		{lockEnabled}
@@ -258,20 +248,12 @@
 			await removeRecurringRule(id);
 			await onRefreshLedger();
 		}}
-		onCreateGoal={async (name, targetRaw) => {
-			await createGoal(name, targetRaw);
-			await onRefreshLedger();
-		}}
-		onUpdateGoalSaved={async (id, savedRaw) => {
-			await updateGoalSaved(id, savedRaw);
+		onCreateGoal={async (name, targetRaw, targetOn) => {
+			await createGoal(name, targetRaw, targetOn);
 			await onRefreshLedger();
 		}}
 		onDeleteGoal={async (id) => {
 			await removeGoal(id);
-			await onRefreshLedger();
-		}}
-		onCaptureNetWorth={async () => {
-			await captureNetWorth();
 			await onRefreshLedger();
 		}}
 		onEnableLock={async (passphrase) => {

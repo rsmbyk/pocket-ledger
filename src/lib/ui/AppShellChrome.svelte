@@ -34,8 +34,15 @@
 	import type { MonthSummary } from '$lib/domain/month-summary';
 	import type { RecurringRule, RecurringFrequency } from '$lib/domain/recurring';
 	import type { Goal } from '$lib/domain/goals';
-	import type { NetWorthSnapshot } from '$lib/domain/net-worth';
-	import type { AddableTransactionType } from '$lib/domain/transaction-rules';
+	import {
+		daysRemaining,
+		goalProgressPercent,
+		sortGoalsByNearestDeadline
+	} from '$lib/domain/goals';
+	import {
+		todayOccurredOn,
+		type AddableTransactionType
+	} from '$lib/domain/transaction-rules';
 	import { formatMinor } from '$lib/domain/money';
 	import { isAppRoute, type AppRoute } from '$lib/shared/router';
 	import {
@@ -58,7 +65,6 @@
 		monthSummary: MonthSummary | null;
 		recurringRules: RecurringRule[];
 		goals: Goal[];
-		snapshots: NetWorthSnapshot[];
 		expenseCategories: CategoryRow[];
 		incomeCategories: CategoryRow[];
 		lockEnabled: boolean;
@@ -83,10 +89,8 @@
 		}) => void | Promise<void>;
 		onToggleRecurring: (id: string, active: boolean) => void | Promise<void>;
 		onDeleteRecurring: (id: string) => void | Promise<void>;
-		onCreateGoal: (name: string, targetRaw: string) => void | Promise<void>;
-		onUpdateGoalSaved: (id: string, savedRaw: string) => void | Promise<void>;
+		onCreateGoal: (name: string, targetRaw: string, targetOn: string) => void | Promise<void>;
 		onDeleteGoal: (id: string) => void | Promise<void>;
-		onCaptureNetWorth: () => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
@@ -109,7 +113,6 @@
 		monthSummary,
 		recurringRules,
 		goals,
-		snapshots,
 		expenseCategories,
 		incomeCategories,
 		lockEnabled,
@@ -126,9 +129,7 @@
 		onToggleRecurring,
 		onDeleteRecurring,
 		onCreateGoal,
-		onUpdateGoalSaved,
 		onDeleteGoal,
-		onCaptureNetWorth,
 		onEnableLock,
 		onDisableLock,
 		onCreateCategory,
@@ -243,6 +244,12 @@
 		return hideHomeAmounts ? '••••' : formatMinor(amount, currencyLabel);
 	}
 
+	function daysLeftLabel(days: number): string {
+		if (days > 0) return `${days} days left`;
+		if (days === 0) return 'Due today';
+		return `Overdue by ${Math.abs(days)} days`;
+	}
+
 	function navigate(next: string) {
 		if (!isAppRoute(next)) return;
 		onNavigate(next);
@@ -261,7 +268,7 @@
 
 	function applyFilters() {
 		applied = { ...cloneFilters(draft), search: applied.search ?? '' };
-		filtersOpen = false;
+		if (!xlWide.current) filtersOpen = false;
 	}
 
 	function requestCloseFilters() {
@@ -298,6 +305,11 @@
 	function updateAppliedSearch(next: string) {
 		applied = { ...applied, search: next };
 	}
+
+	$effect(() => {
+		if (route !== 'activity' || !xlWide.current) return;
+		draft = cloneFilters(applied);
+	});
 </script>
 
 <Sidebar.Root collapsible="offcanvas">
@@ -383,7 +395,7 @@
 	<div
 		class={[
 			'mx-auto flex w-full flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8',
-			activityStageWide ? 'max-w-5xl' : 'max-w-3xl'
+			activityStageWide ? 'max-w-none' : 'max-w-3xl'
 		]}
 		data-testid="app-stage"
 	>
@@ -404,6 +416,25 @@
 						{homeMoney(balanceMinor)}
 					</p>
 				</section>
+
+				{#if goals.length > 0}
+					{@const sorted = sortGoalsByNearestDeadline(goals, balanceMinor)}
+					{@const top = sorted[0]}
+					{@const days = daysRemaining(top.targetOn, todayOccurredOn())}
+					{@const percent = goalProgressPercent(top.targetMinor, balanceMinor)}
+					<button
+						type="button"
+						class="border-border/80 bg-card hover:bg-muted/40 flex w-full flex-col gap-0.5 rounded-xl border px-4 py-3 text-left shadow-xs transition-colors"
+						data-testid="home-goal-strip"
+						onclick={() => navigate('more')}
+					>
+						<p class="text-muted-foreground text-sm">Nearest goal</p>
+						<p class="font-medium">{top.name}</p>
+						<p class="text-muted-foreground text-sm">
+							{percent}% · {daysLeftLabel(days)}
+						</p>
+					</button>
+				{/if}
 
 				{#if monthSummary}
 					<MonthSummaryCard
@@ -509,7 +540,7 @@
 		{:else if route === 'activity'}
 			<div
 				data-testid="activity-panel"
-				class={xlWide.current && filtersOpen ? 'flex gap-4' : 'space-y-3'}
+				class={xlWide.current ? 'flex gap-4' : 'space-y-3'}
 			>
 				{#snippet filterFormFields()}
 					<div class="space-y-1">
@@ -595,13 +626,19 @@
 				{/snippet}
 
 				{#snippet filterPanel()}
+					{@const persistent = xlWide.current}
 					<div
-						class="border-border flex flex-row items-center justify-between gap-2 border-b px-4 py-3 text-left"
+						class={[
+							'border-border flex flex-row items-center gap-2 border-b px-4 py-3 text-left',
+							persistent ? 'justify-end' : 'justify-between'
+						]}
 					>
-						<p class="inline-flex items-center gap-2 text-base font-semibold">
-							<SlidersHorizontalIcon class="size-4" aria-hidden="true" />
-							Filters
-						</p>
+						{#if !persistent}
+							<p class="inline-flex items-center gap-2 text-base font-semibold">
+								<SlidersHorizontalIcon class="size-4" aria-hidden="true" />
+								Filters
+							</p>
+						{/if}
 						<Button
 							type="button"
 							variant="outline"
@@ -614,22 +651,24 @@
 							Clear
 						</Button>
 					</div>
-					<div class="grid flex-1 gap-3 overflow-y-auto px-4 py-4">
+					<div class="grid gap-3 overflow-y-auto px-4 py-4">
 						{@render filterFormFields()}
 					</div>
 					<div class="border-border flex flex-row gap-2 border-t px-4 py-3">
+						{#if !persistent}
+							<Button
+								type="button"
+								variant="outline"
+								class="flex-1"
+								data-testid="activity-filters-close"
+								onclick={requestCloseFilters}
+							>
+								Close
+							</Button>
+						{/if}
 						<Button
 							type="button"
-							variant="outline"
-							class="flex-1"
-							data-testid="activity-filters-close"
-							onclick={requestCloseFilters}
-						>
-							Close
-						</Button>
-						<Button
-							type="button"
-							class="flex-1"
+							class={persistent ? 'w-full' : 'flex-1'}
 							disabled={!canApplyDraft}
 							data-testid="activity-filters-apply"
 							onclick={applyFilters}
@@ -656,26 +695,27 @@
 								oninput={(e) => updateAppliedSearch(e.currentTarget.value)}
 							/>
 						</div>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							class="relative shrink-0"
-							aria-label="Filters"
-							data-testid="activity-filters-open"
-							onclick={openFilters}
-						>
-							<SlidersHorizontalIcon class="size-4" />
-							Filters
-							{#if hasAdvancedFilters}
-								<span
-									class="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-medium tabular-nums"
-									data-testid="activity-filters-badge"
-								>
-									{advancedFilterCount}
-								</span>
-							{/if}
-						</Button>
+						{#if !xlWide.current}
+							<Button
+								type="button"
+								variant="outline"
+								class="relative shrink-0"
+								aria-label="Filters"
+								data-testid="activity-filters-open"
+								onclick={openFilters}
+							>
+								<SlidersHorizontalIcon class="size-4" />
+								Filters
+								{#if hasAdvancedFilters}
+									<span
+										class="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-medium tabular-nums"
+										data-testid="activity-filters-badge"
+									>
+										{advancedFilterCount}
+									</span>
+								{/if}
+							</Button>
+						{/if}
 					</div>
 
 					<div class="flex justify-end">
@@ -726,7 +766,7 @@
 					/>
 				</div>
 
-				{#if xlWide.current && filtersOpen}
+				{#if xlWide.current}
 					<aside
 						data-testid="activity-filters-drawer"
 						class="border-border bg-card flex w-72 shrink-0 flex-col border-l"
@@ -747,9 +787,9 @@
 		{:else}
 			<MorePanel
 				{currencyLabel}
+				{balanceMinor}
 				{recurringRules}
 				{goals}
-				{snapshots}
 				{expenseCategories}
 				{incomeCategories}
 				{lockEnabled}
@@ -760,9 +800,7 @@
 				{onToggleRecurring}
 				{onDeleteRecurring}
 				{onCreateGoal}
-				{onUpdateGoalSaved}
 				{onDeleteGoal}
-				{onCaptureNetWorth}
 				{onEnableLock}
 				{onDisableLock}
 			/>

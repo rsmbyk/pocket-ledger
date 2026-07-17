@@ -39,6 +39,8 @@ async function openAndApplyType(page: Page, type: 'all' | 'income' | 'expense'):
 }
 
 test.describe('017 / 045 activity filters', () => {
+	test.use({ viewport: { width: 1024, height: 800 } });
+
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
 		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
@@ -75,7 +77,11 @@ test.describe('017 / 045 activity filters', () => {
 		await page.getByTestId('activity-filter-type').selectOption('expense');
 		await page.getByTestId('activity-filters-close').click();
 		await expect(page.getByRole('heading', { name: 'Discard filter changes?' })).toBeVisible();
-		await page.getByTestId('activity-filters-discard-confirm').click();
+		await expect(page.getByTestId('confirm-dialog-danger-header')).toHaveCount(0);
+		const discardConfirm = page.getByTestId('activity-filters-discard-confirm');
+		await expect(discardConfirm).toHaveClass(/bg-destructive/);
+		await expect(discardConfirm).toHaveClass(/border-destructive/);
+		await discardConfirm.click();
 		await expect(filtersSurface(page)).toBeHidden();
 		await expect(page.getByTestId('activity-list')).toContainText('Salary');
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
@@ -103,7 +109,7 @@ test.describe('017 / 045 activity filters', () => {
 	});
 });
 
-test.describe('049 activity filters xl drawer', () => {
+test.describe('049 / 058 activity filters xl drawer', () => {
 	test.use({ viewport: { width: 1280, height: 800 } });
 
 	test.beforeEach(async ({ page }) => {
@@ -111,17 +117,21 @@ test.describe('049 activity filters xl drawer', () => {
 		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
 	});
 
-	test('opens in-layout drawer without sheet overlay', async ({ page }) => {
+	test('always shows in-layout drawer without open button or Close', async ({ page }) => {
 		await seedIncomeAndExpense(page);
 		await goToNav(page, 'activity');
-		await page.getByTestId('activity-filters-open').click();
 		await expect(page.getByTestId('activity-filters-drawer')).toBeVisible();
+		await expect(page.getByTestId('activity-filters-open')).toHaveCount(0);
 		await expect(page.getByTestId('activity-filters-sheet')).toHaveCount(0);
+		await expect(page.getByTestId('activity-filters-close')).toHaveCount(0);
+		await expect(page.getByTestId('activity-filters-clear')).toBeVisible();
 		await expect(page.getByTestId('activity-filters-clear')).toHaveClass(/border/);
+		await expect(page.getByTestId('activity-filters-apply')).toBeVisible();
 		await page.getByTestId('activity-filter-type').selectOption('expense');
 		await page.getByTestId('activity-filters-apply').click();
-		await expect(page.getByTestId('activity-filters-drawer')).toBeHidden();
+		await expect(page.getByTestId('activity-filters-drawer')).toBeVisible();
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
+		await expect(page.getByTestId('activity-list')).not.toContainText('Salary');
 	});
 });
 

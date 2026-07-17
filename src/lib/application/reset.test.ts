@@ -6,7 +6,7 @@ import { createCategory, listCategories } from '$lib/application/categories';
 import { addTransaction, listRecentTransactions } from '$lib/application/transactions';
 import { createRecurringRule, listRecurringRules } from '$lib/application/recurring';
 import { createGoal, listGoals } from '$lib/application/goals';
-import { captureNetWorth, listNetWorthSnapshots } from '$lib/application/net-worth';
+import { listNetWorthSnapshots, putNetWorthSnapshot } from '$lib/data/net-worth-repo';
 import { enableLock, isLockEnabled, unlockWithPassphrase } from '$lib/application/lock';
 import { resetLocalData } from './reset';
 
@@ -33,8 +33,13 @@ describe('resetLocalData', () => {
 			frequency: 'monthly',
 			note: ''
 		});
-		await createGoal('Trip', '100000');
-		await captureNetWorth();
+		await createGoal('Trip', '100000', '2026-12-31');
+		await putNetWorthSnapshot({
+			id: crypto.randomUUID(),
+			capturedOn: '2026-07-14',
+			totalMinor: 1000,
+			createdAt: new Date().toISOString()
+		});
 
 		await resetLocalData({ preserveCategories: false, preservePassphrase: false });
 

@@ -1,6 +1,8 @@
 <script lang="ts">
+	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { cn } from '$lib/utils.js';
 
 	type Props = {
 		open: boolean;
@@ -10,7 +12,12 @@
 		cancelLabel?: string;
 		/** Destructive styling on the confirm action. */
 		destructive?: boolean;
+		/** High-severity danger header + icon. */
+		dangerChrome?: boolean;
+		/** Hide Cancel; only the confirm/dismiss action is shown. */
+		hideCancel?: boolean;
 		confirmTestId?: string;
+		contentTestId?: string;
 		onOpenChange: (open: boolean) => void;
 		onConfirm: () => void | Promise<void>;
 	};
@@ -22,7 +29,10 @@
 		confirmLabel = 'Continue',
 		cancelLabel = 'Cancel',
 		destructive = false,
+		dangerChrome = false,
+		hideCancel = false,
 		confirmTestId = 'confirm-dialog-confirm',
+		contentTestId = 'confirm-dialog',
 		onOpenChange,
 		onConfirm
 	}: Props = $props();
@@ -40,31 +50,60 @@
 	}
 </script>
 
+{#snippet actions()}
+	{#if !hideCancel}
+		<Button
+			type="button"
+			variant="outline"
+			disabled={busy}
+			data-testid="confirm-dialog-cancel"
+			onclick={() => onOpenChange(false)}
+		>
+			{cancelLabel}
+		</Button>
+	{/if}
+	<Button
+		type="button"
+		variant={destructive ? 'destructive' : 'default'}
+		disabled={busy}
+		data-testid={confirmTestId}
+		onclick={() => void confirm()}
+	>
+		{confirmLabel}
+	</Button>
+{/snippet}
+
 <Dialog.Root {open} onOpenChange={onOpenChange}>
-	<Dialog.Content class="sm:max-w-md" data-testid="confirm-dialog" showCloseButton={false}>
-		<Dialog.Header>
-			<Dialog.Title>{title}</Dialog.Title>
-			<Dialog.Description>{description}</Dialog.Description>
-		</Dialog.Header>
-		<Dialog.Footer class="gap-2 sm:justify-end">
-			<Button
-				type="button"
-				variant="outline"
-				disabled={busy}
-				data-testid="confirm-dialog-cancel"
-				onclick={() => onOpenChange(false)}
+	<Dialog.Content
+		class={cn('sm:max-w-md z-[60]', dangerChrome && 'gap-0 overflow-hidden p-0')}
+		overlayClass="z-[60]"
+		data-testid={contentTestId}
+		showCloseButton={false}
+	>
+		{#if dangerChrome}
+			<Dialog.Header
+				class="gap-1 space-y-0 border-b border-destructive/20 bg-destructive/5 px-6 py-3"
+				data-testid="confirm-dialog-danger-header"
 			>
-				{cancelLabel}
-			</Button>
-			<Button
-				type="button"
-				variant={destructive ? 'destructive' : 'default'}
-				disabled={busy}
-				data-testid={confirmTestId}
-				onclick={() => void confirm()}
-			>
-				{confirmLabel}
-			</Button>
-		</Dialog.Footer>
+				<div class="flex items-center gap-2">
+					<TriangleAlertIcon class="text-destructive size-5 shrink-0" aria-hidden="true" />
+					<Dialog.Title>{title}</Dialog.Title>
+				</div>
+			</Dialog.Header>
+			<div class="space-y-6 px-6 py-4">
+				<Dialog.Description>{description}</Dialog.Description>
+				<Dialog.Footer class="gap-2 sm:justify-end">
+					{@render actions()}
+				</Dialog.Footer>
+			</div>
+		{:else}
+			<Dialog.Header>
+				<Dialog.Title>{title}</Dialog.Title>
+				<Dialog.Description>{description}</Dialog.Description>
+			</Dialog.Header>
+			<Dialog.Footer class="gap-2 sm:justify-end">
+				{@render actions()}
+			</Dialog.Footer>
+		{/if}
 	</Dialog.Content>
 </Dialog.Root>

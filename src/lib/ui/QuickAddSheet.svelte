@@ -2,6 +2,8 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import BanIcon from '@lucide/svelte/icons/ban';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import PencilIcon from '@lucide/svelte/icons/pencil';
+	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -242,15 +244,24 @@
 {#snippet txHeader(Title: typeof Dialog.Title, Description: typeof Dialog.Description)}
 	<div class="flex items-center justify-between gap-3">
 		<div class="min-w-0 flex-1">
-			<Title>{sheetTitle}</Title>
+			<div class="flex items-center gap-2">
+				{#if isVoidedView}
+					<BanIcon class="size-4 shrink-0" data-testid="tx-header-icon-voided" aria-hidden="true" />
+				{:else if isEdit}
+					<PencilIcon class="size-4 shrink-0" data-testid="tx-header-icon-edit" aria-hidden="true" />
+				{:else}
+					<PlusIcon class="size-4 shrink-0" data-testid="tx-header-icon-add" aria-hidden="true" />
+				{/if}
+				<Title>{sheetTitle}</Title>
+			</div>
 			<Description>{sheetDescription}</Description>
 		</div>
 		{#if isEdit && !isVoidedView}
 			<Button
 				type="button"
-				variant="outline"
+				variant="destructive"
 				size="sm"
-				class="border-destructive/40 text-destructive hover:bg-destructive/10 shrink-0 gap-1.5"
+				class="shrink-0 gap-1.5"
 				disabled={saving}
 				data-testid="tx-void"
 				onclick={() => (voidConfirmOpen = true)}
@@ -273,7 +284,7 @@
 		{#if isEdit || isVoidedView}
 			<span
 				class={cn(
-					'inline-flex w-fit rounded-md px-2 py-0.5 text-xs font-medium',
+					'mx-auto inline-flex w-fit rounded-md px-2 py-0.5 text-xs font-medium',
 					type === 'expense'
 						? 'bg-destructive/10 text-destructive'
 						: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
@@ -333,7 +344,7 @@
 					onpaste={onAmountPaste}
 					oninput={(e) => onAmountInput(e.currentTarget.value)}
 					disabled={isVoidedView || saving}
-					class={cn((isVoidedView || saving) && 'shadow-none')}
+					class={cn('!pl-2.5', (isVoidedView || saving) && 'shadow-none')}
 					aria-label="Amount"
 					aria-invalid={error ? true : undefined}
 				/>
@@ -447,6 +458,7 @@
 	description="This action is permanent and cannot be undone. The transaction will remain visible but will no longer affect your balance."
 	confirmLabel="Void"
 	destructive
+	dangerChrome
 	confirmTestId="tx-void-confirm"
 	onOpenChange={(next) => (voidConfirmOpen = next)}
 	onConfirm={confirmVoid}

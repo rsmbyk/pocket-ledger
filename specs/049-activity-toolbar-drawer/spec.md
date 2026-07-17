@@ -67,3 +67,4 @@ Finish Activity chrome from Spec 045: restore Filters beside search, right-align
 ## Related
 
 - Delivers Spec 045 items 5–6 and 10 (≥1280 drawer) as originally intended
+- **Superseded on ≥1280 by Spec 058** (always-on drawer; no open click)
