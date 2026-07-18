@@ -35,8 +35,8 @@
 {/snippet}
 
 <Card.Root class="gap-0 py-0" data-testid="month-summary">
-	<Card.Header class="gap-2 px-4 pt-3 pb-3">
-		<div class="flex items-center justify-between gap-2">
+	<Card.Header class="flex items-center px-4 py-3">
+		<div class="flex w-full items-center justify-between gap-2">
 			<Button
 				variant="outline"
 				size="icon-sm"
@@ -46,10 +46,10 @@
 				<ChevronLeftIcon class="size-4" />
 			</Button>
 			<div class="text-center">
-				<Card.Title class="text-sm font-semibold" data-testid="month-label"
+				<Card.Title class="text-sm font-semibold leading-tight" data-testid="month-label"
 					>{formatMonthLabel(summary.monthKey)}</Card.Title
 				>
-				<Card.Description class="text-xs">Month summary</Card.Description>
+				<p class="text-muted-foreground text-xs leading-tight">Month summary</p>
 			</div>
 			<Button variant="outline" size="icon-sm" aria-label="Next month" onclick={onNextMonth}>
 				<ChevronRightIcon class="size-4" />
