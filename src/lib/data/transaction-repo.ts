@@ -19,6 +19,19 @@ export async function listTransactionsForAccount(
 		});
 }
 
+/** All transactions (all pockets), newest occurredOn / createdAt first. */
+export async function listAllTransactions(): Promise<LedgerTransaction[]> {
+	const rows = await db.transactions.toArray();
+	return rows
+		.map((row) => withVoidedAt(row))
+		.sort((a, b) => {
+			if (a.occurredOn === b.occurredOn) {
+				return b.createdAt.localeCompare(a.createdAt);
+			}
+			return b.occurredOn.localeCompare(a.occurredOn);
+		});
+}
+
 export async function getTransaction(id: TransactionId): Promise<LedgerTransaction | undefined> {
 	const row = await db.transactions.get(id);
 	return row ? withVoidedAt(row) : undefined;

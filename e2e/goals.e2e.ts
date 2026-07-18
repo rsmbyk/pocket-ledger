@@ -1,46 +1,20 @@
-import { expect, test, type Locator } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
 
-async function setGoalDeadline(section: Locator, isoDate: string) {
-	await section.locator('input[type="date"]').fill(isoDate);
-}
-
-test.describe('060 goals have X by Y', () => {
+/** Spec 072 retired global goals; pocket goals replace them. */
+test.describe('072 pocket goals (replaces 060 More/Home goals)', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 	});
 
-	test('Home strip absent without goals; present after create; nearest first', async ({ page }) => {
+	test('no Home strip or More Goals section', async ({ page }) => {
 		await expect(page.getByTestId('home-goal-strip')).toHaveCount(0);
-
 		await goToNav(page, 'more');
-		const more = page.getByTestId('more-section-goals');
-		await more.getByPlaceholder('Name').fill('Later');
-		await more.getByPlaceholder('Target amount').fill('500000');
-		await setGoalDeadline(more, '2026-12-31');
-		await more.getByRole('button', { name: 'Add goal' }).click();
-		await expect(page.getByTestId('goals-list')).toContainText('Later');
-
-		await more.getByPlaceholder('Name').fill('Sooner');
-		await more.getByPlaceholder('Target amount').fill('100000');
-		await setGoalDeadline(more, '2026-08-01');
-		await more.getByRole('button', { name: 'Add goal' }).click();
-
-		const list = page.getByTestId('goals-list');
-		const rows = list.locator('[data-testid^="goal-row-"]');
-		await expect(rows).toHaveCount(2);
-		await expect(rows.first()).toContainText('Sooner');
-
-		await goToNav(page, 'home');
-		const strip = page.getByTestId('home-goal-strip');
-		await expect(strip).toBeVisible();
-		await expect(strip).toContainText('Sooner');
-		await strip.click();
-		await expect(page.getByTestId('more-section-goals')).toBeVisible();
+		await expect(page.getByTestId('more-section-goals')).toHaveCount(0);
 	});
 
-	test('progress reflects Main balance', async ({ page }) => {
+	test('pocket goal progress reflects balance', async ({ page }) => {
 		await ensureCategory(page, 'Salary', 'income');
 		await openAdd(page);
 		const dialog = page.getByRole('dialog');
@@ -49,30 +23,11 @@ test.describe('060 goals have X by Y', () => {
 		await selectTxCategory(page, 'Salary', dialog);
 		await dialog.getByRole('button', { name: 'Save' }).click();
 
-		await goToNav(page, 'more');
-		const more = page.getByTestId('more-section-goals');
-		await more.getByPlaceholder('Name').fill('Emergency');
-		await more.getByPlaceholder('Target amount').fill('100000');
-		await setGoalDeadline(more, '2026-12-31');
-		await more.getByRole('button', { name: 'Add goal' }).click();
-		await expect(page.getByTestId('goals-list')).toContainText(/25%/);
-	});
-
-	test('deleting last goal removes Home strip', async ({ page }) => {
-		await goToNav(page, 'more');
-		const more = page.getByTestId('more-section-goals');
-		await more.getByPlaceholder('Name').fill('Solo');
-		await more.getByPlaceholder('Target amount').fill('50000');
-		await setGoalDeadline(more, '2026-09-01');
-		await more.getByRole('button', { name: 'Add goal' }).click();
-		await goToNav(page, 'home');
-		await expect(page.getByTestId('home-goal-strip')).toBeVisible();
-
-		await goToNav(page, 'more');
-		await page.getByTestId('goals-list').getByRole('button', { name: 'Delete' }).click();
-		await page.getByTestId('goal-delete-confirm').click();
-		await expect(page.getByTestId('goals-list')).toContainText(/no goals/i);
-		await goToNav(page, 'home');
-		await expect(page.getByTestId('home-goal-strip')).toHaveCount(0);
+		await goToNav(page, 'pockets');
+		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
+		await mainRow.getByTestId('pocket-edit').click();
+		await page.getByTestId('pocket-goal-target-input').fill('100000');
+		await page.getByTestId('pocket-save').click();
+		await expect(mainRow).toContainText(/25%/);
 	});
 });

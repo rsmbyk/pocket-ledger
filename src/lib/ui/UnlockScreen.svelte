@@ -48,11 +48,15 @@
 						autocomplete="current-password"
 						bind:value={passphrase}
 						data-testid="unlock-passphrase"
+						aria-invalid={error ? true : undefined}
+						oninput={() => (error = null)}
 					/>
+					{#if error}
+						<p class="text-destructive text-sm" role="alert" data-testid="unlock-field-error-passphrase">
+							{error}
+						</p>
+					{/if}
 				</div>
-				{#if error}
-					<p class="text-destructive text-sm" role="alert">{error}</p>
-				{/if}
 				<Button type="submit" class="w-full" disabled={busy} data-testid="unlock-submit">
 					{busy ? 'Checking…' : 'Unlock'}
 				</Button>

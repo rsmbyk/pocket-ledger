@@ -1,5 +1,5 @@
 import { db } from '$lib/data/db';
-import type { Account } from '$lib/domain/account';
+import { normalizeAccount, type Account } from '$lib/domain/account';
 import type { CategoryRow } from '$lib/data/db';
 import type { LedgerTransaction } from '$lib/domain/transaction';
 import type { RecurringRule } from '$lib/domain/recurring';
@@ -14,6 +14,8 @@ import { openField, sealAllSensitiveFields } from '$lib/application/field-crypto
 import { isLockEnabled } from '$lib/application/lock';
 import { getDataKey } from '$lib/data/session-key';
 import { assignSortOrdersByName } from '$lib/domain/category-order';
+import { todayOccurredOn } from '$lib/domain/transaction-rules';
+import { pickNearestGoalForMigration } from '$lib/domain/goal-migrate';
 
 export const BACKUP_FORMAT_VERSION = 1 as const;
 
@@ -106,6 +108,43 @@ export function parseBackupJson(raw: string): LedgerBackup {
 
 export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 	const normalized = parseBackupJson(JSON.stringify(backup));
+	const today = todayOccurredOn();
+	let accounts = (normalized.accounts as Account[]).map((a, index) =>
+		normalizeAccount(a, {
+			today,
+			isMain: a.isMain === true,
+			sortOrder: typeof a.sortOrder === 'number' ? a.sortOrder : index
+		})
+	);
+	if (accounts.length > 0 && !accounts.some((a) => a.isMain)) {
+		const mainId =
+			accounts.find((a) => a.name === 'Main')?.id ?? accounts[0]!.id;
+		accounts = accounts.map((a, index) =>
+			normalizeAccount(a, {
+				today,
+				isMain: a.id === mainId,
+				sortOrder: a.id === mainId ? 0 : index
+			})
+		);
+	}
+	if (normalized.goals.length > 0) {
+		const main = accounts.find((a) => a.isMain);
+		if (main && main.goalTargetMinor == null) {
+			const pick = pickNearestGoalForMigration(normalized.goals);
+			if (pick) {
+				accounts = accounts.map((a) =>
+					a.id === main.id
+						? {
+								...a,
+								goalTargetMinor: pick.targetMinor,
+								goalTargetOn: pick.targetOn
+							}
+						: a
+				);
+			}
+		}
+	}
+
 	await db.transaction(
 		'rw',
 		[
@@ -127,7 +166,7 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 				db.netWorthSnapshots.clear(),
 				db.settings.clear()
 			]);
-			await db.accounts.bulkPut(normalized.accounts);
+			await db.accounts.bulkPut(accounts);
 			const categories = normalized.categories as Array<
 				CategoryRow & { sortOrder?: number }
 			>;
@@ -139,7 +178,7 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 				normalized.transactions.map((t) => ({ ...t, voidedAt: t.voidedAt ?? null }))
 			);
 			await db.recurringRules.bulkPut(normalized.recurringRules);
-			await db.goals.bulkPut(normalized.goals);
+			/* Goals live on pockets now; leave goals table empty after migrate. */
 			await db.netWorthSnapshots.bulkPut(normalized.netWorthSnapshots);
 			await db.settings.bulkPut(normalized.settings);
 		}

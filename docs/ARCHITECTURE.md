@@ -31,7 +31,8 @@ Simple ledger rows include:
 
 - `accountId`
 - `type`: `income` | `expense` | `transfer`
-- `counterAccountId` (nullable; for future transfers)
+- `counterAccountId` (nullable; destination pocket for transfers)
+
 
 Do not invent a second parallel storage model when transfers arrive — extend this shape.
 
@@ -41,7 +42,7 @@ Optional passphrase lock (`encryption.enabled`, default off) derives an in-memor
 
 ## Routing
 
-Hash router in `src/lib/shared/router.ts` (no router package). Shell tabs sync with `#/`, `#/activity`, `#/categories`, `#/more`. Unknown hashes fall back to home. Path-based history routing is out of scope until needed.
+Hash router in `src/lib/shared/router.ts` (no router package). Shell tabs sync with `#/`, `#/activity`, `#/pockets`, `#/categories`, `#/more`. Unknown hashes fall back to home. Path-based history routing is out of scope until needed.
 
 ## Testing map
 

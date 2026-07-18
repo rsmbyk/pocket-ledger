@@ -3,14 +3,16 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '$lib/data/db';
 import {
 	addTransaction,
+	addTransfer,
 	ensureSeedCategories,
 	getAccountBalance,
 	getCategoriesForType,
 	listRecentTransactions,
 	updateTransaction,
+	updateTransfer,
 	voidTransaction
 } from './transactions';
-import { ensureDefaultAccount } from './accounts';
+import { ensureDefaultAccount, createPocket } from './accounts';
 import { createCategory } from './categories';
 
 describe('transactions application', () => {
@@ -135,5 +137,39 @@ describe('transactions application', () => {
 				categoryId: income.id
 			})
 		).rejects.toThrow(/type cannot be changed/i);
+	});
+
+	it('creates and updates a transfer', async () => {
+		const main = await ensureDefaultAccount();
+		const vac = await createPocket({
+			name: 'Vacation',
+			notes: '',
+			openingBalanceMinor: 0,
+			openingAsOf: main.openingAsOf
+		});
+		const created = await addTransfer({
+			sourceAccountId: main.id,
+			destAccountId: vac.id,
+			amountRaw: '10000',
+			note: 'seed',
+			occurredOn: main.openingAsOf
+		});
+		expect(created.type).toBe('transfer');
+		expect(await getAccountBalance(main.id)).toBe(-10_000);
+		expect(await getAccountBalance(vac.id)).toBe(10_000);
+
+		await updateTransfer({
+			id: created.id,
+			sourceAccountId: main.id,
+			destAccountId: vac.id,
+			amountRaw: '5000',
+			note: 'trimmed',
+			occurredOn: main.openingAsOf
+		});
+		expect(await getAccountBalance(main.id)).toBe(-5_000);
+		expect(await getAccountBalance(vac.id)).toBe(5_000);
+		const listed = await listRecentTransactions();
+		expect(listed[0]?.note).toBe('trimmed');
+		expect(listed[0]?.amountMinor).toBe(5_000);
 	});
 });

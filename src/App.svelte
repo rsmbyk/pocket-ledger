@@ -3,9 +3,19 @@
 	import { ModeWatcher, mode, setMode, userPrefersMode } from 'mode-watcher';
 	import AppShell from '$lib/ui/AppShell.svelte';
 	import UnlockScreen from '$lib/ui/UnlockScreen.svelte';
-	import { ensureDefaultAccount, getAccountsOverview } from '$lib/application/accounts';
 	import {
-		getAccountBalance,
+		clearPocketGoal,
+		createPocket,
+		deletePocket,
+		ensureDefaultAccount,
+		getAccountsOverview,
+		reorderPockets,
+		updatePocket,
+		type CreatePocketInput,
+		type UpdatePocketInput
+	} from '$lib/application/accounts';
+	import {
+		getAllPocketsBalance,
 		getCategoriesForType,
 		listRecentTransactions
 	} from '$lib/application/transactions';
@@ -25,11 +35,6 @@
 		setRecurringActive
 	} from '$lib/application/recurring';
 	import {
-		createGoal,
-		listGoals,
-		removeGoal
-	} from '$lib/application/goals';
-	import {
 		disableLock,
 		enableLock,
 		isLockEnabled,
@@ -46,7 +51,6 @@
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
 	import type { RecurringRule } from '$lib/domain/recurring';
-	import type { Goal } from '$lib/domain/goals';
 	import {
 		currentMonthKey,
 		shiftMonth,
@@ -61,6 +65,7 @@
 	} from '$lib/shared/theme';
 
 	let account = $state<Account | null>(null);
+	let accounts = $state<Account[]>([]);
 	let isSinglePot = $state(true);
 	let balanceMinor = $state(0);
 	let transactions = $state<LedgerTransaction[]>([]);
@@ -70,7 +75,6 @@
 	let monthKey = $state<MonthKey>(currentMonthKey());
 	let monthSummary = $state<MonthSummary | null>(null);
 	let recurringRules = $state<RecurringRule[]>([]);
-	let goals = $state<Goal[]>([]);
 	let lockEnabled = $state(false);
 	let unlocked = $state(true);
 	let ready = $state(false);
@@ -78,23 +82,24 @@
 	let themePreference = $state<ThemePreference>('system');
 
 	async function refreshLedger(active: Account, key: MonthKey = monthKey) {
-		const [balance, recent, categories, summary, rules, goalRows, exp, inc] =
+		const [overview, balance, recent, categories, summary, rules, exp, inc] =
 			await Promise.all([
-				getAccountBalance(active.id),
+				getAccountsOverview(),
+				getAllPocketsBalance(),
 				listRecentTransactions(active.id),
 				listCategories(),
 				getMonthSummary(active.id, key),
 				listRecurringRules(),
-				listGoals(),
 				getCategoriesForType('expense'),
 				getCategoriesForType('income')
 			]);
+		accounts = overview.accounts;
+		isSinglePot = overview.isSinglePot;
 		balanceMinor = balance;
 		transactions = recent;
 		categoriesById = Object.fromEntries(categories.map((c) => [c.id, c]));
 		monthSummary = summary;
 		recurringRules = rules;
-		goals = goalRows;
 		expenseCategories = exp;
 		incomeCategories = inc;
 	}
@@ -111,6 +116,7 @@
 		const overview = await getAccountsOverview();
 		const active = overview.accounts[0] ?? null;
 		account = active;
+		accounts = overview.accounts;
 		isSinglePot = overview.isSinglePot;
 		await materializeDueRecurring();
 		if (active) {
@@ -210,13 +216,13 @@
 {:else}
 	<AppShell
 		{account}
+		{accounts}
 		{isSinglePot}
 		{balanceMinor}
 		{transactions}
 		{categoriesById}
 		{monthSummary}
 		{recurringRules}
-		{goals}
 		{expenseCategories}
 		{incomeCategories}
 		{lockEnabled}
@@ -248,14 +254,6 @@
 			await removeRecurringRule(id);
 			await onRefreshLedger();
 		}}
-		onCreateGoal={async (name, targetRaw, targetOn) => {
-			await createGoal(name, targetRaw, targetOn);
-			await onRefreshLedger();
-		}}
-		onDeleteGoal={async (id) => {
-			await removeGoal(id);
-			await onRefreshLedger();
-		}}
 		onEnableLock={async (passphrase) => {
 			await enableLock(passphrase);
 			lockEnabled = true;
@@ -278,6 +276,26 @@
 		}}
 		onReorderCategories={async (kind, orderedIds) => {
 			await reorderCategories(kind, orderedIds);
+			await onRefreshLedger();
+		}}
+		onCreatePocket={async (input: CreatePocketInput) => {
+			await createPocket(input);
+			await onRefreshLedger();
+		}}
+		onUpdatePocket={async (input: UpdatePocketInput) => {
+			await updatePocket(input);
+			await onRefreshLedger();
+		}}
+		onDeletePocket={async (id) => {
+			await deletePocket(id);
+			await onRefreshLedger();
+		}}
+		onReorderPockets={async (orderedNonMainIds) => {
+			await reorderPockets(orderedNonMainIds);
+			await onRefreshLedger();
+		}}
+		onClearPocketGoal={async (id) => {
+			await clearPocketGoal(id);
 			await onRefreshLedger();
 		}}
 		{ready}

@@ -11,6 +11,7 @@ describe('hash router', () => {
 
 	it('parses known panels', () => {
 		expect(parseHash('#/activity')).toBe('activity');
+		expect(parseHash('#/pockets')).toBe('pockets');
 		expect(parseHash('#/categories')).toBe('categories');
 		expect(parseHash('#/more')).toBe('more');
 	});
@@ -23,6 +24,7 @@ describe('hash router', () => {
 	it('builds hashes for navigation', () => {
 		expect(routeToHash('home')).toBe('#/');
 		expect(routeToHash('activity')).toBe('#/activity');
+		expect(routeToHash('pockets')).toBe('#/pockets');
 		expect(routeToHash('categories')).toBe('#/categories');
 		expect(routeToHash('more')).toBe('#/more');
 	});

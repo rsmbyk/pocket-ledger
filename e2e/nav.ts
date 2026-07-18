@@ -3,7 +3,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 /** Navigate via the app drawer (desktop rail) or overlay sheet (mobile). */
 export async function goToNav(
 	page: Page,
-	dest: 'home' | 'activity' | 'categories' | 'more'
+	dest: 'home' | 'activity' | 'pockets' | 'categories' | 'more'
 ): Promise<void> {
 	const rail = page.getByTestId('app-drawer-rail');
 	const sheet = page.getByTestId('app-drawer-sheet');
