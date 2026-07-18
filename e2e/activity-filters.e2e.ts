@@ -87,25 +87,68 @@ test.describe('017 / 045 activity filters', () => {
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
 	});
 
-	test('049 toolbar: Filters beside search; Add right-aligned; sort icons cycle', async ({
-		page
-	}) => {
+	test('049 toolbar: Sort then Filters beside search; Add right-aligned', async ({ page }) => {
 		await seedIncomeAndExpense(page);
 		await goToNav(page, 'activity');
 
 		const searchBox = await page.getByTestId('activity-filters').boundingBox();
+		const sortBtn = await page.getByTestId('activity-sort-open').boundingBox();
 		const filtersBtn = await page.getByTestId('activity-filters-open').boundingBox();
 		const addBtn = await page.getByTestId('activity-add').boundingBox();
-		expect(searchBox && filtersBtn && addBtn).toBeTruthy();
-		expect(filtersBtn!.x).toBeGreaterThan(searchBox!.x);
+		expect(searchBox && sortBtn && filtersBtn && addBtn).toBeTruthy();
+		expect(sortBtn!.x).toBeGreaterThan(searchBox!.x);
+		expect(filtersBtn!.x).toBeGreaterThan(sortBtn!.x);
 		expect(Math.abs(filtersBtn!.y - searchBox!.y)).toBeLessThan(24);
 		expect(addBtn!.y).toBeGreaterThan(searchBox!.y + searchBox!.height - 4);
 
-		await expect(page.getByTestId('activity-sort-icon-created')).toBeVisible();
-		await page.getByTestId('activity-sort-date').click();
-		await expect(page.getByTestId('activity-sort-icon-occurred-desc')).toBeVisible();
-		await page.getByTestId('activity-sort-date').click();
-		await expect(page.getByTestId('activity-sort-icon-occurred-asc')).toBeVisible();
+		await expect(page.getByTestId('activity-filters-open')).toHaveText('');
+		await expect(page.getByTestId('activity-sort-open')).toHaveText('');
+
+		await page.getByTestId('activity-sort-open').click();
+		await expect(page.getByTestId('activity-sort-sheet')).toBeVisible();
+		await page.getByTestId('activity-sort-occurredOn-asc').click();
+		await expect(page.getByTestId('activity-sort-sheet')).toBeHidden();
+	});
+
+	test('065 primary-outline when sort or filters active', async ({ page }) => {
+		await seedIncomeAndExpense(page);
+		await goToNav(page, 'activity');
+
+		const sortBtn = page.getByTestId('activity-sort-open');
+		const filtersBtn = page.getByTestId('activity-filters-open');
+		await expect(sortBtn).not.toHaveAttribute('data-active', 'true');
+		await expect(filtersBtn).not.toHaveAttribute('data-active', 'true');
+
+		await sortBtn.click();
+		await page.getByTestId('activity-sort-occurredOn-desc').click();
+		await expect(sortBtn).toHaveAttribute('data-active', 'true');
+		await expect(sortBtn).toHaveAttribute('aria-pressed', 'true');
+		await expect(sortBtn).toHaveClass(/border-primary/);
+
+		await openAndApplyType(page, 'expense');
+		await expect(filtersBtn).toHaveAttribute('data-active', 'true');
+		await expect(filtersBtn).toHaveAttribute('aria-pressed', 'true');
+		await expect(filtersBtn).toHaveClass(/border-primary/);
+		await expect(page.getByTestId('activity-filters-badge')).toBeVisible();
+
+		await openAndApplyType(page, 'all');
+		await expect(filtersBtn).not.toHaveAttribute('data-active', 'true');
+		await expect(sortBtn).toHaveAttribute('data-active', 'true');
+	});
+
+	test('064 Categories sort puts income before expense; note is own line', async ({ page }) => {
+		await seedIncomeAndExpense(page);
+		await goToNav(page, 'activity');
+
+		const foodRow = page.locator('button[data-testid^="activity-row-"]').filter({ hasText: 'Food' });
+		await expect(foodRow.getByTestId(/-note$/)).toContainText('secret lunch');
+		await expect(foodRow.getByTestId(/-date$/)).toBeVisible();
+
+		await page.getByTestId('activity-sort-open').click();
+		await page.getByTestId('activity-sort-category').click();
+		const rows = page.locator('button[data-testid^="activity-row-"]');
+		await expect(rows.first()).toContainText('Salary');
+		await expect(rows.nth(1)).toContainText('Food');
 	});
 });
 
@@ -127,6 +170,10 @@ test.describe('049 / 058 activity filters xl drawer', () => {
 		await expect(page.getByTestId('activity-filters-clear')).toBeVisible();
 		await expect(page.getByTestId('activity-filters-clear')).toHaveClass(/border/);
 		await expect(page.getByTestId('activity-filters-apply')).toBeVisible();
+		await expect(page.getByTestId('activity-sort-open')).toBeVisible();
+		await page.getByTestId('activity-sort-open').click();
+		await expect(page.getByTestId('activity-sort-sheet')).toBeVisible();
+		await page.getByTestId('activity-sort-close').click();
 		await page.getByTestId('activity-filter-type').selectOption('expense');
 		await page.getByTestId('activity-filters-apply').click();
 		await expect(page.getByTestId('activity-filters-drawer')).toBeVisible();

@@ -24,7 +24,23 @@ export type ActivityFilterCriteria = {
 	amountRaw?: string | null;
 };
 
-export type ActivityDateSort = 'createdAt-desc' | 'occurredOn-desc' | 'occurredOn-asc';
+/** Activity list sort modes (Spec 064). */
+export type ActivitySortMode =
+	| 'createdAt-desc'
+	| 'occurredOn-desc'
+	| 'occurredOn-asc'
+	| 'category';
+
+/** @deprecated Prefer ActivitySortMode */
+export type ActivityDateSort = Exclude<ActivitySortMode, 'category'>;
+
+export type CategorySortMeta = {
+	id: string;
+	kind: 'income' | 'expense';
+	sortOrder: number;
+};
+
+export const DEFAULT_ACTIVITY_SORT: ActivitySortMode = 'createdAt-desc';
 
 export const DEFAULT_ACTIVITY_FILTERS: Required<
 	Pick<
@@ -132,18 +148,37 @@ export function filterTransactions(
 	});
 }
 
-export function nextActivityDateSort(current: ActivityDateSort): ActivityDateSort {
-	if (current === 'createdAt-desc') return 'occurredOn-desc';
-	if (current === 'occurredOn-desc') return 'occurredOn-asc';
-	return 'createdAt-desc';
+function categoryRank(
+	categoryId: string | null,
+	byId: Map<string, CategorySortMeta>
+): number {
+	if (categoryId == null) return Number.MAX_SAFE_INTEGER;
+	const meta = byId.get(categoryId);
+	if (!meta) return Number.MAX_SAFE_INTEGER - 1;
+	const typeBias = meta.kind === 'income' ? 0 : 1_000_000;
+	return typeBias + meta.sortOrder;
 }
 
-/** Sort Activity rows for the Date column cycle. */
-export function sortTransactionsByDate(
+/** Sort Activity rows for the selected mode (Spec 064). */
+export function sortTransactions(
 	transactions: LedgerTransaction[],
-	mode: ActivityDateSort
+	mode: ActivitySortMode,
+	categories: CategorySortMeta[] = []
 ): LedgerTransaction[] {
 	const rows = [...transactions];
+	if (mode === 'category') {
+		const byId = new Map(categories.map((c) => [c.id, c]));
+		rows.sort((a, b) => {
+			const byCat =
+				categoryRank(a.categoryId, byId) - categoryRank(b.categoryId, byId);
+			if (byCat !== 0) return byCat;
+			const byCreated = b.createdAt.localeCompare(a.createdAt);
+			if (byCreated !== 0) return byCreated;
+			return a.id.localeCompare(b.id);
+		});
+		return rows;
+	}
+
 	rows.sort((a, b) => {
 		if (mode === 'createdAt-desc') {
 			const byCreated = b.createdAt.localeCompare(a.createdAt);
@@ -158,4 +193,12 @@ export function sortTransactionsByDate(
 		return a.id.localeCompare(b.id);
 	});
 	return rows;
+}
+
+/** @deprecated Use sortTransactions */
+export function sortTransactionsByDate(
+	transactions: LedgerTransaction[],
+	mode: ActivityDateSort
+): LedgerTransaction[] {
+	return sortTransactions(transactions, mode);
 }
