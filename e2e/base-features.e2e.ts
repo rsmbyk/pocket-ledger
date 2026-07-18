@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, goToNav } from './nav';
+import { goToNav } from './nav';
 
 
 test.describe('003–008 base features', () => {
@@ -15,6 +15,7 @@ test.describe('003–008 base features', () => {
 		await expect(page.getByTestId('export-backup')).toBeVisible();
 		await expect(page.getByTestId('reset-all')).toBeVisible();
 		await expect(page.getByTestId('lock-status')).toContainText(/off/i);
+		await expect(page.getByTestId('more-section-recurring')).toHaveCount(0);
 	});
 
 	test('export downloads a JSON backup', async ({ page }) => {
@@ -29,6 +30,7 @@ test.describe('003–008 base features', () => {
 		await goToNav(page, 'pockets');
 		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
 		await mainRow.getByTestId('pocket-edit').click();
+		await page.getByTestId('pocket-goal-enabled').check();
 		await page.getByTestId('pocket-goal-target-input').fill('1000000');
 		await page.getByTestId('pocket-save').click();
 		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
@@ -38,6 +40,20 @@ test.describe('003–008 base features', () => {
 		await expect(page.getByTestId('more-section-privacy')).toBeVisible();
 		await expect(page.getByTestId('more-section-goals')).toHaveCount(0);
 		await expect(page.getByTestId('capture-net-worth')).toHaveCount(0);
+	});
+
+	test('header lock returns to unlock screen', async ({ page }) => {
+		await goToNav(page, 'more');
+		await page.getByTestId('enable-lock-pass').fill('secret-pass');
+		await page.getByPlaceholder('Confirm passphrase').fill('secret-pass');
+		await page.getByTestId('enable-lock').click();
+		await expect(page.getByTestId('lock-status')).toContainText(/on/i);
+		await expect(page.getByTestId('header-lock')).toBeVisible();
+		await page.getByTestId('header-lock').click();
+		await expect(page.getByTestId('unlock-screen')).toBeVisible();
+		await page.getByTestId('unlock-passphrase').fill('secret-pass');
+		await page.getByTestId('unlock-submit').click();
+		await expect(page.getByTestId('app-shell')).toBeVisible();
 	});
 
 	test('enables passphrase lock and requires unlock', async ({ page }) => {
@@ -52,14 +68,5 @@ test.describe('003–008 base features', () => {
 		await page.getByTestId('unlock-passphrase').fill('secret-pass');
 		await page.getByTestId('unlock-submit').click();
 		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
-	});
-
-	test('adds a recurring rule', async ({ page }) => {
-		await ensureCategory(page, 'Food', 'expense');
-		await goToNav(page, 'more');
-		await page.getByRole('textbox', { name: 'Amount', exact: true }).fill('50000');
-		await page.getByRole('button', { name: 'Add rule' }).click();
-		await expect(page.getByTestId('recurring-list')).toContainText(/monthly/i);
-		await expect(page.getByTestId('recurring-list')).toContainText(/50/);
 	});
 });

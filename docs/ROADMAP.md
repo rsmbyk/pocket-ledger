@@ -6,7 +6,7 @@ Ordered slices after scaffold. Each slice gets a numbered spec before code.
 2. ~~**Categories** — seed + assign~~ (included in 001; custom category UI still later)
 3. ~~**Month summary + charts** — cashflow / category views~~ → `specs/002-month-charts.md`
 4. ~~**Export** — JSON backup download~~ → `specs/003-export-import.md`
-5. ~~**Recurring** — templates that spawn transactions~~ → `specs/004-recurring.md`
+5. ~~**Recurring** — templates that spawn transactions~~ → removed in `specs/087-remove-recurring/` (was `004`)
 6. ~~**Goals** — progress toward targets~~ → `specs/005-goals.md`
 7. ~~**Net worth** — account snapshots over time~~ → removed in `specs/059-remove-net-worth/` (was `006`)
 8. ~~**Optional encryption / passphrase lock** — off by default~~ → `specs/007-passphrase-lock.md` (session lock; field-level at-rest still follow-up)

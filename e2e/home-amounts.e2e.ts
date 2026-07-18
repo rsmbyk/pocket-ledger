@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, openAdd, selectTxCategory } from './nav';
+import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
 
 test.describe('048 home amount hide + by-category icons', () => {
 	test.beforeEach(async ({ page }) => {
@@ -41,5 +41,27 @@ test.describe('048 home amount hide + by-category icons', () => {
 			1
 		);
 		await expect(page.getByTestId('category-chart').locator('p').first().locator('svg')).toHaveCount(1);
+	});
+
+	test('show money requires passphrase when lock is on', async ({ page }) => {
+		await goToNav(page, 'more');
+		await page.getByTestId('enable-lock-pass').fill('secret-pass');
+		await page.getByPlaceholder('Confirm passphrase').fill('secret-pass');
+		await page.getByTestId('enable-lock').click();
+		await expect(page.getByTestId('lock-status')).toContainText(/on/i);
+
+		await goToNav(page, 'home');
+		await page.getByTestId('toggle-home-amounts').click();
+		await expect(page.getByTestId('account-balance')).toHaveText('••••');
+		await page.getByTestId('toggle-home-amounts').click();
+		await expect(page.getByTestId('show-money-dialog')).toBeVisible();
+		await page.getByTestId('show-money-passphrase').fill('wrong-pass');
+		await page.getByTestId('show-money-confirm').click();
+		await expect(page.getByTestId('show-money-error')).toBeVisible();
+		await expect(page.getByTestId('account-balance')).toHaveText('••••');
+		await page.getByTestId('show-money-passphrase').fill('secret-pass');
+		await page.getByTestId('show-money-confirm').click();
+		await expect(page.getByTestId('show-money-dialog')).toBeHidden();
+		await expect(page.getByTestId('account-balance')).not.toHaveText('••••');
 	});
 });

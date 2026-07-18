@@ -27,7 +27,7 @@ Personal finance app that works offline after first load, hosted on Cloudflare P
 | Budgets | None for now |
 | Multi-currency / FX | None |
 | UX | **Desktop-first dashboard chrome**, responsive down to mobile (inset sidebar → sheet + stacked layouts below `md`) |
-| Features (shipped) | Recurring, charts, export — specs 001–008; net worth UI removed (059); Pockets nav + CRUD, per-pocket opening balance, per-pocket goals, transfers, Activity pocket filter, Activity row pocket labels — specs 070–077 |
+| Features (shipped) | Charts, export — specs 001–008; net worth UI removed (059); recurring removed (087); Pockets nav + CRUD, per-pocket opening balance, per-pocket goals, transfers, Activity pocket filter, Activity row pocket labels — specs 070–077 |
 | Import | JSON restore (full replace) via More → Backup |
 | Lock | Optional passphrase lock, **off by default** (spec 007) |
 | Router | Hash routes for Home / Activity / Pockets / Categories / More |

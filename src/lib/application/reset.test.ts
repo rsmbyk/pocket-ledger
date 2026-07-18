@@ -1,10 +1,9 @@
-import 'fake-indexeddb/auto';
+	import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '$lib/data/db';
 import { ensureDefaultAccount } from '$lib/application/accounts';
 import { createCategory, listCategories } from '$lib/application/categories';
 import { addTransaction, listRecentTransactions } from '$lib/application/transactions';
-import { createRecurringRule, listRecurringRules } from '$lib/application/recurring';
 import { createGoal, listGoals } from '$lib/application/goals';
 import { listNetWorthSnapshots, putNetWorthSnapshot } from '$lib/data/net-worth-repo';
 import { enableLock, isLockEnabled, unlockWithPassphrase } from '$lib/application/lock';
@@ -16,7 +15,7 @@ describe('resetLocalData', () => {
 		await db.open();
 	});
 
-	it('always wipes txs recurring goals snapshots; recreates Main', async () => {
+	it('always wipes txs goals snapshots; recreates Main', async () => {
 		const account = await ensureDefaultAccount();
 		const food = await createCategory('Food', 'expense');
 		await addTransaction({
@@ -24,14 +23,6 @@ describe('resetLocalData', () => {
 			type: 'expense',
 			amountRaw: '1000',
 			categoryId: food.id
-		});
-		await createRecurringRule({
-			accountId: account.id,
-			type: 'expense',
-			amountMinor: 500,
-			categoryId: food.id,
-			frequency: 'monthly',
-			note: ''
 		});
 		await createGoal('Trip', '100000', '2026-12-31');
 		await putNetWorthSnapshot({
@@ -44,7 +35,6 @@ describe('resetLocalData', () => {
 		await resetLocalData({ preserveCategories: false, preservePassphrase: false });
 
 		expect(await listRecentTransactions((await ensureDefaultAccount()).id)).toHaveLength(0);
-		expect(await listRecurringRules()).toHaveLength(0);
 		expect(await listGoals()).toHaveLength(0);
 		expect(await listNetWorthSnapshots()).toHaveLength(0);
 		expect(await listCategories()).toHaveLength(0);

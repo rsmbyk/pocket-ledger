@@ -94,6 +94,11 @@ export async function verifyPassphrase(passphrase: string): Promise<boolean> {
 	return candidate === verifier;
 }
 
+/** Clear the in-memory session key so the unlock screen is required again. */
+export function lockSession(): void {
+	clearDataKey();
+}
+
 /** Verify passphrase and load the in-memory field encryption key. */
 export async function unlockWithPassphrase(passphrase: string): Promise<boolean> {
 	const saltB64 = await getSetting(SETTINGS_LOCK_SALT);

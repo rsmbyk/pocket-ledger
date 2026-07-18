@@ -1,7 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
 import { normalizeAccount, type Account } from '$lib/domain/account';
 import type { LedgerTransaction } from '$lib/domain/transaction';
-import type { RecurringRule } from '$lib/domain/recurring';
 import type { Goal } from '$lib/domain/goals';
 import type { NetWorthSnapshot } from '$lib/domain/net-worth';
 import { assignSortOrdersByName } from '$lib/domain/category-order';
@@ -26,7 +25,6 @@ export class PocketLedgerDb extends Dexie {
 	categories!: EntityTable<CategoryRow, 'id'>;
 	transactions!: EntityTable<LedgerTransaction, 'id'>;
 	settings!: EntityTable<SettingsRow, 'key'>;
-	recurringRules!: EntityTable<RecurringRule, 'id'>;
 	goals!: EntityTable<Goal, 'id'>;
 	netWorthSnapshots!: EntityTable<NetWorthSnapshot, 'id'>;
 
@@ -145,11 +143,59 @@ export class PocketLedgerDb extends Dexie {
 							await accounts.put({
 								...main,
 								goalTargetMinor: pick.targetMinor,
-								goalTargetOn: pick.targetOn
+								goalTargetOn: pick.targetOn,
+								goalEnabled: true
 							});
 						}
 					}
 					await goalsTable.clear();
+				}
+			});
+		this.version(5)
+			.stores({
+				accounts: 'id, name, sortOrder, isMain',
+				categories: 'id, kind, name, sortOrder',
+				transactions: 'id, accountId, type, occurredOn, categoryId',
+				settings: 'key',
+				recurringRules: null,
+				goals: 'id, name',
+				netWorthSnapshots: 'id, capturedOn'
+			})
+			.upgrade(async (tx) => {
+				const accounts = tx.table('accounts');
+				const rows = (await accounts.toArray()) as Array<Record<string, unknown>>;
+				for (const row of rows) {
+					const normalized = normalizeAccount(
+						{
+							id: String(row.id),
+							name: String(row.name ?? 'Pocket'),
+							currencyLabel: String(row.currencyLabel ?? 'IDR'),
+							createdAt: String(row.createdAt ?? new Date().toISOString()),
+							isMain: row.isMain === true,
+							sortOrder: typeof row.sortOrder === 'number' ? row.sortOrder : 0,
+							notes: typeof row.notes === 'string' ? row.notes : '',
+							openingBalanceMinor:
+								typeof row.openingBalanceMinor === 'number' ? row.openingBalanceMinor : 0,
+							openingAsOf:
+								typeof row.openingAsOf === 'string' && row.openingAsOf
+									? row.openingAsOf
+									: todayOccurredOn(),
+							openingEnabled:
+								typeof row.openingEnabled === 'boolean' ? row.openingEnabled : undefined,
+							goalTargetMinor:
+								typeof row.goalTargetMinor === 'number' ? row.goalTargetMinor : null,
+							goalTargetOn:
+								typeof row.goalTargetOn === 'string' ? row.goalTargetOn : null,
+							goalEnabled:
+								typeof row.goalEnabled === 'boolean' ? row.goalEnabled : undefined
+						},
+						{
+							today: todayOccurredOn(),
+							isMain: row.isMain === true,
+							sortOrder: typeof row.sortOrder === 'number' ? row.sortOrder : 0
+						}
+					);
+					await accounts.put(normalized);
 				}
 			});
 	}

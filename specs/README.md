@@ -96,3 +96,18 @@ Living behavior contracts for Pocket Ledger.
 | [078](078-tx-pocket-picker/spec.md) | Pocket picker on Normal add/edit | Accepted |
 | [079](079-tx-inline-field-errors/spec.md) | Inline field errors on all forms | Accepted |
 | [080](080-dirty-modal-keep-open/spec.md) | Dirty modal keep-open on discard | Accepted |
+| [081](081-tx-mode-tabs-chrome/spec.md) | Tx mode tabs default chrome | Accepted |
+| [082](082-bottom-sheet-expand/spec.md) | Bottom sheet expand to fit | Accepted |
+| [083](083-remove-header-account-subtitle/spec.md) | Remove header Account subtitle | Accepted |
+| [084](084-activity-add-transaction-label/spec.md) | Activity Add → Add Transaction | Accepted |
+| [085](085-dirty-outside-discard-fix/spec.md) | Dirty outside discard fix | Accepted |
+| [086](086-pocket-optional-opening-goal/spec.md) | Optional opening + goal checkboxes | Accepted |
+| [087](087-remove-recurring/spec.md) | Remove recurring feature | Accepted |
+| [088](088-tabs-active-indicator/spec.md) | Tabs active indicator (data-active) | Accepted |
+| [089](089-show-amounts-passphrase/spec.md) | Show money passphrase when locked | Accepted |
+| [090](090-header-quick-lock/spec.md) | Header quick-lock | Accepted |
+| [091](091-pocket-helpers-goal-date-suffix/spec.md) | Pocket helpers + goal-date suffix | Accepted |
+| [092](092-pocket-label-beside-date/spec.md) | Pocket label beside date | Accepted |
+| [093](093-pocket-card-actions-bottom/spec.md) | Pocket card actions bottom | Accepted |
+| [094](094-pocket-description-footer/spec.md) | Pocket description footer | Accepted |
+| [095](095-month-summary-header-padding/spec.md) | Month summary header equal padding | Accepted |

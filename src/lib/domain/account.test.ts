@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	assignNonMainSortOrders,
+	inferOpeningEnabled,
 	listPocketsOrdered,
 	normalizeAccount,
 	type Account
@@ -53,8 +54,50 @@ describe('normalizeAccount', () => {
 		);
 		expect(n.isMain).toBe(true);
 		expect(n.openingBalanceMinor).toBe(0);
-		expect(n.openingAsOf).toBe('2026-07-18');
+		expect(n.openingAsOf).toBe('2026-01-01');
+		expect(n.openingEnabled).toBe(false);
 		expect(n.goalTargetMinor).toBeNull();
+		expect(n.goalEnabled).toBe(false);
 		expect(n.notes).toBe('');
+	});
+
+	it('infers openingEnabled when opening differs from creation defaults', () => {
+		const n = normalizeAccount({
+			id: '1',
+			name: 'Main',
+			currencyLabel: 'IDR',
+			createdAt: '2026-01-01T12:00:00.000Z',
+			openingBalanceMinor: 50_000,
+			openingAsOf: '2026-06-01'
+		});
+		expect(n.openingEnabled).toBe(true);
+		expect(n.openingBalanceMinor).toBe(50_000);
+	});
+
+	it('clears goal fields when goalEnabled is false', () => {
+		const n = normalizeAccount({
+			id: '1',
+			name: 'Main',
+			currencyLabel: 'IDR',
+			createdAt: '2026-01-01T00:00:00.000Z',
+			goalEnabled: false,
+			goalTargetMinor: 100,
+			goalTargetOn: '2026-12-01'
+		});
+		expect(n.goalEnabled).toBe(false);
+		expect(n.goalTargetMinor).toBeNull();
+		expect(n.goalTargetOn).toBeNull();
+	});
+});
+
+describe('inferOpeningEnabled', () => {
+	it('is false for zero opening on creation date', () => {
+		expect(
+			inferOpeningEnabled({
+				openingBalanceMinor: 0,
+				openingAsOf: '2026-01-01',
+				createdAt: '2026-01-01T00:00:00.000Z'
+			})
+		).toBe(false);
 	});
 });

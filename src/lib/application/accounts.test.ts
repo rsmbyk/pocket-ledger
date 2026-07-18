@@ -63,6 +63,7 @@ describe('accounts application', () => {
 		const savings = await createPocket({
 			name: 'Savings',
 			notes: 'Rainy day fund',
+			openingEnabled: true,
 			openingBalanceMinor: 15000,
 			openingAsOf: '2026-01-01'
 		});

@@ -218,13 +218,18 @@
 		requestDiscard();
 	}
 
-	function onDismissAttempt() {
-		if (!isDirty) return;
-		discardConfirmOpen = true;
+	/** Keep host open when dirty / discard open; bits-ui `ignore` skips these callbacks. */
+	function onInteractOutside(e: PointerEvent) {
+		if (!isDirty && !discardConfirmOpen) return;
+		e.preventDefault();
+		if (isDirty) discardConfirmOpen = true;
 	}
 
-	const dismissOutsideBehavior = $derived(isDirty || discardConfirmOpen ? 'ignore' : 'close');
-	const dismissEscapeBehavior = $derived(isDirty || discardConfirmOpen ? 'ignore' : 'close');
+	function onEscapeKeydown(e: KeyboardEvent) {
+		if (!isDirty && !discardConfirmOpen) return;
+		e.preventDefault();
+		if (isDirty) discardConfirmOpen = true;
+	}
 
 	function confirmDiscard() {
 		discardConfirmOpen = false;
@@ -500,7 +505,7 @@
 
 {#snippet txForm()}
 	<form
-		class="flex flex-col gap-4 overflow-y-auto px-4 py-4"
+		class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4"
 		onsubmit={(e) => {
 			e.preventDefault();
 			void save();
@@ -535,7 +540,7 @@
 				class="w-full"
 				data-testid="tx-mode-tabs"
 			>
-				<Tabs.List variant="line" class="w-full">
+				<Tabs.List variant="default" class="w-full">
 					<Tabs.Trigger value="normal" disabled={saving} data-testid="tx-mode-normal" class="flex-1">
 						Normal
 					</Tabs.Trigger>
@@ -800,15 +805,15 @@
 {#if desktop.current}
 	<Dialog.Root {open} onOpenChange={handleOpenChange}>
 		<Dialog.Content
-			class="gap-0 p-0"
+			class="flex max-h-[100svh] flex-col gap-0 overflow-hidden p-0"
 			data-testid="tx-dialog"
 			showCloseButton={false}
-			interactOutsideBehavior={dismissOutsideBehavior}
-			escapeKeydownBehavior={dismissEscapeBehavior}
-			onInteractOutside={onDismissAttempt}
-			onEscapeKeydown={onDismissAttempt}
+			interactOutsideBehavior="close"
+			escapeKeydownBehavior="close"
+			onInteractOutside={onInteractOutside}
+			onEscapeKeydown={onEscapeKeydown}
 		>
-			<Dialog.Header class="border-border border-b px-4 py-3 text-left">
+			<Dialog.Header class="border-border shrink-0 border-b px-4 py-3 text-left">
 				{@render txHeader(Dialog.Title, Dialog.Description)}
 			</Dialog.Header>
 			{@render txForm()}
@@ -818,15 +823,15 @@
 	<Sheet.Root {open} onOpenChange={handleOpenChange}>
 		<Sheet.Content
 			side="bottom"
-			class="mx-auto max-h-[90svh] w-full max-w-lg gap-0 rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+			class="mx-auto flex max-h-[100svh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
 			data-testid="tx-sheet"
 			showCloseButton={false}
-			interactOutsideBehavior={dismissOutsideBehavior}
-			escapeKeydownBehavior={dismissEscapeBehavior}
-			onInteractOutside={onDismissAttempt}
-			onEscapeKeydown={onDismissAttempt}
+			interactOutsideBehavior="close"
+			escapeKeydownBehavior="close"
+			onInteractOutside={onInteractOutside}
+			onEscapeKeydown={onEscapeKeydown}
 		>
-			<Sheet.Header class="border-border border-b px-4 py-3 text-left">
+			<Sheet.Header class="border-border shrink-0 border-b px-4 py-3 text-left">
 				{@render txHeader(Sheet.Title, Sheet.Description)}
 			</Sheet.Header>
 			{@render txForm()}

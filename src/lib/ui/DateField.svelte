@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import CalendarIcon from '@lucide/svelte/icons/calendar';
 	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
 	import { cn } from '$lib/utils.js';
@@ -11,6 +12,8 @@
 		'aria-label'?: string;
 		testid?: string;
 		onValueChange: (next: string) => void;
+		/** Optional trailing control inside the field chrome (right side). */
+		trailing?: Snippet;
 	};
 
 	let {
@@ -20,7 +23,8 @@
 		class: className = '',
 		'aria-label': ariaLabel = 'Date',
 		testid = 'date-field',
-		onValueChange
+		onValueChange,
+		trailing
 	}: Props = $props();
 
 	let nativeInput = $state<HTMLInputElement | null>(null);
@@ -56,26 +60,35 @@
 </script>
 
 <div class={cn('relative', className)}>
-	<button
-		type="button"
-		{id}
+	<div
 		class={cn(
-			'border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-9 w-full cursor-pointer items-center gap-2 rounded-md border px-3 text-left text-sm shadow-xs focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
-			disabled && 'shadow-none'
+			'border-input bg-background ring-offset-background focus-within:ring-ring flex h-9 w-full items-center gap-2 rounded-md border px-3 text-sm shadow-xs focus-within:ring-2',
+			disabled && 'cursor-not-allowed opacity-50 shadow-none'
 		)}
-		{disabled}
-		aria-label={ariaLabel}
-		aria-expanded={pickerOpen}
-		data-testid={testid}
-		onclick={onTriggerClick}
 	>
-		<CalendarIcon class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
-		{#if display}
-			<span class="tabular-nums">{display}</span>
-		{:else}
-			<span class="text-muted-foreground">Pick a date</span>
+		<button
+			type="button"
+			{id}
+			class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left focus-visible:outline-none disabled:cursor-not-allowed"
+			{disabled}
+			aria-label={ariaLabel}
+			aria-expanded={pickerOpen}
+			data-testid={testid}
+			onclick={onTriggerClick}
+		>
+			<CalendarIcon class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
+			{#if display}
+				<span class="truncate tabular-nums">{display}</span>
+			{:else}
+				<span class="text-muted-foreground truncate">Pick a date</span>
+			{/if}
+		</button>
+		{#if trailing}
+			<div class="ml-auto flex shrink-0 items-center" data-slot="date-field-trailing">
+				{@render trailing()}
+			</div>
 		{/if}
-	</button>
+	</div>
 	<input
 		bind:this={nativeInput}
 		type="date"
@@ -89,7 +102,6 @@
 		}}
 		oncancel={() => closePicker()}
 		onblur={() => {
-			// Native picker may blur after selection; keep state honest.
 			window.setTimeout(() => {
 				if (document.activeElement !== nativeInput) closePicker();
 			}, 0);
