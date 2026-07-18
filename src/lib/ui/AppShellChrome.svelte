@@ -53,8 +53,7 @@
 		isDefaultActivityFilters,
 		UNCATEGORIZED_FILTER,
 		type ActivityFilterCriteria,
-		type ActivitySortMode,
-		type CategorySortMeta
+		type ActivitySortMode
 	} from '$lib/domain/activity-filters';
 	import { readHideAmounts, writeHideAmounts } from '$lib/shared/hide-amounts';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -165,14 +164,6 @@
 
 	const filterCategories = $derived(
 		[...expenseCategories, ...incomeCategories].sort((a, b) => a.name.localeCompare(b.name))
-	);
-
-	const categorySortMeta = $derived<CategorySortMeta[]>(
-		[...incomeCategories, ...expenseCategories].map((c) => ({
-			id: c.id,
-			kind: c.kind,
-			sortOrder: c.sortOrder
-		}))
 	);
 
 	const filtersSheetSide = $derived<'bottom' | 'right'>(
@@ -296,8 +287,7 @@
 	const sortOptions: { mode: ActivitySortMode; label: string; testid: string }[] = [
 		{ mode: 'createdAt-desc', label: 'Default', testid: 'activity-sort-createdAt-desc' },
 		{ mode: 'occurredOn-desc', label: 'Date (descending)', testid: 'activity-sort-occurredOn-desc' },
-		{ mode: 'occurredOn-asc', label: 'Date (ascending)', testid: 'activity-sort-occurredOn-asc' },
-		{ mode: 'category', label: 'Categories', testid: 'activity-sort-category' }
+		{ mode: 'occurredOn-asc', label: 'Date (ascending)', testid: 'activity-sort-occurredOn-asc' }
 	];
 
 	function applyFilters() {
@@ -521,6 +511,7 @@
 											categoryLabel={categoryName(tx.categoryId)}
 											uncategorized={tx.categoryId == null}
 											hideAmount={hideHomeAmounts}
+											secondary="date"
 											testid={`recent-row-${tx.id}`}
 											onOpen={() => onOpenEdit(tx)}
 										/>
@@ -528,6 +519,15 @@
 								{/each}
 							</ul>
 						{/if}
+						<Button
+							type="button"
+							variant="ghost"
+							class="text-muted-foreground hover:text-foreground mt-1 w-full justify-center text-sm"
+							data-testid="recent-see-more"
+							onclick={() => navigate('activity')}
+						>
+							See more in Activity
+						</Button>
 					</Card.Content>
 				</Card.Root>
 			</div>
@@ -822,7 +822,6 @@
 						{currencyLabel}
 						{categoryName}
 						sortMode={activitySort}
-						categoryMeta={categorySortMeta}
 						onEdit={onOpenEdit}
 					/>
 				</div>

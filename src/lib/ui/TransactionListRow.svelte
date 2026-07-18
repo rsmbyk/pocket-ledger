@@ -12,6 +12,11 @@
 		/** When true, show UncategorizedLabel instead of categoryLabel text. */
 		uncategorized?: boolean;
 		hideAmount?: boolean;
+		/**
+		 * `date` — Home Recent (063): note then date, or date only.
+		 * `note` — Activity (068): note or empty spacer; never shows date.
+		 */
+		secondary?: 'date' | 'note';
 		testid: string;
 		onOpen: () => void;
 	};
@@ -22,6 +27,7 @@
 		categoryLabel,
 		uncategorized = false,
 		hideAmount = false,
+		secondary = 'date',
 		testid,
 		onOpen
 	}: Props = $props();
@@ -48,14 +54,25 @@
 				{categoryLabel}
 			{/if}
 		</p>
-		{#if note}
+		{#if secondary === 'note'}
+			<p
+				class="text-muted-foreground truncate text-xs"
+				data-testid={note ? `${testid}-note` : `${testid}-spacer`}
+			>
+				{#if note}{note}{:else}&nbsp;{/if}
+			</p>
+		{:else if note}
 			<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-note`}>
 				{note}
 			</p>
+			<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-date`}>
+				{dateLabel}
+			</p>
+		{:else}
+			<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-date`}>
+				{dateLabel}
+			</p>
 		{/if}
-		<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-date`}>
-			{dateLabel}
-		</p>
 	</div>
 	<p
 		class={[

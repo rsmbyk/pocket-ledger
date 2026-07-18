@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { LedgerTransaction } from '$lib/domain/transaction';
 import {
+	activityListSections,
 	amountDigitsMatch,
 	filterTransactions,
+	groupActivityByOccurredOn,
+	initialRevealEndIndex,
 	isDefaultActivityFilters,
+	nextRevealEndIndex,
 	sortTransactions,
 	sortTransactionsByDate,
 	UNCATEGORIZED_FILTER
@@ -19,7 +23,7 @@ function tx(
 		counterAccountId: null,
 		categoryId: partial.categoryId ?? null,
 		note: partial.note ?? '',
-		createdAt: '2026-07-14T00:00:00.000Z',
+		createdAt: partial.createdAt ?? '2026-07-14T00:00:00.000Z',
 		voidedAt: partial.voidedAt ?? null,
 		type: partial.type,
 		amountMinor: partial.amountMinor,
@@ -111,26 +115,60 @@ describe('activity-filters', () => {
 		expect(sortTransactionsByDate(mixed, 'occurredOn-asc')[0]?.id).toBe('1');
 	});
 
-	it('sorts by category set order with incomes first', () => {
-		const cats = [
-			{ id: 'sal', kind: 'income' as const, sortOrder: 1 },
-			{ id: 'bonus', kind: 'income' as const, sortOrder: 0 },
-			{ id: 'food', kind: 'expense' as const, sortOrder: 0 },
-			{ id: 'rent', kind: 'expense' as const, sortOrder: 1 }
-		];
-		const mixed = [
-			tx({ id: 'u', type: 'expense', amountMinor: 1, occurredOn: '2026-07-01', categoryId: null }),
-			tx({ id: 'f', type: 'expense', amountMinor: 1, occurredOn: '2026-07-01', categoryId: 'food' }),
-			tx({ id: 'r', type: 'expense', amountMinor: 1, occurredOn: '2026-07-01', categoryId: 'rent' }),
-			tx({ id: 's', type: 'income', amountMinor: 1, occurredOn: '2026-07-01', categoryId: 'sal' }),
-			tx({ id: 'b', type: 'income', amountMinor: 1, occurredOn: '2026-07-01', categoryId: 'bonus' })
-		];
-		expect(sortTransactions(mixed, 'category', cats).map((t) => t.id)).toEqual([
-			'b',
-			's',
-			'f',
-			'r',
-			'u'
-		]);
+	it('groups by occurredOn only for date sorts', () => {
+		const sortedDesc = sortTransactions(
+			[
+				tx({ id: 'a', type: 'expense', amountMinor: 1, occurredOn: '2026-07-16' }),
+				tx({ id: 'b', type: 'expense', amountMinor: 1, occurredOn: '2026-07-16' }),
+				tx({ id: 'c', type: 'expense', amountMinor: 1, occurredOn: '2026-07-15' })
+			],
+			'occurredOn-desc'
+		);
+		const groups = groupActivityByOccurredOn(sortedDesc, 'occurredOn-desc');
+		expect(groups.map((g) => g.occurredOn)).toEqual(['2026-07-16', '2026-07-15']);
+		expect(groups[0]?.transactions.map((t) => t.id)).toEqual(['a', 'b']);
+
+		const flat = groupActivityByOccurredOn(sortedDesc, 'createdAt-desc');
+		expect(flat).toHaveLength(1);
+		expect(flat[0]?.occurredOn).toBe('');
+		expect(flat[0]?.transactions).toHaveLength(3);
+
+		const sections = activityListSections(sortedDesc, 'occurredOn-desc');
+		expect(sections.filter((s) => s.kind === 'header')).toHaveLength(2);
+		expect(activityListSections(sortedDesc, 'createdAt-desc').every((s) => s.kind === 'row')).toBe(
+			true
+		);
+	});
+
+	it('reveals by rows for Default and whole days for date sorts', () => {
+		const many = Array.from({ length: 100 }, (_, i) =>
+			tx({
+				id: `r${i}`,
+				type: 'expense',
+				amountMinor: 1,
+				occurredOn: '2026-07-01',
+				createdAt: `2026-07-01T00:${String(i).padStart(2, '0')}:00.000Z`
+			})
+		);
+		expect(initialRevealEndIndex(many, 'createdAt-desc', 40)).toBe(40);
+		expect(nextRevealEndIndex(many, 40, 'createdAt-desc', 40)).toBe(80);
+		expect(nextRevealEndIndex(many, 80, 'createdAt-desc', 40)).toBe(100);
+		expect(nextRevealEndIndex(many, 100, 'createdAt-desc', 40)).toBe(100);
+
+		const dayA = Array.from({ length: 10 }, (_, i) =>
+			tx({ id: `a${i}`, type: 'expense', amountMinor: 1, occurredOn: '2026-07-20' })
+		);
+		const dayB = Array.from({ length: 50 }, (_, i) =>
+			tx({ id: `b${i}`, type: 'expense', amountMinor: 1, occurredOn: '2026-07-19' })
+		);
+		const dateSorted = [...dayA, ...dayB];
+		const first = initialRevealEndIndex(dateSorted, 'occurredOn-desc', 40);
+		expect(first).toBe(60);
+		expect(dateSorted.slice(0, first).every((t, _, arr) => {
+			const days = new Set(arr.map((x) => x.occurredOn));
+			return days.size === 2;
+		})).toBe(true);
+		const lastDay = dateSorted[first - 1]!.occurredOn;
+		expect(dateSorted[first] === undefined || dateSorted[first]!.occurredOn !== lastDay).toBe(true);
 	});
 });

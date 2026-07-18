@@ -136,19 +136,26 @@ test.describe('017 / 045 activity filters', () => {
 		await expect(sortBtn).toHaveAttribute('data-active', 'true');
 	});
 
-	test('064 Categories sort puts income before expense; note is own line', async ({ page }) => {
+	test('067–068 date groups on Date sort; no Categories; note without row date', async ({
+		page
+	}) => {
 		await seedIncomeAndExpense(page);
 		await goToNav(page, 'activity');
 
 		const foodRow = page.locator('button[data-testid^="activity-row-"]').filter({ hasText: 'Food' });
 		await expect(foodRow.getByTestId(/-note$/)).toContainText('secret lunch');
-		await expect(foodRow.getByTestId(/-date$/)).toBeVisible();
+		await expect(foodRow.getByTestId(/-date$/)).toHaveCount(0);
 
 		await page.getByTestId('activity-sort-open').click();
-		await page.getByTestId('activity-sort-category').click();
-		const rows = page.locator('button[data-testid^="activity-row-"]');
-		await expect(rows.first()).toContainText('Salary');
-		await expect(rows.nth(1)).toContainText('Food');
+		await expect(page.getByTestId('activity-sort-category')).toHaveCount(0);
+		await page.getByTestId('activity-sort-occurredOn-desc').click();
+
+		await expect(page.locator('[data-testid^="activity-date-group-"]')).toHaveCount(1);
+		await expect(foodRow.getByTestId(/-date$/)).toHaveCount(0);
+
+		await page.getByTestId('activity-sort-open').click();
+		await page.getByTestId('activity-sort-createdAt-desc').click();
+		await expect(page.locator('[data-testid^="activity-date-group-"]')).toHaveCount(0);
 	});
 });
 
