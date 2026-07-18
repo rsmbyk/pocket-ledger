@@ -14,12 +14,15 @@
 		type ActivitySortMode
 	} from '$lib/domain/activity-filters';
 
+	type PocketInfo = { name: string; isMain: boolean };
+
 	type Props = {
 		transactions: LedgerTransaction[];
 		totalCount: number;
 		currencyLabel: string;
 		categoryName: (categoryId: string | null) => string;
 		sortMode: ActivitySortMode;
+		pocketsById?: Record<string, PocketInfo>;
 		onEdit: (tx: LedgerTransaction) => void;
 	};
 
@@ -29,8 +32,15 @@
 		currencyLabel,
 		categoryName,
 		sortMode,
+		pocketsById,
 		onEdit
 	}: Props = $props();
+
+	/** Default sort shows date; date sorts show note only (empty note → no secondary, 076). */
+	function secondaryFor(tx: LedgerTransaction, mode: ActivitySortMode): 'date' | 'note' | 'none' {
+		if (mode === 'createdAt-desc') return 'date';
+		return tx.note?.trim() ? 'note' : 'none';
+	}
 
 	const sorted = $derived(sortTransactions(transactions, sortMode));
 
@@ -116,7 +126,9 @@
 						{currencyLabel}
 						categoryLabel={categoryName(section.tx.categoryId)}
 						uncategorized={section.tx.categoryId == null}
-						secondary="note"
+						secondary={secondaryFor(section.tx, sortMode)}
+						{pocketsById}
+						showPocket
 						testid={`activity-row-${section.tx.id}`}
 						onOpen={() => onEdit(section.tx)}
 					/>

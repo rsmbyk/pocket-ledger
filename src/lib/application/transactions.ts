@@ -1,19 +1,26 @@
 import { countCategories, listCategories, listCategoriesByKind } from '$lib/data/category-repo';
 import {
 	getTransaction,
+	listAllTransactions,
 	listTransactionsForAccount,
 	putTransaction
 } from '$lib/data/transaction-repo';
+import { listAccounts, getAccount } from '$lib/data/account-repo';
 import type { CategoryRow } from '$lib/data/db';
 import { isVoided, type LedgerTransaction, type TransactionId } from '$lib/domain/transaction';
 import {
 	isValidOccurredOn,
 	parseAmountInput,
-	sumBalance,
 	todayOccurredOn,
 	type AddableTransactionType
 } from '$lib/domain/transaction-rules';
 import { openField, sealField } from '$lib/application/field-crypto';
+import { derivePocketBalance, sumAllPocketBalances } from '$lib/domain/pocket-balance';
+import {
+	assertTypeImmutable,
+	buildTransferFields,
+	type TransferInput
+} from '$lib/domain/transfer-rules';
 
 export type AddTransactionInput = {
 	accountId: string;
@@ -26,6 +33,10 @@ export type AddTransactionInput = {
 };
 
 export type UpdateTransactionInput = AddTransactionInput & {
+	id: TransactionId;
+};
+
+export type UpdateTransferInput = TransferInput & {
 	id: TransactionId;
 };
 
@@ -82,13 +93,36 @@ export async function addTransaction(input: AddTransactionInput): Promise<Ledger
 	return { ...tx, note: notePlain };
 }
 
+export async function addTransfer(input: TransferInput): Promise<LedgerTransaction> {
+	const fields = buildTransferFields(input);
+	const source = await getAccount(fields.accountId);
+	const dest = await getAccount(fields.counterAccountId);
+	if (!source || !dest) throw new Error('Choose source and destination pockets');
+
+	const tx: LedgerTransaction = {
+		id: createId(),
+		accountId: fields.accountId,
+		counterAccountId: fields.counterAccountId,
+		type: 'transfer',
+		amountMinor: fields.amountMinor,
+		categoryId: null,
+		note: await sealField(fields.note),
+		occurredOn: fields.occurredOn,
+		createdAt: new Date().toISOString(),
+		voidedAt: null
+	};
+	await putTransaction(tx);
+	return { ...tx, note: fields.note };
+}
+
 export async function updateTransaction(input: UpdateTransactionInput): Promise<LedgerTransaction> {
 	const existing = await getTransaction(input.id);
 	if (!existing) throw new Error('Transaction not found');
 	if (isVoided(existing)) throw new Error('Voided transactions cannot be edited');
-	if (input.type !== existing.type) {
-		throw new Error('Transaction type cannot be changed');
+	if (existing.type === 'transfer') {
+		throw new Error('Use updateTransfer for transfer transactions');
 	}
+	assertTypeImmutable(existing, input.type);
 
 	const amountMinor = parseAmountInput(input.amountRaw);
 	const occurredOn = input.occurredOn ?? existing.occurredOn;
@@ -96,7 +130,10 @@ export async function updateTransaction(input: UpdateTransactionInput): Promise<
 		throw new Error('Date must be YYYY-MM-DD');
 	}
 
-	const categoryId = await resolveCategoryId(existing.type, input.categoryId);
+	const categoryId = await resolveCategoryId(
+		existing.type as AddableTransactionType,
+		input.categoryId
+	);
 
 	const notePlain = (input.note ?? '').trim();
 	const tx: LedgerTransaction = {
@@ -111,6 +148,32 @@ export async function updateTransaction(input: UpdateTransactionInput): Promise<
 	};
 	await putTransaction(tx);
 	return { ...tx, note: notePlain };
+}
+
+export async function updateTransfer(input: UpdateTransferInput): Promise<LedgerTransaction> {
+	const existing = await getTransaction(input.id);
+	if (!existing) throw new Error('Transaction not found');
+	if (isVoided(existing)) throw new Error('Voided transactions cannot be edited');
+	assertTypeImmutable(existing, 'transfer');
+
+	const fields = buildTransferFields(input);
+	const source = await getAccount(fields.accountId);
+	const dest = await getAccount(fields.counterAccountId);
+	if (!source || !dest) throw new Error('Choose source and destination pockets');
+
+	const tx: LedgerTransaction = {
+		...existing,
+		accountId: fields.accountId,
+		counterAccountId: fields.counterAccountId,
+		type: 'transfer',
+		amountMinor: fields.amountMinor,
+		categoryId: null,
+		note: await sealField(fields.note),
+		occurredOn: fields.occurredOn,
+		voidedAt: null
+	};
+	await putTransaction(tx);
+	return { ...tx, note: fields.note };
 }
 
 async function resolveCategoryId(
@@ -143,8 +206,7 @@ export async function removeTransaction(id: TransactionId): Promise<void> {
 	await voidTransaction(id);
 }
 
-export async function listRecentTransactions(accountId: string): Promise<LedgerTransaction[]> {
-	const rows = await listTransactionsForAccount(accountId);
+async function revealTxNotes(rows: LedgerTransaction[]): Promise<LedgerTransaction[]> {
 	return Promise.all(
 		rows.map(async (tx) => ({
 			...tx,
@@ -153,7 +215,23 @@ export async function listRecentTransactions(accountId: string): Promise<LedgerT
 	);
 }
 
-export async function getAccountBalance(accountId: string): Promise<number> {
-	const txs = await listTransactionsForAccount(accountId);
-	return sumBalance(txs);
+/** All-pocket recent list (Activity + Home). */
+export async function listRecentTransactions(_accountId?: string): Promise<LedgerTransaction[]> {
+	const rows = await listAllTransactions();
+	const revealed = await revealTxNotes(rows);
+	return revealed.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
+
+export async function getAccountBalance(accountId: string): Promise<number> {
+	const [pocket, txs] = await Promise.all([getAccount(accountId), listAllTransactions()]);
+	if (!pocket) return 0;
+	return derivePocketBalance(pocket, txs);
+}
+
+/** Combined balance across all pockets (Home). */
+export async function getAllPocketsBalance(): Promise<number> {
+	const [pockets, txs] = await Promise.all([listAccounts(), listAllTransactions()]);
+	return sumAllPocketBalances(pockets, txs);
+}
+
+export { listTransactionsForAccount };

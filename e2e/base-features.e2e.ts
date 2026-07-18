@@ -25,16 +25,18 @@ test.describe('003–008 base features', () => {
 		expect(download.suggestedFilename()).toMatch(/pocket-ledger-.*\.json/);
 	});
 
-	test('creates a goal with deadline', async ({ page }) => {
+	test('creates a pocket goal with target', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
+		await mainRow.getByTestId('pocket-edit').click();
+		await page.getByTestId('pocket-goal-target-input').fill('1000000');
+		await page.getByTestId('pocket-save').click();
+		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+		await expect(mainRow).toContainText(/%|1,?000,?000/);
 		await goToNav(page, 'more');
-		const more = page.getByTestId('more-section-goals');
-		await more.getByPlaceholder('Name').fill('Emergency');
-		await more.getByPlaceholder('Target amount').fill('1000000');
-		await more.locator('input[type="date"]').fill('2026-12-31');
-		await more.getByRole('button', { name: 'Add goal' }).click();
-		await expect(page.getByTestId('goals-list')).toContainText('Emergency');
 		await expect(page.getByTestId('more-section-backup')).toBeVisible();
 		await expect(page.getByTestId('more-section-privacy')).toBeVisible();
+		await expect(page.getByTestId('more-section-goals')).toHaveCount(0);
 		await expect(page.getByTestId('capture-net-worth')).toHaveCount(0);
 	});
 

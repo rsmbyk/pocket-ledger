@@ -22,6 +22,8 @@ export type ActivityFilterCriteria = {
 	amountOp?: AmountCompareOp;
 	/** Digits / grouped amount string for lt/gt compare (minor units). */
 	amountRaw?: string | null;
+	/** Empty / `all` / omitted = all pockets; else pocket (account) id. */
+	pocketId?: string | null;
 };
 
 /** Activity list sort modes (Specs 064 / 067). */
@@ -55,6 +57,7 @@ export const DEFAULT_ACTIVITY_FILTERS: Required<
 		| 'hideVoided'
 		| 'amountOp'
 		| 'amountRaw'
+		| 'pocketId'
 	>
 > = {
 	type: 'all',
@@ -64,7 +67,8 @@ export const DEFAULT_ACTIVITY_FILTERS: Required<
 	search: '',
 	hideVoided: false,
 	amountOp: 'none',
-	amountRaw: ''
+	amountRaw: '',
+	pocketId: 'all'
 };
 
 /** Digits-only form of a search query for loose amount matching. */
@@ -98,6 +102,7 @@ export function isDefaultActivityFilters(
 	const hideVoided = criteria.hideVoided ?? false;
 	const amountOp = criteria.amountOp ?? 'none';
 	const amountRaw = criteria.amountRaw?.trim() || '';
+	const pocketId = criteria.pocketId?.trim() || 'all';
 	return (
 		type === DEFAULT_ACTIVITY_FILTERS.type &&
 		(categoryId === '' || categoryId == null) &&
@@ -106,7 +111,8 @@ export function isDefaultActivityFilters(
 		search === '' &&
 		hideVoided === false &&
 		amountOp === 'none' &&
-		amountRaw === ''
+		amountRaw === '' &&
+		(pocketId === 'all' || pocketId === '')
 	);
 }
 
@@ -126,9 +132,16 @@ export function filterTransactions(
 	const hideVoided = criteria.hideVoided ?? false;
 	const amountOp = criteria.amountOp ?? 'none';
 	const compareAmount = parseCompareAmount(criteria.amountRaw);
+	const pocketId = criteria.pocketId?.trim() || 'all';
 
 	return transactions.filter((tx) => {
 		if (hideVoided && isVoided(tx)) return false;
+		if (pocketId && pocketId !== 'all') {
+			const onPocket =
+				tx.accountId === pocketId ||
+				(tx.counterAccountId != null && tx.counterAccountId === pocketId);
+			if (!onPocket) return false;
+		}
 		if (type !== 'all' && tx.type !== type) return false;
 		if (categoryId === UNCATEGORIZED_FILTER) {
 			if (tx.categoryId != null) return false;

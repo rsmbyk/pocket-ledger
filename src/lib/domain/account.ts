@@ -1,4 +1,4 @@
-/** Account identity for multi-account support (single-pot when only one exists). */
+/** Account / Pocket identity (Dexie table remains `accounts`; UI says Pocket). */
 export type AccountId = string;
 
 export type Account = {
@@ -6,9 +6,78 @@ export type Account = {
 	name: string;
 	/** Display-only currency label; multi-currency is out of scope for now. */
 	currencyLabel: string;
-	/** Reserved for optional encryption later; always false in scaffold. */
 	createdAt: string;
+	/** Exactly one pocket should be Main after ensure. */
+	isMain: boolean;
+	/** Order among non-Main pockets (Main always sorts first regardless). */
+	sortOrder: number;
+	notes: string;
+	/** Known balance as of `openingAsOf` (signed minor units). */
+	openingBalanceMinor: number;
+	/** YYYY-MM-DD — txs before this date do not affect derived balance. */
+	openingAsOf: string;
+	/** Optional goal target; null = no goal. */
+	goalTargetMinor: number | null;
+	/** Optional goal deadline YYYY-MM-DD; null = target-only. */
+	goalTargetOn: string | null;
 };
 
 export const DEFAULT_ACCOUNT_NAME = 'Main';
 export const DEFAULT_CURRENCY_LABEL = 'IDR';
+
+export type AccountLike = Partial<Account> &
+	Pick<Account, 'id' | 'name' | 'currencyLabel' | 'createdAt'>;
+
+/** Normalize legacy / partial account rows to the full Account shape. */
+export function normalizeAccount(
+	row: AccountLike,
+	opts?: { today?: string; sortOrder?: number; isMain?: boolean }
+): Account {
+	const today = opts?.today ?? new Date().toISOString().slice(0, 10);
+	return {
+		id: row.id,
+		name: row.name,
+		currencyLabel: row.currencyLabel,
+		createdAt: row.createdAt,
+		isMain: opts?.isMain ?? row.isMain ?? false,
+		sortOrder: opts?.sortOrder ?? row.sortOrder ?? 0,
+		notes: row.notes ?? '',
+		openingBalanceMinor:
+			typeof row.openingBalanceMinor === 'number' ? row.openingBalanceMinor : 0,
+		openingAsOf: row.openingAsOf?.trim() || today,
+		goalTargetMinor:
+			typeof row.goalTargetMinor === 'number' ? row.goalTargetMinor : null,
+		goalTargetOn: row.goalTargetOn?.trim() ? row.goalTargetOn : null
+	};
+}
+
+/** Main first, then sortOrder ascending, then createdAt, then id. */
+export function listPocketsOrdered<T extends Pick<Account, 'id' | 'isMain' | 'sortOrder' | 'createdAt'>>(
+	pockets: T[]
+): T[] {
+	return [...pockets].sort((a, b) => {
+		if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
+		if (!a.isMain && !b.isMain && a.sortOrder !== b.sortOrder) {
+			return a.sortOrder - b.sortOrder;
+		}
+		const byCreated = a.createdAt.localeCompare(b.createdAt);
+		if (byCreated !== 0) return byCreated;
+		return a.id.localeCompare(b.id);
+	});
+}
+
+/** Assign contiguous sortOrder 0..n-1 to non-Main ids in the given order. */
+export function assignNonMainSortOrders<T extends Pick<Account, 'id' | 'isMain' | 'sortOrder'>>(
+	pockets: T[],
+	orderedNonMainIds: string[]
+): T[] {
+	const main = pockets.filter((p) => p.isMain);
+	const byId = new Map(pockets.map((p) => [p.id, p]));
+	const next: T[] = [...main];
+	orderedNonMainIds.forEach((id, index) => {
+		const p = byId.get(id);
+		if (!p || p.isMain) throw new Error('Invalid pocket order');
+		next.push({ ...p, sortOrder: index });
+	});
+	return next;
+}

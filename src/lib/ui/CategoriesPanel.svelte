@@ -45,6 +45,8 @@
 	let addName = $state('');
 	let busy = $state(false);
 	let error = $state('');
+	let nameFieldError = $state('');
+	let renameErrorId = $state<string | null>(null);
 	let renameDrafts = $state<Record<string, string>>({});
 	let deleteTarget = $state<{ id: string; name: string } | null>(null);
 	let inUseTarget = $state<{ id: string; name: string } | null>(null);
@@ -123,13 +125,23 @@
 		}
 	}
 
-	async function runAction(action: () => void | Promise<void>) {
+	async function runAction(action: () => void | Promise<void>, opts?: { renameId?: string }) {
 		busy = true;
 		error = '';
+		nameFieldError = '';
+		renameErrorId = null;
 		try {
 			await action();
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Something went wrong';
+			const message = e instanceof Error ? e.message : 'Something went wrong';
+			if (opts?.renameId) {
+				renameErrorId = opts.renameId;
+				nameFieldError = message;
+			} else if (addDialogOpen) {
+				nameFieldError = message;
+			} else {
+				error = message;
+			}
 			throw e;
 		} finally {
 			busy = false;
@@ -264,17 +276,33 @@
 											>
 												<GripVerticalIcon class="size-4" aria-hidden="true" />
 											</button>
-											<Input
-												class="min-w-0 flex-1"
-												aria-label={`Name for ${cat.name}`}
-												value={draftFor(cat)}
-												oninput={(e) => {
-													renameDrafts = {
-														...renameDrafts,
-														[cat.id]: (e.currentTarget as HTMLInputElement).value
-													};
-												}}
-											/>
+											<div class="min-w-0 flex-1 space-y-1">
+												<Input
+													class="w-full"
+													aria-label={`Name for ${cat.name}`}
+													aria-invalid={renameErrorId === cat.id ? true : undefined}
+													value={draftFor(cat)}
+													oninput={(e) => {
+														renameDrafts = {
+															...renameDrafts,
+															[cat.id]: (e.currentTarget as HTMLInputElement).value
+														};
+														if (renameErrorId === cat.id) {
+															renameErrorId = null;
+															nameFieldError = '';
+														}
+													}}
+												/>
+												{#if renameErrorId === cat.id && nameFieldError}
+													<p
+														class="text-destructive text-sm"
+														role="alert"
+														data-testid="category-field-error-name"
+													>
+														{nameFieldError}
+													</p>
+												{/if}
+											</div>
 											<div class="flex shrink-0 justify-end gap-1">
 												<Button
 													size="icon-sm"
@@ -283,7 +311,9 @@
 													data-testid="category-save-name"
 													disabled={saveDisabled(cat)}
 													onclick={() =>
-														void runAction(() => onRenameCategory(cat.id, draftFor(cat)))}
+														void runAction(() => onRenameCategory(cat.id, draftFor(cat)), {
+															renameId: cat.id
+														})}
 												>
 													<CheckIcon class="size-4" />
 												</Button>
@@ -352,7 +382,16 @@
 				bind:value={addName}
 				required
 				data-testid="category-name-input"
+				aria-invalid={nameFieldError && addDialogOpen ? true : undefined}
+				oninput={() => {
+					if (nameFieldError) nameFieldError = '';
+				}}
 			/>
+			{#if nameFieldError && addDialogOpen && !renameErrorId}
+				<p class="text-destructive text-sm" role="alert" data-testid="category-field-error-name">
+					{nameFieldError}
+				</p>
+			{/if}
 			<div class="flex justify-end gap-2">
 				<Button
 					type="button"

@@ -1,7 +1,7 @@
 /** Primary shell panels addressable via location hash. */
-export type AppRoute = 'home' | 'activity' | 'categories' | 'more';
+export type AppRoute = 'home' | 'activity' | 'pockets' | 'categories' | 'more';
 
-const ROUTES: readonly AppRoute[] = ['home', 'activity', 'categories', 'more'];
+const ROUTES: readonly AppRoute[] = ['home', 'activity', 'pockets', 'categories', 'more'];
 
 /**
  * Parse `location.hash` into an app route. Unknown paths fall back to home.

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import HomeIcon from '@lucide/svelte/icons/house';
 	import ListIcon from '@lucide/svelte/icons/list';
+	import LandmarkIcon from '@lucide/svelte/icons/landmark';
 	import TagsIcon from '@lucide/svelte/icons/tags';
 	import MoreHorizontalIcon from '@lucide/svelte/icons/ellipsis';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -52,6 +53,10 @@
 			<Command.Item onSelect={() => run(() => onNavigate('activity'))} data-testid="cmd-activity">
 				<ListIcon />
 				Activity
+			</Command.Item>
+			<Command.Item onSelect={() => run(() => onNavigate('pockets'))} data-testid="cmd-pockets">
+				<LandmarkIcon />
+				Pockets
 			</Command.Item>
 			<Command.Item
 				onSelect={() => run(() => onNavigate('categories'))}

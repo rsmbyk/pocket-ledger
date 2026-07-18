@@ -1,7 +1,6 @@
 <script lang="ts">
 	import HardDriveIcon from '@lucide/svelte/icons/hard-drive';
 	import RepeatIcon from '@lucide/svelte/icons/repeat';
-	import TargetIcon from '@lucide/svelte/icons/target';
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -9,29 +8,14 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import type { RecurringRule, RecurringFrequency } from '$lib/domain/recurring';
-	import type { Goal } from '$lib/domain/goals';
 	import type { CategoryRow } from '$lib/data/db';
-	import {
-		dailyPaceNeeded,
-		daysRemaining,
-		goalProgressPercent,
-		goalRemainingMinor,
-		sortGoalsByNearestDeadline
-	} from '$lib/domain/goals';
 	import { formatMinor } from '$lib/domain/money';
-	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
-	import {
-		todayOccurredOn,
-		type AddableTransactionType
-	} from '$lib/domain/transaction-rules';
+	import { type AddableTransactionType } from '$lib/domain/transaction-rules';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
-	import DateField from '$lib/ui/DateField.svelte';
 
 	type Props = {
 		currencyLabel: string;
-		balanceMinor: number;
 		recurringRules: RecurringRule[];
-		goals: Goal[];
 		expenseCategories: CategoryRow[];
 		incomeCategories: CategoryRow[];
 		lockEnabled: boolean;
@@ -50,17 +34,13 @@
 		}) => void | Promise<void>;
 		onToggleRecurring: (id: string, active: boolean) => void | Promise<void>;
 		onDeleteRecurring: (id: string) => void | Promise<void>;
-		onCreateGoal: (name: string, targetRaw: string, targetOn: string) => void | Promise<void>;
-		onDeleteGoal: (id: string) => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
 	};
 
 	let {
 		currencyLabel,
-		balanceMinor,
 		recurringRules,
-		goals,
 		expenseCategories,
 		incomeCategories,
 		lockEnabled,
@@ -70,8 +50,6 @@
 		onCreateRecurring,
 		onToggleRecurring,
 		onDeleteRecurring,
-		onCreateGoal,
-		onDeleteGoal,
 		onEnableLock,
 		onDisableLock
 	}: Props = $props();
@@ -82,10 +60,6 @@
 	let recFrequency = $state<RecurringFrequency>('monthly');
 	let recNote = $state('');
 
-	let goalName = $state('');
-	let goalTarget = $state('');
-	let goalDeadline = $state('');
-
 	let lockPass = $state('');
 	let lockPassConfirm = $state('');
 	let lockPassError = $state<string | null>(null);
@@ -94,15 +68,12 @@
 	let preservePassphrase = $state(false);
 
 	let pendingDeleteRecurringId = $state<string | null>(null);
-	let pendingDeleteGoal = $state<{ id: string; name: string } | null>(null);
 	let importConfirmOpen = $state(false);
 	let pendingImportFile = $state<File | null>(null);
 	let disableLockConfirmOpen = $state(false);
 	let error = $state<string | null>(null);
 
 	const recCategories = $derived(recType === 'expense' ? expenseCategories : incomeCategories);
-	const sortedGoals = $derived(sortGoalsByNearestDeadline(goals, balanceMinor));
-	const today = $derived(todayOccurredOn());
 
 	$effect(() => {
 		if (!recCategories.some((c) => c.id === recCategoryId)) {
@@ -121,16 +92,6 @@
 
 	function requestDeleteRecurring(id: string) {
 		pendingDeleteRecurringId = id;
-	}
-
-	function requestDeleteGoal(id: string, name: string) {
-		pendingDeleteGoal = { id, name };
-	}
-
-	function daysLeftLabel(days: number): string {
-		if (days > 0) return `${days} days left`;
-		if (days === 0) return 'Due today';
-		return `Overdue by ${Math.abs(days)} days`;
 	}
 </script>
 
@@ -283,98 +244,6 @@
 			</Card.Content>
 		</Card.Root>
 
-		<Card.Root class="p-(--card-spacing)" data-testid="more-section-goals">
-			<Card.Header class="px-0">
-				<Card.Title class="flex items-center gap-2 text-base">
-					<TargetIcon class="size-5" aria-hidden="true" />
-					Goals
-				</Card.Title>
-				<Card.Description>Have a target amount by a deadline.</Card.Description>
-			</Card.Header>
-			<Card.Content class="space-y-4 px-0">
-				<form
-					class="space-y-2"
-					onsubmit={(e) => {
-						e.preventDefault();
-						if (!goalDeadline.trim()) {
-							error = 'Deadline is required';
-							return;
-						}
-						void wrap(() => onCreateGoal(goalName, goalTarget, goalDeadline));
-						goalName = '';
-						goalTarget = '';
-						goalDeadline = '';
-					}}
-				>
-					<Input placeholder="Name" bind:value={goalName} required />
-					<Input
-						placeholder="Target amount"
-						inputmode="numeric"
-						bind:value={goalTarget}
-						required
-					/>
-					<div class="space-y-1">
-						<Label for="goal-deadline">Deadline</Label>
-						<DateField
-							id="goal-deadline"
-							value={goalDeadline}
-							aria-label="Deadline"
-							testid="goal-deadline"
-							onValueChange={(next) => (goalDeadline = next)}
-						/>
-					</div>
-					<Button type="submit" class="w-full">Add goal</Button>
-				</form>
-				<ul class="space-y-3 text-sm" data-testid="goals-list">
-					{#each sortedGoals as goal (goal.id)}
-						{@const percent = goalProgressPercent(goal.targetMinor, balanceMinor)}
-						{@const days = daysRemaining(goal.targetOn, today)}
-						{@const remaining = goalRemainingMinor(goal.targetMinor, balanceMinor)}
-						{@const pace = dailyPaceNeeded(remaining, days)}
-						<li
-							class="border-border space-y-2 rounded-lg border p-3"
-							data-testid={`goal-row-${goal.id}`}
-						>
-							<div class="flex items-start justify-between gap-2">
-								<div class="min-w-0">
-									<p class="font-medium">{goal.name}</p>
-									<p class="text-muted-foreground">
-										{formatMinor(Math.max(0, balanceMinor), currencyLabel)} /
-										{formatMinor(goal.targetMinor, currencyLabel)} · {percent}%
-									</p>
-									<p class="text-muted-foreground">
-										{daysLeftLabel(days)}
-										{#if goal.targetOn}
-											· {formatOccurredOnDisplay(goal.targetOn)}
-										{/if}
-									</p>
-									{#if pace != null}
-										<p class="text-muted-foreground">
-											~{formatMinor(pace, currencyLabel)}/day
-										</p>
-									{/if}
-								</div>
-								<Button
-									size="sm"
-									variant="destructive"
-									onclick={() => requestDeleteGoal(goal.id, goal.name)}
-									>Delete</Button
-								>
-							</div>
-							<div class="bg-muted h-2 overflow-hidden rounded-full">
-								<div
-									class="bg-primary h-full rounded-full"
-									style={`width: ${percent}%`}
-								></div>
-							</div>
-						</li>
-					{:else}
-						<li class="text-muted-foreground">No goals yet.</li>
-					{/each}
-				</ul>
-			</Card.Content>
-		</Card.Root>
-
 		<Card.Root class="p-(--card-spacing)" data-testid="more-section-privacy">
 			<Card.Header class="px-0">
 				<Card.Title class="flex items-center gap-2 text-base">
@@ -400,11 +269,16 @@
 								return;
 							}
 							lockPassError = null;
-							void wrap(async () => {
-								await onEnableLock(lockPass);
-								lockPass = '';
-								lockPassConfirm = '';
-							});
+							void (async () => {
+								try {
+									await onEnableLock(lockPass);
+									lockPass = '';
+									lockPassConfirm = '';
+								} catch (err) {
+									lockPassError =
+										err instanceof Error ? err.message : 'Could not enable lock';
+								}
+							})();
 						}}
 					>
 						<Input
@@ -413,14 +287,37 @@
 							bind:value={lockPass}
 							autocomplete="new-password"
 							data-testid="enable-lock-pass"
+							aria-invalid={lockPassError && /at least|Passphrase must/i.test(lockPassError)
+								? true
+								: undefined}
+							oninput={() => (lockPassError = null)}
 						/>
+						{#if lockPassError && /at least|Passphrase must/i.test(lockPassError)}
+							<p
+								class="text-destructive text-sm"
+								role="alert"
+								data-testid="lock-field-error-passphrase"
+							>
+								{lockPassError}
+							</p>
+						{/if}
 						<Input
 							type="password"
 							placeholder="Confirm passphrase"
 							bind:value={lockPassConfirm}
 							autocomplete="new-password"
+							aria-invalid={lockPassError && /do not match/i.test(lockPassError) ? true : undefined}
+							oninput={() => (lockPassError = null)}
 						/>
-						{#if lockPassError}
+						{#if lockPassError && /do not match/i.test(lockPassError)}
+							<p
+								class="text-destructive text-sm"
+								role="alert"
+								data-testid="lock-field-error-passphraseConfirm"
+							>
+								{lockPassError}
+							</p>
+						{:else if lockPassError}
 							<p class="text-destructive text-sm" role="alert">{lockPassError}</p>
 						{/if}
 						<Button type="submit" class="w-full" data-testid="enable-lock">Enable lock</Button>
@@ -512,27 +409,6 @@
 		const id = pendingDeleteRecurringId;
 		pendingDeleteRecurringId = null;
 		await wrap(() => onDeleteRecurring(id));
-	}}
-/>
-
-<ConfirmDialog
-	open={pendingDeleteGoal !== null}
-	title="Delete goal?"
-	description={pendingDeleteGoal
-		? `Delete goal "${pendingDeleteGoal.name}" permanently? This cannot be undone.`
-		: 'This cannot be undone.'}
-	confirmLabel="Delete"
-	destructive
-	dangerChrome
-	confirmTestId="goal-delete-confirm"
-	onOpenChange={(open) => {
-		if (!open) pendingDeleteGoal = null;
-	}}
-	onConfirm={async () => {
-		if (!pendingDeleteGoal) return;
-		const { id } = pendingDeleteGoal;
-		pendingDeleteGoal = null;
-		await wrap(() => onDeleteGoal(id));
 	}}
 />
 

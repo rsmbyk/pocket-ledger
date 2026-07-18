@@ -86,6 +86,30 @@ describe('activity-filters', () => {
 		]);
 	});
 
+	it('filters by pocket including transfer either side', () => {
+		const mixed = [
+			tx({ type: 'expense', amountMinor: 10, occurredOn: '2026-07-15', note: 'main-exp' }),
+			{
+				...tx({ type: 'expense', amountMinor: 20, occurredOn: '2026-07-15', note: 'vac-exp' }),
+				accountId: 'vac'
+			},
+			{
+				...tx({ type: 'transfer', amountMinor: 30, occurredOn: '2026-07-15', note: 'xfer' }),
+				accountId: 'acc',
+				counterAccountId: 'vac'
+			}
+		];
+		expect(filterTransactions(mixed, { pocketId: 'acc' }).map((t) => t.note)).toEqual([
+			'main-exp',
+			'xfer'
+		]);
+		expect(filterTransactions(mixed, { pocketId: 'vac' }).map((t) => t.note)).toEqual([
+			'vac-exp',
+			'xfer'
+		]);
+		expect(filterTransactions(mixed, { pocketId: 'all' })).toHaveLength(3);
+	});
+
 	it('detects default filters', () => {
 		expect(isDefaultActivityFilters({})).toBe(true);
 		expect(isDefaultActivityFilters({ type: 'expense' })).toBe(false);

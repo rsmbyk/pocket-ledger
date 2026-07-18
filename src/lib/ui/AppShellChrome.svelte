@@ -2,6 +2,7 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import HomeIcon from '@lucide/svelte/icons/house';
 	import ListIcon from '@lucide/svelte/icons/list';
+	import LandmarkIcon from '@lucide/svelte/icons/landmark';
 	import TagsIcon from '@lucide/svelte/icons/tags';
 	import MoreHorizontalIcon from '@lucide/svelte/icons/ellipsis';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -15,14 +16,18 @@
 	import HistoryIcon from '@lucide/svelte/icons/history';
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
 	import ThemeMenu from '$lib/ui/ThemeMenu.svelte';
 	import MonthSummaryCard from '$lib/ui/MonthSummary.svelte';
 	import MorePanel from '$lib/ui/MorePanel.svelte';
 	import CategoriesPanel from '$lib/ui/CategoriesPanel.svelte';
+	import PocketsPanel from '$lib/ui/PocketsPanel.svelte';
+	import PocketLabel from '$lib/ui/PocketLabel.svelte';
 	import ActivityTable from '$lib/ui/ActivityTable.svelte';
 	import TransactionListRow from '$lib/ui/TransactionListRow.svelte';
 	import EmptyState from '$lib/ui/EmptyState.svelte';
@@ -34,16 +39,9 @@
 	import type { ThemePreference } from '$lib/shared/theme';
 	import type { MonthSummary } from '$lib/domain/month-summary';
 	import type { RecurringRule, RecurringFrequency } from '$lib/domain/recurring';
-	import type { Goal } from '$lib/domain/goals';
-	import {
-		daysRemaining,
-		goalProgressPercent,
-		sortGoalsByNearestDeadline
-	} from '$lib/domain/goals';
-	import {
-		todayOccurredOn,
-		type AddableTransactionType
-	} from '$lib/domain/transaction-rules';
+	import type { CreatePocketInput, UpdatePocketInput } from '$lib/application/accounts';
+	import { derivePocketBalance } from '$lib/domain/pocket-balance';
+	import { type AddableTransactionType } from '$lib/domain/transaction-rules';
 	import { formatMinor } from '$lib/domain/money';
 	import { isAppRoute, type AppRoute } from '$lib/shared/router';
 	import {
@@ -61,12 +59,12 @@
 
 	type Props = {
 		account: Account | null;
+		accounts: Account[];
 		balanceMinor: number;
 		transactions: LedgerTransaction[];
 		categoriesById: Record<string, CategoryRow>;
 		monthSummary: MonthSummary | null;
 		recurringRules: RecurringRule[];
-		goals: Goal[];
 		expenseCategories: CategoryRow[];
 		incomeCategories: CategoryRow[];
 		lockEnabled: boolean;
@@ -91,8 +89,6 @@
 		}) => void | Promise<void>;
 		onToggleRecurring: (id: string, active: boolean) => void | Promise<void>;
 		onDeleteRecurring: (id: string) => void | Promise<void>;
-		onCreateGoal: (name: string, targetRaw: string, targetOn: string) => void | Promise<void>;
-		onDeleteGoal: (id: string) => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
@@ -102,19 +98,26 @@
 			kind: CategoryRow['kind'],
 			orderedIds: string[]
 		) => void | Promise<void>;
+		onCreatePocket: (input: CreatePocketInput) => void | Promise<void>;
+		onUpdatePocket: (input: UpdatePocketInput) => void | Promise<void>;
+		onDeletePocket: (id: string) => void | Promise<void>;
+		onReorderPockets: (orderedNonMainIds: string[]) => void | Promise<void>;
+		onClearPocketGoal: (id: string) => void | Promise<void>;
 		onNavigate: (route: AppRoute) => void;
 		onOpenAdd: () => void;
 		onOpenEdit: (tx: LedgerTransaction) => void;
+		/** Applied Activity pocket filter (`all` or pocket id) for Add default. */
+		onActivityPocketFilterChange?: (pocketId: string) => void;
 	};
 
 	let {
 		account,
+		accounts,
 		balanceMinor,
 		transactions,
 		categoriesById,
 		monthSummary,
 		recurringRules,
-		goals,
 		expenseCategories,
 		incomeCategories,
 		lockEnabled,
@@ -130,17 +133,21 @@
 		onCreateRecurring,
 		onToggleRecurring,
 		onDeleteRecurring,
-		onCreateGoal,
-		onDeleteGoal,
 		onEnableLock,
 		onDisableLock,
 		onCreateCategory,
 		onRenameCategory,
 		onDeleteCategory,
 		onReorderCategories,
+		onCreatePocket,
+		onUpdatePocket,
+		onDeletePocket,
+		onReorderPockets,
+		onClearPocketGoal,
 		onNavigate,
 		onOpenAdd,
-		onOpenEdit
+		onOpenEdit,
+		onActivityPocketFilterChange
 	}: Props = $props();
 
 	const sidebar = Sidebar.useSidebar();
@@ -189,6 +196,13 @@
 
 	const filteredTransactions = $derived(filterTransactions(transactions, applied));
 
+	const pocketsById = $derived(
+		Object.fromEntries(accounts.map((a) => [a.id, { name: a.name, isMain: a.isMain }]))
+	);
+	const pocketBalances = $derived(
+		Object.fromEntries(accounts.map((a) => [a.id, derivePocketBalance(a, transactions)]))
+	);
+
 	const navItems: {
 		id: AppRoute;
 		label: string;
@@ -196,6 +210,7 @@
 	}[] = [
 		{ id: 'home', label: 'Home', icon: HomeIcon },
 		{ id: 'activity', label: 'Activity', icon: ListIcon },
+		{ id: 'pockets', label: 'Pockets', icon: LandmarkIcon },
 		{ id: 'categories', label: 'Categories', icon: TagsIcon },
 		{ id: 'more', label: 'More', icon: MoreHorizontalIcon }
 	];
@@ -209,6 +224,7 @@
 		if (criteria.endDate?.trim()) count++;
 		if (criteria.hideVoided) count++;
 		if ((criteria.amountOp ?? 'none') !== 'none') count++;
+		if ((criteria.pocketId?.trim() || 'all') !== 'all') count++;
 		return count;
 	}
 
@@ -226,7 +242,8 @@
 			(ignoreSearch || (a.search?.trim() ?? '') === (b.search?.trim() ?? '')) &&
 			(a.hideVoided ?? false) === (b.hideVoided ?? false) &&
 			(a.amountOp ?? 'none') === (b.amountOp ?? 'none') &&
-			(a.amountRaw?.trim() ?? '') === (b.amountRaw?.trim() ?? '')
+			(a.amountRaw?.trim() ?? '') === (b.amountRaw?.trim() ?? '') &&
+			(a.pocketId?.trim() || 'all') === (b.pocketId?.trim() || 'all')
 		);
 	}
 
@@ -240,7 +257,8 @@
 			search: criteria.search ?? '',
 			hideVoided: criteria.hideVoided ?? false,
 			amountOp: criteria.amountOp ?? 'none',
-			amountRaw: criteria.amountRaw ?? ''
+			amountRaw: criteria.amountRaw ?? '',
+			pocketId: criteria.pocketId?.trim() || 'all'
 		};
 	}
 
@@ -251,12 +269,6 @@
 
 	function homeMoney(amount: number): string {
 		return hideHomeAmounts ? '••••' : formatMinor(amount, currencyLabel);
-	}
-
-	function daysLeftLabel(days: number): string {
-		if (days > 0) return `${days} days left`;
-		if (days === 0) return 'Due today';
-		return `Overdue by ${Math.abs(days)} days`;
 	}
 
 	function navigate(next: string) {
@@ -292,6 +304,7 @@
 
 	function applyFilters() {
 		applied = { ...cloneFilters(draft), search: applied.search ?? '' };
+		onActivityPocketFilterChange?.(applied.pocketId?.trim() || 'all');
 		if (!xlWide.current) filtersOpen = false;
 	}
 
@@ -311,11 +324,18 @@
 		}
 		if (draftDirty) {
 			discardWarnOpen = true;
-			filtersOpen = true;
 			return;
 		}
 		filtersOpen = false;
 	}
+
+	function onFiltersDismissAttempt() {
+		if (!draftDirty) return;
+		discardWarnOpen = true;
+	}
+
+	const filtersDismissOutside = $derived(draftDirty || discardWarnOpen ? 'ignore' : 'close');
+	const filtersDismissEscape = $derived(draftDirty || discardWarnOpen ? 'ignore' : 'close');
 
 	function confirmDiscardFilters() {
 		draft = cloneFilters(applied);
@@ -441,25 +461,6 @@
 					</p>
 				</section>
 
-				{#if goals.length > 0}
-					{@const sorted = sortGoalsByNearestDeadline(goals, balanceMinor)}
-					{@const top = sorted[0]}
-					{@const days = daysRemaining(top.targetOn, todayOccurredOn())}
-					{@const percent = goalProgressPercent(top.targetMinor, balanceMinor)}
-					<button
-						type="button"
-						class="border-border/80 bg-card hover:bg-muted/40 flex w-full flex-col gap-0.5 rounded-xl border px-4 py-3 text-left shadow-xs transition-colors"
-						data-testid="home-goal-strip"
-						onclick={() => navigate('more')}
-					>
-						<p class="text-muted-foreground text-sm">Nearest goal</p>
-						<p class="font-medium">{top.name}</p>
-						<p class="text-muted-foreground text-sm">
-							{percent}% · {daysLeftLabel(days)}
-						</p>
-					</button>
-				{/if}
-
 				{#if monthSummary}
 					<MonthSummaryCard
 						summary={monthSummary}
@@ -512,6 +513,8 @@
 											uncategorized={tx.categoryId == null}
 											hideAmount={hideHomeAmounts}
 											secondary="date"
+											{pocketsById}
+											showPocket
 											testid={`recent-row-${tx.id}`}
 											onOpen={() => onOpenEdit(tx)}
 										/>
@@ -564,6 +567,42 @@
 								<option value={category.id}>{category.name}</option>
 							{/each}
 						</select>
+					</div>
+					<div class="space-y-1">
+						<Label for="activity-filter-pocket">Pocket</Label>
+						<DropdownMenu.Root>
+							<DropdownMenu.Trigger
+								id="activity-filter-pocket"
+								class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full items-center justify-between rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none"
+								data-testid="activity-filter-pocket"
+								aria-label="Pocket"
+							>
+								{#if (draft.pocketId ?? 'all') === 'all'}
+									<span>All</span>
+								{:else}
+									{@const selected = accounts.find((a) => a.id === draft.pocketId)}
+									<PocketLabel name={selected?.name ?? 'Unknown'} isMain={selected?.isMain ?? false} />
+								{/if}
+								<ChevronDownIcon class="text-muted-foreground size-4 shrink-0" />
+							</DropdownMenu.Trigger>
+							<DropdownMenu.Content class="max-h-60 w-(--bits-dropdown-menu-anchor-width)">
+								<DropdownMenu.Item
+									data-testid="activity-filter-pocket-option-all"
+									onclick={() => (draft.pocketId = 'all')}
+								>
+									All
+								</DropdownMenu.Item>
+								<DropdownMenu.Separator />
+								{#each accounts as pocket (pocket.id)}
+									<DropdownMenu.Item
+										data-testid={`activity-filter-pocket-option-${pocket.id}`}
+										onclick={() => (draft.pocketId = pocket.id)}
+									>
+										<PocketLabel name={pocket.name} isMain={pocket.isMain} />
+									</DropdownMenu.Item>
+								{/each}
+							</DropdownMenu.Content>
+						</DropdownMenu.Root>
 					</div>
 					<div class="space-y-1">
 						<Label for="activity-filter-start">From</Label>
@@ -797,6 +836,10 @@
 								class={filtersSheetClass}
 								data-testid="activity-filters-sheet"
 								showCloseButton={false}
+								interactOutsideBehavior={filtersDismissOutside}
+								escapeKeydownBehavior={filtersDismissEscape}
+								onInteractOutside={onFiltersDismissAttempt}
+								onEscapeKeydown={onFiltersDismissAttempt}
 							>
 								<Sheet.Title class="sr-only">Filters</Sheet.Title>
 								{@render filterPanel()}
@@ -816,25 +859,37 @@
 						onConfirm={confirmDiscardFilters}
 					/>
 
-					<ActivityTable
-						transactions={filteredTransactions}
-						totalCount={transactions.length}
-						{currencyLabel}
-						{categoryName}
-						sortMode={activitySort}
-						onEdit={onOpenEdit}
-					/>
-				</div>
-
-				{#if xlWide.current}
-					<aside
-						data-testid="activity-filters-drawer"
-						class="border-border bg-card flex w-72 shrink-0 flex-col border-l"
-					>
-						{@render filterPanel()}
-					</aside>
-				{/if}
+				<ActivityTable
+					transactions={filteredTransactions}
+					totalCount={transactions.length}
+					{currencyLabel}
+					{categoryName}
+					sortMode={activitySort}
+					{pocketsById}
+					onEdit={onOpenEdit}
+				/>
 			</div>
+
+			{#if xlWide.current}
+				<aside
+					data-testid="activity-filters-drawer"
+					class="border-border bg-card flex w-72 shrink-0 flex-col border-l"
+				>
+					{@render filterPanel()}
+				</aside>
+			{/if}
+		</div>
+		{:else if route === 'pockets'}
+			<PocketsPanel
+				pockets={accounts}
+				balances={pocketBalances}
+				{currencyLabel}
+				onCreatePocket={onCreatePocket}
+				onUpdatePocket={onUpdatePocket}
+				onDeletePocket={onDeletePocket}
+				onReorderPockets={onReorderPockets}
+				onClearGoal={onClearPocketGoal}
+			/>
 		{:else if route === 'categories'}
 			<CategoriesPanel
 				{expenseCategories}
@@ -847,9 +902,7 @@
 		{:else}
 			<MorePanel
 				{currencyLabel}
-				{balanceMinor}
 				{recurringRules}
-				{goals}
 				{expenseCategories}
 				{incomeCategories}
 				{lockEnabled}
@@ -859,8 +912,6 @@
 				{onCreateRecurring}
 				{onToggleRecurring}
 				{onDeleteRecurring}
-				{onCreateGoal}
-				{onDeleteGoal}
 				{onEnableLock}
 				{onDisableLock}
 			/>

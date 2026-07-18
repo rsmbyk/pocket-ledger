@@ -11,19 +11,19 @@
 	import type { ThemePreference } from '$lib/shared/theme';
 	import type { MonthSummary } from '$lib/domain/month-summary';
 	import type { RecurringRule, RecurringFrequency } from '$lib/domain/recurring';
-	import type { Goal } from '$lib/domain/goals';
 	import type { AddableTransactionType } from '$lib/domain/transaction-rules';
+	import type { CreatePocketInput, UpdatePocketInput } from '$lib/application/accounts';
 	import { isAppRoute, parseHash, routeToHash, type AppRoute } from '$lib/shared/router';
 
 	type Props = {
 		account: Account | null;
+		accounts: Account[];
 		isSinglePot: boolean;
 		balanceMinor: number;
 		transactions: LedgerTransaction[];
 		categoriesById: Record<string, CategoryRow>;
 		monthSummary: MonthSummary | null;
 		recurringRules: RecurringRule[];
-		goals: Goal[];
 		expenseCategories: CategoryRow[];
 		incomeCategories: CategoryRow[];
 		lockEnabled: boolean;
@@ -47,8 +47,6 @@
 		}) => void | Promise<void>;
 		onToggleRecurring: (id: string, active: boolean) => void | Promise<void>;
 		onDeleteRecurring: (id: string) => void | Promise<void>;
-		onCreateGoal: (name: string, targetRaw: string, targetOn: string) => void | Promise<void>;
-		onDeleteGoal: (id: string) => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
@@ -58,19 +56,24 @@
 			kind: CategoryRow['kind'],
 			orderedIds: string[]
 		) => void | Promise<void>;
+		onCreatePocket: (input: CreatePocketInput) => void | Promise<void>;
+		onUpdatePocket: (input: UpdatePocketInput) => void | Promise<void>;
+		onDeletePocket: (id: string) => void | Promise<void>;
+		onReorderPockets: (orderedNonMainIds: string[]) => void | Promise<void>;
+		onClearPocketGoal: (id: string) => void | Promise<void>;
 		ready: boolean;
 		error: string | null;
 	};
 
 	let {
 		account,
+		accounts,
 		isSinglePot: _isSinglePot,
 		balanceMinor,
 		transactions,
 		categoriesById,
 		monthSummary,
 		recurringRules,
-		goals,
 		expenseCategories,
 		incomeCategories,
 		lockEnabled,
@@ -85,14 +88,17 @@
 		onCreateRecurring,
 		onToggleRecurring,
 		onDeleteRecurring,
-		onCreateGoal,
-		onDeleteGoal,
 		onEnableLock,
 		onDisableLock,
 		onCreateCategory,
 		onRenameCategory,
 		onDeleteCategory,
 		onReorderCategories,
+		onCreatePocket,
+		onUpdatePocket,
+		onDeletePocket,
+		onReorderPockets,
+		onClearPocketGoal,
 		ready,
 		error
 	}: Props = $props();
@@ -101,12 +107,22 @@
 	let commandOpen = $state(false);
 	let editing = $state<LedgerTransaction | null>(null);
 	let route = $state<AppRoute>('home');
+	/** Activity applied pocket filter for Normal Add default (`all` = use Main). */
+	let activityPocketFilterId = $state('all');
 	/** Clears `editing` after close animation; must cancel if reopened quickly. */
 	let clearEditingTimer: ReturnType<typeof setTimeout> | null = null;
+
+	const preferredAccountId = $derived(
+		activityPocketFilterId !== 'all' &&
+			accounts.some((a) => a.id === activityPocketFilterId)
+			? activityPocketFilterId
+			: (account?.id ?? '')
+	);
 
 	const navItems: { id: AppRoute; label: string }[] = [
 		{ id: 'home', label: 'Home' },
 		{ id: 'activity', label: 'Activity' },
+		{ id: 'pockets', label: 'Pockets' },
 		{ id: 'categories', label: 'Categories' },
 		{ id: 'more', label: 'More' }
 	];
@@ -184,12 +200,12 @@
 		<Sidebar.Provider class="min-h-svh">
 			<AppShellChrome
 				{account}
+				{accounts}
 				{balanceMinor}
 				{transactions}
 				{categoriesById}
 				{monthSummary}
 				{recurringRules}
-				{goals}
 				{expenseCategories}
 				{incomeCategories}
 				{lockEnabled}
@@ -205,17 +221,21 @@
 				{onCreateRecurring}
 				{onToggleRecurring}
 				{onDeleteRecurring}
-				{onCreateGoal}
-				{onDeleteGoal}
 				{onEnableLock}
 				{onDisableLock}
 				{onCreateCategory}
 				{onRenameCategory}
 				{onDeleteCategory}
 				{onReorderCategories}
+				{onCreatePocket}
+				{onUpdatePocket}
+				{onDeletePocket}
+				{onReorderPockets}
+				{onClearPocketGoal}
 				onNavigate={navigate}
 				onOpenAdd={openAdd}
 				onOpenEdit={openEdit}
+				onActivityPocketFilterChange={(pocketId) => (activityPocketFilterId = pocketId)}
 			/>
 		</Sidebar.Provider>
 	{/if}
@@ -225,7 +245,9 @@
 	<QuickAddSheet
 		open={txSheetOpen}
 		accountId={account.id}
+		preferredAccountId={preferredAccountId || account.id}
 		currencyLabel={account.currencyLabel}
+		{accounts}
 		{editing}
 		onOpenChange={(next) => {
 			txSheetOpen = next;

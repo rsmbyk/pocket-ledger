@@ -85,3 +85,14 @@ Living behavior contracts for Pocket Ledger.
 | [067](067-remove-category-sort/spec.md) | Remove Categories sort | Accepted |
 | [068](068-activity-date-groups/spec.md) | Activity date groups + note secondary | Accepted |
 | [069](069-activity-chunked-reveal/spec.md) | Activity chunked reveal (whole days) | Accepted |
+| [070](070-pockets-nav-crud/spec.md) | Pockets nav + CRUD + Main + order | Accepted |
+| [071](071-pocket-opening-balance/spec.md) | Pocket opening balance + derived balance | Accepted |
+| [072](072-pocket-goals/spec.md) | Pocket goals; retire Home/More goals | Accepted |
+| [073](073-transfer-transactions/spec.md) | Normal / Transfer add; immutable type; neutral badge | Accepted |
+| [074](074-pockets-copy-docs/spec.md) | Accounts → Pockets copy + docs | Accepted |
+| [075](075-activity-pocket-filter/spec.md) | Activity filter by pocket | Accepted |
+| [076](076-activity-row-secondary/spec.md) | Activity row date/note + empty-secondary chrome | Accepted |
+| [077](077-row-pocket-labels/spec.md) | Pocket under amount; transfer row chrome | Accepted |
+| [078](078-tx-pocket-picker/spec.md) | Pocket picker on Normal add/edit | Accepted |
+| [079](079-tx-inline-field-errors/spec.md) | Inline field errors on all forms | Accepted |
+| [080](080-dirty-modal-keep-open/spec.md) | Dirty modal keep-open on discard | Accepted |
