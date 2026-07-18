@@ -25,7 +25,7 @@
 		secondary?: 'date' | 'note' | 'none';
 		/** Pocket id → display info; required with `showPocket` to resolve names. */
 		pocketsById?: Record<string, PocketInfo>;
-		/** Show the pocket (or transfer source → dest) under the amount (077). */
+		/** Show the pocket (or transfer source → dest) on the secondary row (092). */
 		showPocket?: boolean;
 		testid: string;
 		onOpen: () => void;
@@ -52,7 +52,9 @@
 	const isTransfer = $derived(tx.type === 'transfer');
 
 	const hasSecondaryLine = $derived(
-		secondary !== 'none' && !(secondary === 'note' && !note)
+		(secondary === 'date' && true) ||
+			(secondary === 'note' && (!!note || showPocket)) ||
+			(secondary === 'none' && showPocket)
 	);
 
 	const amountText = $derived(
@@ -70,6 +72,27 @@
 	const destPocket = $derived(pocketInfo(tx.counterAccountId));
 	const ownPocket = $derived(pocketInfo(tx.accountId));
 </script>
+
+{#snippet pocketChrome()}
+	{#if isTransfer}
+		<div
+			class="text-muted-foreground flex min-w-0 items-center gap-1 text-xs"
+			data-testid={`${testid}-pocket`}
+		>
+			<PocketLabel name={sourcePocket.name} isMain={sourcePocket.isMain} />
+			<ArrowRightIcon class="size-3 shrink-0" aria-hidden="true" />
+			<PocketLabel name={destPocket.name} isMain={destPocket.isMain} />
+		</div>
+	{:else}
+		<div class="min-w-0" data-testid={`${testid}-pocket`}>
+			<PocketLabel
+				name={ownPocket.name}
+				isMain={ownPocket.isMain}
+				class="text-muted-foreground text-xs"
+			/>
+		</div>
+	{/if}
+{/snippet}
 
 <button
 	type="button"
@@ -99,27 +122,37 @@
 			{/if}
 		</p>
 		{#if secondary === 'note'}
-			{#if note}
-				<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-note`}>
-					{note}
-				</p>
+			{#if note || showPocket}
+				<div class="flex min-w-0 items-center gap-2">
+					{#if note}
+						<p class="text-muted-foreground min-w-0 flex-1 truncate text-xs" data-testid={`${testid}-note`}>
+							{note}
+						</p>
+					{/if}
+					{#if showPocket}
+						{@render pocketChrome()}
+					{/if}
+				</div>
 			{/if}
 		{:else if secondary === 'date'}
 			{#if note}
 				<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-note`}>
 					{note}
 				</p>
-				<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-date`}>
-					{dateLabel}
-				</p>
-			{:else}
-				<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-date`}>
-					{dateLabel}
-				</p>
 			{/if}
+			<div class="flex min-w-0 items-center gap-2">
+				<p class="text-muted-foreground min-w-0 flex-1 truncate text-xs" data-testid={`${testid}-date`}>
+					{dateLabel}
+				</p>
+				{#if showPocket}
+					{@render pocketChrome()}
+				{/if}
+			</div>
+		{:else if secondary === 'none' && showPocket}
+			{@render pocketChrome()}
 		{/if}
 	</div>
-	<div class="flex shrink-0 flex-col items-end gap-0.5">
+	<div class="flex shrink-0 flex-col items-end">
 		<p
 			class={[
 				'font-medium tabular-nums',
@@ -142,26 +175,6 @@
 				{amountText}
 			{/if}
 		</p>
-		{#if showPocket}
-			{#if isTransfer}
-				<div
-					class="text-muted-foreground flex items-center gap-1 text-xs"
-					data-testid={`${testid}-pocket`}
-				>
-					<PocketLabel name={sourcePocket.name} isMain={sourcePocket.isMain} />
-					<ArrowRightIcon class="size-3 shrink-0" aria-hidden="true" />
-					<PocketLabel name={destPocket.name} isMain={destPocket.isMain} />
-				</div>
-			{:else}
-				<div data-testid={`${testid}-pocket`}>
-					<PocketLabel
-						name={ownPocket.name}
-						isMain={ownPocket.isMain}
-						class="text-muted-foreground text-xs"
-					/>
-				</div>
-			{/if}
-		{/if}
 	</div>
 	<ChevronRightIcon class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
 </button>

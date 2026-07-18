@@ -42,6 +42,20 @@ test.describe('003–008 base features', () => {
 		await expect(page.getByTestId('capture-net-worth')).toHaveCount(0);
 	});
 
+	test('header lock returns to unlock screen', async ({ page }) => {
+		await goToNav(page, 'more');
+		await page.getByTestId('enable-lock-pass').fill('secret-pass');
+		await page.getByPlaceholder('Confirm passphrase').fill('secret-pass');
+		await page.getByTestId('enable-lock').click();
+		await expect(page.getByTestId('lock-status')).toContainText(/on/i);
+		await expect(page.getByTestId('header-lock')).toBeVisible();
+		await page.getByTestId('header-lock').click();
+		await expect(page.getByTestId('unlock-screen')).toBeVisible();
+		await page.getByTestId('unlock-passphrase').fill('secret-pass');
+		await page.getByTestId('unlock-submit').click();
+		await expect(page.getByTestId('app-shell')).toBeVisible();
+	});
+
 	test('enables passphrase lock and requires unlock', async ({ page }) => {
 		await goToNav(page, 'more');
 		await page.getByTestId('enable-lock-pass').fill('secret-pass');

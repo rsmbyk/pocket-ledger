@@ -35,7 +35,7 @@
 {/snippet}
 
 <Card.Root class="gap-0 py-0" data-testid="month-summary">
-	<Card.Header class="gap-2 px-4 py-3">
+	<Card.Header class="gap-2 px-4 pt-3 pb-3">
 		<div class="flex items-center justify-between gap-2">
 			<Button
 				variant="outline"

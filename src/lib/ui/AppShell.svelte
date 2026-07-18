@@ -37,6 +37,7 @@
 		}) => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
+		onLockSession: () => void;
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
 		onRenameCategory: (id: string, name: string) => void | Promise<void>;
 		onDeleteCategory: (id: string) => void | Promise<void>;
@@ -74,6 +75,7 @@
 		onResetLocalData,
 		onEnableLock,
 		onDisableLock,
+		onLockSession,
 		onCreateCategory,
 		onRenameCategory,
 		onDeleteCategory,
@@ -203,6 +205,7 @@
 				{onResetLocalData}
 				{onEnableLock}
 				{onDisableLock}
+				{onLockSession}
 				{onCreateCategory}
 				{onRenameCategory}
 				{onDeleteCategory}

@@ -31,6 +31,7 @@
 		disableLock,
 		enableLock,
 		isLockEnabled,
+		lockSession,
 		unlockWithPassphrase
 	} from '$lib/application/lock';
 	import {
@@ -225,6 +226,10 @@
 		onDisableLock={async (passphrase) => {
 			await disableLock(passphrase);
 			lockEnabled = false;
+		}}
+		onLockSession={() => {
+			lockSession();
+			unlocked = false;
 		}}
 		onCreateCategory={async (name, kind) => {
 			await createCategory(name, kind);

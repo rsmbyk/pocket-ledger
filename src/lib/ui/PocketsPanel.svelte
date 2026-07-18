@@ -21,6 +21,7 @@
 	import { assertGoalTarget, goalProgressPercent } from '$lib/domain/goals';
 	import { formatRemainingUnit, largestRemainingUnit } from '$lib/domain/goal-time';
 	import { formatMinor } from '$lib/domain/money';
+	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
 	import { isValidOccurredOn, parseAmountInput, todayOccurredOn } from '$lib/domain/transaction-rules';
 
 	type Props = {
@@ -271,7 +272,7 @@
 	{@const percent = hasGoal ? goalProgressPercent(p.goalTargetMinor!, balance) : 0}
 	{@const remaining =
 		hasGoal && p.goalTargetOn ? largestRemainingUnit(todayOccurredOn(), p.goalTargetOn) : null}
-	<div class="flex items-center gap-2 px-4 py-3">
+	<div class="flex items-stretch gap-2 px-4 py-3">
 		{#if draggable}
 			<button
 				type="button"
@@ -310,9 +311,9 @@
 				</div>
 			{/if}
 		</div>
-		<div class="flex shrink-0 flex-col items-end gap-1">
+		<div class="flex shrink-0 flex-col items-end justify-between self-stretch gap-1">
 			<p class="font-medium tabular-nums">{formatMinor(balance, currencyLabel)}</p>
-			<div class="flex gap-1">
+			<div class="mt-auto flex gap-1">
 				{#if hasGoal}
 					<Button
 						size="icon-sm"
@@ -350,6 +351,14 @@
 			</div>
 		</div>
 	</div>
+	{#if p.notes.trim()}
+		<div
+			class="border-border text-muted-foreground border-t px-4 py-2 text-xs"
+			data-testid="pocket-description"
+		>
+			{p.notes.trim()}
+		</div>
+	{/if}
 {/snippet}
 
 <div class="space-y-3" data-testid="pockets-panel">
@@ -427,12 +436,12 @@
 				{/if}
 			</div>
 			<div class="space-y-1">
-				<Label for="pocket-notes">Notes</Label>
+				<Label for="pocket-notes">Description</Label>
 				<Textarea
 					id="pocket-notes"
 					bind:value={formNotes}
 					placeholder="Optional"
-					data-testid="pocket-notes-input"
+					data-testid="pocket-description-input"
 				/>
 			</div>
 			<div class="space-y-2">
@@ -451,11 +460,6 @@
 					/>
 					Set opening balance
 				</label>
-				{#if !formOpeningEnabled}
-					<p class="text-muted-foreground text-xs" data-testid="pocket-opening-helper">
-						Will be set to 0 as of {formCreationDate} (pocket creation date).
-					</p>
-				{/if}
 				<div class="grid grid-cols-2 gap-2">
 					<div class="space-y-1">
 						<Label for="pocket-opening">Opening balance</Label>
@@ -500,6 +504,13 @@
 						{/if}
 					</div>
 				</div>
+				{#if !formOpeningEnabled}
+					<p class="text-muted-foreground text-xs" data-testid="pocket-opening-helper">
+						Will be set to {formatMinor(0, currencyLabel)} as of {formatOccurredOnDisplay(
+							formCreationDate
+						)} (pocket creation date).
+					</p>
+				{/if}
 			</div>
 			{#if formMode === 'edit'}
 				<div class="space-y-2">
@@ -519,11 +530,6 @@
 						/>
 						Set goal
 					</label>
-					{#if !formGoalEnabled}
-						<p class="text-muted-foreground text-xs" data-testid="pocket-goal-helper">
-							No goal will be saved for this pocket.
-						</p>
-					{/if}
 					<div class="grid grid-cols-2 gap-2">
 						<div class="space-y-1">
 							<Label for="pocket-goal-target">Goal target</Label>
@@ -554,22 +560,7 @@
 							{/if}
 						</div>
 						<div class="space-y-1">
-							<div class="flex items-center justify-between gap-2">
-								<Label for="pocket-goal-date">Goal date</Label>
-								<label class="flex items-center gap-1.5 text-xs font-normal">
-									<input
-										type="checkbox"
-										class="size-3.5 accent-primary"
-										bind:checked={formGoalDateEnabled}
-										disabled={!formGoalEnabled}
-										data-testid="pocket-goal-date-enabled"
-										onchange={() => {
-											if (!formGoalDateEnabled) formGoalTargetOn = '';
-										}}
-									/>
-									Has date
-								</label>
-							</div>
+							<Label for="pocket-goal-date">Goal date</Label>
 							<DateField
 								id="pocket-goal-date"
 								value={formGoalTargetOn}
@@ -579,7 +570,21 @@
 									formGoalTargetOn = next;
 									if (formError?.key === 'goalDate') formError = null;
 								}}
-							/>
+							>
+								{#snippet trailing()}
+									<input
+										type="checkbox"
+										class="size-3.5 accent-primary"
+										bind:checked={formGoalDateEnabled}
+										disabled={!formGoalEnabled}
+										aria-label="Has date"
+										data-testid="pocket-goal-date-enabled"
+										onchange={() => {
+											if (!formGoalDateEnabled) formGoalTargetOn = '';
+										}}
+									/>
+								{/snippet}
+							</DateField>
 							{#if formError?.key === 'goalDate'}
 								<p
 									class="text-destructive text-sm"
@@ -591,6 +596,11 @@
 							{/if}
 						</div>
 					</div>
+					{#if !formGoalEnabled}
+						<p class="text-muted-foreground text-xs" data-testid="pocket-goal-helper">
+							No goal will be saved for this pocket.
+						</p>
+					{/if}
 				</div>
 			{/if}
 			{#if formError?.key === 'form'}

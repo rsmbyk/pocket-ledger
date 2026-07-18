@@ -3,9 +3,10 @@
 @import '@fontsource-variable/inter';
 
 @custom-variant dark (&:is(.dark *));
-/* bits-ui uses data-state; shadcn classes use data-open / data-closed */
+/* bits-ui uses data-state; shadcn classes use data-open / data-closed / data-active */
 @custom-variant data-open (&:is([data-state='open'], [data-open]:not([data-open='false'])));
 @custom-variant data-closed (&:is([data-state='closed'], [data-closed]:not([data-closed='false'])));
+@custom-variant data-active (&:is([data-state='active'], [data-active]:not([data-active='false'])));
 
 :root {
 	--radius: 0.625rem;

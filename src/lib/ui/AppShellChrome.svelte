@@ -12,6 +12,7 @@
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
+	import LockIcon from '@lucide/svelte/icons/lock';
 	import WalletIcon from '@lucide/svelte/icons/wallet';
 	import HistoryIcon from '@lucide/svelte/icons/history';
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
@@ -33,7 +34,9 @@
 	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import DateField from '$lib/ui/DateField.svelte';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import type { Account } from '$lib/domain/account';
+	import { verifyPassphrase } from '$lib/application/lock';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
 	import type { ThemePreference } from '$lib/shared/theme';
@@ -79,6 +82,7 @@
 		}) => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
+		onLockSession: () => void;
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
 		onRenameCategory: (id: string, name: string) => void | Promise<void>;
 		onDeleteCategory: (id: string) => void | Promise<void>;
@@ -119,6 +123,7 @@
 		onResetLocalData,
 		onEnableLock,
 		onDisableLock,
+		onLockSession,
 		onCreateCategory,
 		onRenameCategory,
 		onDeleteCategory,
@@ -145,6 +150,10 @@
 	const recent = $derived(transactions.slice(0, 5));
 
 	let hideHomeAmounts = $state(readHideAmounts());
+	let showMoneyDialogOpen = $state(false);
+	let showMoneyPass = $state('');
+	let showMoneyError = $state<string | null>(null);
+	let showMoneyBusy = $state(false);
 
 	let applied = $state<ActivityFilterCriteria>({ ...DEFAULT_ACTIVITY_FILTERS });
 	let draft = $state<ActivityFilterCriteria>({ ...DEFAULT_ACTIVITY_FILTERS });
@@ -253,6 +262,40 @@
 
 	function homeMoney(amount: number): string {
 		return hideHomeAmounts ? '••••' : formatMinor(amount, currencyLabel);
+	}
+
+	function toggleHomeAmounts() {
+		if (!hideHomeAmounts) {
+			hideHomeAmounts = true;
+			writeHideAmounts(true);
+			return;
+		}
+		if (lockEnabled) {
+			showMoneyPass = '';
+			showMoneyError = null;
+			showMoneyDialogOpen = true;
+			return;
+		}
+		hideHomeAmounts = false;
+		writeHideAmounts(false);
+	}
+
+	async function confirmShowMoney() {
+		showMoneyBusy = true;
+		showMoneyError = null;
+		try {
+			const ok = await verifyPassphrase(showMoneyPass);
+			if (!ok) {
+				showMoneyError = 'Incorrect passphrase';
+				return;
+			}
+			hideHomeAmounts = false;
+			writeHideAmounts(false);
+			showMoneyDialogOpen = false;
+			showMoneyPass = '';
+		} finally {
+			showMoneyBusy = false;
+		}
 	}
 
 	function navigate(next: string) {
@@ -402,16 +445,25 @@
 				size="icon-sm"
 				data-testid="toggle-home-amounts"
 				aria-label={hideHomeAmounts ? 'Show money' : 'Hide money'}
-				onclick={() => {
-					hideHomeAmounts = !hideHomeAmounts;
-					writeHideAmounts(hideHomeAmounts);
-				}}
+				onclick={toggleHomeAmounts}
 			>
 				{#if hideHomeAmounts}
 					<EyeOffIcon class="size-4" />
 				{:else}
 					<EyeIcon class="size-4" />
 				{/if}
+			</Button>
+		{/if}
+		{#if lockEnabled}
+			<Button
+				type="button"
+				variant="ghost"
+				size="icon-sm"
+				data-testid="header-lock"
+				aria-label="Lock app"
+				onclick={() => onLockSession()}
+			>
+				<LockIcon class="size-4" />
 			</Button>
 		{/if}
 		<ThemeMenu preference={themePreference} onPreferenceChange={onThemePreferenceChange} />
@@ -892,3 +944,59 @@
 		{/if}
 	</div>
 </Sidebar.Inset>
+
+<Dialog.Root
+	bind:open={showMoneyDialogOpen}
+	onOpenChange={(open) => {
+		showMoneyDialogOpen = open;
+		if (!open) {
+			showMoneyPass = '';
+			showMoneyError = null;
+		}
+	}}
+>
+	<Dialog.Content class="sm:max-w-sm" data-testid="show-money-dialog">
+		<Dialog.Header>
+			<Dialog.Title>Show money?</Dialog.Title>
+			<Dialog.Description>Enter your passphrase to reveal amounts.</Dialog.Description>
+		</Dialog.Header>
+		<form
+			class="space-y-3"
+			onsubmit={(e) => {
+				e.preventDefault();
+				void confirmShowMoney();
+			}}
+		>
+			<div class="space-y-2">
+				<Label for="show-money-pass">Passphrase</Label>
+				<Input
+					id="show-money-pass"
+					type="password"
+					autocomplete="current-password"
+					bind:value={showMoneyPass}
+					data-testid="show-money-passphrase"
+					aria-invalid={showMoneyError ? true : undefined}
+					oninput={() => (showMoneyError = null)}
+				/>
+				{#if showMoneyError}
+					<p class="text-destructive text-sm" role="alert" data-testid="show-money-error">
+						{showMoneyError}
+					</p>
+				{/if}
+			</div>
+			<div class="flex justify-end gap-2">
+				<Button
+					type="button"
+					variant="outline"
+					disabled={showMoneyBusy}
+					onclick={() => (showMoneyDialogOpen = false)}
+				>
+					Cancel
+				</Button>
+				<Button type="submit" disabled={showMoneyBusy || !showMoneyPass} data-testid="show-money-confirm">
+					{showMoneyBusy ? 'Checking…' : 'Show'}
+				</Button>
+			</div>
+		</form>
+	</Dialog.Content>
+</Dialog.Root>
