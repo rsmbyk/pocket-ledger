@@ -51,4 +51,25 @@ describe('backup', () => {
 	it('names export files by date', () => {
 		expect(backupFilename(new Date('2026-07-14T12:00:00'))).toBe('pocket-ledger-2026-07-14.json');
 	});
+
+	it('ignores legacy recurringRules key on import', async () => {
+		const account = await ensureDefaultAccount();
+		const food = await createCategory('Food', 'expense');
+		await addTransaction({
+			accountId: account.id,
+			type: 'expense',
+			amountRaw: '15000',
+			categoryId: food.id,
+			note: 'lunch'
+		});
+
+		const backup = await buildBackup();
+		const legacy = { ...backup, recurringRules: [{ id: 'legacy-rule' }] };
+		const parsed = parseBackupJson(JSON.stringify(legacy));
+		expect(parsed).not.toHaveProperty('recurringRules');
+		expect(parsed.transactions).toHaveLength(1);
+
+		await restoreBackup(parsed);
+		expect(await db.transactions.count()).toBe(1);
+	});
 });

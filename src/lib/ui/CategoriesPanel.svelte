@@ -431,7 +431,7 @@
 <ConfirmDialog
 	open={inUseTarget !== null}
 	title="Category in use"
-	description="This category is still used by transactions or recurring rules and cannot be deleted."
+	description="This category is still used by transactions and cannot be deleted."
 	confirmLabel="Got it"
 	hideCancel
 	confirmTestId="category-in-use-dismiss"

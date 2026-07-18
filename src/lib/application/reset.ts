@@ -20,7 +20,7 @@ const LOCK_SETTING_KEYS = new Set([
 
 /**
  * Wipe ledger data with optional preserve for categories and passphrase lock.
- * Always clears transactions, recurring, goals, net-worth, and the session key.
+ * Always clears transactions, goals, net-worth, and the session key.
  * Recreates the default Main account.
  */
 export async function resetLocalData(options: ResetLocalDataOptions): Promise<void> {
@@ -30,20 +30,11 @@ export async function resetLocalData(options: ResetLocalDataOptions): Promise<vo
 
 	await db.transaction(
 		'rw',
-		[
-			db.accounts,
-			db.categories,
-			db.transactions,
-			db.recurringRules,
-			db.goals,
-			db.netWorthSnapshots,
-			db.settings
-		],
+		[db.accounts, db.categories, db.transactions, db.goals, db.netWorthSnapshots, db.settings],
 		async () => {
 			await Promise.all([
 				db.accounts.clear(),
 				db.transactions.clear(),
-				db.recurringRules.clear(),
 				db.goals.clear(),
 				db.netWorthSnapshots.clear(),
 				db.settings.clear(),

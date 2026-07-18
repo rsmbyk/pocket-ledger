@@ -10,8 +10,6 @@
 	import type { CategoryRow } from '$lib/data/db';
 	import type { ThemePreference } from '$lib/shared/theme';
 	import type { MonthSummary } from '$lib/domain/month-summary';
-	import type { RecurringRule, RecurringFrequency } from '$lib/domain/recurring';
-	import type { AddableTransactionType } from '$lib/domain/transaction-rules';
 	import type { CreatePocketInput, UpdatePocketInput } from '$lib/application/accounts';
 	import { isAppRoute, parseHash, routeToHash, type AppRoute } from '$lib/shared/router';
 
@@ -23,7 +21,6 @@
 		transactions: LedgerTransaction[];
 		categoriesById: Record<string, CategoryRow>;
 		monthSummary: MonthSummary | null;
-		recurringRules: RecurringRule[];
 		expenseCategories: CategoryRow[];
 		incomeCategories: CategoryRow[];
 		lockEnabled: boolean;
@@ -38,15 +35,6 @@
 			preserveCategories: boolean;
 			preservePassphrase: boolean;
 		}) => void | Promise<void>;
-		onCreateRecurring: (input: {
-			type: AddableTransactionType;
-			amountRaw: string;
-			categoryId: string;
-			frequency: RecurringFrequency;
-			note: string;
-		}) => void | Promise<void>;
-		onToggleRecurring: (id: string, active: boolean) => void | Promise<void>;
-		onDeleteRecurring: (id: string) => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
@@ -73,7 +61,6 @@
 		transactions,
 		categoriesById,
 		monthSummary,
-		recurringRules,
 		expenseCategories,
 		incomeCategories,
 		lockEnabled,
@@ -85,9 +72,6 @@
 		onExport,
 		onImportFile,
 		onResetLocalData,
-		onCreateRecurring,
-		onToggleRecurring,
-		onDeleteRecurring,
 		onEnableLock,
 		onDisableLock,
 		onCreateCategory,
@@ -205,7 +189,6 @@
 				{transactions}
 				{categoriesById}
 				{monthSummary}
-				{recurringRules}
 				{expenseCategories}
 				{incomeCategories}
 				{lockEnabled}
@@ -218,9 +201,6 @@
 				{onExport}
 				{onImportFile}
 				{onResetLocalData}
-				{onCreateRecurring}
-				{onToggleRecurring}
-				{onDeleteRecurring}
 				{onEnableLock}
 				{onDisableLock}
 				{onCreateCategory}

@@ -53,9 +53,8 @@ export async function openField(
 
 /** Seal every sensitive field currently stored in plaintext. */
 export async function sealAllSensitiveFields(key: CryptoKey): Promise<void> {
-	const [transactions, rules, goals, categories] = await Promise.all([
+	const [transactions, goals, categories] = await Promise.all([
 		db.transactions.toArray(),
-		db.recurringRules.toArray(),
 		db.goals.toArray(),
 		db.categories.toArray()
 	]);
@@ -64,9 +63,6 @@ export async function sealAllSensitiveFields(key: CryptoKey): Promise<void> {
 	const nextTx = await Promise.all(
 		transactions.map(async (tx) => ({ ...tx, note: await sealField(tx.note, key) }))
 	);
-	const nextRules = await Promise.all(
-		rules.map(async (rule) => ({ ...rule, note: await sealField(rule.note, key) }))
-	);
 	const nextGoals = await Promise.all(
 		goals.map(async (goal) => ({ ...goal, name: await sealField(goal.name, key) }))
 	);
@@ -74,9 +70,8 @@ export async function sealAllSensitiveFields(key: CryptoKey): Promise<void> {
 		categories.map(async (cat) => ({ ...cat, name: await sealField(cat.name, key) }))
 	);
 
-	await db.transaction('rw', db.transactions, db.recurringRules, db.goals, db.categories, async () => {
+	await db.transaction('rw', db.transactions, db.goals, db.categories, async () => {
 		await db.transactions.bulkPut(nextTx);
-		await db.recurringRules.bulkPut(nextRules);
 		await db.goals.bulkPut(nextGoals);
 		await db.categories.bulkPut(nextCats);
 	});
@@ -84,18 +79,14 @@ export async function sealAllSensitiveFields(key: CryptoKey): Promise<void> {
 
 /** Open every sealed sensitive field back to plaintext. */
 export async function openAllSensitiveFields(key: CryptoKey): Promise<void> {
-	const [transactions, rules, goals, categories] = await Promise.all([
+	const [transactions, goals, categories] = await Promise.all([
 		db.transactions.toArray(),
-		db.recurringRules.toArray(),
 		db.goals.toArray(),
 		db.categories.toArray()
 	]);
 
 	const nextTx = await Promise.all(
 		transactions.map(async (tx) => ({ ...tx, note: await openField(tx.note, key) }))
-	);
-	const nextRules = await Promise.all(
-		rules.map(async (rule) => ({ ...rule, note: await openField(rule.note, key) }))
 	);
 	const nextGoals = await Promise.all(
 		goals.map(async (goal) => ({ ...goal, name: await openField(goal.name, key) }))
@@ -104,9 +95,8 @@ export async function openAllSensitiveFields(key: CryptoKey): Promise<void> {
 		categories.map(async (cat) => ({ ...cat, name: await openField(cat.name, key) }))
 	);
 
-	await db.transaction('rw', db.transactions, db.recurringRules, db.goals, db.categories, async () => {
+	await db.transaction('rw', db.transactions, db.goals, db.categories, async () => {
 		await db.transactions.bulkPut(nextTx);
-		await db.recurringRules.bulkPut(nextRules);
 		await db.goals.bulkPut(nextGoals);
 		await db.categories.bulkPut(nextCats);
 	});

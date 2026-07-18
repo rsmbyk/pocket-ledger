@@ -37,9 +37,12 @@
 	type FormBaseline = {
 		name: string;
 		notes: string;
+		openingEnabled: boolean;
 		openingRaw: string;
 		openingAsOf: string;
+		goalEnabled: boolean;
 		goalTargetRaw: string;
+		goalDateEnabled: boolean;
 		goalTargetOn: string;
 	};
 
@@ -71,24 +74,44 @@
 	let formPocketId = $state<string | null>(null);
 	let formName = $state('');
 	let formNotes = $state('');
-	let formOpeningRaw = $state('');
+	let formOpeningEnabled = $state(false);
+	let formOpeningRaw = $state('0');
 	let formOpeningAsOf = $state(todayOccurredOn());
+	let formGoalEnabled = $state(false);
 	let formGoalTargetRaw = $state('');
+	let formGoalDateEnabled = $state(false);
 	let formGoalTargetOn = $state('');
 	let formError = $state<{ key: FormFieldKey; message: string } | null>(null);
 	let formBaseline = $state<FormBaseline | null>(null);
 
 	let deleteTarget = $state<{ id: string; name: string } | null>(null);
 
+	const formCreationDate = $derived(
+		formMode === 'edit' && formPocketId
+			? (pockets.find((p) => p.id === formPocketId)?.createdAt.slice(0, 10) ??
+					todayOccurredOn())
+			: todayOccurredOn()
+	);
+
 	const formDirty = $derived.by(() => {
-		if (formMode === 'create') return formName.trim() !== '';
+		if (formMode === 'create') {
+			return (
+				formName.trim() !== '' ||
+				formNotes.trim() !== '' ||
+				formOpeningEnabled ||
+				formGoalEnabled
+			);
+		}
 		if (!formBaseline) return false;
 		return (
 			formName !== formBaseline.name ||
 			formNotes !== formBaseline.notes ||
+			formOpeningEnabled !== formBaseline.openingEnabled ||
 			formOpeningRaw !== formBaseline.openingRaw ||
 			formOpeningAsOf !== formBaseline.openingAsOf ||
+			formGoalEnabled !== formBaseline.goalEnabled ||
 			formGoalTargetRaw !== formBaseline.goalTargetRaw ||
+			formGoalDateEnabled !== formBaseline.goalDateEnabled ||
 			formGoalTargetOn !== formBaseline.goalTargetOn
 		);
 	});
@@ -119,9 +142,12 @@
 		return {
 			name: formName,
 			notes: formNotes,
+			openingEnabled: formOpeningEnabled,
 			openingRaw: formOpeningRaw,
 			openingAsOf: formOpeningAsOf,
+			goalEnabled: formGoalEnabled,
 			goalTargetRaw: formGoalTargetRaw,
+			goalDateEnabled: formGoalDateEnabled,
 			goalTargetOn: formGoalTargetOn
 		};
 	}
@@ -131,9 +157,12 @@
 		formPocketId = null;
 		formName = '';
 		formNotes = '';
-		formOpeningRaw = '';
+		formOpeningEnabled = false;
+		formOpeningRaw = '0';
 		formOpeningAsOf = todayOccurredOn();
+		formGoalEnabled = false;
 		formGoalTargetRaw = '';
+		formGoalDateEnabled = false;
 		formGoalTargetOn = '';
 		formError = null;
 		formBaseline = snapshotForm();
@@ -145,9 +174,12 @@
 		formPocketId = p.id;
 		formName = p.name;
 		formNotes = p.notes;
+		formOpeningEnabled = p.openingEnabled;
 		formOpeningRaw = String(p.openingBalanceMinor);
 		formOpeningAsOf = p.openingAsOf;
+		formGoalEnabled = p.goalEnabled;
 		formGoalTargetRaw = p.goalTargetMinor != null ? String(p.goalTargetMinor) : '';
+		formGoalDateEnabled = p.goalTargetOn != null;
 		formGoalTargetOn = p.goalTargetOn ?? '';
 		formError = null;
 		formBaseline = snapshotForm();
@@ -159,31 +191,47 @@
 		busy = true;
 		formError = null;
 		try {
-			const openingBalanceMinor = parseSignedAmount(formOpeningRaw);
-			const openingAsOf = formOpeningAsOf.trim() || todayOccurredOn();
-			if (!isValidOccurredOn(openingAsOf)) {
+			const openingBalanceMinor = formOpeningEnabled
+				? parseSignedAmount(formOpeningRaw)
+				: 0;
+			const openingAsOf = formOpeningEnabled
+				? formOpeningAsOf.trim() || formCreationDate
+				: formCreationDate;
+			if (formOpeningEnabled && !isValidOccurredOn(openingAsOf)) {
 				throw new Error('As-of date must be YYYY-MM-DD');
 			}
 			if (formMode === 'create') {
 				await onCreatePocket({
 					name: formName,
 					notes: formNotes,
+					openingEnabled: formOpeningEnabled,
 					openingBalanceMinor,
 					openingAsOf
 				});
 			} else if (formPocketId) {
-				const goalTargetMinor = formGoalTargetRaw.trim()
-					? parseAmountInput(formGoalTargetRaw)
-					: null;
-				if (goalTargetMinor != null) assertGoalTarget(goalTargetMinor);
-				const goalTargetOn =
-					goalTargetMinor != null && formGoalTargetOn.trim() ? formGoalTargetOn.trim() : null;
+				let goalTargetMinor: number | null = null;
+				let goalTargetOn: string | null = null;
+				if (formGoalEnabled) {
+					goalTargetMinor = formGoalTargetRaw.trim()
+						? parseAmountInput(formGoalTargetRaw)
+						: null;
+					if (goalTargetMinor == null) throw new Error('Goal target is required');
+					assertGoalTarget(goalTargetMinor);
+					if (formGoalDateEnabled) {
+						goalTargetOn = formGoalTargetOn.trim() || null;
+						if (goalTargetOn && !isValidOccurredOn(goalTargetOn)) {
+							throw new Error('Goal date must be YYYY-MM-DD');
+						}
+					}
+				}
 				await onUpdatePocket({
 					id: formPocketId,
 					name: formName,
 					notes: formNotes,
+					openingEnabled: formOpeningEnabled,
 					openingBalanceMinor,
 					openingAsOf,
+					goalEnabled: formGoalEnabled,
 					goalTargetMinor,
 					goalTargetOn
 				});
@@ -219,7 +267,7 @@
 
 {#snippet pocketRow(p: Account, draggable: boolean)}
 	{@const balance = balances[p.id] ?? 0}
-	{@const hasGoal = p.goalTargetMinor != null}
+	{@const hasGoal = p.goalEnabled && p.goalTargetMinor != null}
 	{@const percent = hasGoal ? goalProgressPercent(p.goalTargetMinor!, balance) : 0}
 	{@const remaining =
 		hasGoal && p.goalTargetOn ? largestRemainingUnit(todayOccurredOn(), p.goalTargetOn) : null}
@@ -387,97 +435,161 @@
 					data-testid="pocket-notes-input"
 				/>
 			</div>
-			<div class="grid grid-cols-2 gap-2">
-				<div class="space-y-1">
-					<Label for="pocket-opening">Opening balance</Label>
-					<Input
-						id="pocket-opening"
-						bind:value={formOpeningRaw}
-						inputmode="numeric"
-						placeholder="0"
-						data-testid="pocket-opening-input"
-						aria-invalid={formError?.key === 'opening' ? true : undefined}
-						oninput={() => {
-							if (formError?.key === 'opening') formError = null;
+			<div class="space-y-2">
+				<label class="flex items-center gap-2 text-sm font-medium">
+					<input
+						type="checkbox"
+						class="size-4 accent-primary"
+						bind:checked={formOpeningEnabled}
+						data-testid="pocket-opening-enabled"
+						onchange={() => {
+							if (!formOpeningEnabled) {
+								formOpeningRaw = '0';
+								formOpeningAsOf = formCreationDate;
+							}
 						}}
 					/>
-					{#if formError?.key === 'opening'}
-						<p
-							class="text-destructive text-sm"
-							role="alert"
-							data-testid="pocket-field-error-opening"
-						>
-							{formError.message}
-						</p>
-					{/if}
-				</div>
-				<div class="space-y-1">
-					<Label for="pocket-asof">As of</Label>
-					<DateField
-						id="pocket-asof"
-						value={formOpeningAsOf}
-						testid="pocket-asof-input"
-						onValueChange={(next) => {
-							formOpeningAsOf = next;
-							if (formError?.key === 'asOf' || formError?.key === 'occurredOn') formError = null;
-						}}
-					/>
-					{#if formError?.key === 'asOf' || formError?.key === 'occurredOn'}
-						<p class="text-destructive text-sm" role="alert" data-testid="pocket-field-error-asOf">
-							{formError.message}
-						</p>
-					{/if}
-				</div>
-			</div>
-			{#if formMode === 'edit'}
+					Set opening balance
+				</label>
+				{#if !formOpeningEnabled}
+					<p class="text-muted-foreground text-xs" data-testid="pocket-opening-helper">
+						Will be set to 0 as of {formCreationDate} (pocket creation date).
+					</p>
+				{/if}
 				<div class="grid grid-cols-2 gap-2">
 					<div class="space-y-1">
-						<Label for="pocket-goal-target">Goal target</Label>
+						<Label for="pocket-opening">Opening balance</Label>
 						<Input
-							id="pocket-goal-target"
-							bind:value={formGoalTargetRaw}
+							id="pocket-opening"
+							bind:value={formOpeningRaw}
 							inputmode="numeric"
-							placeholder="No goal"
-							data-testid="pocket-goal-target-input"
-							aria-invalid={formError?.key === 'goalTarget' || formError?.key === 'amount'
-								? true
-								: undefined}
+							placeholder="0"
+							disabled={!formOpeningEnabled}
+							data-testid="pocket-opening-input"
+							aria-invalid={formError?.key === 'opening' ? true : undefined}
 							oninput={() => {
-								if (formError?.key === 'goalTarget' || formError?.key === 'amount') {
-									formError = null;
-								}
+								if (formError?.key === 'opening') formError = null;
 							}}
 						/>
-						{#if formError?.key === 'goalTarget' || formError?.key === 'amount'}
+						{#if formError?.key === 'opening'}
 							<p
 								class="text-destructive text-sm"
 								role="alert"
-								data-testid="pocket-field-error-goalTarget"
+								data-testid="pocket-field-error-opening"
 							>
 								{formError.message}
 							</p>
 						{/if}
 					</div>
 					<div class="space-y-1">
-						<Label for="pocket-goal-date">Goal date (optional)</Label>
+						<Label for="pocket-asof">As of</Label>
 						<DateField
-							id="pocket-goal-date"
-							value={formGoalTargetOn}
-							testid="pocket-goal-date-input"
+							id="pocket-asof"
+							value={formOpeningAsOf}
+							disabled={!formOpeningEnabled}
+							testid="pocket-asof-input"
 							onValueChange={(next) => {
-								formGoalTargetOn = next;
-								if (formError?.key === 'goalDate') formError = null;
+								formOpeningAsOf = next;
+								if (formError?.key === 'asOf' || formError?.key === 'occurredOn') formError = null;
 							}}
 						/>
-						{#if formError?.key === 'goalDate'}
-							<p
-								class="text-destructive text-sm"
-								role="alert"
-								data-testid="pocket-field-error-goalDate"
-							>
+						{#if formError?.key === 'asOf' || formError?.key === 'occurredOn'}
+							<p class="text-destructive text-sm" role="alert" data-testid="pocket-field-error-asOf">
 								{formError.message}
 							</p>
 						{/if}
+					</div>
+				</div>
+			</div>
+			{#if formMode === 'edit'}
+				<div class="space-y-2">
+					<label class="flex items-center gap-2 text-sm font-medium">
+						<input
+							type="checkbox"
+							class="size-4 accent-primary"
+							bind:checked={formGoalEnabled}
+							data-testid="pocket-goal-enabled"
+							onchange={() => {
+								if (!formGoalEnabled) {
+									formGoalTargetRaw = '';
+									formGoalDateEnabled = false;
+									formGoalTargetOn = '';
+								}
+							}}
+						/>
+						Set goal
+					</label>
+					{#if !formGoalEnabled}
+						<p class="text-muted-foreground text-xs" data-testid="pocket-goal-helper">
+							No goal will be saved for this pocket.
+						</p>
+					{/if}
+					<div class="grid grid-cols-2 gap-2">
+						<div class="space-y-1">
+							<Label for="pocket-goal-target">Goal target</Label>
+							<Input
+								id="pocket-goal-target"
+								bind:value={formGoalTargetRaw}
+								inputmode="numeric"
+								placeholder="Target"
+								disabled={!formGoalEnabled}
+								data-testid="pocket-goal-target-input"
+								aria-invalid={formError?.key === 'goalTarget' || formError?.key === 'amount'
+									? true
+									: undefined}
+								oninput={() => {
+									if (formError?.key === 'goalTarget' || formError?.key === 'amount') {
+										formError = null;
+									}
+								}}
+							/>
+							{#if formError?.key === 'goalTarget' || formError?.key === 'amount'}
+								<p
+									class="text-destructive text-sm"
+									role="alert"
+									data-testid="pocket-field-error-goalTarget"
+								>
+									{formError.message}
+								</p>
+							{/if}
+						</div>
+						<div class="space-y-1">
+							<div class="flex items-center justify-between gap-2">
+								<Label for="pocket-goal-date">Goal date</Label>
+								<label class="flex items-center gap-1.5 text-xs font-normal">
+									<input
+										type="checkbox"
+										class="size-3.5 accent-primary"
+										bind:checked={formGoalDateEnabled}
+										disabled={!formGoalEnabled}
+										data-testid="pocket-goal-date-enabled"
+										onchange={() => {
+											if (!formGoalDateEnabled) formGoalTargetOn = '';
+										}}
+									/>
+									Has date
+								</label>
+							</div>
+							<DateField
+								id="pocket-goal-date"
+								value={formGoalTargetOn}
+								disabled={!formGoalEnabled || !formGoalDateEnabled}
+								testid="pocket-goal-date-input"
+								onValueChange={(next) => {
+									formGoalTargetOn = next;
+									if (formError?.key === 'goalDate') formError = null;
+								}}
+							/>
+							{#if formError?.key === 'goalDate'}
+								<p
+									class="text-destructive text-sm"
+									role="alert"
+									data-testid="pocket-field-error-goalDate"
+								>
+									{formError.message}
+								</p>
+							{/if}
+						</div>
 					</div>
 				</div>
 			{/if}

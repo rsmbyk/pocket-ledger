@@ -38,10 +38,8 @@
 	import type { CategoryRow } from '$lib/data/db';
 	import type { ThemePreference } from '$lib/shared/theme';
 	import type { MonthSummary } from '$lib/domain/month-summary';
-	import type { RecurringRule, RecurringFrequency } from '$lib/domain/recurring';
 	import type { CreatePocketInput, UpdatePocketInput } from '$lib/application/accounts';
 	import { derivePocketBalance } from '$lib/domain/pocket-balance';
-	import { type AddableTransactionType } from '$lib/domain/transaction-rules';
 	import { formatMinor } from '$lib/domain/money';
 	import { isAppRoute, type AppRoute } from '$lib/shared/router';
 	import {
@@ -64,7 +62,6 @@
 		transactions: LedgerTransaction[];
 		categoriesById: Record<string, CategoryRow>;
 		monthSummary: MonthSummary | null;
-		recurringRules: RecurringRule[];
 		expenseCategories: CategoryRow[];
 		incomeCategories: CategoryRow[];
 		lockEnabled: boolean;
@@ -80,15 +77,6 @@
 			preserveCategories: boolean;
 			preservePassphrase: boolean;
 		}) => void | Promise<void>;
-		onCreateRecurring: (input: {
-			type: AddableTransactionType;
-			amountRaw: string;
-			categoryId: string;
-			frequency: RecurringFrequency;
-			note: string;
-		}) => void | Promise<void>;
-		onToggleRecurring: (id: string, active: boolean) => void | Promise<void>;
-		onDeleteRecurring: (id: string) => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
@@ -117,7 +105,6 @@
 		transactions,
 		categoriesById,
 		monthSummary,
-		recurringRules,
 		expenseCategories,
 		incomeCategories,
 		lockEnabled,
@@ -130,9 +117,6 @@
 		onExport,
 		onImportFile,
 		onResetLocalData,
-		onCreateRecurring,
-		onToggleRecurring,
-		onDeleteRecurring,
 		onEnableLock,
 		onDisableLock,
 		onCreateCategory,
@@ -178,7 +162,7 @@
 	);
 	const filtersSheetClass = $derived(
 		filtersSheetSide === 'bottom'
-			? 'mx-auto max-h-[90svh] w-full max-w-lg gap-0 rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
+			? 'mx-auto flex max-h-[100svh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
 			: 'w-full gap-0 p-0 sm:max-w-sm'
 	);
 	const sortSheetSide = $derived(filtersSheetSide);
@@ -409,9 +393,6 @@
 		<div class="min-w-0 flex-1">
 			<p class="text-base font-semibold tracking-tight md:text-lg" data-testid="page-title">
 				{pageTitle}
-			</p>
-			<p class="text-muted-foreground truncate text-xs md:hidden">
-				<span class="sr-only">Account </span>{account?.name ?? 'Loading…'}
 			</p>
 		</div>
 		{#if route === 'home'}
@@ -777,7 +758,7 @@
 							data-testid="activity-add"
 						>
 							<PlusIcon class="size-4" />
-							Add
+							Add Transaction
 						</Button>
 					</div>
 
@@ -901,17 +882,10 @@
 			/>
 		{:else}
 			<MorePanel
-				{currencyLabel}
-				{recurringRules}
-				{expenseCategories}
-				{incomeCategories}
 				{lockEnabled}
 				{onExport}
 				{onImportFile}
 				{onResetLocalData}
-				{onCreateRecurring}
-				{onToggleRecurring}
-				{onDeleteRecurring}
 				{onEnableLock}
 				{onDisableLock}
 			/>

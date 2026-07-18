@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '$lib/data/db';
 import { ensureDefaultAccount } from '$lib/application/accounts';
 import { addTransaction, getCategoriesForType } from '$lib/application/transactions';
-import { createRecurringRule } from '$lib/application/recurring';
 import {
 	createCategory,
 	isCategoryInUse,
@@ -30,7 +29,7 @@ describe('categories application', () => {
 		expect((await listCategories()).some((c) => c.name === 'Cafe')).toBe(true);
 	});
 
-	it('reports in-use when a transaction or recurring rule references the category', async () => {
+	it('reports in-use when a transaction references the category', async () => {
 		const account = await ensureDefaultAccount();
 		const viaTx = await createCategory('Coffee', 'expense');
 		expect(await isCategoryInUse(viaTx.id)).toBe(false);
@@ -41,19 +40,6 @@ describe('categories application', () => {
 			categoryId: viaTx.id
 		});
 		expect(await isCategoryInUse(viaTx.id)).toBe(true);
-
-		const viaRule = await createCategory('Rent', 'expense');
-		expect(await isCategoryInUse(viaRule.id)).toBe(false);
-		await createRecurringRule({
-			accountId: account.id,
-			type: 'expense',
-			amountMinor: 100_000,
-			categoryId: viaRule.id,
-			note: '',
-			frequency: 'monthly',
-			nextOccurredOn: '2026-08-01'
-		});
-		expect(await isCategoryInUse(viaRule.id)).toBe(true);
 	});
 
 	it('blocks delete when a transaction uses the category', async () => {

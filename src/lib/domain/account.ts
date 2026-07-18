@@ -16,10 +16,14 @@ export type Account = {
 	openingBalanceMinor: number;
 	/** YYYY-MM-DD — txs before this date do not affect derived balance. */
 	openingAsOf: string;
+	/** False = opening is the implicit default (0 + creation date), not user-set. */
+	openingEnabled: boolean;
 	/** Optional goal target; null = no goal. */
 	goalTargetMinor: number | null;
 	/** Optional goal deadline YYYY-MM-DD; null = target-only. */
 	goalTargetOn: string | null;
+	/** False = no goal (target/date cleared). */
+	goalEnabled: boolean;
 };
 
 export const DEFAULT_ACCOUNT_NAME = 'Main';
@@ -28,12 +32,53 @@ export const DEFAULT_CURRENCY_LABEL = 'IDR';
 export type AccountLike = Partial<Account> &
 	Pick<Account, 'id' | 'name' | 'currencyLabel' | 'createdAt'>;
 
+/** Calendar date (YYYY-MM-DD) from ISO `createdAt`. */
+export function pocketCreationDate(createdAt: string): string {
+	return createdAt.slice(0, 10);
+}
+
+/** Infer whether opening was user-set (migration / legacy rows). */
+export function inferOpeningEnabled(
+	row: Pick<AccountLike, 'openingBalanceMinor' | 'openingAsOf' | 'createdAt'>
+): boolean {
+	const opening =
+		typeof row.openingBalanceMinor === 'number' ? row.openingBalanceMinor : 0;
+	const asOf = row.openingAsOf?.trim() || '';
+	const creation = pocketCreationDate(row.createdAt);
+	return opening !== 0 || (asOf !== '' && asOf !== creation);
+}
+
+/** Infer whether a goal was set (migration / legacy rows). */
+export function inferGoalEnabled(row: Pick<AccountLike, 'goalTargetMinor'>): boolean {
+	return typeof row.goalTargetMinor === 'number';
+}
+
 /** Normalize legacy / partial account rows to the full Account shape. */
 export function normalizeAccount(
 	row: AccountLike,
 	opts?: { today?: string; sortOrder?: number; isMain?: boolean }
 ): Account {
 	const today = opts?.today ?? new Date().toISOString().slice(0, 10);
+	const creation = pocketCreationDate(row.createdAt);
+	const openingBalanceMinor =
+		typeof row.openingBalanceMinor === 'number' ? row.openingBalanceMinor : 0;
+	const rawAsOf = row.openingAsOf?.trim() || '';
+	const openingEnabled =
+		typeof row.openingEnabled === 'boolean'
+			? row.openingEnabled
+			: inferOpeningEnabled({
+					openingBalanceMinor,
+					openingAsOf: rawAsOf || creation,
+					createdAt: row.createdAt
+				});
+	const goalTargetMinor =
+		typeof row.goalTargetMinor === 'number' ? row.goalTargetMinor : null;
+	const goalTargetOn = row.goalTargetOn?.trim() ? row.goalTargetOn : null;
+	const goalEnabled =
+		typeof row.goalEnabled === 'boolean'
+			? row.goalEnabled
+			: inferGoalEnabled({ goalTargetMinor });
+
 	return {
 		id: row.id,
 		name: row.name,
@@ -42,12 +87,12 @@ export function normalizeAccount(
 		isMain: opts?.isMain ?? row.isMain ?? false,
 		sortOrder: opts?.sortOrder ?? row.sortOrder ?? 0,
 		notes: row.notes ?? '',
-		openingBalanceMinor:
-			typeof row.openingBalanceMinor === 'number' ? row.openingBalanceMinor : 0,
-		openingAsOf: row.openingAsOf?.trim() || today,
-		goalTargetMinor:
-			typeof row.goalTargetMinor === 'number' ? row.goalTargetMinor : null,
-		goalTargetOn: row.goalTargetOn?.trim() ? row.goalTargetOn : null
+		openingBalanceMinor: openingEnabled ? openingBalanceMinor : 0,
+		openingAsOf: openingEnabled ? rawAsOf || today : creation || today,
+		openingEnabled,
+		goalTargetMinor: goalEnabled ? goalTargetMinor : null,
+		goalTargetOn: goalEnabled ? goalTargetOn : null,
+		goalEnabled
 	};
 }
 

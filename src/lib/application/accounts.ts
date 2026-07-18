@@ -63,8 +63,10 @@ export async function ensureDefaultAccount(): Promise<Account> {
 			notes: '',
 			openingBalanceMinor: 0,
 			openingAsOf: todayOccurredOn(),
+			openingEnabled: false,
 			goalTargetMinor: null,
-			goalTargetOn: null
+			goalTargetOn: null,
+			goalEnabled: false
 		},
 		{ today: todayOccurredOn(), isMain: true }
 	);
@@ -92,6 +94,7 @@ export async function hasOnlyDefaultAccount(): Promise<boolean> {
 export type CreatePocketInput = {
 	name: string;
 	notes?: string;
+	openingEnabled?: boolean;
 	openingBalanceMinor?: number;
 	openingAsOf?: string;
 };
@@ -100,11 +103,18 @@ export async function createPocket(input: CreatePocketInput): Promise<Account> {
 	await ensureDefaultAccount();
 	const name = input.name.trim();
 	if (!name) throw new Error('Name is required');
-	const openingAsOf = input.openingAsOf?.trim() || todayOccurredOn();
-	if (!isValidOccurredOn(openingAsOf)) throw new Error('Date must be YYYY-MM-DD');
-	const openingBalanceMinor = input.openingBalanceMinor ?? 0;
-	if (!Number.isInteger(openingBalanceMinor)) {
-		throw new Error('Opening balance must be a whole number');
+	const createdAt = new Date().toISOString();
+	const creationDate = createdAt.slice(0, 10);
+	const openingEnabled = input.openingEnabled === true;
+	let openingBalanceMinor = 0;
+	let openingAsOf = creationDate;
+	if (openingEnabled) {
+		openingAsOf = input.openingAsOf?.trim() || creationDate;
+		if (!isValidOccurredOn(openingAsOf)) throw new Error('Date must be YYYY-MM-DD');
+		openingBalanceMinor = input.openingBalanceMinor ?? 0;
+		if (!Number.isInteger(openingBalanceMinor)) {
+			throw new Error('Opening balance must be a whole number');
+		}
 	}
 	const accounts = await listAccounts();
 	const nonMainCount = accounts.filter((a) => !a.isMain).length;
@@ -113,14 +123,16 @@ export async function createPocket(input: CreatePocketInput): Promise<Account> {
 			id: createId(),
 			name,
 			currencyLabel: DEFAULT_CURRENCY_LABEL,
-			createdAt: new Date().toISOString(),
+			createdAt,
 			isMain: false,
 			sortOrder: nonMainCount,
 			notes: (input.notes ?? '').trim(),
 			openingBalanceMinor,
 			openingAsOf,
+			openingEnabled,
 			goalTargetMinor: null,
-			goalTargetOn: null
+			goalTargetOn: null,
+			goalEnabled: false
 		},
 		{ today: todayOccurredOn(), isMain: false, sortOrder: nonMainCount }
 	);
@@ -132,8 +144,10 @@ export type UpdatePocketInput = {
 	id: string;
 	name: string;
 	notes?: string;
+	openingEnabled?: boolean;
 	openingBalanceMinor?: number;
 	openingAsOf?: string;
+	goalEnabled?: boolean;
 	goalTargetMinor?: number | null;
 	goalTargetOn?: string | null;
 };
@@ -143,34 +157,47 @@ export async function updatePocket(input: UpdatePocketInput): Promise<Account> {
 	if (!existing) throw new Error('Pocket not found');
 	const name = input.name.trim();
 	if (!name) throw new Error('Name is required');
-	const openingAsOf =
-		input.openingAsOf !== undefined
-			? input.openingAsOf.trim() || existing.openingAsOf
-			: existing.openingAsOf;
-	if (!isValidOccurredOn(openingAsOf)) throw new Error('Date must be YYYY-MM-DD');
-	const openingBalanceMinor =
-		input.openingBalanceMinor !== undefined
-			? input.openingBalanceMinor
-			: existing.openingBalanceMinor;
-	if (!Number.isInteger(openingBalanceMinor)) {
-		throw new Error('Opening balance must be a whole number');
+
+	const openingEnabled =
+		input.openingEnabled !== undefined ? input.openingEnabled : existing.openingEnabled;
+	let openingBalanceMinor = existing.openingBalanceMinor;
+	let openingAsOf = existing.openingAsOf;
+	if (!openingEnabled) {
+		openingBalanceMinor = 0;
+		openingAsOf = existing.createdAt.slice(0, 10);
+	} else {
+		openingAsOf =
+			input.openingAsOf !== undefined
+				? input.openingAsOf.trim() || existing.openingAsOf
+				: existing.openingAsOf;
+		if (!isValidOccurredOn(openingAsOf)) throw new Error('Date must be YYYY-MM-DD');
+		openingBalanceMinor =
+			input.openingBalanceMinor !== undefined
+				? input.openingBalanceMinor
+				: existing.openingBalanceMinor;
+		if (!Number.isInteger(openingBalanceMinor)) {
+			throw new Error('Opening balance must be a whole number');
+		}
 	}
 
-	let goalTargetMinor =
-		input.goalTargetMinor !== undefined ? input.goalTargetMinor : existing.goalTargetMinor;
-	let goalTargetOn =
-		input.goalTargetOn !== undefined ? input.goalTargetOn : existing.goalTargetOn;
-	if (goalTargetMinor != null) {
+	const goalEnabled =
+		input.goalEnabled !== undefined ? input.goalEnabled : existing.goalEnabled;
+	let goalTargetMinor: number | null = null;
+	let goalTargetOn: string | null = null;
+	if (goalEnabled) {
+		goalTargetMinor =
+			input.goalTargetMinor !== undefined ? input.goalTargetMinor : existing.goalTargetMinor;
+		if (goalTargetMinor == null) throw new Error('Goal target is required');
 		assertGoalTarget(goalTargetMinor);
-	}
-	if (goalTargetOn != null && goalTargetOn.trim()) {
-		if (!isValidOccurredOn(goalTargetOn.trim())) throw new Error('Date must be YYYY-MM-DD');
-		goalTargetOn = goalTargetOn.trim();
-	} else {
-		goalTargetOn = null;
-	}
-	if (goalTargetMinor == null) {
-		goalTargetOn = null;
+		const rawOn =
+			input.goalTargetOn !== undefined ? input.goalTargetOn : existing.goalTargetOn;
+		if (rawOn != null && String(rawOn).trim()) {
+			const trimmed = String(rawOn).trim();
+			if (!isValidOccurredOn(trimmed)) throw new Error('Date must be YYYY-MM-DD');
+			goalTargetOn = trimmed;
+		} else {
+			goalTargetOn = null;
+		}
 	}
 
 	const next = normalizeAccount(
@@ -180,8 +207,10 @@ export async function updatePocket(input: UpdatePocketInput): Promise<Account> {
 			notes: input.notes !== undefined ? input.notes.trim() : existing.notes,
 			openingBalanceMinor,
 			openingAsOf,
+			openingEnabled,
 			goalTargetMinor,
-			goalTargetOn
+			goalTargetOn,
+			goalEnabled
 		},
 		{ today: todayOccurredOn(), isMain: existing.isMain, sortOrder: existing.sortOrder }
 	);
@@ -220,6 +249,7 @@ export async function clearPocketGoal(id: string): Promise<Account> {
 	return updatePocket({
 		id,
 		name: (await getAccount(id))!.name,
+		goalEnabled: false,
 		goalTargetMinor: null,
 		goalTargetOn: null
 	});

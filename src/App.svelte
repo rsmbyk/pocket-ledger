@@ -28,13 +28,6 @@
 	} from '$lib/application/backup';
 	import { resetLocalData } from '$lib/application/reset';
 	import {
-		createRecurringRule,
-		listRecurringRules,
-		materializeDueRecurring,
-		removeRecurringRule,
-		setRecurringActive
-	} from '$lib/application/recurring';
-	import {
 		disableLock,
 		enableLock,
 		isLockEnabled,
@@ -50,14 +43,12 @@
 	import type { Account } from '$lib/domain/account';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
-	import type { RecurringRule } from '$lib/domain/recurring';
 	import {
 		currentMonthKey,
 		shiftMonth,
 		type MonthKey,
 		type MonthSummary
 	} from '$lib/domain/month-summary';
-	import { parseAmountInput } from '$lib/domain/transaction-rules';
 	import {
 		parseThemePreference,
 		THEME_STORAGE_KEY,
@@ -74,7 +65,6 @@
 	let incomeCategories = $state<CategoryRow[]>([]);
 	let monthKey = $state<MonthKey>(currentMonthKey());
 	let monthSummary = $state<MonthSummary | null>(null);
-	let recurringRules = $state<RecurringRule[]>([]);
 	let lockEnabled = $state(false);
 	let unlocked = $state(true);
 	let ready = $state(false);
@@ -82,24 +72,21 @@
 	let themePreference = $state<ThemePreference>('system');
 
 	async function refreshLedger(active: Account, key: MonthKey = monthKey) {
-		const [overview, balance, recent, categories, summary, rules, exp, inc] =
-			await Promise.all([
-				getAccountsOverview(),
-				getAllPocketsBalance(),
-				listRecentTransactions(active.id),
-				listCategories(),
-				getMonthSummary(active.id, key),
-				listRecurringRules(),
-				getCategoriesForType('expense'),
-				getCategoriesForType('income')
-			]);
+		const [overview, balance, recent, categories, summary, exp, inc] = await Promise.all([
+			getAccountsOverview(),
+			getAllPocketsBalance(),
+			listRecentTransactions(active.id),
+			listCategories(),
+			getMonthSummary(active.id, key),
+			getCategoriesForType('expense'),
+			getCategoriesForType('income')
+		]);
 		accounts = overview.accounts;
 		isSinglePot = overview.isSinglePot;
 		balanceMinor = balance;
 		transactions = recent;
 		categoriesById = Object.fromEntries(categories.map((c) => [c.id, c]));
 		monthSummary = summary;
-		recurringRules = rules;
 		expenseCategories = exp;
 		incomeCategories = inc;
 	}
@@ -118,7 +105,6 @@
 		account = active;
 		accounts = overview.accounts;
 		isSinglePot = overview.isSinglePot;
-		await materializeDueRecurring();
 		if (active) {
 			await refreshLedger(active);
 		}
@@ -144,7 +130,6 @@
 
 	async function onRefreshLedger() {
 		if (!account) return;
-		await materializeDueRecurring();
 		await refreshLedger(account);
 	}
 
@@ -222,7 +207,6 @@
 		{transactions}
 		{categoriesById}
 		{monthSummary}
-		{recurringRules}
 		{expenseCategories}
 		{incomeCategories}
 		{lockEnabled}
@@ -234,26 +218,6 @@
 		{onExport}
 		{onImportFile}
 		{onResetLocalData}
-		onCreateRecurring={async (input) => {
-			if (!account) return;
-			await createRecurringRule({
-				accountId: account.id,
-				type: input.type,
-				amountMinor: parseAmountInput(input.amountRaw),
-				categoryId: input.categoryId,
-				frequency: input.frequency,
-				note: input.note
-			});
-			await onRefreshLedger();
-		}}
-		onToggleRecurring={async (id, active) => {
-			await setRecurringActive(id, active);
-			await onRefreshLedger();
-		}}
-		onDeleteRecurring={async (id) => {
-			await removeRecurringRule(id);
-			await onRefreshLedger();
-		}}
 		onEnableLock={async (passphrase) => {
 			await enableLock(passphrase);
 			lockEnabled = true;

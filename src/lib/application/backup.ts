@@ -2,7 +2,6 @@ import { db } from '$lib/data/db';
 import { normalizeAccount, type Account } from '$lib/domain/account';
 import type { CategoryRow } from '$lib/data/db';
 import type { LedgerTransaction } from '$lib/domain/transaction';
-import type { RecurringRule } from '$lib/domain/recurring';
 import type { Goal } from '$lib/domain/goals';
 import type { NetWorthSnapshot } from '$lib/domain/net-worth';
 import {
@@ -25,7 +24,6 @@ export type LedgerBackup = {
 	accounts: Account[];
 	categories: CategoryRow[];
 	transactions: LedgerTransaction[];
-	recurringRules: RecurringRule[];
 	goals: Goal[];
 	netWorthSnapshots: NetWorthSnapshot[];
 	settings: { key: string; value: string }[];
@@ -38,12 +36,11 @@ const SECRET_SETTING_KEYS = new Set([
 ]);
 
 export async function buildBackup(): Promise<LedgerBackup> {
-	const [accounts, categories, transactions, recurringRules, goals, netWorthSnapshots, settings] =
+	const [accounts, categories, transactions, goals, netWorthSnapshots, settings] =
 		await Promise.all([
 			db.accounts.toArray(),
 			db.categories.toArray(),
 			db.transactions.toArray(),
-			db.recurringRules.toArray(),
 			db.goals.toArray(),
 			db.netWorthSnapshots.toArray(),
 			db.settings.toArray()
@@ -63,9 +60,6 @@ export async function buildBackup(): Promise<LedgerBackup> {
 				note: await openField(t.note)
 			}))
 		),
-		recurringRules: await Promise.all(
-			recurringRules.map(async (r) => ({ ...r, note: await openField(r.note) }))
-		),
 		goals: await Promise.all(goals.map(async (g) => ({ ...g, name: await openField(g.name) }))),
 		netWorthSnapshots,
 		settings: settings.filter((s) => !SECRET_SETTING_KEYS.has(s.key))
@@ -82,7 +76,7 @@ export function parseBackupJson(raw: string): LedgerBackup {
 	if (!parsed || typeof parsed !== 'object') {
 		throw new Error('Invalid backup');
 	}
-	const backup = parsed as LedgerBackup;
+	const backup = parsed as LedgerBackup & { recurringRules?: unknown };
 	if (backup.formatVersion !== BACKUP_FORMAT_VERSION) {
 		throw new Error('Unsupported backup version');
 	}
@@ -95,7 +89,6 @@ export function parseBackupJson(raw: string): LedgerBackup {
 		accounts: backup.accounts ?? [],
 		categories: backup.categories ?? [],
 		transactions: backup.transactions ?? [],
-		recurringRules: backup.recurringRules ?? [],
 		goals: (backup.goals ?? []).map((g) => ({
 			...g,
 			targetOn: typeof g.targetOn === 'string' && g.targetOn.trim() ? g.targetOn : '2099-12-31',
@@ -147,21 +140,12 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 
 	await db.transaction(
 		'rw',
-		[
-			db.accounts,
-			db.categories,
-			db.transactions,
-			db.recurringRules,
-			db.goals,
-			db.netWorthSnapshots,
-			db.settings
-		],
+		[db.accounts, db.categories, db.transactions, db.goals, db.netWorthSnapshots, db.settings],
 		async () => {
 			await Promise.all([
 				db.accounts.clear(),
 				db.categories.clear(),
 				db.transactions.clear(),
-				db.recurringRules.clear(),
 				db.goals.clear(),
 				db.netWorthSnapshots.clear(),
 				db.settings.clear()
@@ -177,7 +161,6 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 			await db.transactions.bulkPut(
 				normalized.transactions.map((t) => ({ ...t, voidedAt: t.voidedAt ?? null }))
 			);
-			await db.recurringRules.bulkPut(normalized.recurringRules);
 			/* Goals live on pockets now; leave goals table empty after migrate. */
 			await db.netWorthSnapshots.bulkPut(normalized.netWorthSnapshots);
 			await db.settings.bulkPut(normalized.settings);

@@ -96,3 +96,10 @@ Living behavior contracts for Pocket Ledger.
 | [078](078-tx-pocket-picker/spec.md) | Pocket picker on Normal add/edit | Accepted |
 | [079](079-tx-inline-field-errors/spec.md) | Inline field errors on all forms | Accepted |
 | [080](080-dirty-modal-keep-open/spec.md) | Dirty modal keep-open on discard | Accepted |
+| [081](081-tx-mode-tabs-chrome/spec.md) | Tx mode tabs default chrome | Accepted |
+| [082](082-bottom-sheet-expand/spec.md) | Bottom sheet expand to fit | Accepted |
+| [083](083-remove-header-account-subtitle/spec.md) | Remove header Account subtitle | Accepted |
+| [084](084-activity-add-transaction-label/spec.md) | Activity Add ? Add Transaction | Accepted |
+| [085](085-dirty-outside-discard-fix/spec.md) | Dirty outside discard fix | Accepted |
+| [086](086-pocket-optional-opening-goal/spec.md) | Optional opening + goal checkboxes | Accepted |
+| [087](087-remove-recurring/spec.md) | Remove recurring feature | Accepted |

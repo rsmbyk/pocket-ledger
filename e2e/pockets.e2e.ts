@@ -99,6 +99,11 @@ test.describe('070–077 pockets pack', () => {
 		await expect(page.getByTestId('tx-discard-confirm')).toBeHidden();
 		await expect(sheet).toBeVisible();
 		await expect(sheet.getByTestId('tx-amount')).toHaveValue(/1,?500/);
+
+		await sheet.getByTestId('tx-amount').fill('2500');
+		await page.locator('[data-slot="dialog-overlay"]').click({ position: { x: 8, y: 8 } });
+		await expect(page.getByTestId('tx-discard-confirm')).toBeVisible();
+		await expect(sheet).toBeVisible();
 	});
 
 	test('Recent shows pocket under amount', async ({ page }) => {
