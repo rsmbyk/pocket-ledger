@@ -25,7 +25,7 @@
 		secondary?: 'date' | 'note' | 'none';
 		/** Pocket id → display info; required with `showPocket` to resolve names. */
 		pocketsById?: Record<string, PocketInfo>;
-		/** Show the pocket (or transfer source → dest) on the secondary row (092). */
+		/** Show the pocket (or transfer source → dest) under the amount (096 / 099). */
 		showPocket?: boolean;
 		testid: string;
 		onOpen: () => void;
@@ -122,17 +122,10 @@
 			{/if}
 		</p>
 		{#if secondary === 'note'}
-			{#if note || showPocket}
-				<div class="flex min-w-0 items-center gap-2">
-					{#if note}
-						<p class="text-muted-foreground min-w-0 flex-1 truncate text-xs" data-testid={`${testid}-note`}>
-							{note}
-						</p>
-					{/if}
-					{#if showPocket}
-						{@render pocketChrome()}
-					{/if}
-				</div>
+			{#if note}
+				<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-note`}>
+					{note}
+				</p>
 			{/if}
 		{:else if secondary === 'date'}
 			{#if note}
@@ -140,19 +133,12 @@
 					{note}
 				</p>
 			{/if}
-			<div class="flex min-w-0 items-center gap-2">
-				<p class="text-muted-foreground min-w-0 flex-1 truncate text-xs" data-testid={`${testid}-date`}>
-					{dateLabel}
-				</p>
-				{#if showPocket}
-					{@render pocketChrome()}
-				{/if}
-			</div>
-		{:else if secondary === 'none' && showPocket}
-			{@render pocketChrome()}
+			<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-date`}>
+				{dateLabel}
+			</p>
 		{/if}
 	</div>
-	<div class="flex shrink-0 flex-col items-end">
+	<div class="flex shrink-0 flex-col items-end gap-0">
 		<p
 			class={[
 				'font-medium tabular-nums',
@@ -175,6 +161,9 @@
 				{amountText}
 			{/if}
 		</p>
+		{#if showPocket}
+			{@render pocketChrome()}
+		{/if}
 	</div>
 	<ChevronRightIcon class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
 </button>
