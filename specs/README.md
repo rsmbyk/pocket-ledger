@@ -111,3 +111,7 @@ Living behavior contracts for Pocket Ledger.
 | [093](093-pocket-card-actions-bottom/spec.md) | Pocket card actions bottom | Accepted |
 | [094](094-pocket-description-footer/spec.md) | Pocket description footer | Accepted |
 | [095](095-month-summary-header-padding/spec.md) | Month summary header equal padding | Accepted |
+| [096](096-pocket-under-amount-date-row/spec.md) | Pocket under amount, date-aligned | Accepted |
+| [097](097-pocket-row-center-no-goal/spec.md) | Pocket row center when no goal | Accepted |
+| [098](098-pocket-bottom-with-note/spec.md) | Pocket bottom-aligned when note present | Superseded by [099](099-amount-pocket-center-stack/spec.md) |
+| [099](099-amount-pocket-center-stack/spec.md) | Tight amount+pocket stack, vertically centered | Accepted |

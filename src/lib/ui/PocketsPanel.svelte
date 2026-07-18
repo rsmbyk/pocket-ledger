@@ -272,7 +272,7 @@
 	{@const percent = hasGoal ? goalProgressPercent(p.goalTargetMinor!, balance) : 0}
 	{@const remaining =
 		hasGoal && p.goalTargetOn ? largestRemainingUnit(todayOccurredOn(), p.goalTargetOn) : null}
-	<div class="flex items-stretch gap-2 px-4 py-3">
+	<div class={['flex gap-2 px-4 py-3', hasGoal ? 'items-stretch' : 'items-center']}>
 		{#if draggable}
 			<button
 				type="button"
@@ -311,9 +311,14 @@
 				</div>
 			{/if}
 		</div>
-		<div class="flex shrink-0 flex-col items-end justify-between self-stretch gap-1">
+		<div
+			class={[
+				'flex shrink-0 flex-col items-end gap-1',
+				hasGoal && 'justify-between self-stretch'
+			]}
+		>
 			<p class="font-medium tabular-nums">{formatMinor(balance, currencyLabel)}</p>
-			<div class="mt-auto flex gap-1">
+			<div class={['flex gap-1', hasGoal && 'mt-auto']}>
 				{#if hasGoal}
 					<Button
 						size="icon-sm"
