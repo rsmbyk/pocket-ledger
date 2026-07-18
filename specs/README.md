@@ -81,3 +81,7 @@ Living behavior contracts for Pocket Ledger.
 | [063](063-activity-list-rows/spec.md) | Activity list rows like Recent | Accepted |
 | [064](064-activity-sort-sheet/spec.md) | Activity Sort sheet + icon Filters | Accepted |
 | [065](065-activity-active-toolbar-icons/spec.md) | Active Sort/Filters icon chrome | Accepted |
+| [066](066-recent-see-more/spec.md) | Recent see more → Activity | Accepted |
+| [067](067-remove-category-sort/spec.md) | Remove Categories sort | Accepted |
+| [068](068-activity-date-groups/spec.md) | Activity date groups + note secondary | Accepted |
+| [069](069-activity-chunked-reveal/spec.md) | Activity chunked reveal (whole days) | Accepted |

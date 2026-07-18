@@ -24,23 +24,25 @@ export type ActivityFilterCriteria = {
 	amountRaw?: string | null;
 };
 
-/** Activity list sort modes (Spec 064). */
-export type ActivitySortMode =
-	| 'createdAt-desc'
-	| 'occurredOn-desc'
-	| 'occurredOn-asc'
-	| 'category';
+/** Activity list sort modes (Specs 064 / 067). */
+export type ActivitySortMode = 'createdAt-desc' | 'occurredOn-desc' | 'occurredOn-asc';
 
 /** @deprecated Prefer ActivitySortMode */
-export type ActivityDateSort = Exclude<ActivitySortMode, 'category'>;
-
-export type CategorySortMeta = {
-	id: string;
-	kind: 'income' | 'expense';
-	sortOrder: number;
-};
+export type ActivityDateSort = ActivitySortMode;
 
 export const DEFAULT_ACTIVITY_SORT: ActivitySortMode = 'createdAt-desc';
+
+/** Target rows per chunked reveal bundle (Spec 069). */
+export const ACTIVITY_REVEAL_TARGET = 40;
+
+export type ActivityDateGroup = {
+	occurredOn: string;
+	transactions: LedgerTransaction[];
+};
+
+export type ActivityListSection =
+	| { kind: 'header'; occurredOn: string }
+	| { kind: 'row'; tx: LedgerTransaction };
 
 export const DEFAULT_ACTIVITY_FILTERS: Required<
 	Pick<
@@ -148,37 +150,16 @@ export function filterTransactions(
 	});
 }
 
-function categoryRank(
-	categoryId: string | null,
-	byId: Map<string, CategorySortMeta>
-): number {
-	if (categoryId == null) return Number.MAX_SAFE_INTEGER;
-	const meta = byId.get(categoryId);
-	if (!meta) return Number.MAX_SAFE_INTEGER - 1;
-	const typeBias = meta.kind === 'income' ? 0 : 1_000_000;
-	return typeBias + meta.sortOrder;
+export function isDateActivitySort(mode: ActivitySortMode): boolean {
+	return mode === 'occurredOn-desc' || mode === 'occurredOn-asc';
 }
 
-/** Sort Activity rows for the selected mode (Spec 064). */
+/** Sort Activity rows for the selected mode. */
 export function sortTransactions(
 	transactions: LedgerTransaction[],
-	mode: ActivitySortMode,
-	categories: CategorySortMeta[] = []
+	mode: ActivitySortMode
 ): LedgerTransaction[] {
 	const rows = [...transactions];
-	if (mode === 'category') {
-		const byId = new Map(categories.map((c) => [c.id, c]));
-		rows.sort((a, b) => {
-			const byCat =
-				categoryRank(a.categoryId, byId) - categoryRank(b.categoryId, byId);
-			if (byCat !== 0) return byCat;
-			const byCreated = b.createdAt.localeCompare(a.createdAt);
-			if (byCreated !== 0) return byCreated;
-			return a.id.localeCompare(b.id);
-		});
-		return rows;
-	}
-
 	rows.sort((a, b) => {
 		if (mode === 'createdAt-desc') {
 			const byCreated = b.createdAt.localeCompare(a.createdAt);
@@ -201,4 +182,84 @@ export function sortTransactionsByDate(
 	mode: ActivityDateSort
 ): LedgerTransaction[] {
 	return sortTransactions(transactions, mode);
+}
+
+/**
+ * Build date groups from a sorted list (Spec 068).
+ * Only for date sort modes; Default returns a single flat section of rows.
+ */
+export function groupActivityByOccurredOn(
+	sorted: LedgerTransaction[],
+	mode: ActivitySortMode
+): ActivityDateGroup[] {
+	if (!isDateActivitySort(mode) || sorted.length === 0) {
+		return sorted.length === 0 ? [] : [{ occurredOn: '', transactions: sorted }];
+	}
+	const groups: ActivityDateGroup[] = [];
+	for (const tx of sorted) {
+		const last = groups[groups.length - 1];
+		if (last && last.occurredOn === tx.occurredOn) {
+			last.transactions.push(tx);
+		} else {
+			groups.push({ occurredOn: tx.occurredOn, transactions: [tx] });
+		}
+	}
+	return groups;
+}
+
+/** Flatten groups into header+row sections for date sort; flat rows for Default. */
+export function activityListSections(
+	sorted: LedgerTransaction[],
+	mode: ActivitySortMode
+): ActivityListSection[] {
+	if (!isDateActivitySort(mode)) {
+		return sorted.map((tx) => ({ kind: 'row' as const, tx }));
+	}
+	const sections: ActivityListSection[] = [];
+	for (const group of groupActivityByOccurredOn(sorted, mode)) {
+		sections.push({ kind: 'header', occurredOn: group.occurredOn });
+		for (const tx of group.transactions) {
+			sections.push({ kind: 'row', tx });
+		}
+	}
+	return sections;
+}
+
+/**
+ * Next exclusive end index for chunked reveal (Spec 069).
+ * Date sorts never split an `occurredOn` day.
+ */
+export function nextRevealEndIndex(
+	sorted: LedgerTransaction[],
+	currentEnd: number,
+	mode: ActivitySortMode,
+	targetSize: number = ACTIVITY_REVEAL_TARGET
+): number {
+	const n = sorted.length;
+	if (n === 0) return 0;
+	if (currentEnd >= n) return n;
+
+	if (!isDateActivitySort(mode)) {
+		return Math.min(n, currentEnd + Math.max(1, targetSize));
+	}
+
+	let end = currentEnd;
+	let added = 0;
+	while (end < n && added < targetSize) {
+		const day = sorted[end]!.occurredOn;
+		while (end < n && sorted[end]!.occurredOn === day) {
+			end++;
+			added++;
+		}
+	}
+	return end;
+}
+
+/** Initial reveal end index for a freshly sorted list. */
+export function initialRevealEndIndex(
+	sorted: LedgerTransaction[],
+	mode: ActivitySortMode,
+	targetSize: number = ACTIVITY_REVEAL_TARGET
+): number {
+	return nextRevealEndIndex(sorted, 0, mode, targetSize);
 }
