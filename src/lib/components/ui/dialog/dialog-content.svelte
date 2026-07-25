@@ -7,6 +7,7 @@
 	import type { ComponentProps } from "svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import XIcon from '@lucide/svelte/icons/x';
+	import { focusFirstTextField } from "$lib/ui/focus-first-text-field.js";
 
 	let {
 		ref = $bindable(null),
@@ -15,6 +16,7 @@
 		children,
 		showCloseButton = true,
 		overlayClass,
+		onOpenAutoFocus,
 		...restProps
 	}: WithoutChildrenOrChild<DialogPrimitive.ContentProps> & {
 		portalProps?: WithoutChildrenOrChild<ComponentProps<typeof DialogPortal>>;
@@ -22,6 +24,14 @@
 		showCloseButton?: boolean;
 		overlayClass?: string;
 	} = $props();
+
+	function handleOpenAutoFocus(event: Event) {
+		const root = (ref ?? event.currentTarget) as ParentNode | null;
+		if (root && focusFirstTextField(root)) {
+			event.preventDefault();
+		}
+		onOpenAutoFocus?.(event as Parameters<NonNullable<typeof onOpenAutoFocus>>[0]);
+	}
 </script>
 
 <DialogPortal {...portalProps}>
@@ -34,6 +44,7 @@
 			className
 		)}
 		{...restProps}
+		onOpenAutoFocus={handleOpenAutoFocus}
 	>
 		{@render children?.()}
 		{#if showCloseButton}
