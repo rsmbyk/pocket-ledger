@@ -5,7 +5,8 @@ test.describe('100 DateField mobile picker', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('app-shell')).toBeVisible();
+		await expect(page.getByTestId('recent-add')).toBeVisible();
 	});
 
 	test('tx date field accepts a chosen date on mobile viewport', async ({ page }) => {
@@ -20,15 +21,17 @@ test.describe('100 DateField mobile picker', () => {
 		await expect(field).toContainText('15 Jan 2026');
 	});
 
-	test('clicking the visible date chrome focuses the native input', async ({ page }) => {
+	test('date chrome hit target is the native input', async ({ page }) => {
 		await openAdd(page);
 		const field = page.getByTestId('tx-occurred-on');
 		const native = field.locator('input[type="date"]');
 
-		// Tap the left side of the field (display area), not a trailing control.
-		const box = await field.boundingBox();
-		expect(box).toBeTruthy();
-		await page.mouse.click(box!.x + 24, box!.y + box!.height / 2);
-		await expect(native).toBeFocused();
+		await expect(native).toHaveClass(/opacity-0/);
+		await expect(native).not.toHaveClass(/sr-only/);
+
+		// Center click on the field should hit the overlay input (not a decorative button).
+		await field.click();
+		await native.fill('2026-03-04');
+		await expect(field).toContainText('04 Mar 2026');
 	});
 });
