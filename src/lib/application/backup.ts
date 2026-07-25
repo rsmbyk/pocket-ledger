@@ -51,7 +51,11 @@ export async function buildBackup(): Promise<LedgerBackup> {
 		exportedAt: new Date().toISOString(),
 		accounts,
 		categories: await Promise.all(
-			categories.map(async (c) => ({ ...c, name: await openField(c.name) }))
+			categories.map(async (c) => ({
+				...c,
+				deletedAt: c.deletedAt ?? null,
+				name: await openField(c.name)
+			}))
 		),
 		transactions: await Promise.all(
 			transactions.map(async (t) => ({
@@ -151,9 +155,12 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 				db.settings.clear()
 			]);
 			await db.accounts.bulkPut(accounts);
-			const categories = normalized.categories as Array<
-				CategoryRow & { sortOrder?: number }
-			>;
+			const categories = (
+				normalized.categories as Array<CategoryRow & { sortOrder?: number; deletedAt?: string | null }>
+			).map((c) => ({
+				...c,
+				deletedAt: typeof c.deletedAt === 'string' && c.deletedAt ? c.deletedAt : null
+			}));
 			const toPut = categories.every((c) => typeof c.sortOrder === 'number')
 				? categories
 				: assignSortOrdersByName(categories);

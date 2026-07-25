@@ -1,9 +1,15 @@
-import { deleteCategory, listCategories as listCategoriesRaw, putCategory } from '$lib/data/category-repo';
+import {
+	deleteCategory,
+	listAllCategories as listAllCategoriesRaw,
+	listCategories as listCategoriesRaw,
+	putCategory
+} from '$lib/data/category-repo';
 import { db, type CategoryRow } from '$lib/data/db';
 import { assertUniqueCategoryName, normalizeCategoryName } from '$lib/domain/categories';
 import { nextSortOrderForKind } from '$lib/domain/category-order';
 import { ensureSeedCategories } from '$lib/application/transactions';
 import { openField, sealField } from '$lib/application/field-crypto';
+import { isVoided } from '$lib/domain/transaction';
 
 function createId(): string {
 	return crypto.randomUUID();
@@ -18,9 +24,16 @@ async function revealCategories(rows: CategoryRow[]): Promise<CategoryRow[]> {
 	);
 }
 
+/** Active categories only. */
 export async function listCategories(): Promise<CategoryRow[]> {
 	await ensureSeedCategories();
 	return revealCategories(await listCategoriesRaw());
+}
+
+/** All categories including soft-deleted (id→name display). */
+export async function listAllCategories(): Promise<CategoryRow[]> {
+	await ensureSeedCategories();
+	return revealCategories(await listAllCategoriesRaw());
 }
 
 export async function createCategory(
@@ -36,7 +49,8 @@ export async function createCategory(
 		name: await sealField(name),
 		kind,
 		sortOrder: nextSortOrderForKind(existing, kind),
-		createdAt: new Date().toISOString()
+		createdAt: new Date().toISOString(),
+		deletedAt: null
 	};
 	await putCategory(category);
 	return { ...category, name };
@@ -53,8 +67,15 @@ export async function renameCategory(id: string, nameRaw: string): Promise<Categ
 	return { ...updated, name };
 }
 
-/** True when any transaction references this category. */
+/** True when any non-voided transaction references this category (spec 103). */
 export async function isCategoryInUse(id: string): Promise<boolean> {
+	const txCount = await db.transactions
+		.filter((t) => t.categoryId === id && !isVoided(t))
+		.count();
+	return txCount > 0;
+}
+
+async function hasAnyTransactionRef(id: string): Promise<boolean> {
 	const txCount = await db.transactions.filter((t) => t.categoryId === id).count();
 	return txCount > 0;
 }
@@ -62,10 +83,20 @@ export async function isCategoryInUse(id: string): Promise<boolean> {
 export async function removeCategory(id: string): Promise<void> {
 	const current = await db.categories.get(id);
 	if (!current) throw new Error('Category not found');
+	if (current.deletedAt) throw new Error('Category not found');
 
 	if (await isCategoryInUse(id)) {
 		throw new Error('Cannot delete a category that is still used');
 	}
+
+	if (await hasAnyTransactionRef(id)) {
+		await putCategory({
+			...current,
+			deletedAt: new Date().toISOString()
+		});
+		return;
+	}
+
 	await deleteCategory(id);
 }
 

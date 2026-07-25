@@ -31,7 +31,7 @@ Personal finance app that works offline after first load, hosted on Cloudflare P
 | Import | JSON restore (full replace) via More → Backup |
 | Lock | Optional passphrase lock, **off by default** (spec 007) |
 | Router | Hash routes for Home / Activity / Pockets / Categories / More |
-| Categories | Seed set plus user add / rename / delete (unused only) |
+| Categories | User add / rename / delete; unused → hard-delete; voided-only refs → soft-delete (`deletedAt`); active txs still block delete (spec 103) |
 | Tests | Vitest + Playwright from the start |
 | Process | Spec-Driven Development + TDD + GitHub Flow |
 | Desktop shell | No Tauri; desktop-first dashboard shell (inset sidebar + KPI home + wide stage, spec 013) |

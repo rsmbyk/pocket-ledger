@@ -36,7 +36,7 @@
 	} from '$lib/application/lock';
 	import {
 		createCategory,
-		listCategories,
+		listAllCategories,
 		removeCategory,
 		renameCategory,
 		reorderCategories
@@ -73,11 +73,11 @@
 	let themePreference = $state<ThemePreference>('system');
 
 	async function refreshLedger(active: Account, key: MonthKey = monthKey) {
-		const [overview, balance, recent, categories, summary, exp, inc] = await Promise.all([
+		const [overview, balance, recent, allCategories, summary, exp, inc] = await Promise.all([
 			getAccountsOverview(),
 			getAllPocketsBalance(),
 			listRecentTransactions(active.id),
-			listCategories(),
+			listAllCategories(),
 			getMonthSummary(active.id, key),
 			getCategoriesForType('expense'),
 			getCategoriesForType('income')
@@ -86,7 +86,7 @@
 		isSinglePot = overview.isSinglePot;
 		balanceMinor = balance;
 		transactions = recent;
-		categoriesById = Object.fromEntries(categories.map((c) => [c.id, c]));
+		categoriesById = Object.fromEntries(allCategories.map((c) => [c.id, c]));
 		monthSummary = summary;
 		expenseCategories = exp;
 		incomeCategories = inc;

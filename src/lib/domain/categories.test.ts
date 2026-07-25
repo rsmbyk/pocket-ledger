@@ -13,9 +13,23 @@ describe('category names', () => {
 
 	it('rejects duplicate names within kind', () => {
 		const existing: CategoryRow[] = [
-			{ id: '1', name: 'Coffee', kind: 'expense', sortOrder: 0, createdAt: 't' }
+			{ id: '1', name: 'Coffee', kind: 'expense', sortOrder: 0, createdAt: 't', deletedAt: null }
 		];
 		expect(() => assertUniqueCategoryName('coffee', 'expense', existing)).toThrow(/already exists/i);
 		expect(() => assertUniqueCategoryName('Coffee', 'income', existing)).not.toThrow();
+	});
+
+	it('ignores soft-deleted names for uniqueness', () => {
+		const existing: CategoryRow[] = [
+			{
+				id: '1',
+				name: 'Coffee',
+				kind: 'expense',
+				sortOrder: 0,
+				createdAt: 't',
+				deletedAt: '2026-07-25T00:00:00.000Z'
+			}
+		];
+		expect(() => assertUniqueCategoryName('Coffee', 'expense', existing)).not.toThrow();
 	});
 });
