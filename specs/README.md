@@ -126,3 +126,4 @@ Living behavior contracts for Pocket Ledger.
 | [107](107-filter-category-picker/spec.md) | Filter category dropdown + type coupling | Accepted |
 | [108](108-pocket-description-one-line/spec.md) | Pocket description one line | Accepted |
 | [109](109-month-summary-bounds/spec.md) | Month summary range bounds | Accepted |
+| [110](110-month-opening-from-pockets/spec.md) | Month opening from pocket openings | Draft |
