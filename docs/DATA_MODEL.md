@@ -14,7 +14,7 @@ Dexie database `pocket-ledger`. UI calls accounts **Pockets**; the object store 
 | sortOrder | Order among non-Main pockets; Main always listed first |
 | notes | Free text |
 | openingBalanceMinor | Signed integer minor units |
-| openingAsOf | `YYYY-MM-DD` — txs before this date excluded from derived balance |
+| openingAsOf | `YYYY-MM-DD` — txs before this date excluded from **current** derived balance (spec 071); also seeds month Opening via day-start inference forward/back (spec 110) |
 | goalTargetMinor | Optional goal target; `null` = no goal |
 | goalTargetOn | Optional deadline `YYYY-MM-DD`; `null` = target-only |
 

@@ -21,13 +21,14 @@ Personal finance app that works offline after first load, hosted on Cloudflare P
 | Accounts | Multi-account capable; **single-pot UX** when only one account; start with default `Main` |
 | Pockets | User-managed sub-accounts (**Pockets** nav item); `Main` is pinned first, never deleted, always the default for new transactions; non-Main pockets are user-reorderable (drag), renameable, and deletable once empty (spec 070) |
 | Pocket opening balance | Each pocket has an opening balance + as-of date that seeds its derived running balance (spec 071) |
+| Month Opening / Ending | Home month Opening = sum of each pocket’s balance at month-start, inferred by walking txs backward/forward from that pocket’s opening as-of; Ending = Opening + Net (spec 110) |
 | Goals | Per-pocket balance + deadline goal (target amount, target date), not a separate global feature; editable/clearable from the pocket's edit dialog (spec 072) |
 | Transfers | Move money between pockets as a single `transfer` transaction (source → dest, amount sent, optional admin fee, optional note); shown as a neutral row; fee counts as expense under synthetic **Admin Fee** (spec 073 / 106) |
 | Currency | Single currency; display label only (default `IDR`) |
 | Budgets | None for now |
 | Multi-currency / FX | None |
 | UX | **Desktop-first dashboard chrome**, responsive down to mobile (inset sidebar → sheet + stacked layouts below `md`) |
-| Features (shipped) | Charts, export — specs 001–008; net worth UI removed (059); recurring removed (087); Pockets nav + CRUD, per-pocket opening balance, per-pocket goals, transfers, Activity pocket filter, Activity row pocket labels — specs 070–077 |
+| Features (shipped) | Charts, export — specs 001–008; net worth UI removed (059); recurring removed (087); Pockets nav + CRUD, per-pocket opening balance, per-pocket goals, transfers, Activity pocket filter, Activity row pocket labels — specs 070–077; month Opening from pocket openings — spec 110 |
 | Import | JSON restore (full replace) via More → Backup |
 | Lock | Optional passphrase lock, **off by default** (spec 007) |
 | Router | Hash routes for Home / Activity / Pockets / Categories / More |

@@ -2,6 +2,8 @@ import type { LedgerTransaction } from '$lib/domain/transaction';
 import { isVoided } from '$lib/domain/transaction';
 import { assertMinorUnits, type MinorUnits } from '$lib/domain/money';
 import { ADMIN_FEE_CATEGORY_ID, ADMIN_FEE_LABEL } from '$lib/domain/activity-filters';
+import type { Account } from '$lib/domain/account';
+import { balanceAtDayStart } from '$lib/domain/pocket-balance';
 
 export type MonthKey = string; // YYYY-MM
 
@@ -18,7 +20,7 @@ export type MonthSummary = {
 	netMinor: MinorUnits;
 	incomeByCategory: CategoryTotal[];
 	expenseByCategory: CategoryTotal[];
-	/** Ledger balance at the start of the month (signed sum of earlier txs). */
+	/** Ledger balance at month start (sum of pocket balances at day 1). */
 	openingMinor: MinorUnits;
 	/** openingMinor + netMinor */
 	endingMinor: MinorUnits;
@@ -131,17 +133,6 @@ function transferFeeMinor(tx: Pick<LedgerTransaction, 'feeMinor'>): MinorUnits {
 	return fee;
 }
 
-/** Signed effect on all-pocket ledger: income +, expense −, transfer −fee. */
-function signedAmount(
-	tx: Pick<LedgerTransaction, 'type' | 'amountMinor' | 'feeMinor'>
-): number {
-	assertMinorUnits(tx.amountMinor);
-	if (tx.type === 'income') return tx.amountMinor;
-	if (tx.type === 'expense') return -tx.amountMinor;
-	if (tx.type === 'transfer') return -transferFeeMinor(tx);
-	return 0;
-}
-
 export type CategoryMeta = {
 	name: string;
 	sortOrder: number;
@@ -184,12 +175,15 @@ function categoryTotals(
 
 /**
  * Build month totals, category breakdowns, and opening/ending balances.
+ * Opening = sum of each pocket’s balance at `${monthKey}-01` (Spec 110).
  * @param categoryMeta Map of category id → name + sortOrder (Categories menu order).
+ * @param pockets All pockets; each contributes its day-start balance to Opening.
  */
 export function buildMonthSummary(
 	transactions: LedgerTransaction[],
 	monthKey: MonthKey,
-	categoryMeta: Record<string, CategoryMeta>
+	categoryMeta: Record<string, CategoryMeta>,
+	pockets: Array<Pick<Account, 'id' | 'openingBalanceMinor' | 'openingAsOf'>> = []
 ): MonthSummary {
 	if (!isValidMonthKey(monthKey)) {
 		throw new Error('Invalid month key');
@@ -197,6 +191,9 @@ export function buildMonthSummary(
 
 	const monthStart = `${monthKey}-01`;
 	let openingMinor = 0;
+	for (const pocket of pockets) {
+		openingMinor += balanceAtDayStart(pocket, monthStart, transactions);
+	}
 	let incomeMinor = 0;
 	let expenseMinor = 0;
 	const incomeMap = new Map<string, MinorUnits>();
@@ -207,7 +204,6 @@ export function buildMonthSummary(
 		if (isVoided(tx)) continue;
 
 		if (tx.occurredOn < monthStart) {
-			openingMinor += signedAmount(tx);
 			continue;
 		}
 

@@ -69,4 +69,28 @@ describe('month-summary application', () => {
 		expect(loaded.bounds.latest).toBe(currentMonthKey());
 		expect(loaded.monthKey).toBe(currentMonthKey());
 	});
+
+	it('infers month opening from pocket opening walking mid-gap expense backward', async () => {
+		const account = await ensureDefaultAccount();
+		await updatePocket({
+			id: account.id,
+			name: account.name,
+			openingEnabled: true,
+			openingBalanceMinor: 100_000,
+			openingAsOf: '2026-06-15'
+		});
+		const food = await createCategory('Food', 'expense');
+		await addTransaction({
+			accountId: account.id,
+			type: 'expense',
+			amountRaw: '25000',
+			categoryId: food.id,
+			occurredOn: '2026-06-05'
+		});
+
+		const summary = await getMonthSummary(account.id, '2026-06');
+		expect(summary.openingMinor).toBe(125_000);
+		expect(summary.expenseMinor).toBe(25_000);
+		expect(summary.endingMinor).toBe(100_000);
+	});
 });
