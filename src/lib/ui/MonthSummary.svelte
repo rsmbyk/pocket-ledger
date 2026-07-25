@@ -14,12 +14,21 @@
 		summary: MonthSummary;
 		currencyLabel: string;
 		hideAmounts?: boolean;
+		canPrev?: boolean;
+		canNext?: boolean;
 		onPrevMonth: () => void;
 		onNextMonth: () => void;
 	};
 
-	let { summary, currencyLabel, hideAmounts = false, onPrevMonth, onNextMonth }: Props =
-		$props();
+	let {
+		summary,
+		currencyLabel,
+		hideAmounts = false,
+		canPrev = true,
+		canNext = true,
+		onPrevMonth,
+		onNextMonth
+	}: Props = $props();
 
 	function money(amount: number): string {
 		return hideAmounts ? '••••' : formatMinor(amount, currencyLabel);
@@ -41,6 +50,7 @@
 				variant="outline"
 				size="icon-sm"
 				aria-label="Previous month"
+				disabled={!canPrev}
 				onclick={onPrevMonth}
 			>
 				<ChevronLeftIcon class="size-4" />
@@ -51,7 +61,13 @@
 				>
 				<p class="text-muted-foreground text-xs leading-tight">Month summary</p>
 			</div>
-			<Button variant="outline" size="icon-sm" aria-label="Next month" onclick={onNextMonth}>
+			<Button
+				variant="outline"
+				size="icon-sm"
+				aria-label="Next month"
+				disabled={!canNext}
+				onclick={onNextMonth}
+			>
 				<ChevronRightIcon class="size-4" />
 			</Button>
 		</div>

@@ -21,6 +21,8 @@
 		transactions: LedgerTransaction[];
 		categoriesById: Record<string, CategoryRow>;
 		monthSummary: MonthSummary | null;
+		canPrevMonth?: boolean;
+		canNextMonth?: boolean;
 		expenseCategories: CategoryRow[];
 		incomeCategories: CategoryRow[];
 		lockEnabled: boolean;
@@ -62,6 +64,8 @@
 		transactions,
 		categoriesById,
 		monthSummary,
+		canPrevMonth = false,
+		canNextMonth = false,
 		expenseCategories,
 		incomeCategories,
 		lockEnabled,
@@ -191,6 +195,8 @@
 				{transactions}
 				{categoriesById}
 				{monthSummary}
+				{canPrevMonth}
+				{canNextMonth}
 				{expenseCategories}
 				{incomeCategories}
 				{lockEnabled}

@@ -49,6 +49,66 @@ export function shiftMonth(monthKey: MonthKey, delta: number): MonthKey {
 	return monthKeyFromDate(date);
 }
 
+export type MonthBounds = {
+	earliest: MonthKey;
+	latest: MonthKey;
+};
+
+/** `YYYY-MM` from a calendar date string (`YYYY-MM-DD` or already `YYYY-MM`). */
+export function monthKeyFromDay(day: string): MonthKey | null {
+	const key = day.length >= 7 ? day.slice(0, 7) : day;
+	return isValidMonthKey(key) ? key : null;
+}
+
+/**
+ * Inclusive month range for Home summary navigation.
+ * Earliest = min(non-voided tx occurredOn, all pocket openingAsOf); latest = current local month.
+ * If earliest would be after latest, both are latest.
+ */
+export function resolveMonthBounds(
+	transactions: Array<Pick<LedgerTransaction, 'occurredOn' | 'voidedAt'>>,
+	openingAsOfDates: string[],
+	now = new Date()
+): MonthBounds {
+	const latest = currentMonthKey(now);
+	let earliestDay: string | null = null;
+
+	for (const tx of transactions) {
+		if (isVoided(tx)) continue;
+		if (!earliestDay || tx.occurredOn < earliestDay) {
+			earliestDay = tx.occurredOn;
+		}
+	}
+	for (const asOf of openingAsOfDates) {
+		const trimmed = asOf?.trim() ?? '';
+		if (!trimmed) continue;
+		if (!earliestDay || trimmed < earliestDay) {
+			earliestDay = trimmed;
+		}
+	}
+
+	if (!earliestDay) {
+		return { earliest: latest, latest };
+	}
+	const fromDay = monthKeyFromDay(earliestDay);
+	const earliest = fromDay && fromDay <= latest ? fromDay : latest;
+	return { earliest, latest };
+}
+
+export function clampMonthKey(monthKey: MonthKey, bounds: MonthBounds): MonthKey {
+	if (!isValidMonthKey(monthKey)) {
+		throw new Error('Invalid month key');
+	}
+	if (monthKey < bounds.earliest) return bounds.earliest;
+	if (monthKey > bounds.latest) return bounds.latest;
+	return monthKey;
+}
+
+export function canShiftMonth(monthKey: MonthKey, delta: number, bounds: MonthBounds): boolean {
+	const next = shiftMonth(monthKey, delta);
+	return next >= bounds.earliest && next <= bounds.latest;
+}
+
 export function formatMonthLabel(monthKey: MonthKey, locale?: string): string {
 	if (!isValidMonthKey(monthKey)) return monthKey;
 	const [y, m] = monthKey.split('-').map(Number) as [number, number];

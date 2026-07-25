@@ -73,6 +73,8 @@
 		transactions: LedgerTransaction[];
 		categoriesById: Record<string, CategoryRow>;
 		monthSummary: MonthSummary | null;
+		canPrevMonth?: boolean;
+		canNextMonth?: boolean;
 		expenseCategories: CategoryRow[];
 		incomeCategories: CategoryRow[];
 		lockEnabled: boolean;
@@ -117,6 +119,8 @@
 		transactions,
 		categoriesById,
 		monthSummary,
+		canPrevMonth = false,
+		canNextMonth = false,
 		expenseCategories,
 		incomeCategories,
 		lockEnabled,
@@ -559,6 +563,8 @@
 						summary={monthSummary}
 						{currencyLabel}
 						hideAmounts={hideHomeAmounts}
+						canPrev={canPrevMonth}
+						canNext={canNextMonth}
 						onPrevMonth={() => void onPrevMonth()}
 						onNextMonth={() => void onNextMonth()}
 					/>

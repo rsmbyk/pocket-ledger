@@ -124,3 +124,5 @@ Living behavior contracts for Pocket Ledger.
 | [105](105-pocket-amount-field-format/spec.md) | Pocket amount field format | Accepted |
 | [106](106-transfer-admin-fee/spec.md) | Transfer admin fee | Accepted |
 | [107](107-filter-category-picker/spec.md) | Filter category dropdown + type coupling | Accepted |
+| [108](108-pocket-description-one-line/spec.md) | Pocket description one line | Accepted |
+| [109](109-month-summary-bounds/spec.md) | Month summary range bounds | Accepted |
