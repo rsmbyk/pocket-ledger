@@ -14,4 +14,4 @@
 - [x] `npm run check` + unit (+ e2e if added)
 - [x] Traceability in `./spec.md`
 - [x] Cross-link note on Specs 045 / 064: tab-session persistence superseded by 102
-- [ ] Commit with pack
+- [x] Commit with pack

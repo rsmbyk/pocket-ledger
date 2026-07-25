@@ -13,4 +13,4 @@
 - [x] `npm run check` + unit tests
 - [x] Traceability in `./spec.md`
 - [x] Note on Spec 064: date-mode tie-break superseded by 101
-- [ ] Commit with pack
+- [x] Commit with pack
