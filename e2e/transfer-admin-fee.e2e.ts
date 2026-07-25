@@ -55,7 +55,6 @@ test.describe('106 transfer admin fee', () => {
 	});
 
 	test('Activity Admin Fee filter shows fee transfers', async ({ page }) => {
-		await page.setViewportSize({ width: 390, height: 844 });
 		await ensureVacationPocket(page);
 		await goToNav(page, 'home');
 		await openAdd(page);
@@ -70,6 +69,7 @@ test.describe('106 transfer admin fee', () => {
 		await dialog.getByRole('button', { name: 'Save' }).click();
 		await expect(dialog).toBeHidden({ timeout: 10_000 });
 
+		await page.setViewportSize({ width: 390, height: 844 });
 		await page.goto('/#/activity');
 		await expect(
 			page.getByTestId('activity-list').or(page.getByTestId('activity-empty'))
