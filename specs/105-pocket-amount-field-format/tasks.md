@@ -1,4 +1,4 @@
-# Tasks 103: Pocket amount fields match Amount
+# Tasks 105: Pocket amount fields match Amount
 
 - **Status:** Accepted
 - **Plan:** [./plan.md](./plan.md)
@@ -15,4 +15,4 @@
 - [x] Playwright: `e2e/pockets.e2e.ts` — currency prefix; type `15000` → `15,000`; opening `0` saves
 - [x] `npm run check` + unit + e2e green
 - [x] Traceability in `./spec.md`
-- [x] Commit + draft PR linking Spec 103
+- [x] Commit + draft PR linking Spec 105

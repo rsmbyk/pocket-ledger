@@ -1,6 +1,6 @@
-# Spec 103: Pocket amount fields match Amount
+# Spec 105: Pocket amount fields match Amount
 
-- **ID:** 103
+- **ID:** 105
 - **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
@@ -65,7 +65,7 @@ Opening balance and Goal target on the pocket form use the same amount-entry chr
 
 ### Scenario: Legacy negative clamps on edit
 
-- **Given** a pocket whose stored opening is negative (pre-103 data)
+- **Given** a pocket whose stored opening is negative (pre-105 data)
 - **When** the user opens Edit
 - **Then** the Opening balance field shows `0` (clamped), not the absolute value of the negative
 

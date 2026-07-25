@@ -1,4 +1,4 @@
-# Plan 103: Pocket amount fields match Amount
+# Plan 105: Pocket amount fields match Amount
 
 - **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)

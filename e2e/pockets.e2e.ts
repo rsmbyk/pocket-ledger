@@ -142,7 +142,7 @@ test.describe('070–077 pockets pack', () => {
 		await expect(page.getByTestId('activity-filters-badge')).toBeVisible();
 	});
 
-	test('103 opening and goal amount fields match Amount chrome', async ({ page }) => {
+	test('105 opening and goal amount fields match Amount chrome', async ({ page }) => {
 		await goToNav(page, 'pockets');
 		await page.getByTestId('pocket-add').click();
 		const form = page.getByTestId('pocket-form-dialog');

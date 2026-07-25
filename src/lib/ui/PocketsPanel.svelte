@@ -32,6 +32,12 @@
 		parseNonNegativeAmountInput,
 		todayOccurredOn
 	} from '$lib/domain/transaction-rules';
+	import {
+		clearPocketCreateDraft,
+		readPocketCreateDraft,
+		writePocketCreateDraft,
+		type PocketCreateDraft
+	} from '$lib/shared/create-form-drafts';
 	import { cn } from '$lib/utils.js';
 
 	type Props = {
@@ -94,6 +100,7 @@
 	let formGoalTargetOn = $state('');
 	let formError = $state<{ key: FormFieldKey; message: string } | null>(null);
 	let formBaseline = $state<FormBaseline | null>(null);
+	let discardConfirmOpen = $state(false);
 
 	let deleteTarget = $state<{ id: string; name: string } | null>(null);
 
@@ -189,6 +196,18 @@
 		};
 	}
 
+	function applyPocketDraft(draft: PocketCreateDraft) {
+		formName = draft.name;
+		formNotes = draft.notes;
+		formOpeningEnabled = draft.openingEnabled;
+		formOpeningRaw = amountDigitsOnly(draft.openingRaw) || '0';
+		formOpeningAsOf = draft.openingAsOf || todayOccurredOn();
+		formGoalEnabled = draft.goalEnabled;
+		formGoalTargetRaw = amountDigitsOnly(draft.goalTargetRaw);
+		formGoalDateEnabled = draft.goalDateEnabled;
+		formGoalTargetOn = draft.goalTargetOn;
+	}
+
 	function openCreate() {
 		formMode = 'create';
 		formPocketId = null;
@@ -203,6 +222,8 @@
 		formGoalTargetOn = '';
 		formError = null;
 		formBaseline = snapshotForm();
+		const draft = readPocketCreateDraft();
+		if (draft) applyPocketDraft(draft);
 		formOpen = true;
 	}
 
@@ -222,6 +243,46 @@
 		formError = null;
 		formBaseline = snapshotForm();
 		formOpen = true;
+	}
+
+	function requestFormDiscard() {
+		if (formMode !== 'create' || !formDirty) {
+			formOpen = false;
+			return;
+		}
+		discardConfirmOpen = true;
+	}
+
+	function handleFormOpenChange(next: boolean) {
+		if (next) {
+			formOpen = true;
+			return;
+		}
+		requestFormDiscard();
+	}
+
+	function onFormInteractOutside(e: PointerEvent) {
+		if (formMode !== 'create' || (!formDirty && !discardConfirmOpen)) return;
+		e.preventDefault();
+		if (formDirty) discardConfirmOpen = true;
+	}
+
+	function onFormEscapeKeydown(e: KeyboardEvent) {
+		if (formMode !== 'create' || (!formDirty && !discardConfirmOpen)) return;
+		e.preventDefault();
+		if (formDirty) discardConfirmOpen = true;
+	}
+
+	function confirmFormDiscard() {
+		if (formMode === 'create') clearPocketCreateDraft();
+		discardConfirmOpen = false;
+		formOpen = false;
+	}
+
+	function savePocketCreateDraft() {
+		writePocketCreateDraft(snapshotForm());
+		discardConfirmOpen = false;
+		formOpen = false;
 	}
 
 	async function submitForm() {
@@ -246,6 +307,7 @@
 					openingBalanceMinor,
 					openingAsOf
 				});
+				clearPocketCreateDraft();
 			} else if (formPocketId) {
 				let goalTargetMinor: number | null = null;
 				let goalTargetOn: string | null = null;
@@ -442,8 +504,15 @@
 	</div>
 </div>
 
-<Dialog.Root bind:open={formOpen}>
-	<Dialog.Content class="sm:max-w-md" data-testid="pocket-form-dialog">
+<Dialog.Root open={formOpen} onOpenChange={handleFormOpenChange}>
+	<Dialog.Content
+		class="sm:max-w-md"
+		data-testid="pocket-form-dialog"
+		interactOutsideBehavior="close"
+		escapeKeydownBehavior="close"
+		onInteractOutside={onFormInteractOutside}
+		onEscapeKeydown={onFormEscapeKeydown}
+	>
 		<Dialog.Header>
 			<Dialog.Title>{formMode === 'create' ? 'Add pocket' : 'Edit pocket'}</Dialog.Title>
 			<Dialog.Description>
@@ -675,7 +744,7 @@
 					type="button"
 					variant="outline"
 					disabled={busy}
-					onclick={() => (formOpen = false)}
+					onclick={() => requestFormDiscard()}
 				>
 					Cancel
 				</Button>
@@ -686,6 +755,20 @@
 		</form>
 	</Dialog.Content>
 </Dialog.Root>
+
+<ConfirmDialog
+	open={discardConfirmOpen}
+	title="Discard unsaved changes?"
+	description="Discard permanently, or save a draft to continue later."
+	confirmLabel="Discard"
+	destructive
+	confirmTestId="pocket-discard-confirm"
+	secondaryLabel="Save draft"
+	secondaryTestId="pocket-discard-save-draft"
+	onOpenChange={(next) => (discardConfirmOpen = next)}
+	onConfirm={confirmFormDiscard}
+	onSecondary={savePocketCreateDraft}
+/>
 
 <ConfirmDialog
 	open={deleteTarget !== null}
