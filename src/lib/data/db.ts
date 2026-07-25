@@ -13,6 +13,8 @@ export type CategoryRow = {
 	kind: 'income' | 'expense';
 	sortOrder: number;
 	createdAt: string;
+	/** ISO timestamp when soft-deleted; null = active (spec 103). */
+	deletedAt: string | null;
 };
 
 export type SettingsRow = {
@@ -196,6 +198,26 @@ export class PocketLedgerDb extends Dexie {
 						}
 					);
 					await accounts.put(normalized);
+				}
+			});
+		this.version(6)
+			.stores({
+				accounts: 'id, name, sortOrder, isMain',
+				categories: 'id, kind, name, sortOrder, deletedAt',
+				transactions: 'id, accountId, type, occurredOn, categoryId',
+				settings: 'key',
+				goals: 'id, name',
+				netWorthSnapshots: 'id, capturedOn'
+			})
+			.upgrade(async (tx) => {
+				const table = tx.table('categories');
+				const rows = (await table.toArray()) as Array<Record<string, unknown>>;
+				for (const row of rows) {
+					await table.put({
+						...row,
+						deletedAt:
+							typeof row.deletedAt === 'string' && row.deletedAt ? row.deletedAt : null
+					});
 				}
 			});
 	}

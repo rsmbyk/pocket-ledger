@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, openAdd, selectTxCategory } from './nav';
+import { confirmVoid, ensureCategory, openAdd, selectTxCategory } from './nav';
 
 test.describe('010 / 018 / 022 custom categories', () => {
 	test('adds a category from expense card modal and shows it in quick-add', async ({ page }) => {
@@ -80,5 +80,35 @@ test.describe('010 / 018 / 022 custom categories', () => {
 		await expect(page.getByTestId('confirm-dialog-danger-header')).toBeVisible();
 		await page.getByTestId('category-delete-confirm').click();
 		await expect(page.getByRole('textbox', { name: 'Name for UnusedCat' })).toHaveCount(0);
+	});
+
+	test('103 soft-deletes category used only by voided transactions', async ({ page }) => {
+		await page.goto('/');
+		await ensureCategory(page, 'VoidOnly', 'expense');
+		await openAdd(page);
+		const sheet = page.getByRole('dialog');
+		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
+		await sheet.getByLabel(/amount/i).fill('2500');
+		await selectTxCategory(page, 'VoidOnly', sheet);
+		await sheet.getByRole('button', { name: 'Save' }).click();
+
+		await page.getByTestId('recent-list').locator('[data-testid^="recent-row-"]').first().click();
+		const editSheet = page.getByRole('dialog');
+		await editSheet.getByRole('button', { name: 'Void' }).click();
+		await confirmVoid(page);
+
+		await page.goto('/#/categories');
+		const row = page.locator('li', {
+			has: page.getByRole('textbox', { name: 'Name for VoidOnly' })
+		});
+		await row.getByTestId('category-delete').click();
+		await expect(page.getByTestId('confirm-dialog-danger-header')).toBeVisible();
+		await page.getByTestId('category-delete-confirm').click();
+		await expect(page.getByRole('textbox', { name: 'Name for VoidOnly' })).toHaveCount(0);
+
+		await page.goto('/');
+		await expect(
+			page.getByTestId('recent-list').locator('[data-testid^="recent-row-"]').first()
+		).toContainText('VoidOnly');
 	});
 });

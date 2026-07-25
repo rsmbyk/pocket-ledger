@@ -12,6 +12,11 @@ export function normalizeCategoryName(raw: string): string {
 	return name;
 }
 
+/** Active when not soft-deleted (spec 103). */
+export function isCategoryActive(category: Pick<CategoryRow, 'deletedAt'>): boolean {
+	return !category.deletedAt;
+}
+
 export function assertUniqueCategoryName(
 	name: string,
 	kind: CategoryRow['kind'],
@@ -20,7 +25,11 @@ export function assertUniqueCategoryName(
 ): void {
 	const needle = name.toLowerCase();
 	const clash = existing.find(
-		(c) => c.kind === kind && c.id !== exceptId && c.name.toLowerCase() === needle
+		(c) =>
+			isCategoryActive(c) &&
+			c.kind === kind &&
+			c.id !== exceptId &&
+			c.name.toLowerCase() === needle
 	);
 	if (clash) {
 		throw new Error(`A ${kind} category named "${name}" already exists`);

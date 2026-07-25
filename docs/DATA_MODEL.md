@@ -29,6 +29,7 @@ Backup JSON may still key this collection as `accounts`.
 | kind | `income` \| `expense` |
 | sortOrder | Sibling order within kind |
 | createdAt | |
+| deletedAt | ISO timestamp or null; soft-delete when only voided txs reference the category (spec 103) |
 
 ## transactions
 
