@@ -13,6 +13,6 @@
 - [x] **Green** reject negatives in `src/lib/application/accounts.ts`
 - [x] Wire Opening + Goal target in `src/lib/ui/PocketsPanel.svelte` to Amount InputGroup chrome; clamp legacy negative on edit load; remove `parseSignedAmount`
 - [x] Playwright: `e2e/pockets.e2e.ts` — currency prefix; type `15000` → `15,000`; opening `0` saves
-- [ ] `npm run check` + unit + e2e green
+- [x] `npm run check` + unit + e2e green
 - [x] Traceability in `./spec.md`
-- [ ] Commit + draft PR linking Spec 103
+- [x] Commit + draft PR linking Spec 103
