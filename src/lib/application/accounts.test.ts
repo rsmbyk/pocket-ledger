@@ -73,6 +73,34 @@ describe('accounts application', () => {
 		expect(savings.isMain).toBe(false);
 	});
 
+	it('rejects negative opening balance on create and update', async () => {
+		await ensureDefaultAccount();
+		await expect(
+			createPocket({
+				name: 'Overdraft',
+				openingEnabled: true,
+				openingBalanceMinor: -100,
+				openingAsOf: '2026-01-01'
+			})
+		).rejects.toThrow(/zero or greater/i);
+
+		const vac = await createPocket({
+			name: 'Vacation',
+			openingEnabled: true,
+			openingBalanceMinor: 0,
+			openingAsOf: '2026-01-01'
+		});
+		await expect(
+			updatePocket({
+				id: vac.id,
+				name: vac.name,
+				openingEnabled: true,
+				openingBalanceMinor: -50,
+				openingAsOf: '2026-01-01'
+			})
+		).rejects.toThrow(/zero or greater/i);
+	});
+
 	it('refuses to reorder with a mismatched pocket set', async () => {
 		await ensureDefaultAccount();
 		await createPocket({ name: 'Alpha' });

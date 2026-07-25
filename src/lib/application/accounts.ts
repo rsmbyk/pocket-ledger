@@ -115,6 +115,9 @@ export async function createPocket(input: CreatePocketInput): Promise<Account> {
 		if (!Number.isInteger(openingBalanceMinor)) {
 			throw new Error('Opening balance must be a whole number');
 		}
+		if (openingBalanceMinor < 0) {
+			throw new Error('Opening balance must be zero or greater');
+		}
 	}
 	const accounts = await listAccounts();
 	const nonMainCount = accounts.filter((a) => !a.isMain).length;
@@ -177,6 +180,9 @@ export async function updatePocket(input: UpdatePocketInput): Promise<Account> {
 				: existing.openingBalanceMinor;
 		if (!Number.isInteger(openingBalanceMinor)) {
 			throw new Error('Opening balance must be a whole number');
+		}
+		if (openingBalanceMinor < 0) {
+			throw new Error('Opening balance must be zero or greater');
 		}
 	}
 

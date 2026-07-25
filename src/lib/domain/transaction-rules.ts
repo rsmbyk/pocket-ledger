@@ -18,6 +18,22 @@ export function parseAmountInput(raw: string): MinorUnits {
 	return assertMinorUnits(value);
 }
 
+/**
+ * Opening-balance style amounts: blank → 0; allows zero; rejects negatives and non-digits.
+ */
+export function parseNonNegativeAmountInput(raw: string): MinorUnits {
+	const trimmed = raw.trim().replace(/[,_\s]/g, '');
+	if (!trimmed) return 0;
+	if (!/^\d+$/.test(trimmed)) {
+		throw new Error('Opening balance must be a whole number');
+	}
+	const value = Number(trimmed);
+	if (value < 0) {
+		throw new Error('Opening balance must be zero or greater');
+	}
+	return assertMinorUnits(value);
+}
+
 /** Digits only from an amount field (strips grouping and other non-digits). */
 export function amountDigitsOnly(raw: string): string {
 	return raw.replace(/\D/g, '');

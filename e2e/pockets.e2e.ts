@@ -141,4 +141,32 @@ test.describe('070–077 pockets pack', () => {
 		await page.getByTestId('activity-filters-apply').click();
 		await expect(page.getByTestId('activity-filters-badge')).toBeVisible();
 	});
+
+	test('105 opening and goal amount fields match Amount chrome', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.getByTestId('pocket-add').click();
+		const form = page.getByTestId('pocket-form-dialog');
+		await expect(form).toBeVisible();
+		await page.getByTestId('pocket-name-input').fill('Savings');
+		await page.getByTestId('pocket-opening-enabled').check();
+		const opening = form.getByTestId('pocket-opening-input');
+		await expect(form.getByText('IDR', { exact: true }).first()).toBeVisible();
+		await opening.fill('15000');
+		await expect(opening).toHaveValue('15,000');
+		await opening.fill('0');
+		await expect(opening).toHaveValue('0');
+		await page.getByTestId('pocket-save').click();
+		await expect(form).toBeHidden();
+
+		const savingsRow = page.locator('[data-testid^="pocket-row-"]').filter({ hasText: 'Savings' });
+		await savingsRow.getByTestId('pocket-edit').click();
+		await expect(form).toBeVisible();
+		await page.getByTestId('pocket-goal-enabled').check();
+		const goal = form.getByTestId('pocket-goal-target-input');
+		await expect(form.getByText('IDR', { exact: true })).toHaveCount(2);
+		await goal.fill('100000');
+		await expect(goal).toHaveValue('100,000');
+		await page.getByTestId('pocket-save').click();
+		await expect(form).toBeHidden();
+	});
 });
