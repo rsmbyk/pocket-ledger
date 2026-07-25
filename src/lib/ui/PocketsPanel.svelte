@@ -10,7 +10,6 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as InputGroup from '$lib/components/ui/input-group/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
-	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
@@ -548,7 +547,7 @@
 			</div>
 			<div class="space-y-1">
 				<Label for="pocket-notes">Description</Label>
-				<Textarea
+				<Input
 					id="pocket-notes"
 					bind:value={formNotes}
 					placeholder="Optional"
