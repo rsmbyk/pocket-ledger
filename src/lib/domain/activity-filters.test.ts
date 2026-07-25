@@ -7,8 +7,11 @@ import {
 	filterTransactions,
 	groupActivityByOccurredOn,
 	initialRevealEndIndex,
+	isCategoryFilterCompatible,
+	isCategoryFilterDisabled,
 	isDefaultActivityFilters,
 	nextRevealEndIndex,
+	resolveCategoryIdForType,
 	sortTransactions,
 	sortTransactionsByDate,
 	UNCATEGORIZED_FILTER
@@ -54,6 +57,32 @@ describe('activity-filters', () => {
 		);
 		expect(filterTransactions(rows, { search: 'lunch' })[0]?.note).toBe('secret lunch');
 		expect(filterTransactions(rows, { search: '100,000' })).toHaveLength(1);
+	});
+
+	it('filters by transfer type', () => {
+		const mixed = [
+			...rows,
+			{
+				...tx({ type: 'transfer', amountMinor: 100, occurredOn: '2026-07-16', note: 'xfer' }),
+				counterAccountId: 'vac'
+			}
+		];
+		expect(filterTransactions(mixed, { type: 'transfer' }).map((t) => t.note)).toEqual(['xfer']);
+	});
+
+	it('resolves incompatible category selections for type (Spec 107)', () => {
+		const kinds = { food: 'expense' as const, sal: 'income' as const };
+		expect(isCategoryFilterDisabled('transfer')).toBe(true);
+		expect(isCategoryFilterDisabled('all')).toBe(false);
+		expect(isCategoryFilterCompatible('food', 'expense', kinds)).toBe(true);
+		expect(isCategoryFilterCompatible('food', 'income', kinds)).toBe(false);
+		expect(isCategoryFilterCompatible(ADMIN_FEE_CATEGORY_ID, 'all', kinds)).toBe(true);
+		expect(isCategoryFilterCompatible(ADMIN_FEE_CATEGORY_ID, 'expense', kinds)).toBe(false);
+		expect(isCategoryFilterCompatible(UNCATEGORIZED_FILTER, 'income', kinds)).toBe(true);
+		expect(resolveCategoryIdForType('food', 'income', kinds)).toBe('');
+		expect(resolveCategoryIdForType('food', 'expense', kinds)).toBe('food');
+		expect(resolveCategoryIdForType(ADMIN_FEE_CATEGORY_ID, 'transfer', kinds)).toBe('');
+		expect(resolveCategoryIdForType('', 'transfer', kinds)).toBe('');
 	});
 
 	it('filters uncategorized via sentinel', () => {

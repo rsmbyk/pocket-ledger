@@ -42,8 +42,8 @@
 	} from '$lib/shared/create-form-drafts';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import DateField from '$lib/ui/DateField.svelte';
+	import CategoryPicker from '$lib/ui/CategoryPicker.svelte';
 	import PocketLabel from '$lib/ui/PocketLabel.svelte';
-	import UncategorizedLabel from '$lib/ui/UncategorizedLabel.svelte';
 	import { cn } from '$lib/utils.js';
 
 	type AddMode = 'normal' | 'transfer';
@@ -132,11 +132,6 @@
 				: 'Add money in or out, or move money between pockets.'
 	);
 	const amountDisplay = $derived(formatAmountDigitsDisplay(amountRaw));
-	const selectedCategoryLabel = $derived(
-		categoryId
-			? (categories.find((category) => category.id === categoryId)?.name ?? 'Uncategorized')
-			: 'Uncategorized'
-	);
 
 	const transferSourceOptions = $derived(accounts);
 	const transferDestOptions = $derived(accounts);
@@ -830,43 +825,20 @@
 
 			<div class="space-y-2">
 				<Label>Category</Label>
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger
-						class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full items-center justify-between rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-						disabled={isVoidedView || saving}
-						data-testid="tx-category"
-						aria-label="Category"
-						aria-invalid={fieldAlert('category') ? true : undefined}
-					>
-						{#if categoryId}
-							<span class="truncate">{selectedCategoryLabel}</span>
-						{:else}
-							<UncategorizedLabel system />
-						{/if}
-						<ChevronDownIcon class="text-muted-foreground size-4 shrink-0" />
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content class="max-h-60 w-(--bits-dropdown-menu-anchor-width)">
-						{#each categories as category (category.id)}
-							<DropdownMenu.Item
-								onclick={() => {
-									categoryId = category.id;
-									if (fieldError?.key === 'category') clearFieldError();
-								}}
-							>
-								{category.name}
-							</DropdownMenu.Item>
-						{/each}
-						<DropdownMenu.Separator />
-						<DropdownMenu.Item
-							onclick={() => {
-								categoryId = '';
-								if (fieldError?.key === 'category') clearFieldError();
-							}}
-						>
-							<UncategorizedLabel system />
-						</DropdownMenu.Item>
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
+				<CategoryPicker
+					value={categoryId}
+					onValueChange={(next) => {
+						categoryId = next;
+						if (fieldError?.key === 'category') clearFieldError();
+					}}
+					categories={categories}
+					showUncategorized
+					emptyMeans="uncategorized"
+					disabled={isVoidedView || saving}
+					testid="tx-category"
+					ariaLabel="Category"
+					ariaInvalid={fieldAlert('category') ? true : undefined}
+				/>
 				{@render fieldErrorAlert('category', 'tx-field-error-category')}
 			</div>
 

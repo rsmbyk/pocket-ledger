@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { confirmVoid, goToNav, openAdd } from './nav';
+import { confirmVoid, goToNav, openAdd, selectActivityFilterCategory } from './nav';
 
 test.describe('106 transfer admin fee', () => {
 	test.beforeEach(async ({ page }) => {
@@ -61,7 +61,7 @@ test.describe('106 transfer admin fee', () => {
 			page.getByTestId('activity-list').or(page.getByTestId('activity-empty'))
 		).toBeVisible();
 		await page.getByTestId('activity-filters-open').click();
-		await page.getByTestId('activity-filter-category').selectOption({ label: 'Admin Fee' });
+		await selectActivityFilterCategory(page, 'Admin Fee');
 		await page.getByTestId('activity-filters-apply').click();
 		await expect(page.locator('[data-testid$="-transfer-fee"]').first()).toBeVisible();
 	});

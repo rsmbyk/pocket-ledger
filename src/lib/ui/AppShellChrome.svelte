@@ -47,15 +47,15 @@
 	import { formatMinor } from '$lib/domain/money';
 	import { isAppRoute, type AppRoute } from '$lib/shared/router';
 	import {
-		ADMIN_FEE_CATEGORY_ID,
-		ADMIN_FEE_LABEL,
 		DEFAULT_ACTIVITY_FILTERS,
 		DEFAULT_ACTIVITY_SORT,
 		filterTransactions,
+		isCategoryFilterDisabled,
 		isDefaultActivityFilters,
-		UNCATEGORIZED_FILTER,
+		resolveCategoryIdForType,
 		type ActivityFilterCriteria,
-		type ActivitySortMode
+		type ActivitySortMode,
+		type ActivityTypeFilter
 	} from '$lib/domain/activity-filters';
 	import { readHideAmounts, writeHideAmounts } from '$lib/shared/hide-amounts';
 	import {
@@ -64,6 +64,7 @@
 	} from '$lib/shared/activity-list-session';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import CategoryPicker from '$lib/ui/CategoryPicker.svelte';
 
 	type Props = {
 		account: Account | null;
@@ -170,8 +171,28 @@
 	let discardWarnOpen = $state(false);
 	let activitySort = $state<ActivitySortMode>(initialActivitySession.sort);
 
-	const filterCategories = $derived(
-		[...expenseCategories, ...incomeCategories].sort((a, b) => a.name.localeCompare(b.name))
+	const categoryKinds = $derived(
+		Object.fromEntries([
+			...incomeCategories.map((c) => [c.id, 'income' as const]),
+			...expenseCategories.map((c) => [c.id, 'expense' as const])
+		])
+	);
+	const draftFilterType = $derived((draft.type ?? 'all') as ActivityTypeFilter);
+	const categoryFilterDisabled = $derived(isCategoryFilterDisabled(draftFilterType));
+	const categoryGroupByKind = $derived(draftFilterType === 'all');
+	const categoryShowAdminFee = $derived(draftFilterType === 'all');
+	const categoryPickerIncome = $derived(
+		draftFilterType === 'expense' || draftFilterType === 'transfer' ? [] : incomeCategories
+	);
+	const categoryPickerExpense = $derived(
+		draftFilterType === 'income' || draftFilterType === 'transfer' ? [] : expenseCategories
+	);
+	const categoryPickerFlat = $derived(
+		draftFilterType === 'income'
+			? incomeCategories
+			: draftFilterType === 'expense'
+				? expenseCategories
+				: []
 	);
 
 	const filtersSheetSide = $derived<'bottom' | 'right'>(
@@ -318,8 +339,16 @@
 	}
 
 	function openFilters() {
-		draft = cloneFilters(applied);
+		draft = syncDraftCategory(cloneFilters(applied));
 		filtersOpen = true;
+	}
+
+	function syncDraftCategory(next: ActivityFilterCriteria): ActivityFilterCriteria {
+		const type = (next.type ?? 'all') as ActivityTypeFilter;
+		return {
+			...next,
+			categoryId: resolveCategoryIdForType(next.categoryId, type, categoryKinds)
+		};
 	}
 
 	function openSort() {
@@ -342,6 +371,18 @@
 		{ mode: 'occurredOn-asc', label: 'Date (ascending)', testid: 'activity-sort-occurredOn-asc' }
 	];
 
+	function onFilterTypeChange(next: ActivityTypeFilter) {
+		draft = {
+			...draft,
+			type: next,
+			categoryId: resolveCategoryIdForType(draft.categoryId, next, categoryKinds)
+		};
+	}
+
+	function onFilterCategoryChange(next: string) {
+		draft = { ...draft, categoryId: next };
+	}
+
 	function applyFilters() {
 		applied = { ...cloneFilters(draft), search: applied.search ?? '' };
 		onActivityPocketFilterChange?.(applied.pocketId?.trim() || 'all');
@@ -359,7 +400,7 @@
 
 	function onFiltersOpenChange(open: boolean) {
 		if (open) {
-			draft = cloneFilters(applied);
+			draft = syncDraftCategory(cloneFilters(applied));
 			filtersOpen = true;
 			return;
 		}
@@ -597,29 +638,35 @@
 						<select
 							id="activity-filter-type"
 							class="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
-							bind:value={draft.type}
+							value={draft.type ?? 'all'}
+							onchange={(e) =>
+								onFilterTypeChange(e.currentTarget.value as ActivityTypeFilter)}
 							data-testid="activity-filter-type"
 						>
 							<option value="all">All</option>
 							<option value="income">Income</option>
 							<option value="expense">Expense</option>
+							<option value="transfer">Transfer</option>
 						</select>
 					</div>
 					<div class="space-y-1">
 						<Label for="activity-filter-category">Category</Label>
-						<select
+						<CategoryPicker
 							id="activity-filter-category"
-							class="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
-							bind:value={draft.categoryId}
-							data-testid="activity-filter-category"
-						>
-							<option value="">All</option>
-							{#each filterCategories as category (category.id)}
-								<option value={category.id}>{category.name}</option>
-							{/each}
-							<option value={ADMIN_FEE_CATEGORY_ID}>{ADMIN_FEE_LABEL}</option>
-							<option value={UNCATEGORIZED_FILTER}>Uncategorized</option>
-						</select>
+							testid="activity-filter-category"
+							value={draft.categoryId ?? ''}
+							onValueChange={onFilterCategoryChange}
+							categories={categoryPickerFlat}
+							incomeCategories={categoryPickerIncome}
+							expenseCategories={categoryPickerExpense}
+							groupByKind={categoryGroupByKind}
+							showAllOption
+							showAdminFee={categoryShowAdminFee}
+							showUncategorized
+							emptyMeans="all"
+							disabled={categoryFilterDisabled}
+							ariaLabel="Category"
+						/>
 					</div>
 					<div class="space-y-1">
 						<Label for="activity-filter-pocket">Pocket</Label>
