@@ -1,7 +1,7 @@
 # Spec 107: Admin Fee selectable for expense transactions
 
 - **ID:** 107
-- **Status:** Draft
+- **Status:** Cancelled — Ronald cancelled; Admin Fee stays transfer-fee-only (Spec 106)
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

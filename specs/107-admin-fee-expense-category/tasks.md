@@ -1,12 +1,12 @@
 # Tasks 107: Admin Fee selectable for expense transactions
 
-- **Status:** Draft
+- **Status:** Cancelled — Ronald cancelled; no implementation
 - **Plan:** [./plan.md](./plan.md)
 - **Spec:** [./spec.md](./spec.md)
 
 ## Checklist
 
-- [ ] Spec Accepted by Ronald
+- [ ] ~~Spec Accepted by Ronald~~ **Cancelled**
 - [ ] **Red Vitest:** `src/lib/application/transactions.test.ts` — add/update expense with Admin Fee sentinel; income rejects sentinel
 - [ ] **Green** `resolveCategoryId` / add+update in `src/lib/application/transactions.ts`
 - [ ] **Red Vitest:** `src/lib/domain/activity-filters.test.ts` — Admin Fee filter unions expenses + fee transfers

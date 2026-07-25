@@ -1,6 +1,6 @@
 # Plan 107: Admin Fee as selectable expense category
 
-- **Status:** Draft
+- **Status:** Cancelled — Ronald cancelled; Admin Fee stays transfer-fee-only (Spec 106)
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Spec 106 (transfer admin fee / Admin Fee bucket); Spec 027/043 (Uncategorized system option)
