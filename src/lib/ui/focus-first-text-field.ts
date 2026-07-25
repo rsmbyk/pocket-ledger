@@ -40,9 +40,11 @@ export function isTextEntryField(el: Element): el is HTMLElement {
 	if (el.getAttribute('aria-hidden') === 'true') return false;
 	if (el.closest('[hidden], [aria-hidden="true"]')) return false;
 
+	// Do not check opacity — Dialog/Sheet enter animations start at opacity 0,
+	// and onOpenAutoFocus runs during that window.
 	if (typeof el.checkVisibility === 'function') {
 		try {
-			if (!el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) {
+			if (!el.checkVisibility({ checkOpacity: false, checkVisibilityCSS: true })) {
 				return false;
 			}
 		} catch {

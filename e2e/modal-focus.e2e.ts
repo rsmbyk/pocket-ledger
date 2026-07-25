@@ -9,9 +9,9 @@ test.describe('103 modal first-input autofocus', () => {
 
 	test('Add transaction focuses Amount', async ({ page }) => {
 		await openAdd(page);
-		const form = page.locator('[data-testid="tx-dialog"], [data-testid="tx-sheet"]');
-		await expect(form).toBeVisible();
-		await expect(form.getByTestId('tx-amount')).toBeFocused();
+		const amount = page.getByTestId('tx-amount');
+		await expect(amount).toBeVisible();
+		await expect(amount).toBeFocused();
 	});
 
 	test('Add category focuses name', async ({ page }) => {
@@ -65,7 +65,8 @@ test.describe('103 modal first-input autofocus', () => {
 
 	test('Filters sheet focuses Type select', async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 });
-		await goToNav(page, 'activity');
+		await page.goto('/#/activity');
+		await expect(page.getByTestId('activity-panel')).toBeVisible();
 		await page.getByTestId('activity-filters-open').click();
 		await expect(page.getByTestId('activity-filters-sheet')).toBeVisible();
 		await expect(page.getByTestId('activity-filter-type')).toBeFocused();
