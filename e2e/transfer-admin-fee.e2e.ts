@@ -83,8 +83,9 @@ test.describe('106 transfer admin fee', () => {
 		await page.locator('[data-testid^="recent-row-"]').first().click();
 		await page.getByTestId('tx-void').click();
 		await confirmVoid(page);
-		await expect(page.locator('[data-testid$="-transfer-fee"]')).toHaveCount(0);
 		await expect(page.getByTestId('admin-fee-system')).toHaveCount(0);
+		await expect(page.locator('[data-testid^="recent-row-"]').first()).toHaveClass(/opacity-70/);
+		await expect(page.locator('[data-testid$="-transfer-fee"]').first()).toBeVisible();
 	});
 
 	test('Categories panel has no Admin Fee row; Normal picker excludes it', async ({ page }) => {
