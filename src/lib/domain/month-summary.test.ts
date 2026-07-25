@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { LedgerTransaction } from '$lib/domain/transaction';
 import {
 	buildMonthSummary,
+	canShiftMonth,
+	clampMonthKey,
 	currentMonthKey,
 	formatMonthLabel,
 	isValidMonthKey,
+	resolveMonthBounds,
 	shiftMonth,
 	transactionInMonth
 } from './month-summary';
@@ -193,5 +196,71 @@ describe('month-summary', () => {
 	it('formats month labels', () => {
 		expect(formatMonthLabel('2026-07', 'en')).toMatch(/2026/);
 		expect(currentMonthKey(new Date('2026-07-14T12:00:00'))).toBe('2026-07');
+	});
+
+	describe('month bounds', () => {
+		const now = new Date('2026-07-14T12:00:00');
+
+		it('uses earliest openingAsOf when there are no transactions', () => {
+			expect(resolveMonthBounds([], ['2026-03-15', '2026-05-01'], now)).toEqual({
+				earliest: '2026-03',
+				latest: '2026-07'
+			});
+		});
+
+		it('uses earliest non-voided transaction when earlier than openings', () => {
+			const rows = [
+				tx({ type: 'expense', amountMinor: 1_000, occurredOn: '2026-04-10' }),
+				tx({ type: 'income', amountMinor: 2_000, occurredOn: '2026-06-01' })
+			];
+			expect(resolveMonthBounds(rows, ['2026-06-01'], now)).toEqual({
+				earliest: '2026-04',
+				latest: '2026-07'
+			});
+		});
+
+		it('ignores voided transactions for earliest bound', () => {
+			const rows = [
+				tx({
+					type: 'expense',
+					amountMinor: 1_000,
+					occurredOn: '2026-04-10',
+					voidedAt: '2026-04-11T00:00:00.000Z'
+				})
+			];
+			expect(resolveMonthBounds(rows, ['2026-06-01'], now)).toEqual({
+				earliest: '2026-06',
+				latest: '2026-07'
+			});
+		});
+
+		it('clamps earliest to latest when opening is in the future', () => {
+			expect(resolveMonthBounds([], ['2026-09-01'], now)).toEqual({
+				earliest: '2026-07',
+				latest: '2026-07'
+			});
+		});
+
+		it('defaults earliest to latest when no openings or txs', () => {
+			expect(resolveMonthBounds([], [], now)).toEqual({
+				earliest: '2026-07',
+				latest: '2026-07'
+			});
+		});
+
+		it('clamps month keys into bounds', () => {
+			const bounds = { earliest: '2026-03', latest: '2026-07' };
+			expect(clampMonthKey('2026-01', bounds)).toBe('2026-03');
+			expect(clampMonthKey('2026-12', bounds)).toBe('2026-07');
+			expect(clampMonthKey('2026-05', bounds)).toBe('2026-05');
+		});
+
+		it('reports whether a month shift stays in bounds', () => {
+			const bounds = { earliest: '2026-03', latest: '2026-07' };
+			expect(canShiftMonth('2026-03', -1, bounds)).toBe(false);
+			expect(canShiftMonth('2026-03', 1, bounds)).toBe(true);
+			expect(canShiftMonth('2026-07', 1, bounds)).toBe(false);
+			expect(canShiftMonth('2026-07', -1, bounds)).toBe(true);
+		});
 	});
 });

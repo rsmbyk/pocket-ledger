@@ -19,7 +19,7 @@
 		getCategoriesForType,
 		listRecentTransactions
 	} from '$lib/application/transactions';
-	import { getMonthSummary } from '$lib/application/month-summary';
+	import { loadMonthSummary } from '$lib/application/month-summary';
 	import {
 		backupFilename,
 		buildBackup,
@@ -45,8 +45,10 @@
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
 	import {
+		canShiftMonth,
 		currentMonthKey,
 		shiftMonth,
+		type MonthBounds,
 		type MonthKey,
 		type MonthSummary
 	} from '$lib/domain/month-summary';
@@ -66,19 +68,25 @@
 	let incomeCategories = $state<CategoryRow[]>([]);
 	let monthKey = $state<MonthKey>(currentMonthKey());
 	let monthSummary = $state<MonthSummary | null>(null);
+	let monthBounds = $state<MonthBounds | null>(null);
 	let lockEnabled = $state(false);
 	let unlocked = $state(true);
 	let ready = $state(false);
 	let error = $state<string | null>(null);
 	let themePreference = $state<ThemePreference>('system');
 
+	let canPrevMonth = $derived(
+		monthBounds ? canShiftMonth(monthKey, -1, monthBounds) : false
+	);
+	let canNextMonth = $derived(monthBounds ? canShiftMonth(monthKey, 1, monthBounds) : false);
+
 	async function refreshLedger(active: Account, key: MonthKey = monthKey) {
-		const [overview, balance, recent, allCategories, summary, exp, inc] = await Promise.all([
+		const [overview, balance, recent, allCategories, monthLoad, exp, inc] = await Promise.all([
 			getAccountsOverview(),
 			getAllPocketsBalance(),
 			listRecentTransactions(active.id),
 			listAllCategories(),
-			getMonthSummary(active.id, key),
+			loadMonthSummary(active.id, key),
 			getCategoriesForType('expense'),
 			getCategoriesForType('income')
 		]);
@@ -87,7 +95,9 @@
 		balanceMinor = balance;
 		transactions = recent;
 		categoriesById = Object.fromEntries(allCategories.map((c) => [c.id, c]));
-		monthSummary = summary;
+		monthKey = monthLoad.monthKey;
+		monthBounds = monthLoad.bounds;
+		monthSummary = monthLoad.summary;
 		expenseCategories = exp;
 		incomeCategories = inc;
 	}
@@ -135,15 +145,21 @@
 	}
 
 	async function onPrevMonth() {
-		if (!account) return;
-		monthKey = shiftMonth(monthKey, -1);
-		monthSummary = await getMonthSummary(account.id, monthKey);
+		if (!account || !monthBounds || !canShiftMonth(monthKey, -1, monthBounds)) return;
+		const nextKey = shiftMonth(monthKey, -1);
+		const loaded = await loadMonthSummary(account.id, nextKey);
+		monthKey = loaded.monthKey;
+		monthBounds = loaded.bounds;
+		monthSummary = loaded.summary;
 	}
 
 	async function onNextMonth() {
-		if (!account) return;
-		monthKey = shiftMonth(monthKey, 1);
-		monthSummary = await getMonthSummary(account.id, monthKey);
+		if (!account || !monthBounds || !canShiftMonth(monthKey, 1, monthBounds)) return;
+		const nextKey = shiftMonth(monthKey, 1);
+		const loaded = await loadMonthSummary(account.id, nextKey);
+		monthKey = loaded.monthKey;
+		monthBounds = loaded.bounds;
+		monthSummary = loaded.summary;
 	}
 
 	async function onUnlock(passphrase: string) {
@@ -208,6 +224,8 @@
 		{transactions}
 		{categoriesById}
 		{monthSummary}
+		{canPrevMonth}
+		{canNextMonth}
 		{expenseCategories}
 		{incomeCategories}
 		{lockEnabled}

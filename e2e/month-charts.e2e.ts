@@ -50,6 +50,19 @@ test.describe('002 month charts', () => {
 	});
 
 	test('navigates to previous month', async ({ page }) => {
+		await page.goto('/#/pockets');
+		await expect(page.getByTestId('pockets-panel')).toBeVisible();
+		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
+		await mainRow.getByTestId('pocket-edit').click();
+		const form = page.getByTestId('pocket-form-dialog');
+		await expect(form).toBeVisible();
+		await page.getByTestId('pocket-opening-enabled').check();
+		await page.getByTestId('pocket-asof-input').locator('input[type="date"]').fill('2026-01-01');
+		await page.getByTestId('pocket-save').click();
+		await expect(form).toBeHidden();
+
+		await page.goto('/');
+		await expect(page.getByTestId('month-summary')).toBeVisible();
 		const before = await page.getByTestId('month-label').innerText();
 		await page.getByRole('button', { name: 'Previous month' }).click();
 		await expect(page.getByTestId('month-label')).not.toHaveText(before);
