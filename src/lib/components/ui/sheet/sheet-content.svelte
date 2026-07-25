@@ -11,6 +11,7 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
 	import type { ComponentProps } from "svelte";
+	import { focusFirstTextField } from "$lib/ui/focus-first-text-field.js";
 
 	let {
 		ref = $bindable(null),
@@ -19,6 +20,7 @@
 		showCloseButton = true,
 		portalProps,
 		children,
+		onOpenAutoFocus,
 		...restProps
 	}: WithoutChildrenOrChild<SheetPrimitive.ContentProps> & {
 		portalProps?: WithoutChildrenOrChild<ComponentProps<typeof SheetPortal>>;
@@ -26,6 +28,14 @@
 		showCloseButton?: boolean;
 		children: Snippet;
 	} = $props();
+
+	function handleOpenAutoFocus(event: Event) {
+		const root = (ref ?? event.currentTarget) as ParentNode | null;
+		if (root && focusFirstTextField(root)) {
+			event.preventDefault();
+		}
+		onOpenAutoFocus?.(event as Parameters<NonNullable<typeof onOpenAutoFocus>>[0]);
+	}
 </script>
 
 <SheetPortal {...portalProps}>
@@ -39,6 +49,7 @@
 			className
 		)}
 		{...restProps}
+		onOpenAutoFocus={handleOpenAutoFocus}
 	>
 		{@render children?.()}
 		{#if showCloseButton}
