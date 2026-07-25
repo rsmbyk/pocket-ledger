@@ -6,6 +6,7 @@ describe('classifyFormFieldError', () => {
 		expect(classifyFormFieldError('Amount is required')).toBe('amount');
 		expect(classifyFormFieldError('Amount must be greater than zero')).toBe('amount');
 		expect(classifyFormFieldError('Amount must be a whole number')).toBe('amount');
+		expect(classifyFormFieldError('Fee must be a whole number')).toBe('fee');
 	});
 
 	it('maps date and pocket messages', () => {

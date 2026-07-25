@@ -3,6 +3,7 @@
 	import type { MonthSummary } from '$lib/domain/month-summary';
 	import { formatMinor } from '$lib/domain/money';
 	import UncategorizedLabel from '$lib/ui/UncategorizedLabel.svelte';
+	import { ADMIN_FEE_CATEGORY_ID, ADMIN_FEE_LABEL } from '$lib/domain/activity-filters';
 	import { cn } from '$lib/utils.js';
 
 	type Props = {
@@ -61,6 +62,8 @@
 					<div class="flex justify-between gap-2 text-xs">
 						{#if row.categoryId == null}
 							<UncategorizedLabel class="min-w-0" />
+						{:else if row.categoryId === ADMIN_FEE_CATEGORY_ID}
+							<UncategorizedLabel class="min-w-0" label={ADMIN_FEE_LABEL} />
 						{:else}
 							<span class="truncate">{row.label}</span>
 						{/if}

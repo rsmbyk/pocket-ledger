@@ -14,6 +14,11 @@ export type LedgerTransaction = {
 	type: TransactionType;
 	/** Positive minor units; sign comes from type for balance. */
 	amountMinor: number;
+	/**
+	 * Transfer admin fee in minor units (Spec 106). Always `0` for income/expense.
+	 * Source loses amount+fee; dest receives amount; fee counts as Admin Fee expense.
+	 */
+	feeMinor: number;
 	categoryId: string | null;
 	note: string;
 	occurredOn: string;
@@ -27,9 +32,15 @@ export function isVoided(tx: Pick<LedgerTransaction, 'voidedAt'>): boolean {
 	return Boolean(tx.voidedAt);
 }
 
-/** Normalize legacy rows missing voidedAt. */
+/** Normalize legacy rows missing voidedAt and/or feeMinor. */
 export function withVoidedAt(
-	tx: Omit<LedgerTransaction, 'voidedAt'> & { voidedAt?: string | null }
+	tx: Omit<LedgerTransaction, 'voidedAt' | 'feeMinor'> & {
+		voidedAt?: string | null;
+		feeMinor?: number | null;
+	}
 ): LedgerTransaction {
-	return { ...tx, voidedAt: tx.voidedAt ?? null };
+	const fee = tx.feeMinor;
+	const feeMinor =
+		typeof fee === 'number' && Number.isInteger(fee) && fee >= 0 ? fee : 0;
+	return { ...tx, voidedAt: tx.voidedAt ?? null, feeMinor };
 }

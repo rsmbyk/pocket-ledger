@@ -1,6 +1,7 @@
 import type { LedgerTransaction } from '$lib/domain/transaction';
 import { isVoided } from '$lib/domain/transaction';
 import { assertMinorUnits, type MinorUnits } from '$lib/domain/money';
+import { ADMIN_FEE_CATEGORY_ID, ADMIN_FEE_LABEL } from '$lib/domain/activity-filters';
 
 export type MonthKey = string; // YYYY-MM
 
@@ -62,10 +63,22 @@ export function transactionInMonth(
 	return tx.occurredOn.startsWith(`${monthKey}-`);
 }
 
-function signedAmount(tx: Pick<LedgerTransaction, 'type' | 'amountMinor'>): number {
+function transferFeeMinor(tx: Pick<LedgerTransaction, 'feeMinor'>): MinorUnits {
+	const fee = tx.feeMinor ?? 0;
+	if (!Number.isInteger(fee) || fee < 0) {
+		throw new Error('Stored fee must be a non-negative integer');
+	}
+	return fee;
+}
+
+/** Signed effect on all-pocket ledger: income +, expense −, transfer −fee. */
+function signedAmount(
+	tx: Pick<LedgerTransaction, 'type' | 'amountMinor' | 'feeMinor'>
+): number {
 	assertMinorUnits(tx.amountMinor);
 	if (tx.type === 'income') return tx.amountMinor;
 	if (tx.type === 'expense') return -tx.amountMinor;
+	if (tx.type === 'transfer') return -transferFeeMinor(tx);
 	return 0;
 }
 
@@ -74,17 +87,33 @@ export type CategoryMeta = {
 	sortOrder: number;
 };
 
+const UNCATEGORIZED_SORT = Number.MAX_SAFE_INTEGER;
+const ADMIN_FEE_SORT = Number.MAX_SAFE_INTEGER - 1;
+
 function categoryTotals(
 	map: Map<string, MinorUnits>,
 	categoryMeta: Record<string, CategoryMeta>
 ): CategoryTotal[] {
 	return [...map.entries()]
-		.map(([key, amount]) => ({
-			categoryId: key === '' ? null : key,
-			label: key === '' ? 'Uncategorized' : (categoryMeta[key]?.name ?? 'Category'),
-			amountMinor: amount,
-			sortOrder: key === '' ? Number.POSITIVE_INFINITY : (categoryMeta[key]?.sortOrder ?? 0)
-		}))
+		.map(([key, amount]) => {
+			let categoryId: string | null;
+			let label: string;
+			let sortOrder: number;
+			if (key === '') {
+				categoryId = null;
+				label = 'Uncategorized';
+				sortOrder = UNCATEGORIZED_SORT;
+			} else if (key === ADMIN_FEE_CATEGORY_ID) {
+				categoryId = ADMIN_FEE_CATEGORY_ID;
+				label = ADMIN_FEE_LABEL;
+				sortOrder = ADMIN_FEE_SORT;
+			} else {
+				categoryId = key;
+				label = categoryMeta[key]?.name ?? 'Category';
+				sortOrder = categoryMeta[key]?.sortOrder ?? 0;
+			}
+			return { categoryId, label, amountMinor: amount, sortOrder };
+		})
 		.sort((a, b) => {
 			const byOrder = a.sortOrder - b.sortOrder;
 			if (byOrder !== 0) return byOrder;
@@ -131,6 +160,15 @@ export function buildMonthSummary(
 		} else if (tx.type === 'expense') {
 			expenseMinor += tx.amountMinor;
 			expenseMap.set(key, (expenseMap.get(key) ?? 0) + tx.amountMinor);
+		} else if (tx.type === 'transfer') {
+			const fee = transferFeeMinor(tx);
+			if (fee > 0) {
+				expenseMinor += fee;
+				expenseMap.set(
+					ADMIN_FEE_CATEGORY_ID,
+					(expenseMap.get(ADMIN_FEE_CATEGORY_ID) ?? 0) + fee
+				);
+			}
 		}
 	}
 

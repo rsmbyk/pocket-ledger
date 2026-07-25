@@ -6,6 +6,11 @@ import { amountDigitsOnly } from '$lib/domain/transaction-rules';
 /** Sentinel for Activity filter: only transactions with null categoryId. */
 export const UNCATEGORIZED_FILTER = '__uncategorized__';
 
+/** Sentinel for Activity filter / month bucket: transfer admin fees (Spec 106). */
+export const ADMIN_FEE_CATEGORY_ID = '__admin_fee__';
+
+export const ADMIN_FEE_LABEL = 'Admin Fee';
+
 export type ActivityTypeFilter = 'all' | AddableTransactionType;
 
 export type AmountCompareOp = 'none' | 'lt' | 'gt';
@@ -143,7 +148,10 @@ export function filterTransactions(
 			if (!onPocket) return false;
 		}
 		if (type !== 'all' && tx.type !== type) return false;
-		if (categoryId === UNCATEGORIZED_FILTER) {
+		if (categoryId === ADMIN_FEE_CATEGORY_ID) {
+			const fee = tx.feeMinor ?? 0;
+			if (tx.type !== 'transfer' || fee <= 0) return false;
+		} else if (categoryId === UNCATEGORIZED_FILTER) {
 			if (tx.categoryId != null) return false;
 		} else if (categoryId && tx.categoryId !== categoryId) {
 			return false;

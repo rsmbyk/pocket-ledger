@@ -50,6 +50,7 @@
 
 	type TransferEditBaseline = {
 		amountDigits: string;
+		feeDigits: string;
 		sourceId: string;
 		destId: string;
 		note: string;
@@ -106,6 +107,7 @@
 	let transferSourceId = $state('');
 	let transferDestId = $state('');
 	let transferAmountRaw = $state('');
+	let transferFeeRaw = $state('');
 	let transferNote = $state('');
 	let transferOccurredOn = $state(todayOccurredOn());
 
@@ -146,6 +148,7 @@
 		isTransferEdit
 			? transferEditBaseline !== null &&
 				(transferAmountRaw !== transferEditBaseline.amountDigits ||
+					transferFeeRaw !== transferEditBaseline.feeDigits ||
 					transferSourceId !== transferEditBaseline.sourceId ||
 					transferDestId !== transferEditBaseline.destId ||
 					transferNote !== transferEditBaseline.note ||
@@ -160,6 +163,7 @@
 				: mode === 'transfer'
 					? transferCreateBaseline !== null &&
 						(transferAmountRaw !== '' ||
+							transferFeeRaw !== '' ||
 							transferNote.trim() !== '' ||
 							transferOccurredOn !== transferCreateBaseline.occurredOn ||
 							transferSourceId !== transferCreateBaseline.sourceId ||
@@ -182,6 +186,7 @@
 					transferSourceId === transferDestId ||
 					!(
 						transferAmountRaw !== transferEditBaseline.amountDigits ||
+						transferFeeRaw !== transferEditBaseline.feeDigits ||
 						transferSourceId !== transferEditBaseline.sourceId ||
 						transferDestId !== transferEditBaseline.destId ||
 						transferNote !== transferEditBaseline.note ||
@@ -257,6 +262,7 @@
 			transferSourceId,
 			transferDestId,
 			transferAmountDigits: transferAmountRaw,
+			transferFeeDigits: transferFeeRaw,
 			transferNote,
 			transferOccurredOn
 		};
@@ -297,10 +303,12 @@
 					transferSourceId = editing.accountId;
 					transferDestId = editing.counterAccountId ?? '';
 					transferAmountRaw = String(editing.amountMinor);
+					transferFeeRaw = editing.feeMinor > 0 ? String(editing.feeMinor) : '';
 					transferNote = editing.note;
 					transferOccurredOn = editing.occurredOn;
 					transferEditBaseline = {
 						amountDigits: String(editing.amountMinor),
+						feeDigits: editing.feeMinor > 0 ? String(editing.feeMinor) : '',
 						sourceId: editing.accountId,
 						destId: editing.counterAccountId ?? '',
 						note: editing.note,
@@ -344,6 +352,7 @@
 				transferSourceId = pocket;
 				transferDestId = destDefault;
 				transferAmountRaw = '';
+				transferFeeRaw = '';
 				transferNote = '';
 				transferOccurredOn = today;
 				createBaseline = {
@@ -372,6 +381,7 @@
 					transferSourceId = draft.transferSourceId || pocket;
 					transferDestId = draft.transferDestId || destDefault;
 					transferAmountRaw = draft.transferAmountDigits;
+					transferFeeRaw = draft.transferFeeDigits;
 					transferNote = draft.transferNote;
 					transferOccurredOn = draft.transferOccurredOn || today;
 					if (draft.mode === 'normal') {
@@ -407,6 +417,16 @@
 		onTransferAmountInput(event.clipboardData?.getData('text') ?? '');
 	}
 
+	function onTransferFeeInput(value: string) {
+		transferFeeRaw = amountDigitsOnly(value);
+		if (fieldError?.key === 'fee') clearFieldError();
+	}
+
+	function onTransferFeePaste(event: ClipboardEvent) {
+		event.preventDefault();
+		onTransferFeeInput(event.clipboardData?.getData('text') ?? '');
+	}
+
 	async function onTypeChange(next: AddableTransactionType) {
 		if (isEdit || isVoidedView) return;
 		type = next;
@@ -432,6 +452,7 @@
 					sourceAccountId: transferSourceId,
 					destAccountId: transferDestId,
 					amountRaw: transferAmountRaw,
+					feeRaw: transferFeeRaw,
 					note: transferNote,
 					occurredOn: transferOccurredOn
 				});
@@ -450,6 +471,7 @@
 					sourceAccountId: transferSourceId,
 					destAccountId: transferDestId,
 					amountRaw: transferAmountRaw,
+					feeRaw: transferFeeRaw,
 					note: transferNote,
 					occurredOn: transferOccurredOn
 				});
@@ -676,6 +698,34 @@
 					/>
 				</InputGroup.Root>
 				{@render fieldErrorAlert('amount', 'tx-field-error-amount')}
+			</div>
+
+			<div class="space-y-2">
+				<Label>Fee</Label>
+				<InputGroup.Root
+					data-disabled={isVoidedView || saving ? true : undefined}
+					class={cn((isVoidedView || saving) && 'shadow-none')}
+				>
+					<InputGroup.Addon class="bg-muted/60 border-input border-r px-2.5">
+						<InputGroup.Text>{currencyLabel}</InputGroup.Text>
+					</InputGroup.Addon>
+					<InputGroup.Input
+						name="transfer-fee"
+						inputmode="numeric"
+						autocomplete="off"
+						placeholder="Optional"
+						value={formatAmountDigitsDisplay(transferFeeRaw)}
+						onkeydown={onAmountKeydown}
+						onpaste={onTransferFeePaste}
+						oninput={(e) => onTransferFeeInput(e.currentTarget.value)}
+						disabled={isVoidedView || saving}
+						class={cn('!pl-2.5', (isVoidedView || saving) && 'shadow-none')}
+						aria-label="Fee"
+						aria-invalid={fieldAlert('fee') ? true : undefined}
+						data-testid="tx-transfer-fee"
+					/>
+				</InputGroup.Root>
+				{@render fieldErrorAlert('fee', 'tx-field-error-fee')}
 			</div>
 
 			<div class="space-y-2">

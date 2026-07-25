@@ -1,10 +1,17 @@
 import type { LedgerTransaction, TransactionType } from '$lib/domain/transaction';
-import { parseAmountInput, isValidOccurredOn, todayOccurredOn } from '$lib/domain/transaction-rules';
+import {
+	parseAmountInput,
+	parseNonNegativeAmountInput,
+	isValidOccurredOn,
+	todayOccurredOn
+} from '$lib/domain/transaction-rules';
 
 export type TransferInput = {
 	sourceAccountId: string;
 	destAccountId: string;
 	amountRaw: string;
+	/** Optional admin fee; blank / omitted → 0. */
+	feeRaw?: string;
 	note?: string;
 	occurredOn?: string;
 };
@@ -21,12 +28,19 @@ export function buildTransferFields(input: TransferInput): {
 	counterAccountId: string;
 	type: 'transfer';
 	amountMinor: number;
+	feeMinor: number;
 	categoryId: null;
 	note: string;
 	occurredOn: string;
 } {
 	assertTransferParties(input.sourceAccountId, input.destAccountId);
 	const amountMinor = parseAmountInput(input.amountRaw);
+	let feeMinor: number;
+	try {
+		feeMinor = parseNonNegativeAmountInput(input.feeRaw ?? '');
+	} catch {
+		throw new Error('Fee must be a whole number');
+	}
 	const occurredOn = input.occurredOn ?? todayOccurredOn();
 	if (!isValidOccurredOn(occurredOn)) {
 		throw new Error('Date must be YYYY-MM-DD');
@@ -36,6 +50,7 @@ export function buildTransferFields(input: TransferInput): {
 		counterAccountId: input.destAccountId.trim(),
 		type: 'transfer',
 		amountMinor,
+		feeMinor,
 		categoryId: null,
 		note: (input.note ?? '').trim(),
 		occurredOn

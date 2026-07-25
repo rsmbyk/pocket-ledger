@@ -155,6 +155,7 @@ describe('transactions application', () => {
 			occurredOn: main.openingAsOf
 		});
 		expect(created.type).toBe('transfer');
+		expect(created.feeMinor).toBe(0);
 		expect(await getAccountBalance(main.id)).toBe(-10_000);
 		expect(await getAccountBalance(vac.id)).toBe(10_000);
 
@@ -171,5 +172,43 @@ describe('transactions application', () => {
 		const listed = await listRecentTransactions();
 		expect(listed[0]?.note).toBe('trimmed');
 		expect(listed[0]?.amountMinor).toBe(5_000);
+	});
+
+	it('persists transfer fee and adjusts balances', async () => {
+		const main = await ensureDefaultAccount();
+		const vac = await createPocket({
+			name: 'Vacation',
+			notes: '',
+			openingBalanceMinor: 0,
+			openingAsOf: main.openingAsOf
+		});
+		const created = await addTransfer({
+			sourceAccountId: main.id,
+			destAccountId: vac.id,
+			amountRaw: '10000',
+			feeRaw: '250',
+			occurredOn: main.openingAsOf
+		});
+		expect(created.feeMinor).toBe(250);
+		expect(await getAccountBalance(main.id)).toBe(-10_250);
+		expect(await getAccountBalance(vac.id)).toBe(10_000);
+
+		await updateTransfer({
+			id: created.id,
+			sourceAccountId: main.id,
+			destAccountId: vac.id,
+			amountRaw: '10000',
+			feeRaw: '100',
+			occurredOn: main.openingAsOf
+		});
+		expect(await getAccountBalance(main.id)).toBe(-10_100);
+		expect(await getAccountBalance(vac.id)).toBe(10_000);
+
+		const income = await addTransaction({
+			accountId: main.id,
+			type: 'income',
+			amountRaw: '5000'
+		});
+		expect(income.feeMinor).toBe(0);
 	});
 });
