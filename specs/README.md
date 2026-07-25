@@ -115,3 +115,4 @@ Living behavior contracts for Pocket Ledger.
 | [097](097-pocket-row-center-no-goal/spec.md) | Pocket row center when no goal | Accepted |
 | [098](098-pocket-bottom-with-note/spec.md) | Pocket bottom-aligned when note present | Superseded by [099](099-amount-pocket-center-stack/spec.md) |
 | [099](099-amount-pocket-center-stack/spec.md) | Tight amount+pocket stack, vertically centered | Accepted |
+| [100](100-datefield-mobile-picker/spec.md) | DateField opens on mobile | Draft |
