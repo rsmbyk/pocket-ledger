@@ -63,12 +63,14 @@ test.describe('103 modal first-input autofocus', () => {
 		await expect(page.getByTestId('tx-amount')).not.toBeFocused();
 	});
 
-	test('Filters sheet focuses Type select', async ({ page }) => {
+	test('Filters sheet does not autofocus Type select', async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await page.goto('/#/activity');
 		await expect(page.getByTestId('activity-panel')).toBeVisible();
 		await page.getByTestId('activity-filters-open').click();
-		await expect(page.getByTestId('activity-filters-sheet')).toBeVisible();
-		await expect(page.getByTestId('activity-filter-type')).toBeFocused();
+		const sheet = page.getByTestId('activity-filters-sheet');
+		await expect(sheet).toBeVisible();
+		await expect(page.getByTestId('activity-filter-type')).not.toBeFocused();
+		await expect(sheet).toBeFocused();
 	});
 });
