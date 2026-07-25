@@ -62,7 +62,7 @@ When sorting Activity by date, order transactions that share the same `occurredO
 ## Traceability
 
 - Vitest: `src/lib/domain/activity-filters.test.ts` (TDD first)
-- Playwright: optional — only if extending existing date-sort order checks in `e2e/activity-filters.e2e.ts`
+- Playwright: `e2e/activity-filters.e2e.ts` — same-day order under date asc/desc
 - Implementation: `src/lib/domain/activity-filters.ts` (`sortTransactions`)
 
 ## Related

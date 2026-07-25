@@ -232,6 +232,59 @@ test.describe('020 / 045 activity filters mobile', () => {
 	});
 });
 
+test.describe('101 activity date sort secondary createdAt', () => {
+	test.use({ viewport: { width: 1024, height: 800 } });
+
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/');
+		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+	});
+
+	test('same-day rows follow createdAt in the date sort direction', async ({ page }) => {
+		await ensureCategory(page, 'Food', 'expense');
+
+		await openAdd(page);
+		let form = (await page.getByTestId('tx-sheet').isVisible().catch(() => false))
+			? page.getByTestId('tx-sheet')
+			: page.getByTestId('tx-dialog');
+		await form.getByRole('button', { name: 'Expense', exact: true }).click();
+		await form.getByRole('textbox', { name: 'Amount' }).fill('1000');
+		await selectTxCategory(page, 'Food', form);
+		await form.getByRole('textbox', { name: 'Note' }).fill('earlier-created');
+		await form.getByRole('button', { name: 'Save' }).click();
+
+		await openAdd(page);
+		form = (await page.getByTestId('tx-sheet').isVisible().catch(() => false))
+			? page.getByTestId('tx-sheet')
+			: page.getByTestId('tx-dialog');
+		await form.getByRole('button', { name: 'Expense', exact: true }).click();
+		await form.getByRole('textbox', { name: 'Amount' }).fill('2000');
+		await selectTxCategory(page, 'Food', form);
+		await form.getByRole('textbox', { name: 'Note' }).fill('later-created');
+		await form.getByRole('button', { name: 'Save' }).click();
+
+		await goToNav(page, 'activity');
+		await page.getByTestId('activity-sort-open').click();
+		await page.getByTestId('activity-sort-occurredOn-desc').click();
+
+		const notesDesc = page.locator(
+			'[data-testid="activity-list"] [data-testid$="-note"]'
+		);
+		await expect(notesDesc).toHaveCount(2);
+		await expect(notesDesc.nth(0)).toContainText('later-created');
+		await expect(notesDesc.nth(1)).toContainText('earlier-created');
+
+		await page.getByTestId('activity-sort-open').click();
+		await page.getByTestId('activity-sort-occurredOn-asc').click();
+
+		const notesAsc = page.locator(
+			'[data-testid="activity-list"] [data-testid$="-note"]'
+		);
+		await expect(notesAsc.nth(0)).toContainText('earlier-created');
+		await expect(notesAsc.nth(1)).toContainText('later-created');
+	});
+});
+
 test.describe('102 activity session sort + filters', () => {
 	test.use({ viewport: { width: 1024, height: 800 } });
 
