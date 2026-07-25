@@ -118,3 +118,4 @@ Living behavior contracts for Pocket Ledger.
 | [100](100-datefield-mobile-picker/spec.md) | DateField opens on mobile | Accepted |
 | [101](101-activity-date-sort-created-at/spec.md) | Activity date sort secondary by createdAt | Accepted |
 | [102](102-activity-session-sort-filters/spec.md) | Activity session sort + filters persistence | Accepted |
+| [103](103-create-form-draft-discard/spec.md) | Create-form draft on discard (session) | Accepted |

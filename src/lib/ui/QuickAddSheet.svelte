@@ -34,6 +34,12 @@
 		type AddableTransactionType,
 		type TxFormBaseline
 	} from '$lib/domain/transaction-rules';
+	import {
+		clearTxCreateDraft,
+		readTxCreateDraft,
+		writeTxCreateDraft,
+		type TxCreateDraft
+	} from '$lib/shared/create-form-drafts';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import DateField from '$lib/ui/DateField.svelte';
 	import PocketLabel from '$lib/ui/PocketLabel.svelte';
@@ -87,6 +93,11 @@
 	let saving = $state(false);
 	let seeded = $state(false);
 	let createBaseline = $state<(TxFormBaseline & { accountId: string }) | null>(null);
+	let transferCreateBaseline = $state<{
+		sourceId: string;
+		destId: string;
+		occurredOn: string;
+	} | null>(null);
 	let editBaseline = $state<(Omit<TxFormBaseline, 'type'> & { accountId: string }) | null>(null);
 	let transferEditBaseline = $state<TransferEditBaseline | null>(null);
 	let voidConfirmOpen = $state(false);
@@ -147,9 +158,12 @@
 					) ||
 						selectedAccountId !== editBaseline.accountId)
 				: mode === 'transfer'
-					? transferAmountRaw !== '' ||
-						transferNote.trim() !== '' ||
-						transferOccurredOn !== (createBaseline?.occurredOn ?? todayOccurredOn())
+					? transferCreateBaseline !== null &&
+						(transferAmountRaw !== '' ||
+							transferNote.trim() !== '' ||
+							transferOccurredOn !== transferCreateBaseline.occurredOn ||
+							transferSourceId !== transferCreateBaseline.sourceId ||
+							transferDestId !== transferCreateBaseline.destId)
 					: createBaseline !== null &&
 						(isCreateTxDirty(
 							{ type, amountDigits: amountRaw, categoryId, note, occurredOn },
@@ -231,7 +245,31 @@
 		if (isDirty) discardConfirmOpen = true;
 	}
 
+	function snapshotTxCreateDraft(): TxCreateDraft {
+		return {
+			mode,
+			type,
+			amountDigits: amountRaw,
+			categoryId,
+			note,
+			occurredOn,
+			accountId: selectedAccountId,
+			transferSourceId,
+			transferDestId,
+			transferAmountDigits: transferAmountRaw,
+			transferNote,
+			transferOccurredOn
+		};
+	}
+
 	function confirmDiscard() {
+		if (!isEdit) clearTxCreateDraft();
+		discardConfirmOpen = false;
+		onOpenChange(false);
+	}
+
+	function saveCreateDraft() {
+		writeTxCreateDraft(snapshotTxCreateDraft());
 		discardConfirmOpen = false;
 		onOpenChange(false);
 	}
@@ -240,6 +278,7 @@
 		if (!open) {
 			seeded = false;
 			createBaseline = null;
+			transferCreateBaseline = null;
 			editBaseline = null;
 			transferEditBaseline = null;
 			fieldError = null;
@@ -269,6 +308,7 @@
 					};
 					editBaseline = null;
 					createBaseline = null;
+					transferCreateBaseline = null;
 				} else {
 					mode = 'normal';
 					type = editing.type === 'income' ? 'income' : 'expense';
@@ -286,30 +326,59 @@
 						accountId: editing.accountId
 					};
 					transferEditBaseline = null;
+					createBaseline = null;
+					transferCreateBaseline = null;
 				}
 			} else if (!seeded) {
+				const today = todayOccurredOn();
+				const pocket = defaultPocketId;
+				const destDefault = accounts.find((a) => a.id !== pocket)?.id ?? '';
 				mode = 'normal';
 				type = 'expense';
 				amountRaw = '';
 				note = '';
-				occurredOn = todayOccurredOn();
+				occurredOn = today;
 				categoryId = '';
-				selectedAccountId = defaultPocketId;
+				selectedAccountId = pocket;
 				categories = await getCategoriesForType('expense');
-				transferSourceId = defaultPocketId;
-				transferDestId = accounts.find((a) => a.id !== defaultPocketId)?.id ?? '';
+				transferSourceId = pocket;
+				transferDestId = destDefault;
 				transferAmountRaw = '';
 				transferNote = '';
-				transferOccurredOn = todayOccurredOn();
-				seeded = true;
+				transferOccurredOn = today;
 				createBaseline = {
 					type: 'expense',
 					amountDigits: '',
 					categoryId: '',
 					note: '',
-					occurredOn,
-					accountId: defaultPocketId
+					occurredOn: today,
+					accountId: pocket
 				};
+				transferCreateBaseline = {
+					sourceId: pocket,
+					destId: destDefault,
+					occurredOn: today
+				};
+
+				const draft = readTxCreateDraft();
+				if (draft) {
+					mode = draft.mode;
+					type = draft.type;
+					amountRaw = draft.amountDigits;
+					categoryId = draft.categoryId;
+					note = draft.note;
+					occurredOn = draft.occurredOn || today;
+					selectedAccountId = draft.accountId || pocket;
+					transferSourceId = draft.transferSourceId || pocket;
+					transferDestId = draft.transferDestId || destDefault;
+					transferAmountRaw = draft.transferAmountDigits;
+					transferNote = draft.transferNote;
+					transferOccurredOn = draft.transferOccurredOn || today;
+					if (draft.mode === 'normal') {
+						categories = await getCategoriesForType(draft.type);
+					}
+				}
+				seeded = true;
 			}
 		})();
 	});
@@ -384,6 +453,7 @@
 					note: transferNote,
 					occurredOn: transferOccurredOn
 				});
+				clearTxCreateDraft();
 			} else {
 				await addTransaction({
 					accountId: selectedAccountId,
@@ -393,6 +463,7 @@
 					note,
 					occurredOn
 				});
+				clearTxCreateDraft();
 			}
 			onOpenChange(false);
 			await onSaved();
@@ -854,10 +925,15 @@
 <ConfirmDialog
 	open={discardConfirmOpen}
 	title="Discard unsaved changes?"
-	description="Your edits will be lost if you leave without saving."
+	description={isEdit
+		? 'Your edits will be lost if you leave without saving.'
+		: 'Discard permanently, or save a draft to continue later.'}
 	confirmLabel="Discard"
 	destructive
 	confirmTestId="tx-discard-confirm"
+	secondaryLabel={isEdit ? undefined : 'Save draft'}
+	secondaryTestId="tx-discard-save-draft"
 	onOpenChange={(next) => (discardConfirmOpen = next)}
 	onConfirm={confirmDiscard}
+	onSecondary={isEdit ? undefined : saveCreateDraft}
 />

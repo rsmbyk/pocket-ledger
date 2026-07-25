@@ -1,0 +1,130 @@
+import { describe, expect, it } from 'vitest';
+import {
+	CATEGORY_CREATE_DRAFT_KEYS,
+	POCKET_CREATE_DRAFT_KEY,
+	TX_CREATE_DRAFT_KEY,
+	clearCategoryCreateDraft,
+	clearPocketCreateDraft,
+	clearTxCreateDraft,
+	parseCategoryCreateDraft,
+	parsePocketCreateDraft,
+	parseTxCreateDraft,
+	readCategoryCreateDraft,
+	readPocketCreateDraft,
+	readTxCreateDraft,
+	writeCategoryCreateDraft,
+	writePocketCreateDraft,
+	writeTxCreateDraft,
+	type CategoryCreateDraft,
+	type PocketCreateDraft,
+	type TxCreateDraft
+} from './create-form-drafts';
+
+function memoryStorage() {
+	const map = new Map<string, string>();
+	return {
+		getItem: (k: string) => map.get(k) ?? null,
+		setItem: (k: string, v: string) => {
+			map.set(k, v);
+		},
+		removeItem: (k: string) => {
+			map.delete(k);
+		},
+		map
+	};
+}
+
+const sampleTx: TxCreateDraft = {
+	mode: 'normal',
+	type: 'expense',
+	amountDigits: '1500',
+	categoryId: 'cat-1',
+	note: 'coffee',
+	occurredOn: '2026-07-20',
+	accountId: 'acc-main',
+	transferSourceId: 'acc-main',
+	transferDestId: 'acc-vac',
+	transferAmountDigits: '',
+	transferNote: '',
+	transferOccurredOn: '2026-07-20'
+};
+
+const samplePocket: PocketCreateDraft = {
+	name: 'Vacation',
+	notes: 'trip',
+	openingEnabled: true,
+	openingRaw: '100',
+	openingAsOf: '2026-01-01',
+	goalEnabled: false,
+	goalTargetRaw: '',
+	goalDateEnabled: false,
+	goalTargetOn: ''
+};
+
+const sampleCategory: CategoryCreateDraft = {
+	name: 'Groceries'
+};
+
+describe('create-form-drafts', () => {
+	it('returns null for missing or garbage tx drafts', () => {
+		expect(parseTxCreateDraft(null)).toBeNull();
+		expect(parseTxCreateDraft('')).toBeNull();
+		expect(parseTxCreateDraft('not-json')).toBeNull();
+		expect(parseTxCreateDraft('[]')).toBeNull();
+		expect(parseTxCreateDraft(JSON.stringify({ mode: 'nope' }))).toBeNull();
+	});
+
+	it('round-trips tx create draft and clears', () => {
+		const storage = memoryStorage();
+		writeTxCreateDraft(sampleTx, storage);
+		expect(storage.map.has(TX_CREATE_DRAFT_KEY)).toBe(true);
+		expect(readTxCreateDraft(storage)).toEqual(sampleTx);
+		clearTxCreateDraft(storage);
+		expect(readTxCreateDraft(storage)).toBeNull();
+	});
+
+	it('round-trips transfer mode fields', () => {
+		const storage = memoryStorage();
+		const transfer: TxCreateDraft = {
+			...sampleTx,
+			mode: 'transfer',
+			transferAmountDigits: '500',
+			transferNote: 'move',
+			transferSourceId: 'a',
+			transferDestId: 'b',
+			transferOccurredOn: '2026-07-21'
+		};
+		writeTxCreateDraft(transfer, storage);
+		expect(readTxCreateDraft(storage)?.mode).toBe('transfer');
+		expect(readTxCreateDraft(storage)?.transferAmountDigits).toBe('500');
+	});
+
+	it('round-trips pocket create draft and clears', () => {
+		const storage = memoryStorage();
+		expect(parsePocketCreateDraft(null)).toBeNull();
+		expect(parsePocketCreateDraft('{}')).toBeNull();
+		writePocketCreateDraft(samplePocket, storage);
+		expect(storage.map.has(POCKET_CREATE_DRAFT_KEY)).toBe(true);
+		expect(readPocketCreateDraft(storage)).toEqual(samplePocket);
+		clearPocketCreateDraft(storage);
+		expect(readPocketCreateDraft(storage)).toBeNull();
+	});
+
+	it('isolates category drafts per kind', () => {
+		const storage = memoryStorage();
+		writeCategoryCreateDraft('expense', sampleCategory, storage);
+		writeCategoryCreateDraft('income', { name: 'Salary' }, storage);
+		expect(readCategoryCreateDraft('expense', storage)).toEqual(sampleCategory);
+		expect(readCategoryCreateDraft('income', storage)).toEqual({ name: 'Salary' });
+		expect(storage.map.has(CATEGORY_CREATE_DRAFT_KEYS.expense)).toBe(true);
+		expect(storage.map.has(CATEGORY_CREATE_DRAFT_KEYS.income)).toBe(true);
+		clearCategoryCreateDraft('expense', storage);
+		expect(readCategoryCreateDraft('expense', storage)).toBeNull();
+		expect(readCategoryCreateDraft('income', storage)).toEqual({ name: 'Salary' });
+	});
+
+	it('rejects empty category names as no draft', () => {
+		expect(parseCategoryCreateDraft(JSON.stringify({ name: '  ' }))).toBeNull();
+		expect(parseCategoryCreateDraft(JSON.stringify({ name: 12 }))).toBeNull();
+	});
+});
