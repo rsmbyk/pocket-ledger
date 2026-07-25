@@ -13,6 +13,6 @@
 - [x] **Green** `buildMonthSummary` takes pockets and uses inferred Opening
 - [x] **Red/Green Vitest:** `src/lib/application/month-summary.test.ts` — load passes pockets into summary
 - [x] Playwright: `e2e/month-opening-from-pockets.e2e.ts` — mid-gap expense before as-of → June Opening reflects reverse
-- [ ] `npm run check` + unit (+ e2e) green
+- [x] `npm run check` + unit (+ e2e) green
 - [x] Traceability in `./spec.md`
-- [ ] Commit + draft PR linking Spec 110
+- [x] Commit + draft PR linking Spec 110
