@@ -11,7 +11,7 @@ Opening a form modal should put the caret in the first field the user will type 
 
 ## Scope / edges
 
-**In:** Shared Dialog + Sheet content autofocus the first enabled, visible text-entry control (typing `input` types, `textarea`, native `select`). Skip disabled/readonly, checkbox/radio/button/submit/date overlays, tabs, dropdown triggers, Close/X. If none match, leave bits-ui default. ConfirmDialog with no text fields keeps default button focus.
+**In:** Shared Dialog + Sheet content autofocus the first enabled, visible **text** control (typing `input` types, `textarea` only — not `select`). Skip disabled/readonly, select/checkbox/radio/button/submit/date overlays, tabs, dropdown triggers, Close/X. If none match, leave bits-ui default. ConfirmDialog with no text fields keeps default button focus.
 
 **Out:** Field order/copy changes; focus restore on close beyond bits-ui; suppressing mobile virtual keyboard; per-panel `autofocus` attributes unless a one-off exception appears.
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	applyModalOpenFocus,
 	findFirstTextField,
 	focusFirstTextField,
 	isTextEntryField
@@ -41,13 +42,44 @@ describe('focus-first-text-field', () => {
 		root.remove();
 	});
 
-	it('treats native select as a text-entry field', () => {
+	it('skips native select and focuses the next text input', () => {
 		const root = mount(`
 			<button type="button">Clear</button>
 			<select data-id="type"><option>All</option></select>
 			<input type="text" data-id="amount" />
 		`);
-		expect(findFirstTextField(root)?.getAttribute('data-id')).toBe('type');
+		expect(isTextEntryField(root.querySelector('select')!)).toBe(false);
+		expect(findFirstTextField(root)?.getAttribute('data-id')).toBe('amount');
+		root.remove();
+	});
+
+	it('applyModalOpenFocus focuses panel when first focusable is select', () => {
+		const root = mount(`
+			<select data-id="type"><option>All</option></select>
+			<button type="button">Apply</button>
+		`);
+		expect(applyModalOpenFocus(root)).toBe(true);
+		expect(document.activeElement).toBe(root);
+		expect(root.querySelector('select')).not.toBe(document.activeElement);
+		root.remove();
+	});
+
+	it('applyModalOpenFocus leaves default when first focusable is a button', () => {
+		const root = mount(`
+			<button type="button">Cancel</button>
+			<button type="button">Confirm</button>
+		`);
+		expect(applyModalOpenFocus(root)).toBe(false);
+		root.remove();
+	});
+
+	it('returns null when only select/checkbox controls exist', () => {
+		const root = mount(`
+			<select data-id="type"><option>All</option></select>
+			<input type="checkbox" />
+		`);
+		expect(findFirstTextField(root)).toBeNull();
+		expect(focusFirstTextField(root)).toBe(false);
 		root.remove();
 	});
 
