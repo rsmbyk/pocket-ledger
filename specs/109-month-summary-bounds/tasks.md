@@ -13,6 +13,6 @@
 - [x] **Green** `src/lib/application/month-summary.ts` (+ list accounts for `openingAsOf`)
 - [x] UI: `canPrev` / `canNext` on `MonthSummary.svelte`; wire through AppShell / Chrome; App clamps + no-op at bounds
 - [x] Playwright: `e2e/month-summary-bounds.e2e.ts` — next disabled on current; prev disabled at earliest opening
-- [ ] `npm run check` + unit (+ e2e) green
+- [x] `npm run check` + unit (+ e2e) green
 - [x] Traceability in `./spec.md`
-- [ ] Commit + draft PR linking Spec 109
+- [x] Commit + draft PR linking Spec 109
