@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { derivePocketBalance, pocketDelta, sumAllPocketBalances } from './pocket-balance';
+import {
+	balanceAtDayStart,
+	derivePocketBalance,
+	pocketDelta,
+	sumAllPocketBalances
+} from './pocket-balance';
 import type { LedgerTransaction } from './transaction';
 
 function tx(
@@ -88,6 +93,52 @@ describe('derivePocketBalance', () => {
 					accountId: 'a',
 					occurredOn: '2026-01-15',
 					voidedAt: '2026-01-16T00:00:00.000Z'
+				})
+			])
+		).toBe(100_000);
+	});
+});
+
+describe('balanceAtDayStart', () => {
+	const pocket = {
+		id: 'a',
+		openingBalanceMinor: 100_000,
+		openingAsOf: '2026-06-15'
+	};
+
+	it('returns seed when day equals openingAsOf', () => {
+		expect(balanceAtDayStart(pocket, '2026-06-15', [])).toBe(100_000);
+	});
+
+	it('returns seed when walking back with no mid-gap txs', () => {
+		expect(balanceAtDayStart(pocket, '2026-06-01', [])).toBe(100_000);
+	});
+
+	it('reverses mid-gap expense before as-of', () => {
+		expect(
+			balanceAtDayStart(pocket, '2026-06-01', [
+				tx({ type: 'expense', amountMinor: 25_000, accountId: 'a', occurredOn: '2026-06-05' })
+			])
+		).toBe(125_000);
+	});
+
+	it('walks forward past as-of into a later day', () => {
+		expect(
+			balanceAtDayStart(pocket, '2026-07-01', [
+				tx({ type: 'expense', amountMinor: 10_000, accountId: 'a', occurredOn: '2026-06-20' })
+			])
+		).toBe(90_000);
+	});
+
+	it('ignores voided txs when walking back', () => {
+		expect(
+			balanceAtDayStart(pocket, '2026-06-01', [
+				tx({
+					type: 'expense',
+					amountMinor: 25_000,
+					accountId: 'a',
+					occurredOn: '2026-06-05',
+					voidedAt: '2026-06-06T00:00:00.000Z'
 				})
 			])
 		).toBe(100_000);

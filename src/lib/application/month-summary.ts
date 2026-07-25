@@ -40,7 +40,7 @@ export async function loadMonthSummary(
 	return {
 		monthKey,
 		bounds,
-		summary: buildMonthSummary(transactions, monthKey, categoryMeta)
+		summary: buildMonthSummary(transactions, monthKey, categoryMeta, pockets)
 	};
 }
 

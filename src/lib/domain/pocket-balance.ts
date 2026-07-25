@@ -42,6 +42,39 @@ export function pocketDelta(tx: PocketBalanceTx, pocketId: string): MinorUnits {
 }
 
 /**
+ * Pocket balance at the start of calendar day `day` (YYYY-MM-DD), inferred from the
+ * known opening by walking ledger effects forward or backward to that day.
+ * Spec 071 current-balance cutoff is unchanged — this is for historical month Opening.
+ */
+export function balanceAtDayStart(
+	pocket: Pick<Account, 'id' | 'openingBalanceMinor' | 'openingAsOf'>,
+	day: string,
+	transactions: PocketBalanceTx[]
+): MinorUnits {
+	const opening = pocket.openingBalanceMinor;
+	if (!Number.isInteger(opening)) {
+		throw new Error('Opening balance must be a whole number');
+	}
+	const asOf = pocket.openingAsOf;
+	if (day === asOf) return opening;
+
+	let total = opening;
+	if (day > asOf) {
+		for (const tx of transactions) {
+			if (tx.occurredOn < asOf || tx.occurredOn >= day) continue;
+			total += pocketDelta(tx, pocket.id);
+		}
+		return total;
+	}
+
+	for (const tx of transactions) {
+		if (tx.occurredOn < day || tx.occurredOn >= asOf) continue;
+		total -= pocketDelta(tx, pocket.id);
+	}
+	return total;
+}
+
+/**
  * Current pocket balance = opening + deltas for non-voided txs with occurredOn >= openingAsOf.
  */
 export function derivePocketBalance(

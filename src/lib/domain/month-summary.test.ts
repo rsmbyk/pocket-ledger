@@ -19,7 +19,7 @@ function tx(
 	return {
 		id: partial.id ?? crypto.randomUUID(),
 		accountId: partial.accountId ?? 'acc',
-		counterAccountId: null,
+		counterAccountId: partial.counterAccountId ?? null,
 		categoryId: partial.categoryId ?? null,
 		note: partial.note ?? '',
 		createdAt: partial.createdAt ?? '2026-07-14T00:00:00.000Z',
@@ -59,6 +59,7 @@ describe('month-summary', () => {
 	});
 
 	it('aggregates income, expense, net, and category breakdowns', () => {
+		const pocket = { id: 'acc', openingBalanceMinor: 0, openingAsOf: '2026-01-01' };
 		const rows = [
 			tx({ type: 'income', amountMinor: 100_000, occurredOn: '2026-07-01', categoryId: 'sal' }),
 			tx({ type: 'income', amountMinor: 20_000, occurredOn: '2026-07-05', categoryId: 'side' }),
@@ -68,12 +69,17 @@ describe('month-summary', () => {
 			tx({ type: 'expense', amountMinor: 1_000, occurredOn: '2026-06-01', categoryId: 'food' })
 		];
 
-		const summary = buildMonthSummary(rows, '2026-07', {
-			food: { name: 'Food', sortOrder: 0 },
-			ride: { name: 'Transport', sortOrder: 1 },
-			sal: { name: 'Salary', sortOrder: 0 },
-			side: { name: 'Side', sortOrder: 1 }
-		});
+		const summary = buildMonthSummary(
+			rows,
+			'2026-07',
+			{
+				food: { name: 'Food', sortOrder: 0 },
+				ride: { name: 'Transport', sortOrder: 1 },
+				sal: { name: 'Salary', sortOrder: 0 },
+				side: { name: 'Side', sortOrder: 1 }
+			},
+			[pocket]
+		);
 
 		expect(summary.incomeMinor).toBe(120_000);
 		expect(summary.expenseMinor).toBe(28_000);
@@ -88,6 +94,41 @@ describe('month-summary', () => {
 		]);
 		expect(summary.openingMinor).toBe(-1_000);
 		expect(summary.endingMinor).toBe(91_000);
+	});
+
+	it('infers opening from pocket openings walking backward and forward', () => {
+		const pocket = { id: 'a', openingBalanceMinor: 100_000, openingAsOf: '2026-06-15' };
+		const midGap = [
+			tx({
+				type: 'expense',
+				amountMinor: 25_000,
+				accountId: 'a',
+				occurredOn: '2026-06-05',
+				categoryId: 'food'
+			})
+		];
+		expect(buildMonthSummary(midGap, '2026-06', {}, [pocket]).openingMinor).toBe(125_000);
+
+		const later = [
+			tx({
+				type: 'expense',
+				amountMinor: 10_000,
+				accountId: 'a',
+				occurredOn: '2026-06-20',
+				categoryId: 'food'
+			})
+		];
+		expect(buildMonthSummary(later, '2026-07', {}, [pocket]).openingMinor).toBe(90_000);
+	});
+
+	it('sums opening across pockets', () => {
+		const pockets = [
+			{ id: 'a', openingBalanceMinor: 100_000, openingAsOf: '2026-06-01' },
+			{ id: 'b', openingBalanceMinor: 50_000, openingAsOf: '2026-06-01' }
+		];
+		const summary = buildMonthSummary([], '2026-06', {}, pockets);
+		expect(summary.openingMinor).toBe(150_000);
+		expect(summary.endingMinor).toBe(150_000);
 	});
 
 	it('orders categories by sortOrder with Admin Fee before Uncategorized', () => {
@@ -118,6 +159,10 @@ describe('month-summary', () => {
 	});
 
 	it('counts transfer fees as expense and reduces opening by prior fees', () => {
+		const pockets = [
+			{ id: 'main', openingBalanceMinor: 0, openingAsOf: '2026-01-01' },
+			{ id: 'vac', openingBalanceMinor: 0, openingAsOf: '2026-01-01' }
+		];
 		const rows = [
 			tx({
 				type: 'transfer',
@@ -144,7 +189,7 @@ describe('month-summary', () => {
 				counterAccountId: 'vac'
 			})
 		];
-		const summary = buildMonthSummary(rows, '2026-07', {});
+		const summary = buildMonthSummary(rows, '2026-07', {}, pockets);
 		expect(summary.openingMinor).toBe(-250);
 		expect(summary.expenseMinor).toBe(100);
 		expect(summary.expenseByCategory).toEqual([
@@ -171,6 +216,7 @@ describe('month-summary', () => {
 	});
 
 	it('ignores voided transactions in totals and opening', () => {
+		const pocket = { id: 'acc', openingBalanceMinor: 0, openingAsOf: '2026-01-01' };
 		const rows = [
 			tx({ type: 'expense', amountMinor: 15_000, occurredOn: '2026-07-02', categoryId: 'food' }),
 			tx({
@@ -187,7 +233,12 @@ describe('month-summary', () => {
 				voidedAt: '2026-07-16T00:00:00.000Z'
 			})
 		];
-		const summary = buildMonthSummary(rows, '2026-07', { food: { name: 'Food', sortOrder: 0 } });
+		const summary = buildMonthSummary(
+			rows,
+			'2026-07',
+			{ food: { name: 'Food', sortOrder: 0 } },
+			[pocket]
+		);
 		expect(summary.expenseMinor).toBe(15_000);
 		expect(summary.openingMinor).toBe(0);
 		expect(summary.endingMinor).toBe(-15_000);

@@ -1,7 +1,7 @@
 # Spec 110: Month opening from pocket openings
 
 - **ID:** 110
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

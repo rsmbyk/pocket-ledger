@@ -1,6 +1,6 @@
 # Plan 110: Month opening from pocket openings
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Spec 002 (month charts); Spec 071 (pocket opening + derived balance); Spec 106 (transfer admin fee); Spec 109 (month bounds — Opening math left unchanged there)
