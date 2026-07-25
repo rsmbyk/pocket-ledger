@@ -147,7 +147,8 @@ test.describe('017 / 045 activity filters', () => {
 
 		const foodRow = page.locator('button[data-testid^="activity-row-"]').filter({ hasText: 'Food' });
 		await expect(foodRow.getByTestId(/-note$/)).toContainText('secret lunch');
-		await expect(foodRow.getByTestId(/-date$/)).toHaveCount(0);
+		// Spec 076: default (createdAt) sort shows date on the row secondary line.
+		await expect(foodRow.getByTestId(/-date$/)).toBeVisible();
 
 		await page.getByTestId('activity-sort-open').click();
 		await expect(page.getByTestId('activity-sort-category')).toHaveCount(0);
@@ -348,18 +349,20 @@ test.describe('107 filter category picker + type coupling', () => {
 		await page.getByTestId('activity-filters-open').click();
 		await expect(filtersSurface(page)).toBeVisible();
 		await page.getByTestId('activity-filter-category').click();
-		await expect(page.getByText('Income', { exact: true }).first()).toBeVisible();
-		await expect(page.getByText('Expenses', { exact: true }).first()).toBeVisible();
-		await expect(page.getByRole('menuitem', { name: 'Salary', exact: true })).toBeVisible();
-		await expect(page.getByRole('menuitem', { name: 'Food', exact: true })).toBeVisible();
-		await expect(page.getByRole('menuitem', { name: 'Admin Fee' })).toBeVisible();
+		const categoryMenu = page.getByRole('menu');
+		await expect(categoryMenu.getByRole('group', { name: 'Income' })).toBeVisible();
+		await expect(categoryMenu.getByRole('group', { name: 'Expenses' })).toBeVisible();
+		await expect(categoryMenu.getByRole('menuitem', { name: 'Salary', exact: true })).toBeVisible();
+		await expect(categoryMenu.getByRole('menuitem', { name: 'Food', exact: true })).toBeVisible();
+		await expect(categoryMenu.getByRole('menuitem', { name: 'Admin Fee' })).toBeVisible();
 		await page.keyboard.press('Escape');
 
 		await page.getByTestId('activity-filter-type').selectOption('income');
 		await page.getByTestId('activity-filter-category').click();
-		await expect(page.getByRole('menuitem', { name: 'Salary', exact: true })).toBeVisible();
-		await expect(page.getByRole('menuitem', { name: 'Food', exact: true })).toHaveCount(0);
-		await expect(page.getByRole('menuitem', { name: 'Admin Fee' })).toHaveCount(0);
+		const incomeMenu = page.getByRole('menu');
+		await expect(incomeMenu.getByRole('menuitem', { name: 'Salary', exact: true })).toBeVisible();
+		await expect(incomeMenu.getByRole('menuitem', { name: 'Food', exact: true })).toHaveCount(0);
+		await expect(incomeMenu.getByRole('menuitem', { name: 'Admin Fee' })).toHaveCount(0);
 		await page.keyboard.press('Escape');
 
 		await page.getByTestId('activity-filter-type').selectOption('transfer');
@@ -367,8 +370,9 @@ test.describe('107 filter category picker + type coupling', () => {
 		await expect(page.getByTestId('activity-filter-category')).toContainText('All');
 		await page.getByTestId('activity-filters-apply').click();
 		await expect(filtersSurface(page)).toBeHidden();
-		await expect(page.getByTestId('activity-list')).not.toContainText('Salary');
-		await expect(page.getByTestId('activity-list')).not.toContainText('Food');
+		// No transfers seeded — filtered empty (not income/expense rows).
+		await expect(page.getByTestId('activity-empty-filtered')).toBeVisible();
+		await expect(page.getByTestId('activity-list')).toHaveCount(0);
 	});
 
 	test('clears incompatible category when type changes', async ({ page }) => {

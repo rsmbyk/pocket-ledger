@@ -14,6 +14,6 @@
 - [x] Refactor `src/lib/ui/QuickAddSheet.svelte` onto CategoryPicker
 - [x] Playwright: `e2e/activity-filters.e2e.ts` — type Transfer; category menu groups / narrowing; helpers for DropdownMenu
 - [x] Playwright: `e2e/transfer-admin-fee.e2e.ts` — Admin Fee via CategoryPicker (not native select)
-- [ ] `npm run check` + unit + e2e green
+- [x] `npm run check` + unit + e2e green
 - [x] Traceability in `./spec.md`
-- [ ] Commit + draft PR linking Spec 107
+- [x] Commit + draft PR linking Spec 107
