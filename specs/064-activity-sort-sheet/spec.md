@@ -36,11 +36,11 @@ Add an Activity **Sort** control (icon-only sheet) and make the **Filters** open
 
 - Always-on Sort drawer on xl
 - Changing filter criteria / Apply-Clear model
-- Persisting sort mode across sessions (session/runtime state is enough unless already patterned otherwise — **default: not persisted**)
+- Persisting sort mode across sessions (session/runtime state is enough unless already patterned otherwise — **default: not persisted**) — **tab-session persistence: [102](../102-activity-session-sort-filters/spec.md)**
 
 ## Domain rules
 
-- **Default / date modes:** same comparisons as today’s `sortTransactionsByDate` for the three date/create modes; tie-break `id`
+- **Default / date modes:** same comparisons as today’s `sortTransactionsByDate` for the three date/create modes; tie-break `id` — **date modes secondary `createdAt` then `id`: [101](../101-activity-date-sort-created-at/spec.md)**
 - **Categories mode:**
   1. Income categories before expense categories
   2. Within each type, order by category `sortOrder` ascending (set ordering)

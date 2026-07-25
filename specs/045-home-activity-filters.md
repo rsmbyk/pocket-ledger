@@ -40,7 +40,7 @@ Polish Home chrome and amount privacy; overhaul Activity filters into a draft/ap
 14. **Dirty close warn** — if draft ≠ applied and user closes (Close, outside, Escape), ConfirmDialog warns changes will not be applied; decline keeps surface open
 15. **Clear** — header icon button with label **Clear**; enabled only when draft ≠ defaults; resets draft to defaults (Apply still required to commit)
 16. **Filters button badge / affordance** — reflect when **applied** filters are non-default
-17. **Session only** — applied/draft filters are not persisted across reloads
+17. **Session only** — applied/draft filters are not persisted across reloads — **superseded for tab-session persistence by [102](102-activity-session-sort-filters/spec.md)** (`sessionStorage`)
 18. **Sheet headers** — Filters header includes icons
 
 ### Out of scope

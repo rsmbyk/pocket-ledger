@@ -139,6 +139,42 @@ describe('activity-filters', () => {
 		expect(sortTransactionsByDate(mixed, 'occurredOn-asc')[0]?.id).toBe('1');
 	});
 
+	it('orders same-day rows by createdAt matching date sort direction (Spec 101)', () => {
+		const sameDay = [
+			tx({
+				id: 'old-created',
+				type: 'expense',
+				amountMinor: 1,
+				occurredOn: '2026-07-15',
+				createdAt: '2026-07-01T10:00:00.000Z'
+			}),
+			tx({
+				id: 'new-created',
+				type: 'expense',
+				amountMinor: 1,
+				occurredOn: '2026-07-15',
+				createdAt: '2026-07-20T10:00:00.000Z'
+			}),
+			tx({
+				id: 'other-day',
+				type: 'expense',
+				amountMinor: 1,
+				occurredOn: '2026-07-16',
+				createdAt: '2026-06-01T10:00:00.000Z'
+			})
+		];
+		expect(sortTransactions(sameDay, 'occurredOn-desc').map((t) => t.id)).toEqual([
+			'other-day',
+			'new-created',
+			'old-created'
+		]);
+		expect(sortTransactions(sameDay, 'occurredOn-asc').map((t) => t.id)).toEqual([
+			'old-created',
+			'new-created',
+			'other-day'
+		]);
+	});
+
 	it('groups by occurredOn only for date sorts', () => {
 		const sortedDesc = sortTransactions(
 			[

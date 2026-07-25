@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { MediaQuery } from 'svelte/reactivity';
+	import { onMount } from 'svelte';
 	import HomeIcon from '@lucide/svelte/icons/house';
 	import ListIcon from '@lucide/svelte/icons/list';
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
@@ -55,6 +56,10 @@
 		type ActivitySortMode
 	} from '$lib/domain/activity-filters';
 	import { readHideAmounts, writeHideAmounts } from '$lib/shared/hide-amounts';
+	import {
+		readActivityListSession,
+		writeActivityListSession
+	} from '$lib/shared/activity-list-session';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 
@@ -155,12 +160,13 @@
 	let showMoneyError = $state<string | null>(null);
 	let showMoneyBusy = $state(false);
 
-	let applied = $state<ActivityFilterCriteria>({ ...DEFAULT_ACTIVITY_FILTERS });
-	let draft = $state<ActivityFilterCriteria>({ ...DEFAULT_ACTIVITY_FILTERS });
+	const initialActivitySession = readActivityListSession();
+	let applied = $state<ActivityFilterCriteria>({ ...initialActivitySession.filters });
+	let draft = $state<ActivityFilterCriteria>({ ...initialActivitySession.filters });
 	let filtersOpen = $state(false);
 	let sortOpen = $state(false);
 	let discardWarnOpen = $state(false);
-	let activitySort = $state<ActivitySortMode>(DEFAULT_ACTIVITY_SORT);
+	let activitySort = $state<ActivitySortMode>(initialActivitySession.sort);
 
 	const filterCategories = $derived(
 		[...expenseCategories, ...incomeCategories].sort((a, b) => a.name.localeCompare(b.name))
@@ -321,6 +327,11 @@
 	function selectActivitySort(mode: ActivitySortMode) {
 		activitySort = mode;
 		sortOpen = false;
+		persistActivityListSession();
+	}
+
+	function persistActivityListSession() {
+		writeActivityListSession({ sort: activitySort, filters: applied });
 	}
 
 	const sortOptions: { mode: ActivitySortMode; label: string; testid: string }[] = [
@@ -332,6 +343,7 @@
 	function applyFilters() {
 		applied = { ...cloneFilters(draft), search: applied.search ?? '' };
 		onActivityPocketFilterChange?.(applied.pocketId?.trim() || 'all');
+		persistActivityListSession();
 		if (!xlWide.current) filtersOpen = false;
 	}
 
@@ -375,11 +387,16 @@
 
 	function updateAppliedSearch(next: string) {
 		applied = { ...applied, search: next };
+		persistActivityListSession();
 	}
 
 	$effect(() => {
 		if (route !== 'activity' || !xlWide.current) return;
 		draft = cloneFilters(applied);
+	});
+
+	onMount(() => {
+		onActivityPocketFilterChange?.(applied.pocketId?.trim() || 'all');
 	});
 </script>
 
