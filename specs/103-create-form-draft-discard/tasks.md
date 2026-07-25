@@ -6,14 +6,14 @@
 
 ## Checklist
 
-- [ ] Spec Accepted by Ronald
-- [ ] **Red Vitest:** `src/lib/shared/create-form-drafts.test.ts` — round-trip tx/pocket/category; malformed → null; clear; per-key isolation
-- [ ] **Green** `src/lib/shared/create-form-drafts.ts`
-- [ ] Extend `ConfirmDialog` with optional secondary action (Save draft)
-- [ ] Wire `QuickAddSheet` create: restore dirty, three-action discard, clear on success/Discard
-- [ ] Wire `PocketsPanel` create: prevent-then-warn + draft restore/clear
-- [ ] Wire `CategoriesPanel` create: prevent-then-warn + per-kind draft
-- [ ] Playwright: `e2e/create-form-drafts.e2e.ts`
-- [ ] `npm run check` + unit + e2e
-- [ ] Traceability in `./spec.md`
-- [ ] Commit with pack
+- [x] Spec Accepted by Ronald
+- [x] **Red Vitest:** `src/lib/shared/create-form-drafts.test.ts` — round-trip tx/pocket/category; malformed → null; clear; per-key isolation
+- [x] **Green** `src/lib/shared/create-form-drafts.ts`
+- [x] Extend `ConfirmDialog` with optional secondary action (Save draft)
+- [x] Wire `QuickAddSheet` create: restore dirty, three-action discard, clear on success/Discard
+- [x] Wire `PocketsPanel` create: prevent-then-warn + draft restore/clear
+- [x] Wire `CategoriesPanel` create: prevent-then-warn + per-kind draft
+- [x] Playwright: `e2e/create-form-drafts.e2e.ts`
+- [x] `npm run check` + unit + e2e
+- [x] Traceability in `./spec.md`
+- [x] Commit with pack
