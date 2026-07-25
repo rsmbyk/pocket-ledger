@@ -7,6 +7,7 @@ import {
 	isEditTxDirty,
 	isValidOccurredOn,
 	parseAmountInput,
+	parseNonNegativeAmountInput,
 	sumBalance,
 	todayOccurredOn
 } from './transaction-rules';
@@ -15,6 +16,19 @@ describe('transaction-rules', () => {
 	it('parses whole-number amounts', () => {
 		expect(parseAmountInput('15000')).toBe(15000);
 		expect(parseAmountInput('15,000')).toBe(15000);
+	});
+
+	it('parses non-negative opening amounts including blank and zero', () => {
+		expect(parseNonNegativeAmountInput('')).toBe(0);
+		expect(parseNonNegativeAmountInput('0')).toBe(0);
+		expect(parseNonNegativeAmountInput('15000')).toBe(15000);
+		expect(parseNonNegativeAmountInput('15,000')).toBe(15000);
+	});
+
+	it('rejects negative and non-digit opening amounts', () => {
+		expect(() => parseNonNegativeAmountInput('-1')).toThrow(/whole number/i);
+		expect(() => parseNonNegativeAmountInput('10.5')).toThrow(/whole number/i);
+		expect(() => parseNonNegativeAmountInput('abc')).toThrow(/whole number/i);
 	});
 
 	it('formats amount digits with thousand grouping', () => {

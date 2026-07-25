@@ -8,6 +8,7 @@
 	import { dragHandle, dragHandleZone, type DndEvent } from 'svelte-dnd-action';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
+	import * as InputGroup from '$lib/components/ui/input-group/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -22,7 +23,16 @@
 	import { formatRemainingUnit, largestRemainingUnit } from '$lib/domain/goal-time';
 	import { formatMinor } from '$lib/domain/money';
 	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
-	import { isValidOccurredOn, parseAmountInput, todayOccurredOn } from '$lib/domain/transaction-rules';
+	import {
+		amountDigitsOnly,
+		formatAmountDigitsDisplay,
+		isBlockedAmountKey,
+		isValidOccurredOn,
+		parseAmountInput,
+		parseNonNegativeAmountInput,
+		todayOccurredOn
+	} from '$lib/domain/transaction-rules';
+	import { cn } from '$lib/utils.js';
 
 	type Props = {
 		pockets: Account[];
@@ -117,6 +127,9 @@
 		);
 	});
 
+	const formOpeningDisplay = $derived(formatAmountDigitsDisplay(formOpeningRaw));
+	const formGoalTargetDisplay = $derived(formatAmountDigitsDisplay(formGoalTargetRaw));
+
 	async function runAction(action: () => void | Promise<void>) {
 		busy = true;
 		error = '';
@@ -130,13 +143,36 @@
 		}
 	}
 
-	function parseSignedAmount(raw: string): number {
-		const trimmed = raw.trim().replace(/[,_\s]/g, '');
-		if (!trimmed) return 0;
-		if (!/^-?\d+$/.test(trimmed)) {
-			throw new Error('Opening balance must be a whole number');
-		}
-		return Number(trimmed);
+	function onOpeningInput(value: string) {
+		formOpeningRaw = amountDigitsOnly(value);
+		if (formError?.key === 'opening') formError = null;
+	}
+
+	function onOpeningKeydown(event: KeyboardEvent) {
+		if (isBlockedAmountKey(event)) event.preventDefault();
+	}
+
+	function onOpeningPaste(event: ClipboardEvent) {
+		event.preventDefault();
+		const text = event.clipboardData?.getData('text') ?? '';
+		formOpeningRaw = amountDigitsOnly(text);
+		if (formError?.key === 'opening') formError = null;
+	}
+
+	function onGoalTargetInput(value: string) {
+		formGoalTargetRaw = amountDigitsOnly(value);
+		if (formError?.key === 'goalTarget' || formError?.key === 'amount') formError = null;
+	}
+
+	function onGoalTargetKeydown(event: KeyboardEvent) {
+		if (isBlockedAmountKey(event)) event.preventDefault();
+	}
+
+	function onGoalTargetPaste(event: ClipboardEvent) {
+		event.preventDefault();
+		const text = event.clipboardData?.getData('text') ?? '';
+		formGoalTargetRaw = amountDigitsOnly(text);
+		if (formError?.key === 'goalTarget' || formError?.key === 'amount') formError = null;
 	}
 
 	function snapshotForm(): FormBaseline {
@@ -176,10 +212,11 @@
 		formName = p.name;
 		formNotes = p.notes;
 		formOpeningEnabled = p.openingEnabled;
-		formOpeningRaw = String(p.openingBalanceMinor);
+		formOpeningRaw = String(Math.max(0, p.openingBalanceMinor));
 		formOpeningAsOf = p.openingAsOf;
 		formGoalEnabled = p.goalEnabled;
-		formGoalTargetRaw = p.goalTargetMinor != null ? String(p.goalTargetMinor) : '';
+		formGoalTargetRaw =
+			p.goalTargetMinor != null ? amountDigitsOnly(String(p.goalTargetMinor)) : '';
 		formGoalDateEnabled = p.goalTargetOn != null;
 		formGoalTargetOn = p.goalTargetOn ?? '';
 		formError = null;
@@ -193,7 +230,7 @@
 		formError = null;
 		try {
 			const openingBalanceMinor = formOpeningEnabled
-				? parseSignedAmount(formOpeningRaw)
+				? parseNonNegativeAmountInput(formOpeningRaw)
 				: 0;
 			const openingAsOf = formOpeningEnabled
 				? formOpeningAsOf.trim() || formCreationDate
@@ -468,18 +505,28 @@
 				<div class="grid grid-cols-2 gap-2">
 					<div class="space-y-1">
 						<Label for="pocket-opening">Opening balance</Label>
-						<Input
-							id="pocket-opening"
-							bind:value={formOpeningRaw}
-							inputmode="numeric"
-							placeholder="0"
-							disabled={!formOpeningEnabled}
-							data-testid="pocket-opening-input"
-							aria-invalid={formError?.key === 'opening' ? true : undefined}
-							oninput={() => {
-								if (formError?.key === 'opening') formError = null;
-							}}
-						/>
+						<InputGroup.Root
+							data-disabled={!formOpeningEnabled ? true : undefined}
+							class={cn(!formOpeningEnabled && 'shadow-none')}
+						>
+							<InputGroup.Addon class="bg-muted/60 border-input border-r px-2.5">
+								<InputGroup.Text>{currencyLabel}</InputGroup.Text>
+							</InputGroup.Addon>
+							<InputGroup.Input
+								id="pocket-opening"
+								inputmode="numeric"
+								autocomplete="off"
+								placeholder="15,000"
+								value={formOpeningDisplay}
+								disabled={!formOpeningEnabled}
+								data-testid="pocket-opening-input"
+								aria-invalid={formError?.key === 'opening' ? true : undefined}
+								onkeydown={onOpeningKeydown}
+								onpaste={onOpeningPaste}
+								oninput={(e) => onOpeningInput(e.currentTarget.value)}
+								class={cn('!pl-2.5', !formOpeningEnabled && 'shadow-none')}
+							/>
+						</InputGroup.Root>
 						{#if formError?.key === 'opening'}
 							<p
 								class="text-destructive text-sm"
@@ -538,22 +585,32 @@
 					<div class="grid grid-cols-2 gap-2">
 						<div class="space-y-1">
 							<Label for="pocket-goal-target">Goal target</Label>
-							<Input
-								id="pocket-goal-target"
-								bind:value={formGoalTargetRaw}
-								inputmode="numeric"
-								placeholder="Target"
-								disabled={!formGoalEnabled}
-								data-testid="pocket-goal-target-input"
-								aria-invalid={formError?.key === 'goalTarget' || formError?.key === 'amount'
-									? true
-									: undefined}
-								oninput={() => {
-									if (formError?.key === 'goalTarget' || formError?.key === 'amount') {
-										formError = null;
+							<InputGroup.Root
+								data-disabled={!formGoalEnabled ? true : undefined}
+								class={cn(!formGoalEnabled && 'shadow-none')}
+							>
+								<InputGroup.Addon class="bg-muted/60 border-input border-r px-2.5">
+									<InputGroup.Text>{currencyLabel}</InputGroup.Text>
+								</InputGroup.Addon>
+								<InputGroup.Input
+									id="pocket-goal-target"
+									inputmode="numeric"
+									autocomplete="off"
+									placeholder="15,000"
+									value={formGoalTargetDisplay}
+									disabled={!formGoalEnabled}
+									data-testid="pocket-goal-target-input"
+									aria-invalid={
+										formError?.key === 'goalTarget' || formError?.key === 'amount'
+											? true
+											: undefined
 									}
-								}}
-							/>
+									onkeydown={onGoalTargetKeydown}
+									onpaste={onGoalTargetPaste}
+									oninput={(e) => onGoalTargetInput(e.currentTarget.value)}
+									class={cn('!pl-2.5', !formGoalEnabled && 'shadow-none')}
+								/>
+							</InputGroup.Root>
 							{#if formError?.key === 'goalTarget' || formError?.key === 'amount'}
 								<p
 									class="text-destructive text-sm"
