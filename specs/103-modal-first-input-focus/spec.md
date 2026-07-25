@@ -15,12 +15,11 @@ When a Dialog or Sheet opens, automatically focus the first enabled text-entry f
 ### In scope
 
 1. Shared **Dialog** and **Sheet** content autofocus on open
-2. **First input** = first enabled, visible text-entry control:
+2. **First input** = first enabled, visible **text** control only:
    - `input` typing types (`text`, `password`, `search`, `email`, `tel`, `url`, `number`, unset, and similar non-skipped types)
    - `textarea`
-   - native `select`
-3. **Skip:** disabled, readonly, `checkbox` / `radio` / `button` / `submit` / `reset` / `file` / `hidden` / `image`, `type="date"` (and other non-typing date/time/range/color types), tab triggers, dropdown triggers, Close/X, confirm actions
-4. If none match → leave bits-ui default focus (do not `preventDefault`)
+3. **Skip (do not autofocus):** native `select`, disabled, readonly, `checkbox` / `radio` / `button` / `submit` / `reset` / `file` / `hidden` / `image`, `type="date"` (and other non-typing date/time/range/color types), tab triggers, dropdown triggers, Close/X, confirm actions
+4. If none match → leave bits-ui default focus **unless** that default would land on a non-text form control (`select`, checkbox, date, …); in that case focus the panel content instead
 5. ConfirmDialog with no text fields stays on default button focus inside the confirm panel
 
 ### Out of scope
@@ -66,11 +65,11 @@ When a Dialog or Sheet opens, automatically focus the first enabled text-entry f
 - **When** the ConfirmDialog opens
 - **Then** focus stays inside the confirm dialog (Cancel or Confirm), not on a parent sheet text field
 
-### Scenario: Filters sheet focuses first select
+### Scenario: Filters sheet does not autofocus select
 
-- **Given** Activity on a viewport that uses the filters sheet
+- **Given** Activity on a viewport that uses the filters sheet (no enabled text fields ahead of selects)
 - **When** the user opens Filters
-- **Then** the Type select (`activity-filter-type`) is focused
+- **Then** the Type select (`activity-filter-type`) is **not** focused; focus stays on the sheet panel (or a button), not a non-text form control
 
 ## Traceability
 

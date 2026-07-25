@@ -7,7 +7,7 @@
 	import type { ComponentProps } from "svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import XIcon from '@lucide/svelte/icons/x';
-	import { focusFirstTextField } from "$lib/ui/focus-first-text-field.js";
+	import { applyModalOpenFocus } from "$lib/ui/focus-first-text-field.js";
 
 	let {
 		ref = $bindable(null),
@@ -26,8 +26,8 @@
 	} = $props();
 
 	function handleOpenAutoFocus(event: Event) {
-		const root = (ref ?? event.currentTarget) as ParentNode | null;
-		if (root && focusFirstTextField(root)) {
+		const root = (ref ?? event.currentTarget) as HTMLElement | null;
+		if (root && applyModalOpenFocus(root)) {
 			event.preventDefault();
 		}
 		onOpenAutoFocus?.(event as Parameters<NonNullable<typeof onOpenAutoFocus>>[0]);

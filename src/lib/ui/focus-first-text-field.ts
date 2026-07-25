@@ -1,4 +1,4 @@
-/** Input types that are not typing fields (skip for modal autofocus). */
+/** Input types that are not typing fields (never autofocus these). */
 const SKIP_INPUT_TYPES = new Set([
 	'button',
 	'submit',
@@ -17,25 +17,23 @@ const SKIP_INPUT_TYPES = new Set([
 	'range'
 ]);
 
-/**
- * Whether an element is an enabled, visible text-entry control
- * (typing input, textarea, or native select).
- */
-export function isTextEntryField(el: Element): el is HTMLElement {
-	if (!(el instanceof HTMLElement)) return false;
+/** Non-text form controls that must not receive open autofocus. */
+const NON_TEXT_FORM_TYPES = new Set([
+	'checkbox',
+	'radio',
+	'file',
+	'hidden',
+	'image',
+	'date',
+	'datetime-local',
+	'month',
+	'week',
+	'time',
+	'color',
+	'range'
+]);
 
-	if (el instanceof HTMLTextAreaElement) {
-		if (el.disabled || el.readOnly) return false;
-	} else if (el instanceof HTMLSelectElement) {
-		if (el.disabled) return false;
-	} else if (el instanceof HTMLInputElement) {
-		const type = (el.getAttribute('type') ?? el.type ?? 'text').toLowerCase();
-		if (SKIP_INPUT_TYPES.has(type)) return false;
-		if (el.disabled || el.readOnly) return false;
-	} else {
-		return false;
-	}
-
+function isVisible(el: HTMLElement): boolean {
 	if (el.hidden) return false;
 	if (el.getAttribute('aria-hidden') === 'true') return false;
 	if (el.closest('[hidden], [aria-hidden="true"]')) return false;
@@ -48,7 +46,6 @@ export function isTextEntryField(el: Element): el is HTMLElement {
 				return false;
 			}
 		} catch {
-			// Some environments throw when the node is detached; treat as not visible.
 			return false;
 		}
 	}
@@ -56,9 +53,37 @@ export function isTextEntryField(el: Element): el is HTMLElement {
 	return true;
 }
 
-/** First enabled visible text-entry control under `root`, or null. */
+/**
+ * Whether an element is an enabled, visible text control
+ * (typing `input` or `textarea` — not select, checkbox, date, etc.).
+ */
+export function isTextEntryField(el: Element): el is HTMLElement {
+	if (!(el instanceof HTMLElement)) return false;
+
+	if (el instanceof HTMLTextAreaElement) {
+		if (el.disabled || el.readOnly) return false;
+	} else if (el instanceof HTMLInputElement) {
+		const type = (el.getAttribute('type') ?? el.type ?? 'text').toLowerCase();
+		if (SKIP_INPUT_TYPES.has(type)) return false;
+		if (el.disabled || el.readOnly) return false;
+	} else {
+		return false;
+	}
+
+	return isVisible(el);
+}
+
+/** Native select / checkbox / radio / date / etc. — never open-autofocus these. */
+export function isNonTextFormControl(el: Element): boolean {
+	if (el instanceof HTMLSelectElement) return true;
+	if (!(el instanceof HTMLInputElement)) return false;
+	const type = (el.getAttribute('type') ?? el.type ?? 'text').toLowerCase();
+	return NON_TEXT_FORM_TYPES.has(type);
+}
+
+/** First enabled visible text control under `root`, or null. */
 export function findFirstTextField(root: ParentNode): HTMLElement | null {
-	const candidates = root.querySelectorAll('input, textarea, select');
+	const candidates = root.querySelectorAll('input, textarea');
 	for (const el of candidates) {
 		if (isTextEntryField(el)) return el;
 	}
@@ -66,7 +91,7 @@ export function findFirstTextField(root: ParentNode): HTMLElement | null {
 }
 
 /**
- * Focus the first text-entry field under `root`.
+ * Focus the first text field under `root`.
  * @returns true if a field was focused
  */
 export function focusFirstTextField(root: ParentNode): boolean {
@@ -74,4 +99,44 @@ export function focusFirstTextField(root: ParentNode): boolean {
 	if (!el) return false;
 	el.focus();
 	return true;
+}
+
+/**
+ * Handle Dialog/Sheet open autofocus: prefer a text field; otherwise leave
+ * bits-ui default unless that would land on a non-text form control (select,
+ * checkbox, date, …) — then focus the panel root instead.
+ * @returns true if default autofocus was overridden (`preventDefault` needed)
+ */
+export function applyModalOpenFocus(root: HTMLElement): boolean {
+	if (focusFirstTextField(root)) return true;
+
+	const candidate = firstFocusable(root);
+	if (candidate && isNonTextFormControl(candidate)) {
+		if (typeof root.tabIndex !== 'number' || root.tabIndex < 0) {
+			root.tabIndex = -1;
+		}
+		root.focus();
+		return true;
+	}
+
+	return false;
+}
+
+function firstFocusable(root: HTMLElement): HTMLElement | null {
+	const nodes = root.querySelectorAll(
+		'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+	);
+	for (const node of nodes) {
+		if (!(node instanceof HTMLElement)) continue;
+		if (node === root) continue;
+		if (!isVisible(node)) continue;
+		if (node instanceof HTMLButtonElement && node.disabled) continue;
+		if (node instanceof HTMLInputElement && node.disabled) continue;
+		if (node instanceof HTMLSelectElement && node.disabled) continue;
+		if (node instanceof HTMLTextAreaElement && node.disabled) continue;
+		const ti = node.getAttribute('tabindex');
+		if (ti === '-1') continue;
+		return node;
+	}
+	return null;
 }
