@@ -2,6 +2,7 @@ import { db } from '$lib/data/db';
 import { normalizeAccount, type Account } from '$lib/domain/account';
 import type { CategoryRow } from '$lib/data/db';
 import type { LedgerTransaction } from '$lib/domain/transaction';
+import { withVoidedAt } from '$lib/domain/transaction';
 import type { Goal } from '$lib/domain/goals';
 import type { NetWorthSnapshot } from '$lib/domain/net-worth';
 import {
@@ -58,11 +59,13 @@ export async function buildBackup(): Promise<LedgerBackup> {
 			}))
 		),
 		transactions: await Promise.all(
-			transactions.map(async (t) => ({
-				...t,
-				voidedAt: t.voidedAt ?? null,
-				note: await openField(t.note)
-			}))
+			transactions.map(async (t) => {
+				const normalized = withVoidedAt(t);
+				return {
+					...normalized,
+					note: await openField(normalized.note)
+				};
+			})
 		),
 		goals: await Promise.all(goals.map(async (g) => ({ ...g, name: await openField(g.name) }))),
 		netWorthSnapshots,
@@ -92,7 +95,7 @@ export function parseBackupJson(raw: string): LedgerBackup {
 		exportedAt: backup.exportedAt ?? new Date().toISOString(),
 		accounts: backup.accounts ?? [],
 		categories: backup.categories ?? [],
-		transactions: backup.transactions ?? [],
+		transactions: (backup.transactions ?? []).map((t) => withVoidedAt(t as LedgerTransaction)),
 		goals: (backup.goals ?? []).map((g) => ({
 			...g,
 			targetOn: typeof g.targetOn === 'string' && g.targetOn.trim() ? g.targetOn : '2099-12-31',
@@ -166,7 +169,9 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 				: assignSortOrdersByName(categories);
 			await db.categories.bulkPut(toPut);
 			await db.transactions.bulkPut(
-				normalized.transactions.map((t) => ({ ...t, voidedAt: t.voidedAt ?? null }))
+				normalized.transactions.map((t) =>
+					withVoidedAt({ ...t, voidedAt: t.voidedAt ?? null, feeMinor: t.feeMinor })
+				)
 			);
 			/* Goals live on pockets now; leave goals table empty after migrate. */
 			await db.netWorthSnapshots.bulkPut(normalized.netWorthSnapshots);

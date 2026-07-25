@@ -18,6 +18,7 @@ export type TxCreateDraft = {
 	transferSourceId: string;
 	transferDestId: string;
 	transferAmountDigits: string;
+	transferFeeDigits: string;
 	transferNote: string;
 	transferOccurredOn: string;
 };
@@ -117,6 +118,7 @@ export function parseTxCreateDraft(value: string | null | undefined): TxCreateDr
 		transferSourceId: asString(obj.transferSourceId),
 		transferDestId: asString(obj.transferDestId),
 		transferAmountDigits: asString(obj.transferAmountDigits),
+		transferFeeDigits: asString(obj.transferFeeDigits),
 		transferNote: asString(obj.transferNote),
 		transferOccurredOn: asString(obj.transferOccurredOn)
 	};

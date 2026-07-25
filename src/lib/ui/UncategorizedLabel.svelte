@@ -3,22 +3,29 @@
 	import { cn } from '$lib/utils.js';
 
 	type Props = {
-		/** When true, this is system Uncategorized (`categoryId == null`). */
+		/** When true, this is a system bucket (Uncategorized / Admin Fee). */
 		system?: boolean;
 		label?: string;
 		class?: string;
+		/** Override default system test id. */
+		testid?: string;
 	};
 
 	let {
 		system = true,
 		label = 'Uncategorized',
-		class: className = ''
+		class: className = '',
+		testid
 	}: Props = $props();
+
+	const systemTestId = $derived(
+		testid ?? (label === 'Admin Fee' ? 'admin-fee-system' : 'uncategorized-system')
+	);
 </script>
 
 <span
 	class={cn('inline-flex max-w-full items-center gap-1.5', className)}
-	data-testid={system ? 'uncategorized-system' : undefined}
+	data-testid={system ? systemTestId : undefined}
 >
 	{#if system}
 		<CircleDashedIcon class="text-muted-foreground size-3.5 shrink-0" aria-hidden="true" />

@@ -5,12 +5,20 @@ import { assertMinorUnits, type MinorUnits } from '$lib/domain/money';
 
 export type PocketBalanceTx = Pick<
 	LedgerTransaction,
-	'type' | 'amountMinor' | 'accountId' | 'counterAccountId' | 'occurredOn' | 'voidedAt'
+	'type' | 'amountMinor' | 'feeMinor' | 'accountId' | 'counterAccountId' | 'occurredOn' | 'voidedAt'
 >;
+
+function transferFeeMinor(tx: Pick<PocketBalanceTx, 'feeMinor'>): MinorUnits {
+	const fee = tx.feeMinor ?? 0;
+	if (!Number.isInteger(fee) || fee < 0) {
+		throw new Error('Stored fee must be a non-negative integer');
+	}
+	return fee;
+}
 
 /**
  * Signed effect of one tx on pocket `pocketId`.
- * Transfers: source (−) / destination (+). Voided → 0.
+ * Transfers: source −(amount+fee) / destination +amount. Voided → 0.
  */
 export function pocketDelta(tx: PocketBalanceTx, pocketId: string): MinorUnits {
 	if (tx.voidedAt || isVoided(tx)) return 0;
@@ -25,7 +33,8 @@ export function pocketDelta(tx: PocketBalanceTx, pocketId: string): MinorUnits {
 		return tx.accountId === pocketId ? -tx.amountMinor : 0;
 	}
 	if (tx.type === 'transfer') {
-		if (tx.accountId === pocketId) return -tx.amountMinor;
+		const fee = transferFeeMinor(tx);
+		if (tx.accountId === pocketId) return -(tx.amountMinor + fee);
 		if (tx.counterAccountId === pocketId) return tx.amountMinor;
 		return 0;
 	}

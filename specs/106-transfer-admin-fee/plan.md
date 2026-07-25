@@ -1,6 +1,6 @@
 # Plan 106: Transfer admin fee
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Spec 073 (transfers); Spec 071 (pocket balance); Spec 027/043 (Uncategorized system bucket + order); Spec 002 (month charts); Spec 104 (create-form drafts)

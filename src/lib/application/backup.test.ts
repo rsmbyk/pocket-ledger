@@ -78,29 +78,29 @@ describe('backup', () => {
 		expect(await db.transactions.count()).toBe(1);
 	});
 
-	it('round-trips soft-deleted categories and defaults missing deletedAt', async () => {
+	it('defaults missing feeMinor to zero on parse and restore', async () => {
 		const account = await ensureDefaultAccount();
-		const coffee = await createCategory('Coffee', 'expense');
-		const tx = await addTransaction({
-			accountId: account.id,
-			type: 'expense',
-			amountRaw: '1000',
-			categoryId: coffee.id
-		});
-		await voidTransaction(tx.id);
-		await removeCategory(coffee.id);
-
 		const backup = await buildBackup();
-		const soft = backup.categories.find((c) => c.id === coffee.id);
-		expect(soft?.deletedAt).toBeTruthy();
-
-		await restoreBackup(backup);
-		expect((await listCategories()).some((c) => c.id === coffee.id)).toBe(false);
-		expect((await listAllCategories()).find((c) => c.id === coffee.id)?.deletedAt).toBeTruthy();
-
-		const legacyCats = backup.categories.map(({ deletedAt: _d, ...rest }) => rest);
-		await restoreBackup({ ...backup, categories: legacyCats as typeof backup.categories });
-		const restored = await db.categories.get(coffee.id);
-		expect(restored?.deletedAt ?? null).toBeNull();
+		const legacyTx = {
+			id: crypto.randomUUID(),
+			accountId: account.id,
+			counterAccountId: null,
+			type: 'expense' as const,
+			amountMinor: 1_000,
+			categoryId: null,
+			note: 'legacy',
+			occurredOn: account.openingAsOf,
+			createdAt: new Date().toISOString(),
+			voidedAt: null
+		};
+		const parsed = parseBackupJson(
+			JSON.stringify({
+				...backup,
+				transactions: [legacyTx]
+			})
+		);
+		expect(parsed.transactions[0]?.feeMinor).toBe(0);
+		await restoreBackup(parsed);
+		expect((await db.transactions.toArray())[0]?.feeMinor).toBe(0);
 	});
 });

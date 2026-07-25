@@ -13,6 +13,7 @@ function tx(
 		note: '',
 		createdAt: '2026-01-01T00:00:00.000Z',
 		voidedAt: null,
+		feeMinor: 0,
 		...partial
 	};
 }
@@ -38,6 +39,19 @@ describe('pocketDelta', () => {
 		expect(pocketDelta(xfer, 'main')).toBe(-10_000);
 		expect(pocketDelta(xfer, 'vac')).toBe(10_000);
 		expect(pocketDelta(xfer, 'other')).toBe(0);
+	});
+
+	it('charges fee to source only', () => {
+		const xfer = tx({
+			type: 'transfer',
+			amountMinor: 10_000,
+			feeMinor: 250,
+			accountId: 'main',
+			counterAccountId: 'vac',
+			occurredOn: '2026-01-01'
+		});
+		expect(pocketDelta(xfer, 'main')).toBe(-10_250);
+		expect(pocketDelta(xfer, 'vac')).toBe(10_000);
 	});
 });
 
@@ -93,6 +107,22 @@ describe('sumAllPocketBalances', () => {
 		});
 		expect(sumAllPocketBalances([main, vac], [xfer])).toBe(100_000);
 		expect(derivePocketBalance(main, [xfer])).toBe(90_000);
+		expect(derivePocketBalance(vac, [xfer])).toBe(10_000);
+	});
+
+	it('reduces total balance by transfer fee', () => {
+		const main = { id: 'm', openingBalanceMinor: 100_000, openingAsOf: '2026-01-01' };
+		const vac = { id: 'v', openingBalanceMinor: 0, openingAsOf: '2026-01-01' };
+		const xfer = tx({
+			type: 'transfer',
+			amountMinor: 10_000,
+			feeMinor: 250,
+			accountId: 'm',
+			counterAccountId: 'v',
+			occurredOn: '2026-01-02'
+		});
+		expect(sumAllPocketBalances([main, vac], [xfer])).toBe(99_750);
+		expect(derivePocketBalance(main, [xfer])).toBe(89_750);
 		expect(derivePocketBalance(vac, [xfer])).toBe(10_000);
 	});
 });

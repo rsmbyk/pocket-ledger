@@ -22,7 +22,7 @@ Personal finance app that works offline after first load, hosted on Cloudflare P
 | Pockets | User-managed sub-accounts (**Pockets** nav item); `Main` is pinned first, never deleted, always the default for new transactions; non-Main pockets are user-reorderable (drag), renameable, and deletable once empty (spec 070) |
 | Pocket opening balance | Each pocket has an opening balance + as-of date that seeds its derived running balance (spec 071) |
 | Goals | Per-pocket balance + deadline goal (target amount, target date), not a separate global feature; editable/clearable from the pocket's edit dialog (spec 072) |
-| Transfers | Move money between pockets as a single `transfer` transaction (source → dest, one amount, optional note); shown as a neutral (non income/expense) row; editing is void-only (spec 073) |
+| Transfers | Move money between pockets as a single `transfer` transaction (source → dest, amount sent, optional admin fee, optional note); shown as a neutral row; fee counts as expense under synthetic **Admin Fee** (spec 073 / 106) |
 | Currency | Single currency; display label only (default `IDR`) |
 | Budgets | None for now |
 | Multi-currency / FX | None |

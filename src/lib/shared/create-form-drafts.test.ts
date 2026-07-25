@@ -45,6 +45,7 @@ const sampleTx: TxCreateDraft = {
 	transferSourceId: 'acc-main',
 	transferDestId: 'acc-vac',
 	transferAmountDigits: '',
+	transferFeeDigits: '',
 	transferNote: '',
 	transferOccurredOn: '2026-07-20'
 };
@@ -89,6 +90,7 @@ describe('create-form-drafts', () => {
 			...sampleTx,
 			mode: 'transfer',
 			transferAmountDigits: '500',
+			transferFeeDigits: '25',
 			transferNote: 'move',
 			transferSourceId: 'a',
 			transferDestId: 'b',
@@ -97,6 +99,12 @@ describe('create-form-drafts', () => {
 		writeTxCreateDraft(transfer, storage);
 		expect(readTxCreateDraft(storage)?.mode).toBe('transfer');
 		expect(readTxCreateDraft(storage)?.transferAmountDigits).toBe('500');
+		expect(readTxCreateDraft(storage)?.transferFeeDigits).toBe('25');
+	});
+
+	it('defaults missing transfer fee digits to empty', () => {
+		const { transferFeeDigits: _omit, ...legacy } = sampleTx;
+		expect(parseTxCreateDraft(JSON.stringify(legacy))?.transferFeeDigits).toBe('');
 	});
 
 	it('round-trips pocket create draft and clears', () => {

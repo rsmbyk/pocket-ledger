@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { LedgerTransaction } from '$lib/domain/transaction';
 import {
 	activityListSections,
+	ADMIN_FEE_CATEGORY_ID,
 	amountDigitsMatch,
 	filterTransactions,
 	groupActivityByOccurredOn,
@@ -25,6 +26,7 @@ function tx(
 		note: partial.note ?? '',
 		createdAt: partial.createdAt ?? '2026-07-14T00:00:00.000Z',
 		voidedAt: partial.voidedAt ?? null,
+		feeMinor: partial.feeMinor ?? 0,
 		type: partial.type,
 		amountMinor: partial.amountMinor,
 		occurredOn: partial.occurredOn
@@ -61,6 +63,41 @@ describe('activity-filters', () => {
 		];
 		expect(filterTransactions(mixed, { categoryId: UNCATEGORIZED_FILTER })).toHaveLength(1);
 		expect(filterTransactions(mixed, { categoryId: UNCATEGORIZED_FILTER })[0]?.note).toBe('bare');
+	});
+
+	it('filters Admin Fee via sentinel to transfers with fee', () => {
+		const mixed = [
+			tx({ type: 'expense', amountMinor: 9, occurredOn: '2026-07-16', note: 'exp' }),
+			{
+				...tx({ type: 'transfer', amountMinor: 100, occurredOn: '2026-07-16', note: 'free' }),
+				counterAccountId: 'vac',
+				feeMinor: 0
+			},
+			{
+				...tx({ type: 'transfer', amountMinor: 100, occurredOn: '2026-07-16', note: 'paid' }),
+				counterAccountId: 'vac',
+				feeMinor: 25
+			},
+			{
+				...tx({
+					type: 'transfer',
+					amountMinor: 100,
+					occurredOn: '2026-07-16',
+					note: 'void-fee',
+					voidedAt: '2026-07-17T00:00:00.000Z'
+				}),
+				counterAccountId: 'vac',
+				feeMinor: 50
+			}
+		];
+		expect(filterTransactions(mixed, { categoryId: ADMIN_FEE_CATEGORY_ID }).map((t) => t.note)).toEqual(
+			['paid', 'void-fee']
+		);
+		expect(
+			filterTransactions(mixed, { categoryId: ADMIN_FEE_CATEGORY_ID, hideVoided: true }).map(
+				(t) => t.note
+			)
+		).toEqual(['paid']);
 	});
 
 	it('hides voided and compares amount lt/gt', () => {

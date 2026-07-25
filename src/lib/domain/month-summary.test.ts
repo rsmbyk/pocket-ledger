@@ -22,6 +22,7 @@ function tx(
 		createdAt: partial.createdAt ?? '2026-07-14T00:00:00.000Z',
 		type: partial.type,
 		amountMinor: partial.amountMinor,
+		feeMinor: partial.feeMinor ?? 0,
 		occurredOn: partial.occurredOn,
 		voidedAt: partial.voidedAt ?? null
 	};
@@ -86,11 +87,19 @@ describe('month-summary', () => {
 		expect(summary.endingMinor).toBe(91_000);
 	});
 
-	it('orders categories by sortOrder with Uncategorized last', () => {
+	it('orders categories by sortOrder with Admin Fee before Uncategorized', () => {
 		const rows = [
 			tx({ type: 'expense', amountMinor: 5_000, occurredOn: '2026-07-02', categoryId: 'b' }),
 			tx({ type: 'expense', amountMinor: 50_000, occurredOn: '2026-07-02', categoryId: 'a' }),
-			tx({ type: 'expense', amountMinor: 1_000, occurredOn: '2026-07-02', categoryId: null })
+			tx({ type: 'expense', amountMinor: 1_000, occurredOn: '2026-07-02', categoryId: null }),
+			tx({
+				type: 'transfer',
+				amountMinor: 10_000,
+				feeMinor: 250,
+				occurredOn: '2026-07-02',
+				accountId: 'main',
+				counterAccountId: 'vac'
+			})
 		];
 		const summary = buildMonthSummary(rows, '2026-07', {
 			a: { name: 'Alpha', sortOrder: 1 },
@@ -99,8 +108,63 @@ describe('month-summary', () => {
 		expect(summary.expenseByCategory.map((r) => r.label)).toEqual([
 			'Beta',
 			'Alpha',
+			'Admin Fee',
 			'Uncategorized'
 		]);
+		expect(summary.expenseMinor).toBe(5_000 + 50_000 + 1_000 + 250);
+	});
+
+	it('counts transfer fees as expense and reduces opening by prior fees', () => {
+		const rows = [
+			tx({
+				type: 'transfer',
+				amountMinor: 10_000,
+				feeMinor: 250,
+				occurredOn: '2026-06-15',
+				accountId: 'main',
+				counterAccountId: 'vac'
+			}),
+			tx({
+				type: 'transfer',
+				amountMinor: 5_000,
+				feeMinor: 100,
+				occurredOn: '2026-07-02',
+				accountId: 'main',
+				counterAccountId: 'vac'
+			}),
+			tx({
+				type: 'transfer',
+				amountMinor: 1_000,
+				feeMinor: 0,
+				occurredOn: '2026-07-03',
+				accountId: 'main',
+				counterAccountId: 'vac'
+			})
+		];
+		const summary = buildMonthSummary(rows, '2026-07', {});
+		expect(summary.openingMinor).toBe(-250);
+		expect(summary.expenseMinor).toBe(100);
+		expect(summary.expenseByCategory).toEqual([
+			{ categoryId: '__admin_fee__', label: 'Admin Fee', amountMinor: 100 }
+		]);
+		expect(summary.endingMinor).toBe(-350);
+	});
+
+	it('ignores voided transfer fees', () => {
+		const rows = [
+			tx({
+				type: 'transfer',
+				amountMinor: 10_000,
+				feeMinor: 250,
+				occurredOn: '2026-07-02',
+				accountId: 'main',
+				counterAccountId: 'vac',
+				voidedAt: '2026-07-03T00:00:00.000Z'
+			})
+		];
+		const summary = buildMonthSummary(rows, '2026-07', {});
+		expect(summary.expenseMinor).toBe(0);
+		expect(summary.expenseByCategory).toEqual([]);
 	});
 
 	it('ignores voided transactions in totals and opening', () => {

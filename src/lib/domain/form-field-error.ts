@@ -1,6 +1,7 @@
 /** Field keys for inline form validation presentation (spec 079). */
 export type FormFieldKey =
 	| 'amount'
+	| 'fee'
 	| 'name'
 	| 'occurredOn'
 	| 'opening'
@@ -23,6 +24,7 @@ export function classifyFormFieldError(message: string): FormFieldKey {
 	const m = message.trim();
 	if (/Opening balance/i.test(m)) return 'opening';
 	if (/As-of date/i.test(m)) return 'asOf';
+	if (/^Fee\b/i.test(m)) return 'fee';
 	if (/^Amount\b/i.test(m)) return 'amount';
 	if (/Goal target|goalTarget/i.test(m)) return 'goalTarget';
 	if (/Goal date/i.test(m)) return 'goalDate';

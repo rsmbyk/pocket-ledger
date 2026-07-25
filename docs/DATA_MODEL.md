@@ -41,8 +41,9 @@ Simple ledger row, double-entry-ready:
 | accountId | Source pocket (income/expense pocket; transfer source) |
 | counterAccountId | Null for income/expense; destination pocket for transfers |
 | type | `income` \| `expense` \| `transfer` |
-| amountMinor | Positive integer; sign from type / transfer direction |
-| categoryId | Nullable; always null for transfers |
+| amountMinor | Positive integer; sign from type / transfer direction (transfer = amount sent = dest receives) |
+| feeMinor | Non-negative integer; transfer admin fee (Spec 106); always `0` for income/expense; missing on read/restore → `0` |
+| categoryId | Nullable; always null for transfers (fee uses synthetic Admin Fee bucket, not categoryId) |
 | note | |
 | occurredOn | Date key `YYYY-MM-DD` |
 | createdAt | |

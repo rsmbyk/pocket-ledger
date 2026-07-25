@@ -47,6 +47,8 @@
 	import { formatMinor } from '$lib/domain/money';
 	import { isAppRoute, type AppRoute } from '$lib/shared/router';
 	import {
+		ADMIN_FEE_CATEGORY_ID,
+		ADMIN_FEE_LABEL,
 		DEFAULT_ACTIVITY_FILTERS,
 		DEFAULT_ACTIVITY_SORT,
 		filterTransactions,
@@ -612,10 +614,11 @@
 							data-testid="activity-filter-category"
 						>
 							<option value="">All</option>
-							<option value={UNCATEGORIZED_FILTER}>Uncategorized</option>
 							{#each filterCategories as category (category.id)}
 								<option value={category.id}>{category.name}</option>
 							{/each}
+							<option value={ADMIN_FEE_CATEGORY_ID}>{ADMIN_FEE_LABEL}</option>
+							<option value={UNCATEGORIZED_FILTER}>Uncategorized</option>
 						</select>
 					</div>
 					<div class="space-y-1">
