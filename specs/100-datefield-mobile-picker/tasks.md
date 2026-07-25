@@ -11,6 +11,6 @@
 - [x] Green: rework `src/lib/ui/DateField.svelte` so the native `type="date"` input is the hit target (opacity-0 overlay or equivalent — not `sr-only` + `showPicker`-only)
 - [x] Preserve formatted display, disabled state, `testid`, `aria-label`, trailing snippet hit area
 - [x] Soften/remove Spec 047 toggle-close expectation in docs if behavior changes; keep open reliable
-- [ ] `npm run check` clean; Playwright date-field (and existing tx smoke) pass
+- [x] `npm run check` clean; Playwright date-field (and existing tx smoke) pass
 - [x] Update `specs/README.md` status → Accepted when landing
-- [ ] Commit + draft PR linking Spec 100
+- [x] Commit + draft PR linking Spec 100
