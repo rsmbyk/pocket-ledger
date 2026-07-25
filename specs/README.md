@@ -116,3 +116,5 @@ Living behavior contracts for Pocket Ledger.
 | [098](098-pocket-bottom-with-note/spec.md) | Pocket bottom-aligned when note present | Superseded by [099](099-amount-pocket-center-stack/spec.md) |
 | [099](099-amount-pocket-center-stack/spec.md) | Tight amount+pocket stack, vertically centered | Accepted |
 | [100](100-datefield-mobile-picker/spec.md) | DateField opens on mobile | Accepted |
+| [101](101-activity-date-sort-created-at/spec.md) | Activity date sort secondary by createdAt | Draft |
+| [102](102-activity-session-sort-filters/spec.md) | Activity session sort + filters persistence | Draft |
