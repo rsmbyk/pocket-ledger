@@ -25,6 +25,9 @@ test.describe('070–077 pockets pack', () => {
 
 		await page.getByTestId('pocket-add').click();
 		await expect(page.getByTestId('pocket-save')).toBeDisabled();
+		const description = page.getByTestId('pocket-description-input');
+		await expect(description).toBeVisible();
+		await expect(description).toHaveJSProperty('tagName', 'INPUT');
 		await page.getByTestId('pocket-name-input').fill('Vacation');
 		await expect(page.getByTestId('pocket-save')).toBeEnabled();
 		await page.getByTestId('pocket-save').click();
