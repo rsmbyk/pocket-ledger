@@ -13,6 +13,11 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import type { CategoryRow } from '$lib/data/db';
 	import { isCategoryInUse } from '$lib/application/categories';
+	import {
+		clearCategoryCreateDraft,
+		readCategoryCreateDraft,
+		writeCategoryCreateDraft
+	} from '$lib/shared/create-form-drafts';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import { cn } from '$lib/utils.js';
@@ -43,6 +48,7 @@
 	let addDialogOpen = $state(false);
 	let addKind = $state<CategoryRow['kind']>('expense');
 	let addName = $state('');
+	let discardConfirmOpen = $state(false);
 	let busy = $state(false);
 	let error = $state('');
 	let nameFieldError = $state('');
@@ -67,6 +73,8 @@
 	);
 
 	const addSubmitDisabled = $derived(busy || addName.trim() === '');
+
+	const addDirty = $derived(addName.trim() !== '');
 
 	const groups = $derived([
 		{
@@ -159,7 +167,51 @@
 	function openAdd(kind: CategoryRow['kind']) {
 		addKind = kind;
 		addName = '';
+		nameFieldError = '';
+		const draft = readCategoryCreateDraft(kind);
+		if (draft) addName = draft.name;
 		addDialogOpen = true;
+	}
+
+	function requestAddDiscard() {
+		if (!addDirty) {
+			addDialogOpen = false;
+			return;
+		}
+		discardConfirmOpen = true;
+	}
+
+	function handleAddOpenChange(next: boolean) {
+		if (next) {
+			addDialogOpen = true;
+			return;
+		}
+		requestAddDiscard();
+	}
+
+	function onAddInteractOutside(e: PointerEvent) {
+		if (!addDirty && !discardConfirmOpen) return;
+		e.preventDefault();
+		if (addDirty) discardConfirmOpen = true;
+	}
+
+	function onAddEscapeKeydown(e: KeyboardEvent) {
+		if (!addDirty && !discardConfirmOpen) return;
+		e.preventDefault();
+		if (addDirty) discardConfirmOpen = true;
+	}
+
+	function confirmAddDiscard() {
+		clearCategoryCreateDraft(addKind);
+		discardConfirmOpen = false;
+		addDialogOpen = false;
+		addName = '';
+	}
+
+	function saveCategoryCreateDraft() {
+		writeCategoryCreateDraft(addKind, { name: addName });
+		discardConfirmOpen = false;
+		addDialogOpen = false;
 	}
 
 	function handleConsider(kind: CategoryRow['kind'], e: CustomEvent<DndEvent<CategoryRow>>) {
@@ -340,10 +392,15 @@
 	</div>
 </div>
 
-<Dialog.Root bind:open={addDialogOpen}>
+<Dialog.Root open={addDialogOpen} onOpenChange={handleAddOpenChange}>
 	<Dialog.Content
 		class={cn('sm:max-w-md overflow-hidden p-0', activeDialogGroup.dialogClass)}
 		showCloseButton={false}
+		interactOutsideBehavior="close"
+		escapeKeydownBehavior="close"
+		onInteractOutside={onAddInteractOutside}
+		onEscapeKeydown={onAddEscapeKeydown}
+		data-testid="category-add-dialog"
 	>
 		<Dialog.Header
 			class={cn('gap-1 space-y-0 border-b px-6 py-3', activeDialogGroup.dialogHeaderClass)}
@@ -372,6 +429,7 @@
 				e.preventDefault();
 				void runAction(async () => {
 					await onCreateCategory(addName, addKind);
+					clearCategoryCreateDraft(addKind);
 					addName = '';
 					addDialogOpen = false;
 				});
@@ -397,7 +455,7 @@
 					type="button"
 					variant="outline"
 					disabled={busy}
-					onclick={() => (addDialogOpen = false)}
+					onclick={() => requestAddDiscard()}
 				>
 					Cancel
 				</Button>
@@ -406,6 +464,20 @@
 		</form>
 	</Dialog.Content>
 </Dialog.Root>
+
+<ConfirmDialog
+	open={discardConfirmOpen}
+	title="Discard unsaved changes?"
+	description="Discard permanently, or save a draft to continue later."
+	confirmLabel="Discard"
+	destructive
+	confirmTestId="category-discard-confirm"
+	secondaryLabel="Save draft"
+	secondaryTestId="category-discard-save-draft"
+	onOpenChange={(next) => (discardConfirmOpen = next)}
+	onConfirm={confirmAddDiscard}
+	onSecondary={saveCategoryCreateDraft}
+/>
 
 <ConfirmDialog
 	open={deleteTarget !== null}

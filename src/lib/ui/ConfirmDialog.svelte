@@ -10,6 +10,9 @@
 		description: string;
 		confirmLabel?: string;
 		cancelLabel?: string;
+		/** Optional middle action (e.g. Save draft). Shown between Cancel and Confirm. */
+		secondaryLabel?: string;
+		secondaryTestId?: string;
 		/** Destructive styling on the confirm action. */
 		destructive?: boolean;
 		/** High-severity danger header + icon. */
@@ -20,6 +23,7 @@
 		contentTestId?: string;
 		onOpenChange: (open: boolean) => void;
 		onConfirm: () => void | Promise<void>;
+		onSecondary?: () => void | Promise<void>;
 	};
 
 	let {
@@ -28,13 +32,16 @@
 		description,
 		confirmLabel = 'Continue',
 		cancelLabel = 'Cancel',
+		secondaryLabel,
+		secondaryTestId = 'confirm-dialog-secondary',
 		destructive = false,
 		dangerChrome = false,
 		hideCancel = false,
 		confirmTestId = 'confirm-dialog-confirm',
 		contentTestId = 'confirm-dialog',
 		onOpenChange,
-		onConfirm
+		onConfirm,
+		onSecondary
 	}: Props = $props();
 
 	let busy = $state(false);
@@ -43,6 +50,17 @@
 		busy = true;
 		try {
 			await onConfirm();
+			onOpenChange(false);
+		} finally {
+			busy = false;
+		}
+	}
+
+	async function secondary() {
+		if (!onSecondary) return;
+		busy = true;
+		try {
+			await onSecondary();
 			onOpenChange(false);
 		} finally {
 			busy = false;
@@ -60,6 +78,17 @@
 			onclick={() => onOpenChange(false)}
 		>
 			{cancelLabel}
+		</Button>
+	{/if}
+	{#if secondaryLabel && onSecondary}
+		<Button
+			type="button"
+			variant="outline"
+			disabled={busy}
+			data-testid={secondaryTestId}
+			onclick={() => void secondary()}
+		>
+			{secondaryLabel}
 		</Button>
 	{/if}
 	<Button
