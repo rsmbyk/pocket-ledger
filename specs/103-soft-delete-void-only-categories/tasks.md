@@ -15,4 +15,4 @@
 - [x] Playwright: `e2e/categories.e2e.ts` — void-only can delete; active still warns
 - [x] `docs/PRODUCT.md` category delete rule
 - [x] `npm run check` + unit (+ e2e)
-- [ ] Commit + PR linking Spec 103
+- [x] Commit + PR linking Spec 103
