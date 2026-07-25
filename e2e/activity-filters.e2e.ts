@@ -231,3 +231,46 @@ test.describe('020 / 045 activity filters mobile', () => {
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
 	});
 });
+
+test.describe('102 activity session sort + filters', () => {
+	test.use({ viewport: { width: 1024, height: 800 } });
+
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/');
+		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+	});
+
+	test('persists sort and applied filters across reload', async ({ page }) => {
+		await seedIncomeAndExpense(page);
+		await goToNav(page, 'activity');
+
+		await page.getByTestId('activity-sort-open').click();
+		await page.getByTestId('activity-sort-occurredOn-asc').click();
+		await expect(page.getByTestId('activity-sort-open')).toHaveAttribute('data-active', 'true');
+
+		await openAndApplyType(page, 'expense');
+		await page.getByTestId('activity-filter-search').fill('lunch');
+		await expect(page.getByTestId('activity-list')).toContainText('Food');
+		await expect(page.getByTestId('activity-list')).not.toContainText('Salary');
+
+		await page.reload();
+		await expect(page.getByTestId('app-shell')).toBeVisible();
+		await goToNav(page, 'activity');
+
+		await expect(page.getByTestId('activity-sort-open')).toHaveAttribute('data-active', 'true');
+		await expect(page.getByTestId('activity-filters-badge')).toHaveText('1');
+		await expect(page.getByTestId('activity-filter-search')).toHaveValue('lunch');
+		await expect(page.getByTestId('activity-list')).toContainText('Food');
+		await expect(page.getByTestId('activity-list')).not.toContainText('Salary');
+
+		await page.getByTestId('activity-sort-open').click();
+		await expect(page.getByTestId('activity-sort-occurredOn-asc')).toHaveAttribute(
+			'aria-selected',
+			'true'
+		);
+		await page.getByTestId('activity-sort-close').click();
+
+		await page.getByTestId('activity-filters-open').click();
+		await expect(page.getByTestId('activity-filter-type')).toHaveValue('expense');
+	});
+});

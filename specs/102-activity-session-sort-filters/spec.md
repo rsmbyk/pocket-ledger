@@ -73,7 +73,7 @@ Persist Activity **sort mode** and **applied filters** (including search) for th
 ## Traceability
 
 - Vitest: `src/lib/shared/activity-list-session.test.ts` (TDD first) — parse/validate/read/write
-- Playwright: `e2e/activity-filters.e2e.ts` (or dedicated) — optional reload assertion
+- Playwright: `e2e/activity-filters.e2e.ts` — reload restores sort + applied filters
 - Implementation: `src/lib/shared/activity-list-session.ts`; wire in `src/lib/ui/AppShellChrome.svelte`
 
 ## Related
