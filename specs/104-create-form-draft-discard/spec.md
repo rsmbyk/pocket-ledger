@@ -1,6 +1,6 @@
-# Spec 103: Create-form draft on discard (session)
+# Spec 104: Create-form draft on discard (session)
 
-- **ID:** 103
+- **ID:** 104
 - **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)

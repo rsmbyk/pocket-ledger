@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
 
-test.describe('Create-form draft on discard (103)', () => {
+test.describe('Create-form draft on discard (104)', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
 		await expect(page.getByTestId('app-shell')).toBeVisible();
