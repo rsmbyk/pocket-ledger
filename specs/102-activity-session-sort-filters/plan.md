@@ -1,6 +1,6 @@
 # Plan 102: Activity session sort + filters persistence
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Spec 045/064 (previously non-persisted); Spec 101 (sort semantics — independent)

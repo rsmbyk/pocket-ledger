@@ -1,6 +1,6 @@
 # Plan 101: Activity date sort secondary by createdAt
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Spec 064/067 (sort modes); Spec 068 (within-day order preserved)

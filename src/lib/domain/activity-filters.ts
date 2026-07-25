@@ -180,9 +180,13 @@ export function sortTransactions(
 		} else if (mode === 'occurredOn-desc') {
 			const byDate = b.occurredOn.localeCompare(a.occurredOn);
 			if (byDate !== 0) return byDate;
+			const byCreated = b.createdAt.localeCompare(a.createdAt);
+			if (byCreated !== 0) return byCreated;
 		} else {
 			const byDate = a.occurredOn.localeCompare(b.occurredOn);
 			if (byDate !== 0) return byDate;
+			const byCreated = a.createdAt.localeCompare(b.createdAt);
+			if (byCreated !== 0) return byCreated;
 		}
 		return a.id.localeCompare(b.id);
 	});

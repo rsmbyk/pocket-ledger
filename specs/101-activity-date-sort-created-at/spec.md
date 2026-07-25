@@ -1,7 +1,7 @@
 # Spec 101: Activity date sort secondary by createdAt
 
 - **ID:** 101
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)
