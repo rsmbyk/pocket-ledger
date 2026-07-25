@@ -22,8 +22,8 @@
 - [x] UI: Fee field on Transfer tab in `src/lib/ui/QuickAddSheet.svelte` (create + edit)
 - [x] UI: fee line on `src/lib/ui/TransactionListRow.svelte` when `feeMinor > 0`
 - [x] UI: Admin Fee in month expense chart + Activity category filter (marker + order before Uncategorized); no Categories-panel row; no normal category picker option
-- [ ] Playwright: `e2e/transfer-admin-fee.e2e.ts` (and extend `e2e/pockets.e2e.ts` if needed) — create with fee; blank fee; edit; void; filter; chart order; row chrome
+- [x] Playwright: `e2e/transfer-admin-fee.e2e.ts` (and extend `e2e/pockets.e2e.ts` if needed) — create with fee; blank fee; edit; void; filter; chart order; row chrome
 - [x] Update `docs/PRODUCT.md` + `docs/DATA_MODEL.md`
-- [ ] `npm run check` + unit + e2e green
+- [x] `npm run check` + unit + e2e green
 - [x] Traceability in `./spec.md`
-- [ ] Commit + draft PR linking Spec 106
+- [x] Commit + draft PR linking Spec 106
