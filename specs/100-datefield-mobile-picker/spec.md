@@ -1,7 +1,7 @@
 # Spec 100: DateField opens on mobile
 
 - **ID:** 100
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

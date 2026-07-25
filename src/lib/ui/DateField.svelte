@@ -27,85 +27,53 @@
 		trailing
 	}: Props = $props();
 
-	let nativeInput = $state<HTMLInputElement | null>(null);
-	let pickerOpen = $state(false);
-
 	const display = $derived(value ? formatOccurredOnDisplay(value) : '');
-
-	function closePicker() {
-		pickerOpen = false;
-		nativeInput?.blur();
-	}
-
-	function openPicker() {
-		if (disabled || !nativeInput) return;
-		try {
-			nativeInput.showPicker();
-			pickerOpen = true;
-		} catch {
-			nativeInput.focus();
-			nativeInput.click();
-			pickerOpen = true;
-		}
-	}
-
-	function onTriggerClick() {
-		if (disabled) return;
-		if (pickerOpen) {
-			closePicker();
-			return;
-		}
-		openPicker();
-	}
 </script>
 
-<div class={cn('relative', className)}>
+<div
+	class={cn('relative', className)}
+	data-testid={testid}
+>
 	<div
 		class={cn(
 			'border-input bg-background ring-offset-background focus-within:ring-ring flex h-9 w-full items-center gap-2 rounded-md border px-3 text-sm shadow-xs focus-within:ring-2',
 			disabled && 'cursor-not-allowed opacity-50 shadow-none'
 		)}
 	>
-		<button
-			type="button"
-			{id}
-			class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left focus-visible:outline-none disabled:cursor-not-allowed"
-			{disabled}
-			aria-label={ariaLabel}
-			aria-expanded={pickerOpen}
-			data-testid={testid}
-			onclick={onTriggerClick}
-		>
+		<div class="pointer-events-none flex min-w-0 flex-1 items-center gap-2 text-left">
 			<CalendarIcon class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
 			{#if display}
 				<span class="truncate tabular-nums">{display}</span>
 			{:else}
 				<span class="text-muted-foreground truncate">Pick a date</span>
 			{/if}
-		</button>
+		</div>
 		{#if trailing}
-			<div class="ml-auto flex shrink-0 items-center" data-slot="date-field-trailing">
+			<div
+				class="relative z-10 ml-auto flex shrink-0 items-center"
+				data-slot="date-field-trailing"
+			>
 				{@render trailing()}
 			</div>
 		{/if}
 	</div>
+	<!--
+		Native date input is the hit target (opacity 0 overlay). showPicker() on an
+		sr-only input is a silent no-op on iOS Safari; a real tap on type=date works.
+	-->
 	<input
-		bind:this={nativeInput}
+		{id}
 		type="date"
-		class="sr-only"
-		tabindex={-1}
+		class={cn(
+			'absolute inset-y-0 left-0 z-[1] cursor-pointer opacity-0',
+			trailing ? 'right-10' : 'right-0',
+			disabled && 'cursor-not-allowed'
+		)}
 		{disabled}
 		{value}
+		aria-label={ariaLabel}
 		onchange={(e) => {
 			onValueChange((e.currentTarget as HTMLInputElement).value);
-			closePicker();
 		}}
-		oncancel={() => closePicker()}
-		onblur={() => {
-			window.setTimeout(() => {
-				if (document.activeElement !== nativeInput) closePicker();
-			}, 0);
-		}}
-		aria-hidden="true"
 	/>
 </div>
