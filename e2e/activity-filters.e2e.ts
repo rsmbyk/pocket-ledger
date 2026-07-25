@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
+import { ensureCategory, goToNav, openAdd, selectActivityFilterCategory, selectTxCategory } from './nav';
 
 async function seedIncomeAndExpense(page: Page): Promise<void> {
 	await ensureCategory(page, 'Salary', 'income');
@@ -30,7 +30,10 @@ function filtersSurface(page: Page) {
 	);
 }
 
-async function openAndApplyType(page: Page, type: 'all' | 'income' | 'expense'): Promise<void> {
+async function openAndApplyType(
+	page: Page,
+	type: 'all' | 'income' | 'expense' | 'transfer'
+): Promise<void> {
 	await page.getByTestId('activity-filters-open').click();
 	await expect(filtersSurface(page)).toBeVisible();
 	await page.getByTestId('activity-filter-type').selectOption(type);
@@ -144,7 +147,8 @@ test.describe('017 / 045 activity filters', () => {
 
 		const foodRow = page.locator('button[data-testid^="activity-row-"]').filter({ hasText: 'Food' });
 		await expect(foodRow.getByTestId(/-note$/)).toContainText('secret lunch');
-		await expect(foodRow.getByTestId(/-date$/)).toHaveCount(0);
+		// Spec 076: default (createdAt) sort shows date on the row secondary line.
+		await expect(foodRow.getByTestId(/-date$/)).toBeVisible();
 
 		await page.getByTestId('activity-sort-open').click();
 		await expect(page.getByTestId('activity-sort-category')).toHaveCount(0);
@@ -325,5 +329,60 @@ test.describe('102 activity session sort + filters', () => {
 
 		await page.getByTestId('activity-filters-open').click();
 		await expect(page.getByTestId('activity-filter-type')).toHaveValue('expense');
+	});
+});
+
+test.describe('107 filter category picker + type coupling', () => {
+	test.use({ viewport: { width: 1024, height: 800 } });
+
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/');
+		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+	});
+
+	test('type All groups Income and Expenses; Income narrows; Transfer disables', async ({
+		page
+	}) => {
+		await seedIncomeAndExpense(page);
+		await goToNav(page, 'activity');
+
+		await page.getByTestId('activity-filters-open').click();
+		await expect(filtersSurface(page)).toBeVisible();
+		await page.getByTestId('activity-filter-category').click();
+		const categoryMenu = page.getByRole('menu');
+		await expect(categoryMenu.getByRole('group', { name: 'Income' })).toBeVisible();
+		await expect(categoryMenu.getByRole('group', { name: 'Expenses' })).toBeVisible();
+		await expect(categoryMenu.getByRole('menuitem', { name: 'Salary', exact: true })).toBeVisible();
+		await expect(categoryMenu.getByRole('menuitem', { name: 'Food', exact: true })).toBeVisible();
+		await expect(categoryMenu.getByRole('menuitem', { name: 'Admin Fee' })).toBeVisible();
+		await page.keyboard.press('Escape');
+
+		await page.getByTestId('activity-filter-type').selectOption('income');
+		await page.getByTestId('activity-filter-category').click();
+		const incomeMenu = page.getByRole('menu');
+		await expect(incomeMenu.getByRole('menuitem', { name: 'Salary', exact: true })).toBeVisible();
+		await expect(incomeMenu.getByRole('menuitem', { name: 'Food', exact: true })).toHaveCount(0);
+		await expect(incomeMenu.getByRole('menuitem', { name: 'Admin Fee' })).toHaveCount(0);
+		await page.keyboard.press('Escape');
+
+		await page.getByTestId('activity-filter-type').selectOption('transfer');
+		await expect(page.getByTestId('activity-filter-category')).toBeDisabled();
+		await expect(page.getByTestId('activity-filter-category')).toContainText('All');
+		await page.getByTestId('activity-filters-apply').click();
+		await expect(filtersSurface(page)).toBeHidden();
+		// No transfers seeded — filtered empty (not income/expense rows).
+		await expect(page.getByTestId('activity-empty-filtered')).toBeVisible();
+		await expect(page.getByTestId('activity-list')).toHaveCount(0);
+	});
+
+	test('clears incompatible category when type changes', async ({ page }) => {
+		await seedIncomeAndExpense(page);
+		await goToNav(page, 'activity');
+
+		await page.getByTestId('activity-filters-open').click();
+		await selectActivityFilterCategory(page, 'Food');
+		await expect(page.getByTestId('activity-filter-category')).toContainText('Food');
+		await page.getByTestId('activity-filter-type').selectOption('income');
+		await expect(page.getByTestId('activity-filter-category')).toContainText('All');
 	});
 });

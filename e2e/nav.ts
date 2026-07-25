@@ -59,6 +59,15 @@ export async function selectTxCategory(
 	await page.getByRole('menuitem', { name, exact: true }).click();
 }
 
+/** Pick a category from the Activity filter CategoryPicker. */
+export async function selectActivityFilterCategory(
+	page: Page,
+	name: string
+): Promise<void> {
+	await page.getByTestId('activity-filter-category').click();
+	await page.getByRole('menuitem', { name, exact: true }).click();
+}
+
 /** Confirm the in-app void ConfirmDialog. */
 export async function confirmVoid(page: Page): Promise<void> {
 	await page.getByTestId('tx-void-confirm').click();

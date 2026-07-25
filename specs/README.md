@@ -118,8 +118,9 @@ Living behavior contracts for Pocket Ledger.
 | [100](100-datefield-mobile-picker/spec.md) | DateField opens on mobile | Accepted |
 | [101](101-activity-date-sort-created-at/spec.md) | Activity date sort secondary by createdAt | Accepted |
 | [102](102-activity-session-sort-filters/spec.md) | Activity session sort + filters persistence | Accepted |
-<<<<<<< HEAD
-| [103](103-create-form-draft-discard/spec.md) | Create-form draft on discard (session) | Accepted |
-=======
 | [103](103-modal-first-input-focus/spec.md) | Modal first-input autofocus | Accepted |
->>>>>>> origin/main
+| [103](103-soft-delete-void-only-categories/spec.md) | Soft-delete void-only categories | Accepted |
+| [104](104-create-form-draft-discard/spec.md) | Create-form draft on discard (session) | Accepted |
+| [105](105-pocket-amount-field-format/spec.md) | Pocket amount field format | Accepted |
+| [106](106-transfer-admin-fee/spec.md) | Transfer admin fee | Accepted |
+| [107](107-filter-category-picker/spec.md) | Filter category dropdown + type coupling | Accepted |

@@ -1,6 +1,5 @@
 import type { LedgerTransaction } from '$lib/domain/transaction';
 import { isVoided } from '$lib/domain/transaction';
-import type { AddableTransactionType } from '$lib/domain/transaction-rules';
 import { amountDigitsOnly } from '$lib/domain/transaction-rules';
 
 /** Sentinel for Activity filter: only transactions with null categoryId. */
@@ -11,7 +10,47 @@ export const ADMIN_FEE_CATEGORY_ID = '__admin_fee__';
 
 export const ADMIN_FEE_LABEL = 'Admin Fee';
 
-export type ActivityTypeFilter = 'all' | AddableTransactionType;
+/** Activity type filter including Transfer (Spec 107). */
+export type ActivityTypeFilter = 'all' | 'income' | 'expense' | 'transfer';
+
+/** Map of user category id → kind for filter option compatibility (Spec 107). */
+export type CategoryKindLookup = Record<string, 'income' | 'expense'>;
+
+/** True when the category filter control should be disabled (Transfer). */
+export function isCategoryFilterDisabled(type: ActivityTypeFilter): boolean {
+	return type === 'transfer';
+}
+
+/**
+ * Whether a draft categoryId is valid for the selected type filter.
+ * Empty / All is always compatible except Transfer still forces All via resolve.
+ */
+export function isCategoryFilterCompatible(
+	categoryId: string | null | undefined,
+	type: ActivityTypeFilter,
+	categoryKinds: CategoryKindLookup
+): boolean {
+	const id = (categoryId ?? '').trim();
+	if (!id) return true;
+	if (type === 'transfer') return false;
+	if (id === ADMIN_FEE_CATEGORY_ID) return type === 'all';
+	if (id === UNCATEGORIZED_FILTER) return true;
+	const kind = categoryKinds[id];
+	if (!kind) return type === 'all';
+	if (type === 'all') return true;
+	return kind === type;
+}
+
+/** Returns categoryId if compatible with type; otherwise All (`''`). */
+export function resolveCategoryIdForType(
+	categoryId: string | null | undefined,
+	type: ActivityTypeFilter,
+	categoryKinds: CategoryKindLookup
+): string {
+	const id = (categoryId ?? '').trim();
+	if (isCategoryFilterCompatible(id, type, categoryKinds)) return id;
+	return '';
+}
 
 export type AmountCompareOp = 'none' | 'lt' | 'gt';
 
