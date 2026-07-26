@@ -219,6 +219,7 @@
 			<label class="flex items-center gap-2 text-sm">
 				<input
 					type="checkbox"
+					class="size-5 accent-primary md:size-4"
 					bind:checked={preserveCategories}
 					data-testid="reset-preserve-categories"
 				/>
@@ -227,6 +228,7 @@
 			<label class="flex items-center gap-2 text-sm">
 				<input
 					type="checkbox"
+					class="size-5 accent-primary md:size-4"
 					bind:checked={preservePassphrase}
 					data-testid="reset-preserve-passphrase"
 				/>

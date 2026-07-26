@@ -1,6 +1,6 @@
 # Plan 114: Mobile checkbox scale
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Spec 111 (mobile primary heights); Spec 112 (compact buttons); Spec 113 (goal-date checkbox only)

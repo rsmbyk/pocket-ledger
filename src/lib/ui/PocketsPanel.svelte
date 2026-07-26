@@ -558,7 +558,7 @@
 				<label class="flex items-center gap-2 text-sm font-medium">
 					<input
 						type="checkbox"
-						class="size-4 accent-primary"
+						class="size-5 accent-primary md:size-4"
 						bind:checked={formOpeningEnabled}
 						data-testid="pocket-opening-enabled"
 						onchange={() => {
@@ -637,7 +637,7 @@
 					<label class="flex items-center gap-2 text-sm font-medium">
 						<input
 							type="checkbox"
-							class="size-4 accent-primary"
+							class="size-5 accent-primary md:size-4"
 							bind:checked={formGoalEnabled}
 							data-testid="pocket-goal-enabled"
 							onchange={() => {
