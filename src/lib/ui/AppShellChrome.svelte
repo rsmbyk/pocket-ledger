@@ -733,6 +733,7 @@
 					<label class="flex items-center gap-2 text-sm">
 						<input
 							type="checkbox"
+							class="size-5 accent-primary md:size-4"
 							bind:checked={draft.hideVoided}
 							data-testid="activity-filter-hide-voided"
 						/>
