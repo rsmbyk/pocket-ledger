@@ -704,7 +704,7 @@
 								{#snippet trailing()}
 									<input
 										type="checkbox"
-										class="size-3.5 accent-primary"
+										class="size-5 accent-primary md:size-4"
 										bind:checked={formGoalDateEnabled}
 										disabled={!formGoalEnabled}
 										aria-label="Has date"

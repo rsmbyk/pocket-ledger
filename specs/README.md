@@ -129,3 +129,4 @@ Living behavior contracts for Pocket Ledger.
 | [110](110-month-opening-from-pockets/spec.md) | Month opening from pocket openings | Accepted |
 | [111](111-mobile-control-heights/spec.md) | Mobile control heights | Accepted |
 | [112](112-mobile-compact-button-heights/spec.md) | Mobile compact button heights | Accepted |
+| [113](113-compound-control-scale/spec.md) | Compound control scale after mobile heights | Accepted |
