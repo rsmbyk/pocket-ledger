@@ -1,7 +1,7 @@
 # Spec 111: Mobile control heights
 
 - **ID:** 111
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

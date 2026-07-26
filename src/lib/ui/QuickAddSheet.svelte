@@ -558,7 +558,7 @@
 		<Label>{labelText}</Label>
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger
-				class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full items-center justify-between rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+				class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-11 w-full items-center justify-between rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:h-9"
 				disabled={isVoidedView || saving}
 				data-testid={testid}
 				aria-label={labelText}
@@ -755,7 +755,7 @@
 					<Button
 						type="button"
 						class={cn(
-							'h-9 w-full border font-semibold',
+							'h-11 w-full border font-semibold md:h-9',
 							type === 'income'
 								? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400'
 								: 'border-border bg-background text-muted-foreground hover:bg-muted/50'
@@ -769,7 +769,7 @@
 					<Button
 						type="button"
 						class={cn(
-							'h-9 w-full border font-semibold',
+							'h-11 w-full border font-semibold md:h-9',
 							type === 'expense'
 								? 'border-destructive/40 bg-destructive/15 text-destructive hover:bg-destructive/20'
 								: 'border-border bg-background text-muted-foreground hover:bg-muted/50'

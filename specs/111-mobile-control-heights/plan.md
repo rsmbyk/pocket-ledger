@@ -1,6 +1,6 @@
 # Plan 111: Mobile control heights
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Spec 039 (tx type controls moved off oversized `h-12` to compact `h-9`); Spec 013 (sidebar nav `lg` / 48px — unchanged)
