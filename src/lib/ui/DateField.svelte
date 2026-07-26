@@ -36,7 +36,7 @@
 >
 	<div
 		class={cn(
-			'border-input bg-background ring-offset-background focus-within:ring-ring flex h-9 w-full items-center gap-2 rounded-md border px-3 text-sm shadow-xs focus-within:ring-2',
+			'border-input bg-background ring-offset-background focus-within:ring-ring flex h-11 w-full items-center gap-2 rounded-md border px-3 text-sm shadow-xs focus-within:ring-2 md:h-9',
 			disabled && 'cursor-not-allowed opacity-50 shadow-none'
 		)}
 	>

@@ -643,7 +643,7 @@
 						<Label for="activity-filter-type">Type</Label>
 						<select
 							id="activity-filter-type"
-							class="border-input bg-background flex h-9 w-full rounded-md border px-3 text-sm"
+							class="border-input bg-background flex h-11 w-full rounded-md border px-3 text-sm md:h-9"
 							value={draft.type ?? 'all'}
 							onchange={(e) =>
 								onFilterTypeChange(e.currentTarget.value as ActivityTypeFilter)}
@@ -679,7 +679,7 @@
 						<DropdownMenu.Root>
 							<DropdownMenu.Trigger
 								id="activity-filter-pocket"
-								class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full items-center justify-between rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none"
+								class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-11 w-full items-center justify-between rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none md:h-9"
 								data-testid="activity-filter-pocket"
 								aria-label="Pocket"
 							>
@@ -743,7 +743,7 @@
 						<div class="flex gap-2">
 							<select
 								id="activity-filter-amount-op"
-								class="border-input bg-background flex h-9 min-w-0 flex-1 rounded-md border px-3 text-sm"
+								class="border-input bg-background flex h-11 min-w-0 flex-1 rounded-md border px-3 text-sm md:h-9"
 								bind:value={draft.amountOp}
 								data-testid="activity-filter-amount-op"
 							>
