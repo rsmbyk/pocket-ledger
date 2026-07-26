@@ -1,6 +1,6 @@
 # Plan 112: Mobile compact button heights
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Hardens / follows:** Spec 111 (primary controls `h-11` below `md`; compact sizes left dense)
