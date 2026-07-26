@@ -11,8 +11,8 @@
 - [x] InputGroup root: `overflow-hidden` in `src/lib/components/ui/input-group/input-group.svelte`
 - [x] Goal-date trailing checkbox: `size-5 md:size-4` in `src/lib/ui/PocketsPanel.svelte`
 - [x] Leave Amount call-site prefix classes and DateField overlay gutter unchanged
-- [ ] `npm run check` clean
+- [x] `npm run check` clean
 - [x] Manual: narrow viewport — Amount currency prefix fills `h-11`; goal-date checkbox reads `size-5`; `md+` prefix fills `h-9`, checkbox `size-4`
 - [x] Playwright: deferred (no dedicated e2e this slice)
 - [x] Update `specs/README.md` status → Accepted when landing
-- [ ] Commit + draft PR linking Spec 113
+- [x] Commit + draft PR linking Spec 113
