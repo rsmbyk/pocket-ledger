@@ -22,3 +22,12 @@
 - UI: shadcn under `src/lib/components/ui`
 - Theme: `mode-watcher` + `pocket-ledger-theme` storage key
 - Hosting: Cloudflare Workers static assets at site root (`base: '/'`) — see `docs/HOSTING.md`
+
+## Cursor Cloud specific instructions
+
+The VM starts with dependencies already installed by the startup update script (`npm ci` + `npx playwright install chromium`). Standard commands live in `README.md` and `package.json` scripts — use those. Notes below are only the non-obvious gotchas.
+
+- Single client-only PWA, no backend/DB. "Running the app" = one Vite process: `npm run dev` (port 5173). All data lives in the browser (IndexedDB via Dexie), so there is nothing to provision or seed.
+- Tests need the Playwright Chromium browser, and not just the E2E suite: the Vitest `client` project runs in **real Chromium** (`@vitest/browser-playwright`), so a missing browser breaks `npm run test:unit:run` too, not only `npm run test:e2e`. The update script installs it; if you ever hit a "browser not found" error, re-run `npx playwright install chromium`.
+- `npm run test:e2e` self-builds and self-serves the app on port 4173 (see `playwright.config.ts`) — do NOT start a server manually for E2E.
+- `npm run lint` (`prettier --check .`) currently reports pre-existing formatting drift across many tracked files on a clean checkout (the repo is not fully formatted against its own `prettier.config.js`). A failing `npm run lint` is the baseline, not something your change broke — and do NOT mass-reformat the repo to "fix" it. `npm run check` (svelte-check + tsc) does pass cleanly.
