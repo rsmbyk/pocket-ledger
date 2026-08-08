@@ -54,25 +54,22 @@ Token needs **Workers Scripts Edit** (and account access). For GitHub reporting,
 
 ## Local Docker (optional)
 
-Compose runs Vite in the `docker-vm` so you do not need Node on the guest. Production is still Cloudflare — these containers are for local work only.
-
-From the VM (Windows tree `C:\Users\Javan\projects\pocket-ledger` → `/mnt/projects/projects/pocket-ledger`):
+Compose runs Vite so you do not need Node on the host. Production is still Cloudflare — these containers are for local work only.
 
 ```bash
-cd /mnt/projects/projects/pocket-ledger
-docker compose up          # Vite dev → http://localhost:5173
+mkdir -p /home/rsmbyk/projects
+cd /home/rsmbyk/projects
+git clone https://github.com/rsmbyk/pocket-ledger.git
+cd pocket-ledger
+docker compose up --build          # Vite dev → http://localhost:5173
 docker compose --profile preview up preview   # built preview → :4173
 ```
 
-`node_modules` lives in a named volume so the VirtualBox share does not fight npm installs. `CHOKIDAR_USEPOLLING=true` keeps HMR working on that share.
-
-On the Windows host, open **http://localhost:5173/**. That needs a VirtualBox NAT rule `5173 → 5173` on `docker-vm` (rule name `pocketledger` if you added it for this project). Without it, use an SSH tunnel:
-
-```powershell
-ssh -L 5173:localhost:5173 docker-vm
-```
+`node_modules` lives in a named volume so the bind mount does not fight host/container installs.
 
 First `docker compose up` can take a minute (`npm ci` into the named volume). Later starts reuse that volume and are faster.
+
+On this machine you may also run a separate Nginx Proxy Manager stack under `/home/rsmbyk/projects/local-dev-proxy` to map a portless `*.localhost` name (e.g. `http://pocket-ledger.localhost/`) to a published host port (`127.0.0.1:<port>`). That proxy is machine-local and is not required for the project Compose file — see that folder’s README.
 
 ## Former: GitHub Pages / classic Cloudflare Pages
 
