@@ -16,10 +16,20 @@ Offline-first personal finance tracker. Mobile-first PWA, data stays on your dev
 
 ## Quick start
 
+With Node on the host:
+
 ```bash
 npm install
 npm run dev
 ```
+
+With Docker (from `/home/rsmbyk/projects/pocket-ledger`):
+
+```bash
+docker compose up --build
+```
+
+Then open http://localhost:5173 — see [docs/HOSTING.md](docs/HOSTING.md).
 
 ```bash
 npm run check
