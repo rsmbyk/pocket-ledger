@@ -9,7 +9,7 @@
 | URLs | Default `*.run.app` is OK. Custom domain is **parked**. |
 | Origins | **Two origins** + CORS. Session cookie lives on the **API** host (not same-origin cookies). |
 | Deploy | GitHub Actions + Workload Identity Federation. **Path-filtered:** `apps/web/**` does not deploy API; `apps/api/**` does not deploy web. |
-| Blobs | Postgres `bytea` until size hurts (GCS parked) |
+| Blobs | Postgres `bytea` until size hurts (GCS parked). Schema: `apps/api/schema.sql`. Local/dev/CI uses an in-memory store unless `DATABASE_URL` is set later. |
 
 Cutover to Cloud Run is a **new origin** = **empty IndexedDB**. Data on the Cloudflare origin does not move. Users who need local history should export an encrypted backup (Spec 120) before switching hosts.
 
@@ -18,8 +18,11 @@ Cutover to Cloud Run is a **new origin** = **empty IndexedDB**. Data on the Clou
 ## Cookie and CORS
 
 - Session cookie: **7-day rolling**, HttpOnly, Secure, on the API host.
-- Web origin is allowlisted on the API for credentialed CORS.
+- Web origin is allowlisted on the API for credentialed CORS (`WEB_ORIGIN`).
 - Do not put the session cookie on the web host.
+- API env: `GOOGLE_CLIENT_ID` (GIS audience), `AUTH_ALLOW_FAKE=1` only for local/e2e (`fake.<sub>.<email>` tokens), `COOKIE_SECURE=0` on http://127.0.0.1, `WEB_ORIGIN`.
+
+Web build env: `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID`, `VITE_FAKE_GOOGLE=1` for e2e.
 
 ## GitHub Actions
 

@@ -54,6 +54,25 @@
 		onDeletePocket: (id: string) => void | Promise<void>;
 		onReorderPockets: (orderedNonMainIds: string[]) => void | Promise<void>;
 		onClearPocketGoal: (id: string) => void | Promise<void>;
+		onPushTransaction?: (id: string, deleted?: boolean) => void | Promise<void>;
+		onSyncConflict?: () => void | Promise<void>;
+		cloudConfigured?: boolean;
+		userEmail?: string | null;
+		sessions?: Array<{
+			id: string;
+			userAgent: string;
+			lastSeenAt: string;
+			current: boolean;
+		}>;
+		idleMinutes?: number;
+		leaveTab?: boolean;
+		onGoogleSignIn?: () => void | Promise<void>;
+		onSignOut?: () => void | Promise<void>;
+		onRevokeSession?: (id: string) => void | Promise<void>;
+		onIdleMinutes?: (minutes: number) => void;
+		onLeaveTab?: (on: boolean) => void;
+		onEnrollWebAuthn?: () => void | Promise<void>;
+		webauthnEnrolled?: boolean;
 		ready: boolean;
 		error: string | null;
 	};
@@ -92,6 +111,20 @@
 		onDeletePocket,
 		onReorderPockets,
 		onClearPocketGoal,
+		onPushTransaction,
+		onSyncConflict,
+		cloudConfigured = false,
+		userEmail = null,
+		sessions = [],
+		idleMinutes = 30,
+		leaveTab = true,
+		onGoogleSignIn,
+		onSignOut,
+		onRevokeSession,
+		onIdleMinutes,
+		onLeaveTab,
+		onEnrollWebAuthn,
+		webauthnEnrolled = false,
 		ready,
 		error
 	}: Props = $props();
@@ -212,6 +245,18 @@
 				{onDeletePocket}
 				{onReorderPockets}
 				{onClearPocketGoal}
+				{cloudConfigured}
+				{userEmail}
+				{sessions}
+				{idleMinutes}
+				{leaveTab}
+				{onGoogleSignIn}
+				{onSignOut}
+				{onRevokeSession}
+				{onIdleMinutes}
+				{onLeaveTab}
+				{onEnrollWebAuthn}
+				{webauthnEnrolled}
 				onNavigate={navigate}
 				onOpenAdd={openAdd}
 				onOpenEdit={openEdit}
@@ -242,6 +287,8 @@
 			}
 		}}
 		onSaved={onRefreshLedger}
+		{onPushTransaction}
+		{onSyncConflict}
 	/>
 {/if}
 

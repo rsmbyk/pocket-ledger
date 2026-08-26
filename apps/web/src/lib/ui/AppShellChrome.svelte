@@ -106,6 +106,23 @@
 		onDeletePocket: (id: string) => void | Promise<void>;
 		onReorderPockets: (orderedNonMainIds: string[]) => void | Promise<void>;
 		onClearPocketGoal: (id: string) => void | Promise<void>;
+		cloudConfigured?: boolean;
+		userEmail?: string | null;
+		sessions?: Array<{
+			id: string;
+			userAgent: string;
+			lastSeenAt: string;
+			current: boolean;
+		}>;
+		idleMinutes?: number;
+		leaveTab?: boolean;
+		onGoogleSignIn?: () => void | Promise<void>;
+		onSignOut?: () => void | Promise<void>;
+		onRevokeSession?: (id: string) => void | Promise<void>;
+		onIdleMinutes?: (minutes: number) => void;
+		onLeaveTab?: (on: boolean) => void;
+		onEnrollWebAuthn?: () => void | Promise<void>;
+		webauthnEnrolled?: boolean;
 		onNavigate: (route: AppRoute) => void;
 		onOpenAdd: () => void;
 		onOpenEdit: (tx: LedgerTransaction) => void;
@@ -147,6 +164,18 @@
 		onDeletePocket,
 		onReorderPockets,
 		onClearPocketGoal,
+		cloudConfigured = false,
+		userEmail = null,
+		sessions = [],
+		idleMinutes = 30,
+		leaveTab = true,
+		onGoogleSignIn,
+		onSignOut,
+		onRevokeSession,
+		onIdleMinutes,
+		onLeaveTab,
+		onEnrollWebAuthn,
+		webauthnEnrolled = false,
 		onNavigate,
 		onOpenAdd,
 		onOpenEdit,
@@ -1012,11 +1041,23 @@
 			<MorePanel
 				{lockEnabled}
 				{signedIn}
+				{cloudConfigured}
+				{userEmail}
+				{sessions}
+				{idleMinutes}
+				{leaveTab}
 				{onExport}
 				{onImportFile}
 				{onResetLocalData}
 				{onEnableLock}
 				{onDisableLock}
+				{onGoogleSignIn}
+				{onSignOut}
+				{onRevokeSession}
+				{onIdleMinutes}
+				{onLeaveTab}
+				{onEnrollWebAuthn}
+				{webauthnEnrolled}
 			/>
 		{/if}
 	</div>

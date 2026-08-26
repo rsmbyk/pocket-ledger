@@ -45,6 +45,7 @@
 	import CategoryPicker from '$lib/ui/CategoryPicker.svelte';
 	import PocketLabel from '$lib/ui/PocketLabel.svelte';
 	import { cn } from '$lib/utils.js';
+	import { SyncConflictError } from '$lib/application/sync';
 
 	type AddMode = 'normal' | 'transfer';
 
@@ -67,6 +68,8 @@
 		editing?: LedgerTransaction | null;
 		onOpenChange: (open: boolean) => void;
 		onSaved: () => void | Promise<void>;
+		onPushTransaction?: (id: string, deleted?: boolean) => void | Promise<void>;
+		onSyncConflict?: () => void | Promise<void>;
 	};
 
 	let {
@@ -77,7 +80,9 @@
 		accounts = [],
 		editing = null,
 		onOpenChange,
-		onSaved
+		onSaved,
+		onPushTransaction,
+		onSyncConflict
 	}: Props = $props();
 
 	const desktop = new MediaQuery('min-width: 768px');
@@ -441,6 +446,7 @@
 		saving = true;
 		clearFieldError();
 		try {
+			let savedId: string | null = null;
 			if (editing && editing.type === 'transfer') {
 				await updateTransfer({
 					id: editing.id,
@@ -451,6 +457,7 @@
 					note: transferNote,
 					occurredOn: transferOccurredOn
 				});
+				savedId = editing.id;
 			} else if (editing) {
 				await updateTransaction({
 					id: editing.id,
@@ -461,8 +468,9 @@
 					note,
 					occurredOn
 				});
+				savedId = editing.id;
 			} else if (mode === 'transfer') {
-				await addTransfer({
+				const tx = await addTransfer({
 					sourceAccountId: transferSourceId,
 					destAccountId: transferDestId,
 					amountRaw: transferAmountRaw,
@@ -471,8 +479,9 @@
 					occurredOn: transferOccurredOn
 				});
 				clearTxCreateDraft();
+				savedId = tx.id;
 			} else {
-				await addTransaction({
+				const tx = await addTransaction({
 					accountId: selectedAccountId,
 					type,
 					amountRaw,
@@ -481,10 +490,17 @@
 					occurredOn
 				});
 				clearTxCreateDraft();
+				savedId = tx.id;
 			}
+			if (savedId && onPushTransaction) await onPushTransaction(savedId);
 			onOpenChange(false);
 			await onSaved();
 		} catch (err) {
+			if (err instanceof SyncConflictError) {
+				onOpenChange(false);
+				await onSyncConflict?.();
+				return;
+			}
 			setCaughtError(err);
 		} finally {
 			saving = false;
@@ -497,9 +513,15 @@
 		clearFieldError();
 		try {
 			await voidTransaction(editing.id);
+			if (onPushTransaction) await onPushTransaction(editing.id, true);
 			onOpenChange(false);
 			await onSaved();
 		} catch (err) {
+			if (err instanceof SyncConflictError) {
+				onOpenChange(false);
+				await onSyncConflict?.();
+				return;
+			}
 			setCaughtError(err);
 		} finally {
 			saving = false;

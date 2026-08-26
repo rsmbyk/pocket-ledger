@@ -15,7 +15,7 @@
 		"format": "prettier --write .",
 		"icons": "node scripts/generate-icons.mjs",
 		"test:unit": "npm run test:unit -w @pocket-ledger/web",
-		"test:unit:run": "npm run test:unit:run -w @pocket-ledger/web",
+		"test:unit:run": "npm run test:unit:run -w @pocket-ledger/web && npm run test:unit:run -w @pocket-ledger/api",
 		"test:e2e": "playwright test",
 		"test": "npm run test:unit:run && npm run test:e2e"
 	},

@@ -58,6 +58,40 @@
 		THEME_STORAGE_KEY,
 		type ThemePreference
 	} from '$lib/shared/theme';
+	import AccountPassphraseScreen from '$lib/ui/AccountPassphraseScreen.svelte';
+	import HexKitScreen from '$lib/ui/HexKitScreen.svelte';
+	import ScreensaverOverlay from '$lib/ui/ScreensaverOverlay.svelte';
+	import LocalConflictDialog from '$lib/ui/LocalConflictDialog.svelte';
+	import {
+		cloudConfigured,
+		fakeGoogleEnabled,
+		fetchMe,
+		googleClientId,
+		listCloudSessions,
+		LocalConflictError,
+		logoutCloud,
+		revokeCloudSession,
+		signInWithGoogleToken,
+		type CloudSession
+	} from '$lib/application/cloud-api';
+	import { localHasData } from '$lib/application/local-has-data';
+	import { generateRecoveryKit, type RecoveryKit } from '$lib/application/hex-kit';
+	import {
+		setAccountPassphrase,
+		unlockAccountWithHex,
+		unlockAccountWithPassphrase,
+		uploadRecoveryWrap
+	} from '$lib/application/account-lock';
+	import { parseIdleSettings } from '$lib/application/idle';
+	import { enrollWebAuthn } from '$lib/application/webauthn';
+	import { SETTINGS_IDLE_LEAVE_TAB, SETTINGS_IDLE_MINUTES, SETTINGS_WEBAUTHN, db } from '$lib/data/db';
+	import { getSetting, setSetting } from '$lib/data/settings-repo';
+	import { loadLockout, saveLockout } from '$lib/application/device-lockout-repo';
+	import { isLockedOut, recordSuccess, recordWrongGuess } from '$lib/application/device-lockout';
+	import { pullAndApply, pushSealedEntity, pushTransactionById } from '$lib/application/sync-client';
+	import { promptGoogleIdToken } from '$lib/application/google-signin';
+	import { clearDataKey } from '$lib/data/session-key';
+	import type { AuthMe } from '$lib/application/cloud-api';
 
 	let account = $state<Account | null>(null);
 	let accounts = $state<Account[]>([]);
@@ -75,6 +109,19 @@
 	let ready = $state(false);
 	let error = $state<string | null>(null);
 	let themePreference = $state<ThemePreference>('system');
+	let signedIn = $state(false);
+	let userEmail = $state<string | null>(null);
+	let accountOnboarding = $state<AuthMe['onboarding'] | null>(null);
+	let recoveryKit = $state<RecoveryKit | null>(null);
+	let screensaverOn = $state(false);
+	let idleMinutes = $state(30);
+	let leaveTab = $state(true);
+	let sessions = $state<CloudSession[]>([]);
+	let conflictOpen = $state(false);
+	let pendingGoogleToken = $state<string | null>(null);
+	let lockoutUntil = $state<number | null>(null);
+	let lastActivity = $state(Date.now());
+	let webauthnEnrolled = $state(false);
 
 	let canPrevMonth = $derived(
 		monthBounds ? canShiftMonth(monthKey, -1, monthBounds) : false
@@ -107,11 +154,39 @@
 		const dekState = await ensureLocalDek();
 		lockEnabled = await isLockEnabled();
 		unlocked = dekState === 'unlocked';
-		// Sealed category/note fields need the session key — stop before seeding/lists.
+		const idleStored = parseIdleSettings(
+			await getSetting(SETTINGS_IDLE_MINUTES),
+			await getSetting(SETTINGS_IDLE_LEAVE_TAB)
+		);
+		idleMinutes = idleStored.minutes;
+		leaveTab = idleStored.leaveTab;
+		webauthnEnrolled = Boolean(await getSetting(SETTINGS_WEBAUTHN));
+		const lockout = await loadLockout();
+		lockoutUntil = lockout.lockedUntil;
+		if (cloudConfigured()) {
+			try {
+				const me = await fetchMe();
+				if (me) applyMe(me);
+			} catch {
+				/* signed-out if API is down */
+			}
+		}
 		if (!unlocked) {
 			account = await ensureDefaultAccount();
 			isSinglePot = true;
 			return;
+		}
+		if (signedIn && accountOnboarding && accountOnboarding !== 'complete') {
+			account = await ensureDefaultAccount();
+			return;
+		}
+		if (signedIn) {
+			try {
+				await pullAndApply();
+			} catch {
+				/* online required; keep cache */
+			}
+			sessions = await listCloudSessions().catch(() => []);
 		}
 		const overview = await getAccountsOverview();
 		const active = overview.accounts[0] ?? null;
@@ -134,6 +209,41 @@
 				ready = true;
 			}
 		})();
+		const onActivity = () => {
+			lastActivity = Date.now();
+		};
+		window.addEventListener('pointerdown', onActivity);
+		window.addEventListener('keydown', onActivity);
+		const idleTimer = window.setInterval(() => {
+			if (screensaverOn || !unlocked) return;
+			if (Date.now() - lastActivity >= idleMinutes * 60_000) {
+				lockSession();
+				unlocked = false;
+				screensaverOn = true;
+			}
+		}, 1000);
+		const onVis = () => {
+			if (document.visibilityState === 'hidden' && leaveTab && unlocked) {
+				lockSession();
+				unlocked = false;
+				screensaverOn = true;
+			}
+		};
+		document.addEventListener('visibilitychange', onVis);
+		let poll: number | undefined;
+		poll = window.setInterval(() => {
+			if (!signedIn || !unlocked || document.visibilityState !== 'visible') return;
+			void pullAndApply()
+				.then(() => onRefreshLedger())
+				.catch(() => undefined);
+		}, 30_000);
+		return () => {
+			window.removeEventListener('pointerdown', onActivity);
+			window.removeEventListener('keydown', onActivity);
+			document.removeEventListener('visibilitychange', onVis);
+			window.clearInterval(idleTimer);
+			if (poll) window.clearInterval(poll);
+		};
 	});
 
 	function onThemePreferenceChange(next: ThemePreference) {
@@ -165,10 +275,33 @@
 	}
 
 	async function onUnlock(passphrase: string) {
-		const ok = await unlockWithPassphrase(passphrase);
-		if (!ok) throw new Error('Incorrect passphrase');
+		const lockout = await loadLockout();
+		if (isLockedOut(lockout, Date.now())) {
+			lockoutUntil = lockout.lockedUntil;
+			throw new Error('Too many guesses. Try again later.');
+		}
+		const ok = signedIn
+			? await unlockAccountWithPassphrase(passphrase)
+			: await unlockWithPassphrase(passphrase);
+		if (!ok) {
+			const next = recordWrongGuess(lockout, new Date());
+			await saveLockout(next);
+			lockoutUntil = next.lockedUntil;
+			throw new Error('Incorrect passphrase');
+		}
+		await saveLockout(recordSuccess(lockout, new Date()));
+		lockoutUntil = null;
 		unlocked = true;
 		if (account) await refreshLedger(account);
+	}
+
+	function applyMe(me: AuthMe) {
+		signedIn = true;
+		userEmail = me.user.email;
+		accountOnboarding = me.onboarding;
+		if (me.onboarding === 'needs-kit' && !recoveryKit) {
+			recoveryKit = generateRecoveryKit();
+		}
 	}
 
 	async function onExport(passphrase: string) {
@@ -203,6 +336,42 @@
 		themePreference = parseThemePreference(userPrefersMode.current);
 		void mode.current;
 	});
+
+	async function finishGoogle(idToken: string, discardLocal = false) {
+		const me = await signInWithGoogleToken(idToken, {
+			localHasData: await localHasData(),
+			discardLocal
+		});
+		if (discardLocal) {
+			clearDataKey();
+			await db.delete();
+			await db.open();
+			await ensureLocalDek();
+		}
+		applyMe(me);
+		if (me.onboarding === 'complete') {
+			unlocked = false;
+		}
+	}
+
+	async function onGoogleSignIn() {
+		const token = fakeGoogleEnabled()
+			? `fake.${crypto.randomUUID()}.e2e@example.com`
+			: googleClientId()
+				? await promptGoogleIdToken(googleClientId())
+				: null;
+		if (!token) throw new Error('Google Sign-In is not configured on this build');
+		try {
+			await finishGoogle(token);
+		} catch (err) {
+			if (err instanceof LocalConflictError) {
+				pendingGoogleToken = token;
+				conflictOpen = true;
+				return;
+			}
+			throw err;
+		}
+	}
 </script>
 
 <ModeWatcher
@@ -215,8 +384,55 @@
 	<div class="text-muted-foreground flex min-h-svh items-center justify-center text-sm">
 		Starting up…
 	</div>
+{:else if screensaverOn}
+	<ScreensaverOverlay
+		{signedIn}
+		{lockEnabled}
+		onContinue={async () => {
+			screensaverOn = false;
+			if (!lockEnabled && !signedIn) {
+				await ensureLocalDek();
+				unlocked = true;
+				if (account) await refreshLedger(account);
+			}
+		}}
+	/>
+{:else if lockEnabled && !unlocked && !signedIn}
+	<UnlockScreen variant="device" lockedUntil={lockoutUntil} {onUnlock} />
+{:else if signedIn && accountOnboarding === 'needs-passphrase'}
+	<AccountPassphraseScreen
+		onSubmit={async (passphrase) => {
+			await setAccountPassphrase(passphrase);
+			lockEnabled = true;
+			recoveryKit = generateRecoveryKit();
+			accountOnboarding = 'needs-kit';
+		}}
+	/>
+{:else if signedIn && accountOnboarding === 'needs-kit' && recoveryKit}
+	<HexKitScreen
+		kit={recoveryKit}
+		onConfirm={async () => {
+			await uploadRecoveryWrap(recoveryKit!.compact);
+			accountOnboarding = 'complete';
+			unlocked = true;
+			await bootstrap();
+			if (account) await refreshLedger(account);
+		}}
+	/>
+{:else if signedIn && accountOnboarding === 'complete' && !unlocked}
+	<UnlockScreen
+		variant="account"
+		allowHex
+		{onUnlock}
+		onUnlockHex={async (hex) => {
+			const ok = await unlockAccountWithHex(hex);
+			if (!ok) throw new Error('Recovery kit did not match');
+			accountOnboarding = 'needs-passphrase';
+			unlocked = true;
+		}}
+	/>
 {:else if lockEnabled && !unlocked}
-	<UnlockScreen {onUnlock} />
+	<UnlockScreen variant="device" lockedUntil={lockoutUntil} {onUnlock} />
 {:else}
 	<AppShell
 		{account}
@@ -231,6 +447,7 @@
 		{expenseCategories}
 		{incomeCategories}
 		{lockEnabled}
+		{signedIn}
 		{themePreference}
 		{onThemePreferenceChange}
 		{onRefreshLedger}
@@ -287,7 +504,72 @@
 			await clearPocketGoal(id);
 			await onRefreshLedger();
 		}}
+		onPushTransaction={async (id, deleted) => {
+			if (!signedIn) return;
+			await pushTransactionById(id, deleted === true);
+			await pullAndApply();
+		}}
+		onSyncConflict={async () => {
+			await pullAndApply();
+			await onRefreshLedger();
+		}}
+		cloudConfigured={cloudConfigured()}
+		{userEmail}
+		{sessions}
+		{idleMinutes}
+		{leaveTab}
+		{onGoogleSignIn}
+		onSignOut={async () => {
+			await logoutCloud();
+			clearDataKey();
+			await db.delete();
+			window.location.assign('/');
+		}}
+		onRevokeSession={async (id) => {
+			await revokeCloudSession(id);
+			sessions = await listCloudSessions();
+		}}
+		onIdleMinutes={async (minutes) => {
+			idleMinutes = minutes as typeof idleMinutes;
+			await setSetting(SETTINGS_IDLE_MINUTES, String(minutes));
+			if (signedIn) {
+				await pushSealedEntity('setting', SETTINGS_IDLE_MINUTES, {
+					key: SETTINGS_IDLE_MINUTES,
+					value: String(minutes)
+				});
+			}
+		}}
+		onLeaveTab={async (on) => {
+			leaveTab = on;
+			await setSetting(SETTINGS_IDLE_LEAVE_TAB, String(on));
+			if (signedIn) {
+				await pushSealedEntity('setting', SETTINGS_IDLE_LEAVE_TAB, {
+					key: SETTINGS_IDLE_LEAVE_TAB,
+					value: String(on)
+				});
+			}
+		}}
+		onEnrollWebAuthn={async () => {
+			const id = await enrollWebAuthn();
+			await setSetting(SETTINGS_WEBAUTHN, id);
+			webauthnEnrolled = true;
+		}}
+		{webauthnEnrolled}
 		{ready}
 		{error}
 	/>
 {/if}
+
+<LocalConflictDialog
+	open={conflictOpen}
+	onCancel={() => {
+		conflictOpen = false;
+		pendingGoogleToken = null;
+	}}
+	onConsent={async () => {
+		if (!pendingGoogleToken) return;
+		await finishGoogle(pendingGoogleToken, true);
+		conflictOpen = false;
+		pendingGoogleToken = null;
+	}}
+/>

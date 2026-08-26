@@ -60,6 +60,7 @@ test.describe('010 / 018 / 022 custom categories', () => {
 		await sheet.getByLabel(/amount/i).fill('5000');
 		await selectTxCategory(page, 'Coffee', sheet);
 		await sheet.getByRole('button', { name: 'Save' }).click();
+		await expect(sheet).toBeHidden();
 
 		await page.goto('/categories');
 		const coffeeRow = page.locator('li', { has: page.getByRole('textbox', { name: 'Name for Coffee' }) });

@@ -22,6 +22,11 @@ export type SettingsRow = {
 	value: string;
 };
 
+export type SyncRevRow = {
+	id: string;
+	rev: number;
+};
+
 export class PocketLedgerDb extends Dexie {
 	accounts!: EntityTable<Account, 'id'>;
 	categories!: EntityTable<CategoryRow, 'id'>;
@@ -29,6 +34,7 @@ export class PocketLedgerDb extends Dexie {
 	settings!: EntityTable<SettingsRow, 'key'>;
 	goals!: EntityTable<Goal, 'id'>;
 	netWorthSnapshots!: EntityTable<NetWorthSnapshot, 'id'>;
+	syncRevs!: EntityTable<SyncRevRow, 'id'>;
 
 	constructor() {
 		super('pocket-ledger');
@@ -220,6 +226,15 @@ export class PocketLedgerDb extends Dexie {
 					});
 				}
 			});
+		this.version(7).stores({
+			accounts: 'id, name, sortOrder, isMain',
+			categories: 'id, kind, name, sortOrder, deletedAt',
+			transactions: 'id, accountId, type, occurredOn, categoryId',
+			settings: 'key',
+			goals: 'id, name',
+			netWorthSnapshots: 'id, capturedOn',
+			syncRevs: 'id'
+		});
 	}
 }
 
@@ -230,3 +245,8 @@ export const SETTINGS_LOCK_SALT = 'lock.salt';
 export const SETTINGS_LOCK_VERIFIER = 'lock.verifier';
 export const SETTINGS_RAW_DEK = 'lock.rawDek';
 export const SETTINGS_WRAPPED_DEK = 'lock.wrappedDek';
+export const SETTINGS_IDLE_MINUTES = 'idle.minutes';
+export const SETTINGS_IDLE_LEAVE_TAB = 'idle.leaveTab';
+export const SETTINGS_LOCKOUT = 'lock.lockout';
+export const SETTINGS_WRAP_REV = 'cloud.wrapRev';
+export const SETTINGS_WEBAUTHN = 'lock.webauthn';

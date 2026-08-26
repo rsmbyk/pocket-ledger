@@ -1,16 +1,29 @@
 <script lang="ts">
 	import HardDriveIcon from '@lucide/svelte/icons/hard-drive';
 	import LockIcon from '@lucide/svelte/icons/lock';
+	import CloudIcon from '@lucide/svelte/icons/cloud';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
+	import DeviceSkipWarning from '$lib/ui/DeviceSkipWarning.svelte';
+	import { IDLE_MINUTES } from '$lib/application/idle';
 
 	type Props = {
 		lockEnabled: boolean;
 		signedIn?: boolean;
+		cloudConfigured?: boolean;
+		userEmail?: string | null;
+		sessions?: Array<{
+			id: string;
+			userAgent: string;
+			lastSeenAt: string;
+			current: boolean;
+		}>;
+		idleMinutes?: number;
+		leaveTab?: boolean;
 		onExport: (passphrase: string) => void | Promise<void>;
 		onImportFile: (file: File, passphrase: string) => void | Promise<void>;
 		onResetLocalData: (options: {
@@ -19,16 +32,35 @@
 		}) => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
+		onGoogleSignIn?: () => void | Promise<void>;
+		onSignOut?: () => void | Promise<void>;
+		onRevokeSession?: (id: string) => void | Promise<void>;
+		onIdleMinutes?: (minutes: number) => void;
+		onLeaveTab?: (on: boolean) => void;
+		onEnrollWebAuthn?: () => void | Promise<void>;
+		webauthnEnrolled?: boolean;
 	};
 
 	let {
 		lockEnabled,
 		signedIn = false,
+		cloudConfigured = false,
+		userEmail = null,
+		sessions = [],
+		idleMinutes = 30,
+		leaveTab = true,
 		onExport,
 		onImportFile,
 		onResetLocalData,
 		onEnableLock,
-		onDisableLock
+		onDisableLock,
+		onGoogleSignIn,
+		onSignOut,
+		onRevokeSession,
+		onIdleMinutes,
+		onLeaveTab,
+		onEnrollWebAuthn,
+		webauthnEnrolled = false
 	}: Props = $props();
 
 	let lockPass = $state('');
@@ -46,6 +78,7 @@
 	let exportPassConfirm = $state('');
 	let exportPassError = $state<string | null>(null);
 	let disableLockConfirmOpen = $state(false);
+	let signOutOpen = $state(false);
 	let error = $state<string | null>(null);
 
 	async function wrap(action: () => void | Promise<void>) {
@@ -117,6 +150,72 @@
 		</Card.Root>
 		{/if}
 
+		<Card.Root class="p-(--card-spacing)" data-testid="more-section-cloud">
+			<Card.Header class="px-0">
+				<Card.Title class="flex items-center gap-2 text-base">
+					<CloudIcon class="size-5" aria-hidden="true" />
+					Cloud
+				</Card.Title>
+				<Card.Description>
+					{#if signedIn}
+						Signed in as {userEmail}. Signing out wipes this device; cloud stays.
+					{:else}
+						Optional. Google only. You can keep using Pocket Ledger without an account.
+					{/if}
+				</Card.Description>
+			</Card.Header>
+			<Card.Content class="flex flex-col gap-2 px-0">
+				{#if cloudConfigured && !signedIn && onGoogleSignIn}
+					<Button type="button" onclick={() => void wrap(onGoogleSignIn)} data-testid="google-sign-in">
+						Sign in with Google
+					</Button>
+				{:else if signedIn}
+					{#if sessions.length > 0}
+						<ul class="space-y-2 text-sm" data-testid="session-list">
+							{#each sessions as session (session.id)}
+								<li class="flex items-center justify-between gap-2">
+									<span>
+										{session.current ? 'This device' : session.userAgent || 'Other device'}
+									</span>
+									{#if !session.current && onRevokeSession}
+										<Button
+											type="button"
+											variant="outline"
+											size="sm"
+											onclick={() => void wrap(() => onRevokeSession(session.id))}
+											data-testid="session-revoke"
+										>
+											Revoke
+										</Button>
+									{/if}
+								</li>
+							{/each}
+						</ul>
+					{/if}
+					<Button
+						type="button"
+						variant="destructive"
+						data-testid="cloud-sign-out"
+						onclick={() => (signOutOpen = true)}
+					>
+						Sign out
+					</Button>
+					{#if onEnrollWebAuthn}
+						<Button
+							type="button"
+							variant="outline"
+							onclick={() => void wrap(onEnrollWebAuthn)}
+							data-testid="webauthn-enroll"
+						>
+							{webauthnEnrolled ? 'This device unlock is on' : 'Use this device’s screen lock'}
+						</Button>
+					{/if}
+				{:else}
+					<p class="text-muted-foreground text-sm">Cloud sign-in is not configured on this build.</p>
+				{/if}
+			</Card.Content>
+		</Card.Root>
+
 		<Card.Root class="p-(--card-spacing)" data-testid="more-section-privacy">
 			<Card.Header class="px-0">
 				<Card.Title class="flex items-center gap-2 text-base">
@@ -129,9 +228,39 @@
 				</Card.Description>
 			</Card.Header>
 			<Card.Content class="space-y-2 px-0">
+				{#if !lockEnabled && !signedIn}
+					<DeviceSkipWarning onSetPassphrase={() => document.querySelector<HTMLInputElement>('[data-testid=enable-lock-pass]')?.focus()} />
+				{/if}
 				<p class="text-sm" data-testid="lock-status">
 					Lock is <strong>{lockEnabled ? 'on' : 'off'}</strong>
+					{#if signedIn}
+						(account passphrase — cannot be removed while signed in)
+					{/if}
 				</p>
+				<div class="space-y-2" data-testid="idle-settings">
+					<Label for="idle-minutes">Idle screensaver</Label>
+					<select
+						id="idle-minutes"
+						class="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
+						value={String(idleMinutes)}
+						onchange={(e) => onIdleMinutes?.(Number((e.currentTarget as HTMLSelectElement).value))}
+						data-testid="idle-minutes"
+					>
+						{#each IDLE_MINUTES as mins}
+							<option value={mins}>{mins} minutes</option>
+						{/each}
+					</select>
+					<label class="flex items-center gap-2 text-sm">
+						<input
+							type="checkbox"
+							class="size-5 accent-primary md:size-4"
+							checked={leaveTab}
+							onchange={(e) => onLeaveTab?.((e.currentTarget as HTMLInputElement).checked)}
+							data-testid="idle-leave-tab"
+						/>
+						Lock when I leave this tab
+					</label>
+				</div>
 				{#if !lockEnabled}
 					<form
 						class="space-y-2"
@@ -195,7 +324,7 @@
 						{/if}
 						<Button type="submit" class="w-full" data-testid="enable-lock">Enable lock</Button>
 					</form>
-				{:else}
+				{:else if !signedIn}
 					<form
 						class="space-y-2"
 						onsubmit={(e) => {
@@ -214,6 +343,11 @@
 							>Disable lock</Button
 						>
 					</form>
+				{:else}
+					<p class="text-muted-foreground text-sm">
+						While signed in, the account passphrase stays on. You can change it from unlock after a
+						reload, not remove it.
+					</p>
 				{/if}
 			</Card.Content>
 		</Card.Root>
@@ -403,5 +537,19 @@
 			await onDisableLock(lockPass);
 			lockPass = '';
 		});
+	}}
+/>
+
+<ConfirmDialog
+	open={signOutOpen}
+	title="Sign out?"
+	description="This device’s copy is wiped. There is no signed-in file export. Cloud data stays."
+	confirmLabel="Sign out"
+	destructive
+	dangerChrome
+	confirmTestId="cloud-sign-out-confirm"
+	onOpenChange={(open) => (signOutOpen = open)}
+	onConfirm={async () => {
+		if (onSignOut) await wrap(onSignOut);
 	}}
 />

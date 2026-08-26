@@ -2,7 +2,7 @@
 
 Two modes, one web app. **Signed out:** client-only Dexie PWA, no API. **Signed in:** SvelteKit talks to Hono; Dexie is a cache; Cloud SQL holds ciphertext.
 
-Docs describe the **target**. Specs 117–118 landed the Kit app in `apps/web` and a Hono health stub in `apps/api`. Spec 120 wrapping and encrypted backup are in. Google and sync still follow Specs 119–121.
+Docs describe the **target**. Specs 117–121 are in the tree: Kit PWA, Cloud Run stubs, wrapping, Google session, and ciphertext sync. Android stays parked (Spec 122).
 
 ## Target layout
 
