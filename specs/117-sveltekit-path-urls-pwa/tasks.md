@@ -1,12 +1,12 @@
 # Tasks 117: SvelteKit path URLs + PWA
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Plan:** [./plan.md](./plan.md)
 - **Spec:** [./spec.md](./spec.md)
 
 ## Checklist
 
-- [ ] Spec Accepted by Ronald
+- [x] Spec Accepted by Ronald
 - [ ] SvelteKit + adapter-static SPA fallback
 - [ ] Routes `/` `/activity` `/pockets` `/categories` `/more`
 - [ ] Remove hash router as source of truth

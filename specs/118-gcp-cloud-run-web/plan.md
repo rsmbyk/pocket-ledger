@@ -1,6 +1,6 @@
 # Plan 118: Cloud Run web + path-filtered Actions; retire Cloudflare
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Spec 115 HOSTING; Spec 116 CI; Spec 117 Kit static

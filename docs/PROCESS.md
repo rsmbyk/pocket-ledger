@@ -34,10 +34,10 @@ UI wiring is thin; prefer testing rules below the Svelte boundary.
 
 ## GitHub Flow
 
-1. `main` is always deployable (Cloudflare deploys from `main`).
+1. `main` is always deployable.
 2. Feature work happens on short-lived branches (`feat/*`, `fix/*`, `chore/*`, `docs/*`).
-3. Open a PR into `main`. Verify locally (`npm run check`, unit, e2e) before merge — GitHub Actions CI is not used (account billing blocked workflows).
-4. Land the PR on `main` — that triggers Cloudflare production deploy.
+3. Open a PR into `main`. **GitHub Actions CI** (Spec 116) runs check, unit, and e2e. Verify locally too if CI is not yet live.
+4. Land the PR on `main`. **Target deploy** (Spec 118): path-filtered GitHub Actions → Cloud Run (web and API independently). Until 118 cuts over, Cloudflare’s Git integration may still deploy `main` — that is not the forever path.
 
 ### Merge style
 

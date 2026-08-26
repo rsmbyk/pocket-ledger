@@ -1,6 +1,6 @@
 # Plan 115: Docs unlock — local-first + optional cloud
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 

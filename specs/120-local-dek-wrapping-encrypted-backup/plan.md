@@ -1,6 +1,6 @@
 # Plan 120: Always-on local DEK wrapping; encrypted local-only backup
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Specs 007/011 lock; Spec 119 account wrap; Spec 121 still uses same DEK

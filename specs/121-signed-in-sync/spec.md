@@ -1,7 +1,7 @@
 # Spec 121: Signed-in sync (rev, 409, gravestones, poll, settings)
 
 - **ID:** 121
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

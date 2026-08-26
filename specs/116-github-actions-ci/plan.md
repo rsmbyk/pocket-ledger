@@ -1,6 +1,6 @@
 # Plan 116: Restore GitHub Actions CI
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Spec 115 (docs); Spec 118 (path-filtered deploy)

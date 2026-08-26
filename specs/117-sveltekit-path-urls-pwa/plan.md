@@ -1,6 +1,6 @@
 # Plan 117: SvelteKit path URLs + PWA
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Spec 009 (hash router); Spec 115 (docs target); Spec 118 (`apps/web` on Cloud Run)

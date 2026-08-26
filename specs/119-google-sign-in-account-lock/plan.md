@@ -1,6 +1,6 @@
 # Plan 119: Google Sign-In, account passphrase, hex kit, session manager
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Spec 115 product; Spec 120 wrapping (DEK boxes); Spec 121 sync after unlock

@@ -1,12 +1,12 @@
 # Tasks 119: Google Sign-In, account passphrase, hex kit, session manager
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Plan:** [./plan.md](./plan.md)
 - **Spec:** [./spec.md](./spec.md)
 
 ## Checklist
 
-- [ ] Spec Accepted by Ronald
+- [x] Spec Accepted by Ronald
 - [ ] TDD: onboarding state machine (resume steps) — `apps/api` and/or `apps/web` application tests (name files in implement PR)
 - [ ] TDD: session issue/refresh/revoke
 - [ ] GIS + ID token verify + 7-day cookie + CORS

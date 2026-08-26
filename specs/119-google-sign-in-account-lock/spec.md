@@ -1,7 +1,7 @@
 # Spec 119: Google Sign-In, account passphrase, hex kit, session manager
 
 - **ID:** 119
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

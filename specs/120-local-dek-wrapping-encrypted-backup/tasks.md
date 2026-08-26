@@ -1,12 +1,12 @@
 # Tasks 120: Always-on local DEK wrapping; encrypted local-only backup
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Plan:** [./plan.md](./plan.md)
 - **Spec:** [./spec.md](./spec.md)
 
 ## Checklist
 
-- [ ] Spec Accepted by Ronald
+- [x] Spec Accepted by Ronald
 - [ ] TDD: wrap/unwrap, raw vs wrapped DEK, re-wrap without touching rows
 - [ ] TDD: one-time plaintext migrate
 - [ ] TDD: encrypted envelope export/import; reject formatVersion 1

@@ -1,7 +1,7 @@
 # Spec 122: Android later (second GitHub repo)
 
 - **ID:** 122
-- **Status:** Draft (parked)
+- **Status:** Accepted (parked)
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

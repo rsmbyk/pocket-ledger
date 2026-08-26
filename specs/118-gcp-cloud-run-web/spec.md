@@ -1,7 +1,7 @@
 # Spec 118: Cloud Run web + path-filtered Actions; retire Cloudflare
 
 - **ID:** 118
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

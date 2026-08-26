@@ -1,6 +1,6 @@
 # Plan 122: Android later (second GitHub repo)
 
-- **Status:** Draft (parked — not this wave)
+- **Status:** Accepted (parked — not this wave)
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Spec 115 parked list

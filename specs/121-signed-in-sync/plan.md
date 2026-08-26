@@ -1,6 +1,6 @@
 # Plan 121: Signed-in sync (rev, 409, gravestones, poll, settings)
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Specs 118 API host, 119 session, 120 DEK

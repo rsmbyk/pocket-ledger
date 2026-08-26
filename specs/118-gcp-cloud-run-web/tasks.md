@@ -1,12 +1,12 @@
 # Tasks 118: Cloud Run web + path-filtered Actions
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Plan:** [./plan.md](./plan.md)
 - **Spec:** [./spec.md](./spec.md)
 
 ## Checklist
 
-- [ ] Spec Accepted by Ronald
+- [x] Spec Accepted by Ronald
 - [ ] npm workspaces `apps/web` + `apps/api` stub
 - [ ] `Dockerfile.web` (+ `Dockerfile.api` stub)
 - [ ] Path-filtered GHA deploy web vs API

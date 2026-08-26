@@ -1,7 +1,7 @@
 # Spec 120: Always-on local DEK wrapping; encrypted local-only backup
 
 - **ID:** 120
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

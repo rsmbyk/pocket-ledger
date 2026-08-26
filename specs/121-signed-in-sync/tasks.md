@@ -1,12 +1,12 @@
 # Tasks 121: Signed-in sync
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Plan:** [./plan.md](./plan.md)
 - **Spec:** [./spec.md](./spec.md)
 
 ## Checklist
 
-- [ ] Spec Accepted by Ronald
+- [x] Spec Accepted by Ronald
 - [ ] TDD: API CAS, 409, gravestones, wrapRev
 - [ ] TDD: client 409 closes editor and discards draft
 - [ ] Postgres schema + `bytea`

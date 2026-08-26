@@ -1,80 +1,69 @@
 # Hosting
 
-## Primary: Cloudflare Workers + static assets (Git-connected)
+## Target: GCP Cloud Run (two services)
 
 | Item | Value |
 |------|--------|
-| Production URL | https://pocket-ledger.ronaldsumbayak611.workers.dev/ |
+| Web | Cloud Run serving **static** SvelteKit assets (`Dockerfile.web`) |
+| API | Cloud Run running Hono (`Dockerfile.api`) |
+| URLs | Default `*.run.app` is OK. Custom domain is **parked**. |
+| Origins | **Two origins** + CORS. Session cookie lives on the **API** host (not same-origin cookies). |
+| Deploy | GitHub Actions + Workload Identity Federation. **Path-filtered:** `apps/web/**` does not deploy API; `apps/api/**` does not deploy web. |
+| Blobs | Postgres `bytea` until size hurts (GCS parked) |
+
+Cutover to Cloud Run is a **new origin** = **empty IndexedDB**. Data on the Cloudflare origin does not move. Users who need local history should export an encrypted backup (Spec 120) before switching hosts.
+
+Spec 118 is the slice that makes this true in production. Until it lands, the live site may still be Cloudflare (below).
+
+## Cookie and CORS
+
+- Session cookie: **7-day rolling**, HttpOnly, Secure, on the API host.
+- Web origin is allowlisted on the API for credentialed CORS.
+- Do not put the session cookie on the web host.
+
+## GitHub Actions
+
+- **CI** (Spec 116): lint/typecheck, Vitest, Playwright on `pull_request` and `push` to `main`. CI does **not** deploy.
+- **Deploy** (Spec 118): path-filtered jobs to Cloud Run. Web-only changes must not roll the API service, and vice versa.
+
+## Local Docker
+
+Compose runs the web (and later API) so you do not need Node on the host.
+
+```bash
+docker compose up --build          # Vite / Kit dev → http://localhost:5173
+docker compose --profile preview up preview   # built preview → :4173
+```
+
+`node_modules` lives in a named volume so the bind mount does not fight host/container installs.
+
+On this machine you may also run a separate Nginx Proxy Manager stack under `/home/rsmbyk/projects/local-dev-proxy` to map a portless `*.localhost` name to a published host port. That proxy is machine-local and is not required for the project Compose file.
+
+## Origin / IndexedDB
+
+Ledger data is stored per browser origin. Changing the public URL (Cloudflare → Cloud Run, or a custom domain later) starts an empty database unless the user restores an encrypted export (signed out) or signs in (cloud copy).
+
+## Former: Cloudflare Workers + static assets
+
+**Not the target.** Kept here until Spec 118 retires it as production.
+
+| Item | Value |
+|------|--------|
+| Production URL (until cutover) | https://pocket-ledger.ronaldsumbayak611.workers.dev/ |
 | Source | GitHub `rsmbyk/pocket-ledger` → `main` |
 | Build command | `npm run build` |
 | Deploy command | `npm run deploy` |
 | Assets | `wrangler.toml` → `[assets] directory = "./dist"` |
 | App `base` | `/` (site root) |
 
-Cloudflare builds on push — **GitHub Actions is not required** for deploys.
+Cloudflare Git integration still deploys `main` until 118 cuts over. After 118: do not use Wrangler as the production path.
 
-`pages_build_output_dir` must **not** be set. That flag makes Wrangler treat the project as classic Pages and reject `wrangler deploy` (which is what the Git pipeline runs).
+`pages_build_output_dir` must **not** be set. SPA deep links used `not_found_handling = "single-page-application"`. GitHub Deployments reporting used `npm run report:github-deployment` with `GITHUB_DEPLOYMENTS_TOKEN`.
 
-SPA deep links use `not_found_handling = "single-page-application"` in `wrangler.toml`. Do **not** ship a `public/_redirects` SPA rule — Workers rejects it as an infinite loop when assets are uploaded.
+### Local Wrangler (until retired)
 
-### GitHub Deployments (repo sidebar)
-
-Workers Builds already posts **check runs** on commits. The Environments / Deployments panel on the right of the GitHub repo is a separate API — Cloudflare does not fill it for Workers automatically.
-
-We report it after a successful Wrangler deploy via `npm run report:github-deployment`.
-
-**One-time Cloudflare dashboard setup** (Worker → Settings → Builds):
-
-1. Set **Deploy command** to:
-   `npm run deploy`
-2. Under **Build variables and secrets**, add secret `GITHUB_DEPLOYMENTS_TOKEN`:
-   - Fine-grained PAT on `rsmbyk/pocket-ledger` with **Deployments: Read and write** (Contents read is enough beside that), **or**
-   - Classic PAT with `repo` scope (broader — prefer fine-grained)
-3. Push to `main` (or re-run a build). The repo sidebar should show **production** → live URL.
-
-Without the token the deploy still succeeds; reporting is skipped.
-
-### Local / CLI (optional)
-
-Credentials live in **`.env.local`** (gitignored). Template: `.env.example`.
-
-```powershell
-# PowerShell: load then deploy
-Get-Content .env.local | ForEach-Object {
-  if ($_ -match '^\s*#' -or $_ -notmatch '=') { return }
-  $k, $v = $_.Split('=', 2)
-  Set-Item -Path "Env:$k" -Value $v
-}
-npm run build
-npx wrangler deploy
-npm run report:github-deployment
-```
-
-Token needs **Workers Scripts Edit** (and account access). For GitHub reporting, also set `GITHUB_DEPLOYMENTS_TOKEN`. Never commit tokens. Rotate if a token was shared in chat.
-
-## Local Docker (optional)
-
-Compose runs Vite so you do not need Node on the host. Production is still Cloudflare — these containers are for local work only.
-
-```bash
-mkdir -p /home/rsmbyk/projects
-cd /home/rsmbyk/projects
-git clone https://github.com/rsmbyk/pocket-ledger.git
-cd pocket-ledger
-docker compose up --build          # Vite dev → http://localhost:5173
-docker compose --profile preview up preview   # built preview → :4173
-```
-
-`node_modules` lives in a named volume so the bind mount does not fight host/container installs.
-
-First `docker compose up` can take a minute (`npm ci` into the named volume). Later starts reuse that volume and are faster.
-
-On this machine you may also run a separate Nginx Proxy Manager stack under `/home/rsmbyk/projects/local-dev-proxy` to map a portless `*.localhost` name (e.g. `http://pocket-ledger.localhost/`) to a published host port (`127.0.0.1:<port>`). That proxy is machine-local and is not required for the project Compose file — see that folder’s README.
+Credentials live in **`.env.local`** (gitignored). Template: `.env.example`. Token needs **Workers Scripts Edit**. Never commit tokens.
 
 ## Former: GitHub Pages / classic Cloudflare Pages
 
-Deprecated for this project. GitHub Actions billing blocked GH Pages; the live hostname is `*.workers.dev` via Workers static assets, not a separate Pages project.
-
-## Origin / IndexedDB
-
-Ledger data is stored per browser origin. Changing the public URL (e.g. custom domain later) starts an empty database unless the user restores an export.
+Deprecated. GitHub Actions billing once blocked GH Pages; the interim hostname was `*.workers.dev`.
