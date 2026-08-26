@@ -7,9 +7,9 @@
 ## Checklist
 
 - [x] Spec Accepted by Ronald
-- [ ] `.github/workflows/ci.yml` — PR + push `main`
-- [ ] Steps: `npm ci`, `check`, `test:unit:run`, Playwright, `test:e2e`
-- [ ] PROCESS.md: CI is used; still no deploy in this workflow
-- [ ] TESTING.md if it says Actions unused
-- [ ] `specs/README.md` 116 Accepted when landing
-- [ ] Commit + draft PR linking Spec 116
+- [x] `.github/workflows/ci.yml` — PR + push `main`
+- [x] Steps: `npm ci`, `check`, `test:unit:run`, Playwright, `test:e2e`
+- [x] PROCESS.md: CI is used; still no deploy in this workflow
+- [x] TESTING.md if it says Actions unused
+- [x] `specs/README.md` 116 Accepted when landing
+- [x] Commit linking Spec 116 (draft PR after first publish)
