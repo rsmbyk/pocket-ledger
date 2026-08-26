@@ -38,7 +38,10 @@ describe('field encryption', () => {
 		expect(listed[0]!.note).toBe('secret lunch');
 
 		await disableLock('secret-pass');
-		const plain = (await db.transactions.toArray())[0]!;
-		expect(plain.note).toBe('secret lunch');
+		const stillSealed = (await db.transactions.toArray())[0]!;
+		expect(isSealed(stillSealed.note)).toBe(true);
+		expect(await listRecentTransactions(account.id)).toEqual(
+			expect.arrayContaining([expect.objectContaining({ note: 'secret lunch' })])
+		);
 	});
 });

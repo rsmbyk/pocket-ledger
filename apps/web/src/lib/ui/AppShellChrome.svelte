@@ -78,14 +78,15 @@
 		expenseCategories: CategoryRow[];
 		incomeCategories: CategoryRow[];
 		lockEnabled: boolean;
+		signedIn?: boolean;
 		themePreference: ThemePreference;
 		route: AppRoute;
 		pageTitle: string;
 		onThemePreferenceChange: (next: ThemePreference) => void;
 		onPrevMonth: () => void | Promise<void>;
 		onNextMonth: () => void | Promise<void>;
-		onExport: () => void | Promise<void>;
-		onImportFile: (file: File) => void | Promise<void>;
+		onExport: (passphrase: string) => void | Promise<void>;
+		onImportFile: (file: File, passphrase: string) => void | Promise<void>;
 		onResetLocalData: (options: {
 			preserveCategories: boolean;
 			preservePassphrase: boolean;
@@ -124,6 +125,7 @@
 		expenseCategories,
 		incomeCategories,
 		lockEnabled,
+		signedIn = false,
 		themePreference,
 		route,
 		pageTitle,
@@ -1009,6 +1011,7 @@
 		{:else}
 			<MorePanel
 				{lockEnabled}
+				{signedIn}
 				{onExport}
 				{onImportFile}
 				{onResetLocalData}

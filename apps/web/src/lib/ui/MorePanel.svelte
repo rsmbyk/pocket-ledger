@@ -10,8 +10,9 @@
 
 	type Props = {
 		lockEnabled: boolean;
-		onExport: () => void | Promise<void>;
-		onImportFile: (file: File) => void | Promise<void>;
+		signedIn?: boolean;
+		onExport: (passphrase: string) => void | Promise<void>;
+		onImportFile: (file: File, passphrase: string) => void | Promise<void>;
 		onResetLocalData: (options: {
 			preserveCategories: boolean;
 			preservePassphrase: boolean;
@@ -22,6 +23,7 @@
 
 	let {
 		lockEnabled,
+		signedIn = false,
 		onExport,
 		onImportFile,
 		onResetLocalData,
@@ -38,6 +40,11 @@
 
 	let importConfirmOpen = $state(false);
 	let pendingImportFile = $state<File | null>(null);
+	let importPass = $state('');
+	let exportOpen = $state(false);
+	let exportPass = $state('');
+	let exportPassConfirm = $state('');
+	let exportPassError = $state<string | null>(null);
 	let disableLockConfirmOpen = $state(false);
 	let error = $state<string | null>(null);
 
@@ -56,24 +63,30 @@
 		<p class="text-destructive text-sm" role="alert">{error}</p>
 	{/if}
 	<div class="flex flex-col gap-4" data-testid="more-sections">
+		{#if !signedIn}
 		<Card.Root class="p-(--card-spacing)" data-testid="more-section-backup">
 			<Card.Header class="px-0">
 				<Card.Title class="flex items-center gap-2 text-base">
 					<HardDriveIcon class="size-5" aria-hidden="true" />
 					Backup
 				</Card.Title>
-				<Card.Description>Export or replace all local data.</Card.Description>
+				<Card.Description>Encrypted export or replace all local data.</Card.Description>
 			</Card.Header>
 			<Card.Content class="flex flex-col gap-2 px-0">
 				<Button
 					type="button"
-					onclick={() => void wrap(onExport)}
+					onclick={() => {
+						exportPass = '';
+						exportPassConfirm = '';
+						exportPassError = null;
+						exportOpen = true;
+					}}
 					data-testid="export-backup"
 				>
-					Export JSON
+					Export backup
 				</Button>
 				<div class="space-y-2">
-					<Label for="import-file">Import JSON (replaces everything)</Label>
+					<Label for="import-file">Import backup (replaces everything)</Label>
 					<Input
 						id="import-file"
 						type="file"
@@ -102,6 +115,7 @@
 				</Button>
 			</Card.Content>
 		</Card.Root>
+		{/if}
 
 		<Card.Root class="p-(--card-spacing)" data-testid="more-section-privacy">
 			<Card.Header class="px-0">
@@ -254,25 +268,126 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<ConfirmDialog
-	open={importConfirmOpen}
-	title="Import backup?"
-	description="Import replaces all local data with this backup. This cannot be undone."
-	confirmLabel="Import"
-	destructive
-	dangerChrome
-	confirmTestId="import-backup-confirm"
+<Dialog.Root
+	bind:open={exportOpen}
+	onOpenChange={(open) => {
+		exportOpen = open;
+		if (!open) {
+			exportPass = '';
+			exportPassConfirm = '';
+			exportPassError = null;
+		}
+	}}
+>
+	<Dialog.Content class="sm:max-w-md" data-testid="export-backup-dialog">
+		<Dialog.Header>
+			<Dialog.Title>Export encrypted backup</Dialog.Title>
+			<Dialog.Description>
+				{#if lockEnabled}
+					Enter your device passphrase to wrap this file. The ledger stays unlocked here.
+				{:else}
+					Set a one-time file passphrase (min 8). This does not turn on device lock.
+				{/if}
+			</Dialog.Description>
+		</Dialog.Header>
+		<form
+			class="space-y-3"
+			onsubmit={(e) => {
+				e.preventDefault();
+				if (!lockEnabled && exportPass !== exportPassConfirm) {
+					exportPassError = 'Passphrases do not match';
+					return;
+				}
+				if (exportPass.length < 8) {
+					exportPassError = 'Passphrase must be at least 8 characters';
+					return;
+				}
+				exportPassError = null;
+				void wrap(async () => {
+					await onExport(exportPass);
+					exportOpen = false;
+				});
+			}}
+		>
+			<Input
+				type="password"
+				placeholder={lockEnabled ? 'Device passphrase' : 'File passphrase (min 8)'}
+				bind:value={exportPass}
+				autocomplete="off"
+				data-testid="export-backup-pass"
+				oninput={() => (exportPassError = null)}
+			/>
+			{#if !lockEnabled}
+				<Input
+					type="password"
+					placeholder="Confirm file passphrase"
+					bind:value={exportPassConfirm}
+					autocomplete="off"
+					data-testid="export-backup-pass-confirm"
+					oninput={() => (exportPassError = null)}
+				/>
+			{/if}
+			{#if exportPassError}
+				<p class="text-destructive text-sm" role="alert">{exportPassError}</p>
+			{/if}
+			<div class="flex justify-end gap-2">
+				<Button type="button" variant="outline" onclick={() => (exportOpen = false)}>Cancel</Button>
+				<Button type="submit" data-testid="export-backup-confirm">Export</Button>
+			</div>
+		</form>
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root
+	bind:open={importConfirmOpen}
 	onOpenChange={(open) => {
 		importConfirmOpen = open;
-		if (!open) pendingImportFile = null;
+		if (!open) {
+			pendingImportFile = null;
+			importPass = '';
+		}
 	}}
-	onConfirm={async () => {
-		if (!pendingImportFile) return;
-		const file = pendingImportFile;
-		pendingImportFile = null;
-		await wrap(() => onImportFile(file));
-	}}
-/>
+>
+	<Dialog.Content class="sm:max-w-md" data-testid="import-backup-dialog">
+		<Dialog.Header>
+			<Dialog.Title>Import backup?</Dialog.Title>
+			<Dialog.Description>
+				Import replaces all local data with this backup. This cannot be undone.
+			</Dialog.Description>
+		</Dialog.Header>
+		<div class="space-y-3">
+			<Input
+				type="password"
+				placeholder="File passphrase"
+				bind:value={importPass}
+				autocomplete="off"
+				data-testid="import-backup-pass"
+			/>
+			<div class="flex justify-end gap-2">
+				<Button type="button" variant="outline" onclick={() => (importConfirmOpen = false)}>
+					Cancel
+				</Button>
+				<Button
+					type="button"
+					variant="destructive"
+					data-testid="import-backup-confirm"
+					onclick={() =>
+						void wrap(async () => {
+							if (!pendingImportFile) return;
+							const file = pendingImportFile;
+							pendingImportFile = null;
+							await onImportFile(file, importPass);
+							importPass = '';
+							importConfirmOpen = false;
+						})
+					}
+				>
+					Import
+				</Button>
+			</div>
+		</div>
+	</Dialog.Content>
+</Dialog.Root>
 
 <ConfirmDialog
 	open={disableLockConfirmOpen}

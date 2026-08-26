@@ -2,7 +2,9 @@ import { db } from '$lib/data/db';
 import {
 	SETTINGS_ENCRYPTION_ENABLED,
 	SETTINGS_LOCK_SALT,
-	SETTINGS_LOCK_VERIFIER
+	SETTINGS_LOCK_VERIFIER,
+	SETTINGS_RAW_DEK,
+	SETTINGS_WRAPPED_DEK
 } from '$lib/data/db';
 import { clearDataKey } from '$lib/data/session-key';
 import { ensureDefaultAccount } from '$lib/application/accounts';
@@ -15,7 +17,9 @@ export type ResetLocalDataOptions = {
 const LOCK_SETTING_KEYS = new Set([
 	SETTINGS_LOCK_SALT,
 	SETTINGS_LOCK_VERIFIER,
-	SETTINGS_ENCRYPTION_ENABLED
+	SETTINGS_ENCRYPTION_ENABLED,
+	SETTINGS_RAW_DEK,
+	SETTINGS_WRAPPED_DEK
 ]);
 
 /**

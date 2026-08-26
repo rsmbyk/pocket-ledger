@@ -228,3 +228,5 @@ export const db = new PocketLedgerDb();
 export const SETTINGS_ENCRYPTION_ENABLED = 'encryption.enabled';
 export const SETTINGS_LOCK_SALT = 'lock.salt';
 export const SETTINGS_LOCK_VERIFIER = 'lock.verifier';
+export const SETTINGS_RAW_DEK = 'lock.rawDek';
+export const SETTINGS_WRAPPED_DEK = 'lock.wrappedDek';

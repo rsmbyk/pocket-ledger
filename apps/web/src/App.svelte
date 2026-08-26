@@ -22,14 +22,15 @@
 	import { loadMonthSummary } from '$lib/application/month-summary';
 	import {
 		backupFilename,
-		buildBackup,
-		parseBackupJson,
-		restoreBackup
+		buildEncryptedBackup,
+		parseEncryptedBackupJson,
+		restoreEncryptedBackup
 	} from '$lib/application/backup';
 	import { resetLocalData } from '$lib/application/reset';
 	import {
 		disableLock,
 		enableLock,
+		ensureLocalDek,
 		isLockEnabled,
 		lockSession,
 		unlockWithPassphrase
@@ -103,8 +104,9 @@
 	}
 
 	async function bootstrap() {
+		const dekState = await ensureLocalDek();
 		lockEnabled = await isLockEnabled();
-		unlocked = !lockEnabled;
+		unlocked = dekState === 'unlocked';
 		// Sealed category/note fields need the session key — stop before seeding/lists.
 		if (!unlocked) {
 			account = await ensureDefaultAccount();
@@ -169,8 +171,8 @@
 		if (account) await refreshLedger(account);
 	}
 
-	async function onExport() {
-		const backup = await buildBackup();
+	async function onExport(passphrase: string) {
+		const backup = await buildEncryptedBackup(passphrase);
 		const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
@@ -180,10 +182,10 @@
 		URL.revokeObjectURL(url);
 	}
 
-	async function onImportFile(file: File) {
+	async function onImportFile(file: File, passphrase: string) {
 		const text = await file.text();
-		const backup = parseBackupJson(text);
-		await restoreBackup(backup);
+		const backup = parseEncryptedBackupJson(text);
+		await restoreEncryptedBackup(backup, passphrase);
 		await bootstrap();
 		if (account && unlocked) await refreshLedger(account);
 	}
