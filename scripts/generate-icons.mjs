@@ -89,7 +89,7 @@ function ledgerIcon(x, y, size, maskable = false) {
 	return bg;
 }
 
-const outDir = path.resolve('public/icons');
+const outDir = path.resolve('apps/web/public/icons');
 mkdirSync(outDir, { recursive: true });
 
 writeFileSync(path.join(outDir, 'icon-192.png'), png(192, (x, y, s) => ledgerIcon(x, y, s, false)));
@@ -99,4 +99,4 @@ writeFileSync(
 	png(512, (x, y, s) => ledgerIcon(x, y, s, true))
 );
 
-console.log('Wrote PWA icons to public/icons');
+console.log('Wrote PWA icons to apps/web/public/icons');

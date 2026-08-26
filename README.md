@@ -41,9 +41,9 @@ npm run build
 
 ## Deploy
 
-**Target (Spec 118):** path-filtered GitHub Actions → Cloud Run. A web change must not roll the API service, and vice versa.
+**Production:** path-filtered GitHub Actions → Cloud Run (`deploy-web.yml` vs `deploy-api.yml`). A web-only change does not deploy the API service, and vice versa. Set repo variables `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_DEPLOY_SA` (optional `GCP_REGION`). Until those exist, deploy jobs skip Cloud Run.
 
-Until that cutover, `main` may still deploy via Cloudflare’s Git integration. New origin = empty IndexedDB.
+Cutover is a **new origin** = empty IndexedDB.
 
 See [docs/HOSTING.md](docs/HOSTING.md).
 

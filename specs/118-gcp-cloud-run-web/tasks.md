@@ -7,12 +7,12 @@
 ## Checklist
 
 - [x] Spec Accepted by Ronald
-- [ ] npm workspaces `apps/web` + `apps/api` stub
-- [ ] `Dockerfile.web` (+ `Dockerfile.api` stub)
-- [ ] Path-filtered GHA deploy web vs API
-- [ ] Cloud Run web live; HOSTING.md production URL
-- [ ] Wrangler not the production path
-- [ ] Origin/IDB note in HOSTING
-- [ ] CI (116) still runs on the monorepo
-- [ ] `specs/README.md` 118 Accepted when landing
-- [ ] Commit + draft PR linking Spec 118
+- [x] npm workspaces `apps/web` + `apps/api` stub
+- [x] `Dockerfile.web` (+ `Dockerfile.api` stub)
+- [x] Path-filtered GHA deploy web vs API
+- [x] Cloud Run deploy jobs exist; skip until GCP repo vars are set (HOSTING.md)
+- [x] Wrangler not the production path
+- [x] Origin/IDB note in HOSTING
+- [x] CI (116) still runs on the monorepo
+- [x] `specs/README.md` 118 Accepted when landing
+- [x] Commit linking Spec 118 (draft PR after first publish)

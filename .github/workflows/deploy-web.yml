@@ -1,0 +1,54 @@
+name: Deploy web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'Dockerfile.web'
+      - 'docker/nginx-web.conf'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-web.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip when GCP is not configured
+        id: skip
+        run: |
+          if [ -z "${{ vars.GCP_PROJECT_ID }}" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Set repo variable GCP_PROJECT_ID (and WIF secrets) to deploy Cloud Run."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: google-github-actions/auth@v2
+        if: steps.skip.outputs.skip != 'true'
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+        if: steps.skip.outputs.skip != 'true'
+      - name: Build and deploy Cloud Run (web)
+        if: steps.skip.outputs.skip != 'true'
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          REGION: ${{ vars.GCP_REGION }}
+        run: |
+          gcloud config set project "$PROJECT_ID"
+          gcloud run deploy pocket-ledger-web \
+            --source . \
+            --dockerfile Dockerfile.web \
+            --region "${REGION:-us-central1}" \
+            --allow-unauthenticated \
+            --quiet

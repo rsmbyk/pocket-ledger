@@ -13,7 +13,7 @@
 
 Cutover to Cloud Run is a **new origin** = **empty IndexedDB**. Data on the Cloudflare origin does not move. Users who need local history should export an encrypted backup (Spec 120) before switching hosts.
 
-Spec 118 is the slice that makes this true in production. Until it lands, the live site may still be Cloudflare (below).
+**Production deploy path is GitHub Actions → Cloud Run** (Spec 118). Wrangler is not used for production. Until repo variables `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_DEPLOY_SA` (and optional `GCP_REGION`, default `us-central1`) are set, the deploy workflows skip the Cloud Run step so PRs still CI. The public hostname stays the former Cloudflare URL until the first successful web deploy.
 
 ## Cookie and CORS
 
@@ -45,24 +45,9 @@ Ledger data is stored per browser origin. Changing the public URL (Cloudflare �
 
 ## Former: Cloudflare Workers + static assets
 
-**Not the target.** Kept here until Spec 118 retires it as production.
+**Retired as the production path** (Spec 118). Do not `wrangler deploy` to ship the app.
 
-| Item | Value |
-|------|--------|
-| Production URL (until cutover) | https://pocket-ledger.ronaldsumbayak611.workers.dev/ |
-| Source | GitHub `rsmbyk/pocket-ledger` → `main` |
-| Build command | `npm run build` |
-| Deploy command | `npm run deploy` |
-| Assets | `wrangler.toml` → `[assets] directory = "./dist"` |
-| App `base` | `/` (site root) |
-
-Cloudflare Git integration still deploys `main` until 118 cuts over. After 118: do not use Wrangler as the production path.
-
-`pages_build_output_dir` must **not** be set. SPA deep links used `not_found_handling = "single-page-application"`. GitHub Deployments reporting used `npm run report:github-deployment` with `GITHUB_DEPLOYMENTS_TOKEN`.
-
-### Local Wrangler (until retired)
-
-Credentials live in **`.env.local`** (gitignored). Template: `.env.example`. Token needs **Workers Scripts Edit**. Never commit tokens.
+The last Cloudflare hostname was https://pocket-ledger.ronaldsumbayak611.workers.dev/ — a different origin from Cloud Run, so IndexedDB does not carry over.
 
 ## Former: GitHub Pages / classic Cloudflare Pages
 

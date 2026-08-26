@@ -17,7 +17,7 @@ services:
     command:
       - sh
       - -c
-      - npm ci && npm run dev -- --host 0.0.0.0 --port 5173
+      - npm ci && npm run dev -w @pocket-ledger/web -- --host 0.0.0.0 --port 5173
 
   preview:
     profiles: ['preview']
@@ -30,7 +30,7 @@ services:
     command:
       - sh
       - -c
-      - npm ci && npm run build && npm run preview -- --host 0.0.0.0 --port 4173
+      - npm ci && npm run build -w @pocket-ledger/web && npm run preview -w @pocket-ledger/web -- --host 0.0.0.0 --port 4173
 
 volumes:
   node_modules:
