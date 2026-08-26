@@ -98,9 +98,9 @@ No Cloud KMS envelope. Operator never has the DEK.
 
 ## Routing
 
-**Target (Spec 117):** SvelteKit path URLs — `/`, `/activity`, `/pockets`, `/categories`, `/more`. Keep the service worker so signed-out still works offline after first load. Unknown paths fall back to the shell (SPA). Hash bookmarks (`#/activity`) are not preserved.
+SvelteKit **path** URLs (Spec 117): `/`, `/activity`, `/pockets`, `/categories`, `/more`. The service worker stays so signed-out still works offline after first load. Unknown paths fall back to the home shell (SPA). Hash bookmarks (`#/activity`) are not preserved.
 
-**Current until 117:** hash router in `src/lib/shared/router.ts`. Shell tabs sync with `#/`, `#/activity`, `#/pockets`, `#/categories`, `#/more`. Unknown hashes fall back to home.
+Panel chrome still lives in `AppShell`; `src/lib/shared/router.ts` maps pathnames to panel ids. Navigation uses SvelteKit `goto`.
 
 ## Sync (signed-in, Spec 121)
 

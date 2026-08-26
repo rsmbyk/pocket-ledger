@@ -16,4 +16,4 @@
 - [x] ADR 0006 superseded; 0007 GCP; 0008 wrapping; README index
 - [x] `specs/README.md` row 115 → Accepted when landing
 - [x] No `src/**` in this slice
-- [ ] Commit + draft PR linking Spec 115
+- [x] Commit linking Spec 115 (draft PR after first publish)

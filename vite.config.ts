@@ -2,19 +2,16 @@ import path from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { VitePWA } from 'vite-plugin-pwa';
+import { sveltekit } from '@sveltejs/kit/vite';
+import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
-// Cloudflare Pages / Workers static assets serve at site root.
 const appBase = '/';
 
-// https://vite.dev/config/
 export default defineConfig({
-	base: appBase,
 	plugins: [
 		tailwindcss(),
-		svelte(),
-		VitePWA({
+		sveltekit(),
+		SvelteKitPWA({
 			registerType: 'autoUpdate',
 			includeAssets: ['favicon.svg', 'offline.html', 'icons/*.png'],
 			manifest: {
@@ -47,12 +44,16 @@ export default defineConfig({
 			},
 			workbox: {
 				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,webp}'],
-				navigateFallback: `${appBase}index.html`,
+				navigateFallback: '/index.html',
 				navigateFallbackDenylist: [/^\/api\//],
 				additionalManifestEntries: [{ url: `${appBase}offline.html`, revision: '1' }]
 			},
+			kit: {
+				adapterFallback: '200.html',
+				spa: true
+			},
 			devOptions: {
-				enabled: true
+				enabled: process.env.VITEST !== 'true'
 			}
 		})
 	],
@@ -65,7 +66,7 @@ export default defineConfig({
 		expect: { requireAssertions: true },
 		projects: [
 			{
-				extends: './vite.config.ts',
+				extends: true,
 				test: {
 					name: 'client',
 					browser: {
@@ -77,9 +78,8 @@ export default defineConfig({
 					exclude: ['src/lib/server/**']
 				}
 			},
-
 			{
-				extends: './vite.config.ts',
+				extends: true,
 				test: {
 					name: 'server',
 					environment: 'node',

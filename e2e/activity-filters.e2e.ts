@@ -207,7 +207,7 @@ test.describe('020 / 045 activity filters mobile', () => {
 		await seedIncomeAndExpense(page);
 
 		// Hash nav avoids flaky mobile drawer open after seeding (see desktop-layout for menu path).
-		await page.goto('/#/activity');
+		await page.goto('/activity');
 		await expect(page.getByTestId('activity-panel')).toBeVisible();
 		await expect(page.getByTestId('activity-filters')).toBeVisible();
 		await expect(page.getByTestId('activity-filters-open')).toBeVisible();

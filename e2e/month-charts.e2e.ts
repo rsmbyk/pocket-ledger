@@ -50,7 +50,7 @@ test.describe('002 month charts', () => {
 	});
 
 	test('navigates to previous month', async ({ page }) => {
-		await page.goto('/#/pockets');
+		await page.goto('/pockets');
 		await expect(page.getByTestId('pockets-panel')).toBeVisible();
 		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
 		await mainRow.getByTestId('pocket-edit').click();

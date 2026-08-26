@@ -1,4 +1,4 @@
-# Local development / preview. Production stays on Cloudflare Workers.
+# Local development / preview. Production target is Cloud Run (Spec 118).
 #   cd /home/rsmbyk/projects/pocket-ledger
 #   docker compose up --build
 #

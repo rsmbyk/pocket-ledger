@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import QuickAddSheet from '$lib/ui/QuickAddSheet.svelte';
@@ -11,7 +10,9 @@
 	import type { ThemePreference } from '$lib/shared/theme';
 	import type { MonthSummary } from '$lib/domain/month-summary';
 	import type { CreatePocketInput, UpdatePocketInput } from '$lib/application/accounts';
-	import { isAppRoute, parseHash, routeToHash, type AppRoute } from '$lib/shared/router';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import { isAppRoute, parsePath, routeToPath, type AppRoute } from '$lib/shared/router';
 
 	type Props = {
 		account: Account | null;
@@ -96,11 +97,11 @@
 	let txSheetOpen = $state(false);
 	let commandOpen = $state(false);
 	let editing = $state<LedgerTransaction | null>(null);
-	let route = $state<AppRoute>('home');
+	let route = $derived(parsePath(page.url.pathname));
 	/** Activity applied pocket filter for Normal Add default (`all` = use Main). */
 	let activityPocketFilterId = $state('all');
 	/** Clears `editing` after close animation; must cancel if reopened quickly. */
-	let clearEditingTimer: ReturnType<typeof setTimeout> | null = null;
+	let clearEditingTimer: number | ReturnType<typeof setTimeout> | null = null;
 
 	const preferredAccountId = $derived(
 		activityPocketFilterId !== 'all' &&
@@ -139,10 +140,9 @@
 	}
 
 	function setRoute(next: AppRoute) {
-		route = next;
-		const hash = routeToHash(next);
-		if (typeof location !== 'undefined' && location.hash !== hash) {
-			location.hash = hash;
+		const path = routeToPath(next);
+		if (page.url.pathname !== path) {
+			void goto(path);
 		}
 	}
 
@@ -150,18 +150,6 @@
 		if (!isAppRoute(next)) return;
 		setRoute(next);
 	}
-
-	onMount(() => {
-		route = parseHash(location.hash);
-		const onHashChange = () => {
-			route = parseHash(location.hash);
-		};
-		window.addEventListener('hashchange', onHashChange);
-		if (!location.hash || location.hash === '#') {
-			history.replaceState(null, '', routeToHash('home'));
-		}
-		return () => window.removeEventListener('hashchange', onHashChange);
-	});
 </script>
 
 <div

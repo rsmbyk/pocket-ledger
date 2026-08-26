@@ -43,7 +43,7 @@ test.describe('013 desktop layout', () => {
 		await expect(page.getByTestId('app-drawer-sheet')).toBeVisible();
 		await expect(page.getByTestId('app-drawer-sheet').getByRole('heading', { name: 'Main' })).toBeVisible();
 		await page.getByTestId('nav-activity').click();
-		await expect(page).toHaveURL(/#\/activity$/);
+		await expect(page).toHaveURL(/\/activity\/?$/);
 		await expect(page.getByTestId('app-drawer-sheet')).toBeHidden();
 		await expect(page.getByTestId('page-title')).toHaveText('Activity');
 	});
@@ -90,7 +90,7 @@ test.describe('013 desktop layout', () => {
 		await page.keyboard.press('Control+K');
 		await expect(page.getByTestId('command-palette')).toBeVisible();
 		await page.getByTestId('cmd-activity').click();
-		await expect(page).toHaveURL(/#\/activity$/);
+		await expect(page).toHaveURL(/\/activity\/?$/);
 		await expect(page.getByTestId('page-title')).toHaveText('Activity');
 
 		await page.keyboard.press('Control+K');

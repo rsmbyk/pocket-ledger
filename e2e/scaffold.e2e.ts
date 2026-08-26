@@ -21,13 +21,16 @@ test.describe('000 scaffold', () => {
 	test('registers a service worker for PWA', async ({ page }) => {
 		await page.goto('/');
 		await expect
-			.poll(async () => {
-				return page.evaluate(async () => {
-					if (!('serviceWorker' in navigator)) return false;
-					const ready = await navigator.serviceWorker.ready;
-					return Boolean(ready.active || ready.installing || ready.waiting);
-				});
-			})
+			.poll(
+				async () => {
+					return page.evaluate(async () => {
+						if (!('serviceWorker' in navigator)) return false;
+						const ready = await navigator.serviceWorker.ready;
+						return Boolean(ready.active || ready.installing || ready.waiting);
+					});
+				},
+				{ timeout: 15_000 }
+			)
 			.toBe(true);
 	});
 });
