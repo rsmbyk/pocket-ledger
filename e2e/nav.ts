@@ -73,13 +73,13 @@ export async function confirmVoid(page: Page): Promise<void> {
 	await page.getByTestId('tx-void-confirm').click();
 }
 
-/** Create a category via Categories UI (no auto-seeds). Uses hash nav (mobile-safe). */
+/** Create a category via Categories UI (no auto-seeds). Uses path nav (mobile-safe). */
 export async function ensureCategory(
 	page: Page,
 	name: string,
 	kind: 'expense' | 'income'
 ): Promise<void> {
-	await page.goto(`/#/categories`);
+	await page.goto('/categories');
 	await expect(page.getByTestId('categories-panel')).toBeVisible();
 	await page
 		.getByTestId(kind === 'expense' ? 'category-add-expense' : 'category-add-income')
@@ -87,6 +87,6 @@ export async function ensureCategory(
 	await page.getByTestId('category-name-input').fill(name);
 	await page.getByTestId('category-add').click();
 	await expect(page.getByRole('textbox', { name: `Name for ${name}` })).toBeVisible();
-	await page.goto('/#/');
+	await page.goto('/');
 	await expect(page.getByTestId('home-panel')).toBeVisible();
 }

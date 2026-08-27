@@ -1,0 +1,108 @@
+openapi: 3.1.0
+info:
+  title: Pocket Ledger API
+  version: '1.0.0'
+  description: Session, wrap coat-check, and ciphertext sync. The server never receives the DEK or passphrases.
+servers:
+  - url: /
+paths:
+  /healthz:
+    get:
+      summary: Liveness
+      responses:
+        '200':
+          description: OK
+  /v1/auth/google:
+    post:
+      summary: Exchange a Google ID token for a 7-day rolling session cookie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idToken: { type: string }
+                localHasData: { type: boolean }
+                discardLocal: { type: boolean }
+      responses:
+        '200': { description: Session issued }
+        '401': { description: Invalid token }
+        '409': { description: Cloud already has data and local is dirty }
+  /v1/auth/logout:
+    post:
+      summary: Revoke this session cookie
+      responses:
+        '200': { description: Signed out }
+  /v1/me:
+    get:
+      summary: Current user and onboarding state
+      responses:
+        '200': { description: Signed in }
+        '401': { description: No session }
+  /v1/sessions:
+    get:
+      summary: List sessions for this Google user
+      responses:
+        '200': { description: Session list }
+  /v1/sessions/{id}:
+    delete:
+      summary: Revoke a session
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Revoked }
+        '404': { description: Not found }
+  /v1/wrap:
+    get:
+      summary: Coat-check wrap envelopes
+      responses:
+        '200': { description: Wrap record }
+    put:
+      summary: Update wrap with wrapRev CAS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                wrap: { type: object }
+                recoveryWrap: { type: object }
+                wrapRev: { type: integer }
+      responses:
+        '200': { description: Updated }
+        '409': { description: wrapRev conflict }
+  /v1/sync:
+    get:
+      summary: Pull all entities for this user
+      responses:
+        '200': { description: Entity list }
+  /v1/sync/{kind}/{id}:
+    put:
+      summary: Put ciphertext entity with rev CAS
+      parameters:
+        - in: path
+          name: kind
+          required: true
+          schema: { type: string }
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rev: { type: integer }
+                deleted: { type: boolean }
+                blob: { type: string, nullable: true }
+      responses:
+        '200': { description: Stored with new rev }
+        '409': { description: Stale rev }

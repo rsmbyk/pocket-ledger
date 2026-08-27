@@ -22,6 +22,9 @@ test.describe('003–008 base features', () => {
 		await goToNav(page, 'more');
 		const downloadPromise = page.waitForEvent('download');
 		await page.getByTestId('export-backup').click();
+		await page.getByTestId('export-backup-pass').fill('export-pass');
+		await page.getByTestId('export-backup-pass-confirm').fill('export-pass');
+		await page.getByTestId('export-backup-confirm').click();
 		const download = await downloadPromise;
 		expect(download.suggestedFilename()).toMatch(/pocket-ledger-.*\.json/);
 	});

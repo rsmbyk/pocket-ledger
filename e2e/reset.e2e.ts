@@ -19,10 +19,10 @@ test.describe('024 reset everything', () => {
 		await expect(page.getByTestId('reset-dialog')).toBeVisible();
 		await page.getByTestId('reset-preserve-categories').check();
 		await page.getByTestId('reset-all-confirm').click();
-		await page.goto('/#/');
+		await page.goto('/');
 		await expect(page.getByTestId('account-balance')).toContainText('0');
 
-		await page.goto('/#/categories');
+		await page.goto('/categories');
 		await expect(page.getByRole('textbox', { name: 'Name for Food' })).toBeVisible();
 	});
 });

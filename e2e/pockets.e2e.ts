@@ -10,7 +10,7 @@ test.describe('070–077 pockets pack', () => {
 	test('nav includes Pockets between Activity and Categories', async ({ page }) => {
 		await goToNav(page, 'pockets');
 		await expect(page.getByTestId('pockets-panel')).toBeVisible();
-		await expect(page).toHaveURL(/#\/pockets$/);
+		await expect(page).toHaveURL(/\/pockets\/?$/);
 		await goToNav(page, 'categories');
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
 	});
@@ -126,14 +126,14 @@ test.describe('070–077 pockets pack', () => {
 
 	test('Activity pocket filter Apply', async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 });
-		await page.goto('/#/pockets');
+		await page.goto('/pockets');
 		await expect(page.getByTestId('pockets-panel')).toBeVisible();
 		await page.getByTestId('pocket-add').click();
 		await page.getByTestId('pocket-name-input').fill('Vacation');
 		await page.getByTestId('pocket-save').click();
 		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
 
-		await page.goto('/#/activity');
+		await page.goto('/activity');
 		await expect(
 			page.getByTestId('activity-list').or(page.getByTestId('activity-empty'))
 		).toBeVisible();

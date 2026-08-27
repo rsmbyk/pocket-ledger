@@ -1,18 +1,18 @@
 # Pocket Ledger
 
-Offline-first personal finance tracker. Mobile-first PWA, data stays on your device (IndexedDB).
+Local-first personal finance tracker with optional Google cloud sync. Signed-out: PWA, data stays on the device (IndexedDB). Signed-in: E2E ciphertext on GCP; we never have the passphrase.
 
-**Live:** https://pocket-ledger.ronaldsumbayak611.workers.dev/
+**Live (until Cloud Run cutover):** https://pocket-ledger.ronaldsumbayak611.workers.dev/
 
 ## Stack
 
-- Svelte 5 (runes) + Vite + TypeScript
+- Svelte 5 (runes) + TypeScript (SvelteKit path URLs + PWA — Spec 117)
 - shadcn-svelte + Tailwind CSS v4
-- Dexie (IndexedDB)
-- vite-plugin-pwa
+- Dexie (IndexedDB; cache when signed in)
+- Hono API + Cloud SQL (signed-in, Specs 119–121)
 - Vitest + Playwright
 - Spec-Driven Development + TDD + GitHub Flow
-- Hosting: **Cloudflare Workers** static assets (Git-connected to this repo)
+- Hosting target: **GCP Cloud Run** (web + API). See [docs/HOSTING.md](docs/HOSTING.md).
 
 ## Quick start
 
@@ -41,12 +41,9 @@ npm run build
 
 ## Deploy
 
-Production deploys automatically from `main` via Cloudflare’s Git integration (not GitHub Actions).
+**Production:** path-filtered GitHub Actions → Cloud Run (`deploy-web.yml` vs `deploy-api.yml`). A web-only change does not deploy the API service, and vice versa. Set repo variables `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_DEPLOY_SA` (optional `GCP_REGION`). Until those exist, deploy jobs skip Cloud Run.
 
-Build settings (Cloudflare dashboard):
-
-- Build command: `npm run build`
-- Output directory: `dist`
+Cutover is a **new origin** = empty IndexedDB.
 
 See [docs/HOSTING.md](docs/HOSTING.md).
 
@@ -56,10 +53,10 @@ Read these before changing behavior:
 
 | Doc | Purpose |
 |-----|---------|
-| [docs/PRODUCT.md](docs/PRODUCT.md) | Locked product decisions |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layered client architecture |
+| [docs/PRODUCT.md](docs/PRODUCT.md) | Locked product decisions (two modes, dropped/parked) |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, wrapping, workspaces |
 | [docs/PROCESS.md](docs/PROCESS.md) | SDD + TDD + GitHub Flow |
-| [docs/HOSTING.md](docs/HOSTING.md) | Cloudflare Workers deploy |
+| [docs/HOSTING.md](docs/HOSTING.md) | GCP Cloud Run (Cloudflare until cutover) |
 | [docs/FIRST_WORK.md](docs/FIRST_WORK.md) | Scaffold scope |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Feature order |
 | [specs/](specs/) | Living behavior specs |

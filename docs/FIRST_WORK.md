@@ -14,7 +14,7 @@ Status: implemented as the repository starting point.
 - Docs (product, architecture, process, ADRs, roadmap)
 - Public GitHub repo
 
-**Follow-up:** hosting migrated to Cloudflare Workers (Git-connected); see ADR 0006. GitHub Actions CI was removed after billing blocked workflow runs.
+**Follow-up:** hosting target is GCP Cloud Run (ADR 0007); Cloudflare Workers (ADR 0006) is superseded. GitHub Actions CI is restored in Spec 116.
 
 ## Out of scope
 
