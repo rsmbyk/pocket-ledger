@@ -15,6 +15,10 @@ npm test                # unit then e2e
 2. **Acceptance (Playwright)** — `e2e/*.e2e.ts` mapped to specs
 3. **Typecheck** — `npm run check`
 
+## CI
+
+GitHub Actions (Spec 116) runs `npm run check`, `npm run test:unit:run`, and `npm run test:e2e` on pull requests and on push to `main`. That workflow does **not** deploy.
+
 ## Rules
 
 - New money/domain behavior: Vitest first (TDD)

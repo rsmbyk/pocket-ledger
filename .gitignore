@@ -38,6 +38,9 @@ playwright/.cache
 *.tsbuildinfo
 .DS_Store
 
+.svelte-kit
+apps/web/.svelte-kit
+apps/web/dist
 # Cursor (local IDE) — keep shared agent rules in git
 .cursor/*
 !.cursor/rules/

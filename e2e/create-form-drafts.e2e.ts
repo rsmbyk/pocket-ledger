@@ -100,7 +100,7 @@ test.describe('Create-form draft on discard (104)', () => {
 	});
 
 	test('category create: drafts isolated per kind', async ({ page }) => {
-		await page.goto('/#/categories');
+		await page.goto('/categories');
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
 
 		await page.getByTestId('category-add-expense').click();

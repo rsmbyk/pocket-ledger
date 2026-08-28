@@ -1,7 +1,7 @@
 # Spec 114: Mobile checkbox scale
 
 - **ID:** 114
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

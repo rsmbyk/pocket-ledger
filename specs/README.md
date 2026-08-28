@@ -130,4 +130,12 @@ Living behavior contracts for Pocket Ledger.
 | [111](111-mobile-control-heights/spec.md) | Mobile control heights | Accepted |
 | [112](112-mobile-compact-button-heights/spec.md) | Mobile compact button heights | Accepted |
 | [113](113-compound-control-scale/spec.md) | Compound control scale after mobile heights | Accepted |
-| [114](114-mobile-checkbox-scale/spec.md) | Mobile checkbox scale | Draft |
+| [114](114-mobile-checkbox-scale/spec.md) | Mobile checkbox scale | Accepted |
+| [115](115-docs-unlock-local-first-cloud/spec.md) | Docs unlock — local-first + optional cloud | Accepted |
+| [116](116-github-actions-ci/spec.md) | Restore GitHub Actions CI | Accepted |
+| [117](117-sveltekit-path-urls-pwa/spec.md) | SvelteKit path URLs + PWA | Accepted |
+| [118](118-gcp-cloud-run-web/spec.md) | Cloud Run web + path-filtered Actions; retire Cloudflare | Accepted |
+| [119](119-google-sign-in-account-lock/spec.md) | Google Sign-In, account passphrase, hex kit, session manager | Accepted |
+| [120](120-local-dek-wrapping-encrypted-backup/spec.md) | Always-on local DEK wrapping; encrypted local-only backup | Accepted |
+| [121](121-signed-in-sync/spec.md) | Signed-in sync (rev, 409, gravestones, poll, settings) | Accepted |
+| [122](122-android-second-repo-parked/spec.md) | Android later (second GitHub repo) | Accepted (parked) |
