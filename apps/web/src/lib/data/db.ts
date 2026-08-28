@@ -106,16 +106,12 @@ export class PocketLedgerDb extends Dexie {
 				}
 
 				const nonMain = rows.filter((r) => r.id !== mainId);
-				nonMain.sort((a, b) =>
-					String(a.createdAt ?? '').localeCompare(String(b.createdAt ?? ''))
-				);
+				nonMain.sort((a, b) => String(a.createdAt ?? '').localeCompare(String(b.createdAt ?? '')));
 
 				for (const row of rows) {
 					const id = String(row.id);
 					const isMain = id === mainId;
-					const sortOrder = isMain
-						? 0
-						: nonMain.findIndex((r) => r.id === id);
+					const sortOrder = isMain ? 0 : nonMain.findIndex((r) => r.id === id);
 					const normalized = normalizeAccount(
 						{
 							id,
@@ -128,13 +124,9 @@ export class PocketLedgerDb extends Dexie {
 							openingBalanceMinor:
 								typeof row.openingBalanceMinor === 'number' ? row.openingBalanceMinor : 0,
 							openingAsOf:
-								typeof row.openingAsOf === 'string' && row.openingAsOf
-									? row.openingAsOf
-									: today,
-							goalTargetMinor:
-								typeof row.goalTargetMinor === 'number' ? row.goalTargetMinor : null,
-							goalTargetOn:
-								typeof row.goalTargetOn === 'string' ? row.goalTargetOn : null
+								typeof row.openingAsOf === 'string' && row.openingAsOf ? row.openingAsOf : today,
+							goalTargetMinor: typeof row.goalTargetMinor === 'number' ? row.goalTargetMinor : null,
+							goalTargetOn: typeof row.goalTargetOn === 'string' ? row.goalTargetOn : null
 						},
 						{ today, isMain, sortOrder: sortOrder < 0 ? 0 : sortOrder }
 					);
@@ -190,12 +182,9 @@ export class PocketLedgerDb extends Dexie {
 									: todayOccurredOn(),
 							openingEnabled:
 								typeof row.openingEnabled === 'boolean' ? row.openingEnabled : undefined,
-							goalTargetMinor:
-								typeof row.goalTargetMinor === 'number' ? row.goalTargetMinor : null,
-							goalTargetOn:
-								typeof row.goalTargetOn === 'string' ? row.goalTargetOn : null,
-							goalEnabled:
-								typeof row.goalEnabled === 'boolean' ? row.goalEnabled : undefined
+							goalTargetMinor: typeof row.goalTargetMinor === 'number' ? row.goalTargetMinor : null,
+							goalTargetOn: typeof row.goalTargetOn === 'string' ? row.goalTargetOn : null,
+							goalEnabled: typeof row.goalEnabled === 'boolean' ? row.goalEnabled : undefined
 						},
 						{
 							today: todayOccurredOn(),
@@ -221,8 +210,7 @@ export class PocketLedgerDb extends Dexie {
 				for (const row of rows) {
 					await table.put({
 						...row,
-						deletedAt:
-							typeof row.deletedAt === 'string' && row.deletedAt ? row.deletedAt : null
+						deletedAt: typeof row.deletedAt === 'string' && row.deletedAt ? row.deletedAt : null
 					});
 				}
 			});

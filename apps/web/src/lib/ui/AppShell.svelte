@@ -45,10 +45,7 @@
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
 		onRenameCategory: (id: string, name: string) => void | Promise<void>;
 		onDeleteCategory: (id: string) => void | Promise<void>;
-		onReorderCategories: (
-			kind: CategoryRow['kind'],
-			orderedIds: string[]
-		) => void | Promise<void>;
+		onReorderCategories: (kind: CategoryRow['kind'], orderedIds: string[]) => void | Promise<void>;
 		onCreatePocket: (input: CreatePocketInput) => void | Promise<void>;
 		onUpdatePocket: (input: UpdatePocketInput) => void | Promise<void>;
 		onDeletePocket: (id: string) => void | Promise<void>;
@@ -139,8 +136,7 @@
 	let clearEditingTimer: number | ReturnType<typeof setTimeout> | null = null;
 
 	const preferredAccountId = $derived(
-		activityPocketFilterId !== 'all' &&
-			accounts.some((a) => a.id === activityPocketFilterId)
+		activityPocketFilterId !== 'all' && accounts.some((a) => a.id === activityPocketFilterId)
 			? activityPocketFilterId
 			: (account?.id ?? '')
 	);
@@ -187,10 +183,7 @@
 	}
 </script>
 
-<div
-	class="text-foreground bg-background flex min-h-svh flex-col"
-	data-testid="app-shell"
->
+<div class="text-foreground bg-background flex min-h-svh flex-col" data-testid="app-shell">
 	{#if error}
 		<main class="mx-auto w-full max-w-3xl px-6 py-8">
 			<Card.Root class="border-destructive/40">
@@ -223,7 +216,7 @@
 				{expenseCategories}
 				{incomeCategories}
 				{lockEnabled}
-				signedIn={signedIn}
+				{signedIn}
 				{themePreference}
 				{route}
 				{pageTitle}

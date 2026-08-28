@@ -17,7 +17,12 @@ export async function setLocalRev(kind: string, id: string, rev: number): Promis
 	await db.syncRevs.put({ id: revId(kind, id), rev });
 }
 
-export async function pushSealedEntity(kind: string, id: string, blob: unknown, deleted = false): Promise<void> {
+export async function pushSealedEntity(
+	kind: string,
+	id: string,
+	blob: unknown,
+	deleted = false
+): Promise<void> {
 	const rev = (await localRev(kind, id)) ?? 0;
 	try {
 		const saved = await putCloudEntity({

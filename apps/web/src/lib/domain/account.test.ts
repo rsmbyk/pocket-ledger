@@ -7,9 +7,7 @@ import {
 	type Account
 } from './account';
 
-function pocket(
-	partial: Partial<Account> & Pick<Account, 'id' | 'name'>
-): Account {
+function pocket(partial: Partial<Account> & Pick<Account, 'id' | 'name'>): Account {
 	return normalizeAccount({
 		currencyLabel: 'IDR',
 		createdAt: '2026-01-01T00:00:00.000Z',

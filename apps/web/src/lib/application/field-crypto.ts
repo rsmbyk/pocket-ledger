@@ -22,7 +22,10 @@ export function isSealed(value: string): boolean {
 }
 
 /** Encrypt a string when a session data key is present. Empty strings stay empty. */
-export async function sealField(plain: string, key: CryptoKey | null = getDataKey()): Promise<string> {
+export async function sealField(
+	plain: string,
+	key: CryptoKey | null = getDataKey()
+): Promise<string> {
 	if (!key || plain === '') return plain;
 	if (isSealed(plain)) return plain;
 	const iv = crypto.getRandomValues(new Uint8Array(12));

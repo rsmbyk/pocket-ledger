@@ -40,7 +40,6 @@ export function withVoidedAt(
 	}
 ): LedgerTransaction {
 	const fee = tx.feeMinor;
-	const feeMinor =
-		typeof fee === 'number' && Number.isInteger(fee) && fee >= 0 ? fee : 0;
+	const feeMinor = typeof fee === 'number' && Number.isInteger(fee) && fee >= 0 ? fee : 0;
 	return { ...tx, voidedAt: tx.voidedAt ?? null, feeMinor };
 }

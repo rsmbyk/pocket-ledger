@@ -7,13 +7,7 @@ import { ensureDefaultAccount } from '$lib/application/accounts';
 import { createCategory } from '$lib/application/categories';
 import { addTransaction } from '$lib/application/transactions';
 import { clearDataKey } from '$lib/data/session-key';
-import {
-	disableLock,
-	enableLock,
-	ensureLocalDek,
-	isLockEnabled,
-	verifyPassphrase
-} from './lock';
+import { disableLock, enableLock, ensureLocalDek, isLockEnabled, verifyPassphrase } from './lock';
 
 describe('lock', () => {
 	beforeEach(async () => {

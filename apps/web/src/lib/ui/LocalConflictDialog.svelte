@@ -27,7 +27,12 @@
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="flex justify-end gap-2">
-			<Button type="button" variant="outline" onclick={onCancel} data-testid="local-conflict-cancel">
+			<Button
+				type="button"
+				variant="outline"
+				onclick={onCancel}
+				data-testid="local-conflict-cancel"
+			>
 				Cancel
 			</Button>
 			<Button

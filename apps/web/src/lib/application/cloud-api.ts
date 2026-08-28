@@ -144,12 +144,15 @@ export async function putCloudEntity(entity: {
 	deleted?: boolean;
 	blob: string | null;
 }): Promise<SyncEntity> {
-	return request<SyncEntity>(`/v1/sync/${encodeURIComponent(entity.kind)}/${encodeURIComponent(entity.id)}`, {
-		method: 'PUT',
-		body: JSON.stringify({
-			rev: entity.rev,
-			deleted: entity.deleted === true,
-			blob: entity.blob
-		})
-	});
+	return request<SyncEntity>(
+		`/v1/sync/${encodeURIComponent(entity.kind)}/${encodeURIComponent(entity.id)}`,
+		{
+			method: 'PUT',
+			body: JSON.stringify({
+				rev: entity.rev,
+				deleted: entity.deleted === true,
+				blob: entity.blob
+			})
+		}
+	);
 }

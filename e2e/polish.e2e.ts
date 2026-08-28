@@ -24,7 +24,11 @@ test.describe('012 polish / 014 void / 030', () => {
 
 		await goToNav(page, 'activity');
 		await expect(page.getByTestId('balance-compact')).toHaveCount(0);
-		await page.getByTestId('activity-list').locator('[data-testid^="activity-row-"]').first().click();
+		await page
+			.getByTestId('activity-list')
+			.locator('[data-testid^="activity-row-"]')
+			.first()
+			.click();
 		await expect(page.getByRole('heading', { name: 'Edit transaction' })).toBeVisible();
 		const edit = page.getByTestId('tx-dialog');
 		await edit.getByRole('textbox', { name: 'Amount' }).fill('10000');
@@ -35,14 +39,18 @@ test.describe('012 polish / 014 void / 030', () => {
 
 		await goToNav(page, 'activity');
 		await expect(page.getByTestId('activity-list')).toContainText('10');
-		await page.getByTestId('activity-list').locator('[data-testid^="activity-row-"]').first().click();
+		await page
+			.getByTestId('activity-list')
+			.locator('[data-testid^="activity-row-"]')
+			.first()
+			.click();
 		await page.getByTestId('tx-void').click();
 		await confirmVoid(page);
 		await expect(page.getByTestId('activity-list')).not.toContainText(/^Void$/);
 		await expect(page.getByTestId('activity-empty')).toHaveCount(0);
-		await expect(page.getByTestId('activity-list').locator('[data-testid^="activity-row-"]').first()).toHaveClass(
-			/opacity-70/
-		);
+		await expect(
+			page.getByTestId('activity-list').locator('[data-testid^="activity-row-"]').first()
+		).toHaveClass(/opacity-70/);
 
 		await goToNav(page, 'home');
 		await expect(page.getByTestId('account-balance')).toContainText('0');

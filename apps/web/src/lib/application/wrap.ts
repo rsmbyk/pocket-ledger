@@ -26,13 +26,9 @@ function fromBase64(value: string): Uint8Array<ArrayBuffer> {
 }
 
 async function importPasswordKey(passphrase: string): Promise<CryptoKey> {
-	return crypto.subtle.importKey(
-		'raw',
-		new TextEncoder().encode(passphrase),
-		'PBKDF2',
-		false,
-		['deriveKey']
-	);
+	return crypto.subtle.importKey('raw', new TextEncoder().encode(passphrase), 'PBKDF2', false, [
+		'deriveKey'
+	]);
 }
 
 async function deriveBoxKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
@@ -85,7 +81,10 @@ export async function wrapDek(dek: CryptoKey, passphrase: string): Promise<WrapE
 	};
 }
 
-export async function unwrapDek(envelope: WrapEnvelope, passphrase: string): Promise<CryptoKey | null> {
+export async function unwrapDek(
+	envelope: WrapEnvelope,
+	passphrase: string
+): Promise<CryptoKey | null> {
 	try {
 		const salt = fromBase64(envelope.saltB64);
 		const boxKey = await deriveBoxKey(passphrase, salt);

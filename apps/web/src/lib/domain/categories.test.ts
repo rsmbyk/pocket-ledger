@@ -15,7 +15,9 @@ describe('category names', () => {
 		const existing: CategoryRow[] = [
 			{ id: '1', name: 'Coffee', kind: 'expense', sortOrder: 0, createdAt: 't', deletedAt: null }
 		];
-		expect(() => assertUniqueCategoryName('coffee', 'expense', existing)).toThrow(/already exists/i);
+		expect(() => assertUniqueCategoryName('coffee', 'expense', existing)).toThrow(
+			/already exists/i
+		);
 		expect(() => assertUniqueCategoryName('Coffee', 'income', existing)).not.toThrow();
 	});
 

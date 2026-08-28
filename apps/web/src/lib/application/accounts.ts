@@ -186,8 +186,7 @@ export async function updatePocket(input: UpdatePocketInput): Promise<Account> {
 		}
 	}
 
-	const goalEnabled =
-		input.goalEnabled !== undefined ? input.goalEnabled : existing.goalEnabled;
+	const goalEnabled = input.goalEnabled !== undefined ? input.goalEnabled : existing.goalEnabled;
 	let goalTargetMinor: number | null = null;
 	let goalTargetOn: string | null = null;
 	if (goalEnabled) {
@@ -195,8 +194,7 @@ export async function updatePocket(input: UpdatePocketInput): Promise<Account> {
 			input.goalTargetMinor !== undefined ? input.goalTargetMinor : existing.goalTargetMinor;
 		if (goalTargetMinor == null) throw new Error('Goal target is required');
 		assertGoalTarget(goalTargetMinor);
-		const rawOn =
-			input.goalTargetOn !== undefined ? input.goalTargetOn : existing.goalTargetOn;
+		const rawOn = input.goalTargetOn !== undefined ? input.goalTargetOn : existing.goalTargetOn;
 		if (rawOn != null && String(rawOn).trim()) {
 			const trimmed = String(rawOn).trim();
 			if (!isValidOccurredOn(trimmed)) throw new Error('Date must be YYYY-MM-DD');

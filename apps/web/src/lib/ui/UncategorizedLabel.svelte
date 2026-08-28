@@ -11,12 +11,7 @@
 		testid?: string;
 	};
 
-	let {
-		system = true,
-		label = 'Uncategorized',
-		class: className = '',
-		testid
-	}: Props = $props();
+	let { system = true, label = 'Uncategorized', class: className = '', testid }: Props = $props();
 
 	const systemTestId = $derived(
 		testid ?? (label === 'Admin Fee' ? 'admin-fee-system' : 'uncategorized-system')

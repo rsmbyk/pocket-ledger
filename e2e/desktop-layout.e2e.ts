@@ -41,7 +41,9 @@ test.describe('013 desktop layout', () => {
 
 		await page.getByTestId('open-menu').click();
 		await expect(page.getByTestId('app-drawer-sheet')).toBeVisible();
-		await expect(page.getByTestId('app-drawer-sheet').getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(
+			page.getByTestId('app-drawer-sheet').getByRole('heading', { name: 'Main' })
+		).toBeVisible();
 		await page.getByTestId('nav-activity').click();
 		await expect(page).toHaveURL(/\/activity\/?$/);
 		await expect(page.getByTestId('app-drawer-sheet')).toBeHidden();

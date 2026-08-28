@@ -30,10 +30,7 @@
 	const display = $derived(value ? formatOccurredOnDisplay(value) : '');
 </script>
 
-<div
-	class={cn('relative', className)}
-	data-testid={testid}
->
+<div class={cn('relative', className)} data-testid={testid}>
 	<div
 		class={cn(
 			'border-input bg-background ring-offset-background focus-within:ring-ring flex h-11 w-full items-center gap-2 rounded-md border px-3 text-sm shadow-xs focus-within:ring-2 md:h-9',
@@ -49,10 +46,7 @@
 			{/if}
 		</div>
 		{#if trailing}
-			<div
-				class="relative z-10 ml-auto flex shrink-0 items-center"
-				data-slot="date-field-trailing"
-			>
+			<div class="relative z-10 ml-auto flex shrink-0 items-center" data-slot="date-field-trailing">
 				{@render trailing()}
 			</div>
 		{/if}

@@ -5,9 +5,7 @@ export async function putTransaction(tx: LedgerTransaction): Promise<void> {
 	await db.transactions.put(withVoidedAt(tx));
 }
 
-export async function listTransactionsForAccount(
-	accountId: string
-): Promise<LedgerTransaction[]> {
+export async function listTransactionsForAccount(accountId: string): Promise<LedgerTransaction[]> {
 	const rows = await db.transactions.where('accountId').equals(accountId).toArray();
 	return rows
 		.map((row) => withVoidedAt(row))

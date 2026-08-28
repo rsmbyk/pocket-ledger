@@ -20,7 +20,12 @@
 	</Card.Header>
 	<Card.Content class="space-y-3 px-0">
 		<label class="flex items-center gap-2 text-sm">
-			<input type="checkbox" class="size-5 accent-primary md:size-4" bind:checked={ack} data-testid="device-skip-ack" />
+			<input
+				type="checkbox"
+				class="size-5 accent-primary md:size-4"
+				bind:checked={ack}
+				data-testid="device-skip-ack"
+			/>
 			No passphrase: data on this device can be read if access is lost or shared.
 		</label>
 		<Button type="button" onclick={onSetPassphrase} data-testid="device-skip-set">

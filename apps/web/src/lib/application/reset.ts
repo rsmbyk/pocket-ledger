@@ -39,9 +39,7 @@ export async function resetLocalData(options: ResetLocalDataOptions): Promise<vo
 		keepKeys.add(SETTINGS_ENCRYPTION_ENABLED);
 	}
 	const preservedSettings =
-		keepKeys.size > 0
-			? (await db.settings.toArray()).filter((row) => keepKeys.has(row.key))
-			: [];
+		keepKeys.size > 0 ? (await db.settings.toArray()).filter((row) => keepKeys.has(row.key)) : [];
 
 	await db.transaction(
 		'rw',

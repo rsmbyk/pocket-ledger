@@ -3,7 +3,10 @@
 	"private": true,
 	"version": "0.1.0",
 	"type": "module",
-	"workspaces": ["apps/web", "apps/api"],
+	"workspaces": [
+		"apps/web",
+		"apps/api"
+	],
 	"scripts": {
 		"dev": "npm run dev -w @pocket-ledger/web",
 		"dev:api": "npm run dev -w @pocket-ledger/api",

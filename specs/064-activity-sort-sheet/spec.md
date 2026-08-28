@@ -23,12 +23,12 @@ Add an Activity **Sort** control (icon-only sheet) and make the **Filters** open
    - ≥1280: Sort opens a **right** sheet (Filters stay always-on drawer; no always-on Sort panel)
 5. **Sort modes** (single select; applying a mode updates the list **immediately** and closes the sheet):
 
-   | Id (suggested) | Label | Order |
-   |----------------|-------|--------|
-   | `createdAt-desc` | Default | `createdAt` newest first |
+   | Id (suggested)    | Label             | Order                     |
+   | ----------------- | ----------------- | ------------------------- |
+   | `createdAt-desc`  | Default           | `createdAt` newest first  |
    | `occurredOn-desc` | Date (descending) | `occurredOn` newest first |
-   | `occurredOn-asc` | Date (ascending) | `occurredOn` oldest first |
-   | `category` | Categories | See domain rules |
+   | `occurredOn-asc`  | Date (ascending)  | `occurredOn` oldest first |
+   | `category`        | Categories        | See domain rules          |
 
 6. Remove table-header date-cycle sort UI (depends on 063 list)
 

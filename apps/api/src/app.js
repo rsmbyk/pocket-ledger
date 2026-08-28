@@ -47,7 +47,8 @@ export function createApp(deps) {
 			return c.json(
 				{
 					error: 'local_conflict',
-					message: 'This Google account already has a ledger. Signing in discards local data on this device.'
+					message:
+						'This Google account already has a ledger. Signing in discards local data on this device.'
 				},
 				409
 			);

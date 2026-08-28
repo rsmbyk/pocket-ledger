@@ -51,7 +51,9 @@ test.describe('010 / 018 / 022 custom categories', () => {
 		await expect(del).toHaveClass(/text-destructive/);
 	});
 
-	test('056 warns when category is in use; 057 danger chrome on unused delete', async ({ page }) => {
+	test('056 warns when category is in use; 057 danger chrome on unused delete', async ({
+		page
+	}) => {
 		await page.goto('/');
 		await ensureCategory(page, 'Coffee', 'expense');
 		await openAdd(page);
@@ -63,7 +65,9 @@ test.describe('010 / 018 / 022 custom categories', () => {
 		await expect(sheet).toBeHidden();
 
 		await page.goto('/categories');
-		const coffeeRow = page.locator('li', { has: page.getByRole('textbox', { name: 'Name for Coffee' }) });
+		const coffeeRow = page.locator('li', {
+			has: page.getByRole('textbox', { name: 'Name for Coffee' })
+		});
 		await coffeeRow.getByTestId('category-delete').click();
 		await expect(page.getByTestId('category-in-use-dialog')).toBeVisible();
 		await expect(page.getByTestId('confirm-dialog-danger-header')).toHaveCount(0);

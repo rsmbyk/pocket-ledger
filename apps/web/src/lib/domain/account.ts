@@ -41,8 +41,7 @@ export function pocketCreationDate(createdAt: string): string {
 export function inferOpeningEnabled(
 	row: Pick<AccountLike, 'openingBalanceMinor' | 'openingAsOf' | 'createdAt'>
 ): boolean {
-	const opening =
-		typeof row.openingBalanceMinor === 'number' ? row.openingBalanceMinor : 0;
+	const opening = typeof row.openingBalanceMinor === 'number' ? row.openingBalanceMinor : 0;
 	const asOf = row.openingAsOf?.trim() || '';
 	const creation = pocketCreationDate(row.createdAt);
 	return opening !== 0 || (asOf !== '' && asOf !== creation);
@@ -71,13 +70,10 @@ export function normalizeAccount(
 					openingAsOf: rawAsOf || creation,
 					createdAt: row.createdAt
 				});
-	const goalTargetMinor =
-		typeof row.goalTargetMinor === 'number' ? row.goalTargetMinor : null;
+	const goalTargetMinor = typeof row.goalTargetMinor === 'number' ? row.goalTargetMinor : null;
 	const goalTargetOn = row.goalTargetOn?.trim() ? row.goalTargetOn : null;
 	const goalEnabled =
-		typeof row.goalEnabled === 'boolean'
-			? row.goalEnabled
-			: inferGoalEnabled({ goalTargetMinor });
+		typeof row.goalEnabled === 'boolean' ? row.goalEnabled : inferGoalEnabled({ goalTargetMinor });
 
 	return {
 		id: row.id,
@@ -97,9 +93,9 @@ export function normalizeAccount(
 }
 
 /** Main first, then sortOrder ascending, then createdAt, then id. */
-export function listPocketsOrdered<T extends Pick<Account, 'id' | 'isMain' | 'sortOrder' | 'createdAt'>>(
-	pockets: T[]
-): T[] {
+export function listPocketsOrdered<
+	T extends Pick<Account, 'id' | 'isMain' | 'sortOrder' | 'createdAt'>
+>(pockets: T[]): T[] {
 	return [...pockets].sort((a, b) => {
 		if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
 		if (!a.isMain && !b.isMain && a.sortOrder !== b.sortOrder) {

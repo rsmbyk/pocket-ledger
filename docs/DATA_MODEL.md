@@ -4,50 +4,50 @@ Dexie database `pocket-ledger`. UI calls accounts **Pockets**; the object store 
 
 ## accounts (Pockets)
 
-| Field | Notes |
-|-------|-------|
-| id | UUID |
-| name | Display name (default seed `Main`) |
-| currencyLabel | Display only (default `IDR`) |
-| createdAt | ISO string |
-| isMain | Exactly one Main after ensure; rename does not clear |
-| sortOrder | Order among non-Main pockets; Main always listed first |
-| notes | Free text |
-| openingBalanceMinor | Signed integer minor units |
-| openingAsOf | `YYYY-MM-DD` — txs before this date excluded from **current** derived balance (spec 071); also seeds month Opening via day-start inference forward/back (spec 110) |
-| goalTargetMinor | Optional goal target; `null` = no goal |
-| goalTargetOn | Optional deadline `YYYY-MM-DD`; `null` = target-only |
+| Field               | Notes                                                                                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| id                  | UUID                                                                                                                                                               |
+| name                | Display name (default seed `Main`)                                                                                                                                 |
+| currencyLabel       | Display only (default `IDR`)                                                                                                                                       |
+| createdAt           | ISO string                                                                                                                                                         |
+| isMain              | Exactly one Main after ensure; rename does not clear                                                                                                               |
+| sortOrder           | Order among non-Main pockets; Main always listed first                                                                                                             |
+| notes               | Free text                                                                                                                                                          |
+| openingBalanceMinor | Signed integer minor units                                                                                                                                         |
+| openingAsOf         | `YYYY-MM-DD` — txs before this date excluded from **current** derived balance (spec 071); also seeds month Opening via day-start inference forward/back (spec 110) |
+| goalTargetMinor     | Optional goal target; `null` = no goal                                                                                                                             |
+| goalTargetOn        | Optional deadline `YYYY-MM-DD`; `null` = target-only                                                                                                               |
 
 Backup JSON may still key this collection as `accounts`.
 
 ## categories
 
-| Field | Notes |
-|-------|-------|
-| id | UUID |
-| name | |
-| kind | `income` \| `expense` |
-| sortOrder | Sibling order within kind |
-| createdAt | |
+| Field     | Notes                                                                                     |
+| --------- | ----------------------------------------------------------------------------------------- |
+| id        | UUID                                                                                      |
+| name      |                                                                                           |
+| kind      | `income` \| `expense`                                                                     |
+| sortOrder | Sibling order within kind                                                                 |
+| createdAt |                                                                                           |
 | deletedAt | ISO timestamp or null; soft-delete when only voided txs reference the category (spec 103) |
 
 ## transactions
 
 Simple ledger row, double-entry-ready:
 
-| Field | Notes |
-|-------|-------|
-| id | UUID |
-| accountId | Source pocket (income/expense pocket; transfer source) |
-| counterAccountId | Null for income/expense; destination pocket for transfers |
-| type | `income` \| `expense` \| `transfer` |
-| amountMinor | Positive integer; sign from type / transfer direction (transfer = amount sent = dest receives) |
-| feeMinor | Non-negative integer; transfer admin fee (Spec 106); always `0` for income/expense; missing on read/restore → `0` |
-| categoryId | Nullable; always null for transfers (fee uses synthetic Admin Fee bucket, not categoryId) |
-| note | |
-| occurredOn | Date key `YYYY-MM-DD` |
-| createdAt | |
-| voidedAt | ISO timestamp or null |
+| Field            | Notes                                                                                                             |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------- |
+| id               | UUID                                                                                                              |
+| accountId        | Source pocket (income/expense pocket; transfer source)                                                            |
+| counterAccountId | Null for income/expense; destination pocket for transfers                                                         |
+| type             | `income` \| `expense` \| `transfer`                                                                               |
+| amountMinor      | Positive integer; sign from type / transfer direction (transfer = amount sent = dest receives)                    |
+| feeMinor         | Non-negative integer; transfer admin fee (Spec 106); always `0` for income/expense; missing on read/restore → `0` |
+| categoryId       | Nullable; always null for transfers (fee uses synthetic Admin Fee bucket, not categoryId)                         |
+| note             |                                                                                                                   |
+| occurredOn       | Date key `YYYY-MM-DD`                                                                                             |
+| createdAt        |                                                                                                                   |
+| voidedAt         | ISO timestamp or null                                                                                             |
 
 ## goals (legacy)
 

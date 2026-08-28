@@ -35,13 +35,10 @@ function fromBase64(value: string): Uint8Array {
 }
 
 async function importPasswordKey(passphrase: string): Promise<CryptoKey> {
-	return crypto.subtle.importKey(
-		'raw',
-		new TextEncoder().encode(passphrase),
-		'PBKDF2',
-		false,
-		['deriveBits', 'deriveKey']
-	);
+	return crypto.subtle.importKey('raw', new TextEncoder().encode(passphrase), 'PBKDF2', false, [
+		'deriveBits',
+		'deriveKey'
+	]);
 }
 
 async function deriveLegacyVerifier(passphrase: string, salt: Uint8Array): Promise<string> {

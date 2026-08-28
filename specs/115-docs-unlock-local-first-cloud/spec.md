@@ -193,17 +193,17 @@ API cookie: **7-day rolling**, HttpOnly Secure. **Session manager:** list sessio
 
 ### Crypto numbers
 
-| Item | Value |
-|------|--------|
-| Passphrase min | 8 characters (device and account) |
-| PBKDF2 | SHA-256, 600,000 iterations |
-| Recovery kit | 32 bytes, grouped hex, case-insensitive |
-| Sync poll | 30s + pull on unlock + after save |
-| Session cookie | 7-day rolling, HttpOnly Secure |
-| Blobs | Postgres `bytea` |
-| Idle choices | 5 / 10 / 15 / 30 min (default 30) |
+| Item           | Value                                    |
+| -------------- | ---------------------------------------- |
+| Passphrase min | 8 characters (device and account)        |
+| PBKDF2         | SHA-256, 600,000 iterations              |
+| Recovery kit   | 32 bytes, grouped hex, case-insensitive  |
+| Sync poll      | 30s + pull on unlock + after save        |
+| Session cookie | 7-day rolling, HttpOnly Secure           |
+| Blobs          | Postgres `bytea`                         |
+| Idle choices   | 5 / 10 / 15 / 30 min (default 30)        |
 | Device lockout | 3 wrongs per rung; 15m…1 day at midnight |
-| Kit UX | copy **or** download + checkbox |
+| Kit UX         | copy **or** download + checkbox          |
 
 ### Threat model (honest)
 

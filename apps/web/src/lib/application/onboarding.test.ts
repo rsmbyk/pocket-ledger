@@ -10,16 +10,14 @@ describe('account onboarding', () => {
 	});
 
 	it('returns to the hex kit when wrap exists but recovery does not', () => {
-		expect(accountOnboardingStep({ wrap: { kdf: 'pbkdf2-sha256' }, recoveryWrap: null }, true)).toBe(
-			'needs-kit'
-		);
+		expect(
+			accountOnboardingStep({ wrap: { kdf: 'pbkdf2-sha256' }, recoveryWrap: null }, true)
+		).toBe('needs-kit');
 		expect(moneyUiAllowed('needs-kit')).toBe(false);
 	});
 
 	it('blocks the ledger until unlock after a completed kit', () => {
-		expect(
-			accountOnboardingStep({ wrap: {}, recoveryWrap: {} }, false)
-		).toBe('needs-unlock');
+		expect(accountOnboardingStep({ wrap: {}, recoveryWrap: {} }, false)).toBe('needs-unlock');
 		expect(accountOnboardingStep({ wrap: {}, recoveryWrap: {} }, true)).toBe('complete');
 		expect(moneyUiAllowed('complete')).toBe(true);
 	});

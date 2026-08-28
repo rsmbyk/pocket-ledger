@@ -1,7 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { goToNav } from './nav';
 
-
 test.describe('003–008 base features', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');

@@ -126,7 +126,7 @@
 	}
 
 	body {
-		@apply bg-background text-foreground m-0 min-h-svh;
+		@apply m-0 min-h-svh bg-background text-foreground;
 	}
 
 	#app {

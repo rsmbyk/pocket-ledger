@@ -97,10 +97,7 @@
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
 		onRenameCategory: (id: string, name: string) => void | Promise<void>;
 		onDeleteCategory: (id: string) => void | Promise<void>;
-		onReorderCategories: (
-			kind: CategoryRow['kind'],
-			orderedIds: string[]
-		) => void | Promise<void>;
+		onReorderCategories: (kind: CategoryRow['kind'], orderedIds: string[]) => void | Promise<void>;
 		onCreatePocket: (input: CreatePocketInput) => void | Promise<void>;
 		onUpdatePocket: (input: UpdatePocketInput) => void | Promise<void>;
 		onDeletePocket: (id: string) => void | Promise<void>;
@@ -230,9 +227,7 @@
 				: []
 	);
 
-	const filtersSheetSide = $derived<'bottom' | 'right'>(
-		desktop.current ? 'right' : 'bottom'
-	);
+	const filtersSheetSide = $derived<'bottom' | 'right'>(desktop.current ? 'right' : 'bottom');
 	const filtersSheetClass = $derived(
 		filtersSheetSide === 'bottom'
 			? 'mx-auto flex max-h-[100svh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
@@ -402,7 +397,11 @@
 
 	const sortOptions: { mode: ActivitySortMode; label: string; testid: string }[] = [
 		{ mode: 'createdAt-desc', label: 'Default', testid: 'activity-sort-createdAt-desc' },
-		{ mode: 'occurredOn-desc', label: 'Date (descending)', testid: 'activity-sort-occurredOn-desc' },
+		{
+			mode: 'occurredOn-desc',
+			label: 'Date (descending)',
+			testid: 'activity-sort-occurredOn-desc'
+		},
 		{ mode: 'occurredOn-asc', label: 'Date (ascending)', testid: 'activity-sort-occurredOn-asc' }
 	];
 
@@ -481,13 +480,7 @@
 <Sidebar.Root collapsible="offcanvas">
 	<Sidebar.Header class="p-4">
 		<div class="flex items-center gap-3">
-			<img
-				src="/favicon.svg"
-				alt=""
-				width="36"
-				height="36"
-				class="size-9 shrink-0 rounded-lg"
-			/>
+			<img src="/favicon.svg" alt="" width="36" height="36" class="size-9 shrink-0 rounded-lg" />
 			<div class="min-w-0 flex-1">
 				<p class="truncate text-sm font-semibold">Pocket Ledger</p>
 				<h1 class="text-muted-foreground truncate text-xs font-normal">
@@ -602,9 +595,7 @@
 				{/if}
 
 				<Card.Root class="gap-0 py-0" data-testid="recent-card">
-					<Card.Header
-						class="flex flex-row items-center justify-between gap-2 space-y-0 px-4 py-3"
-					>
+					<Card.Header class="flex flex-row items-center justify-between gap-2 space-y-0 px-4 py-3">
 						<Card.Title class="inline-flex items-center gap-1.5 text-base">
 							<HistoryIcon class="size-4" aria-hidden="true" />
 							Recent
@@ -665,10 +656,7 @@
 				</Card.Root>
 			</div>
 		{:else if route === 'activity'}
-			<div
-				data-testid="activity-panel"
-				class={xlWide.current ? 'flex gap-4' : 'space-y-3'}
-			>
+			<div data-testid="activity-panel" class={xlWide.current ? 'flex gap-4' : 'space-y-3'}>
 				{#snippet filterFormFields()}
 					<div class="space-y-1">
 						<Label for="activity-filter-type">Type</Label>
@@ -676,8 +664,7 @@
 							id="activity-filter-type"
 							class="border-input bg-background flex h-11 w-full rounded-md border px-3 text-sm md:h-9"
 							value={draft.type ?? 'all'}
-							onchange={(e) =>
-								onFilterTypeChange(e.currentTarget.value as ActivityTypeFilter)}
+							onchange={(e) => onFilterTypeChange(e.currentTarget.value as ActivityTypeFilter)}
 							data-testid="activity-filter-type"
 						>
 							<option value="all">All</option>
@@ -718,7 +705,10 @@
 									<span>All</span>
 								{:else}
 									{@const selected = accounts.find((a) => a.id === draft.pocketId)}
-									<PocketLabel name={selected?.name ?? 'Unknown'} isMain={selected?.isMain ?? false} />
+									<PocketLabel
+										name={selected?.name ?? 'Unknown'}
+										isMain={selected?.isMain ?? false}
+									/>
 								{/if}
 								<ChevronDownIcon class="text-muted-foreground size-4 shrink-0" />
 							</DropdownMenu.Trigger>
@@ -997,35 +987,35 @@
 						onConfirm={confirmDiscardFilters}
 					/>
 
-				<ActivityTable
-					transactions={filteredTransactions}
-					totalCount={transactions.length}
-					{currencyLabel}
-					{categoryName}
-					sortMode={activitySort}
-					{pocketsById}
-					onEdit={onOpenEdit}
-				/>
-			</div>
+					<ActivityTable
+						transactions={filteredTransactions}
+						totalCount={transactions.length}
+						{currencyLabel}
+						{categoryName}
+						sortMode={activitySort}
+						{pocketsById}
+						onEdit={onOpenEdit}
+					/>
+				</div>
 
-			{#if xlWide.current}
-				<aside
-					data-testid="activity-filters-drawer"
-					class="border-border bg-card flex w-72 shrink-0 flex-col border-l"
-				>
-					{@render filterPanel()}
-				</aside>
-			{/if}
-		</div>
+				{#if xlWide.current}
+					<aside
+						data-testid="activity-filters-drawer"
+						class="border-border bg-card flex w-72 shrink-0 flex-col border-l"
+					>
+						{@render filterPanel()}
+					</aside>
+				{/if}
+			</div>
 		{:else if route === 'pockets'}
 			<PocketsPanel
 				pockets={accounts}
 				balances={pocketBalances}
 				{currencyLabel}
-				onCreatePocket={onCreatePocket}
-				onUpdatePocket={onUpdatePocket}
-				onDeletePocket={onDeletePocket}
-				onReorderPockets={onReorderPockets}
+				{onCreatePocket}
+				{onUpdatePocket}
+				{onDeletePocket}
+				{onReorderPockets}
 				onClearGoal={onClearPocketGoal}
 			/>
 		{:else if route === 'categories'}
@@ -1111,7 +1101,11 @@
 				>
 					Cancel
 				</Button>
-				<Button type="submit" disabled={showMoneyBusy || !showMoneyPass} data-testid="show-money-confirm">
+				<Button
+					type="submit"
+					disabled={showMoneyBusy || !showMoneyPass}
+					data-testid="show-money-confirm"
+				>
 					{showMoneyBusy ? 'Checking…' : 'Show'}
 				</Button>
 			</div>

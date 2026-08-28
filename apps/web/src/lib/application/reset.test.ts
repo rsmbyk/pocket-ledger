@@ -1,4 +1,4 @@
-	import 'fake-indexeddb/auto';
+import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db, SETTINGS_RAW_DEK } from '$lib/data/db';
 import { clearDataKey } from '$lib/data/session-key';
@@ -7,7 +7,12 @@ import { createCategory, listCategories } from '$lib/application/categories';
 import { addTransaction, listRecentTransactions } from '$lib/application/transactions';
 import { createGoal, listGoals } from '$lib/application/goals';
 import { listNetWorthSnapshots, putNetWorthSnapshot } from '$lib/data/net-worth-repo';
-import { enableLock, ensureLocalDek, isLockEnabled, unlockWithPassphrase } from '$lib/application/lock';
+import {
+	enableLock,
+	ensureLocalDek,
+	isLockEnabled,
+	unlockWithPassphrase
+} from '$lib/application/lock';
 import { resetLocalData } from './reset';
 
 describe('resetLocalData', () => {

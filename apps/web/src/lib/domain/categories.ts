@@ -26,10 +26,7 @@ export function assertUniqueCategoryName(
 	const needle = name.toLowerCase();
 	const clash = existing.find(
 		(c) =>
-			isCategoryActive(c) &&
-			c.kind === kind &&
-			c.id !== exceptId &&
-			c.name.toLowerCase() === needle
+			isCategoryActive(c) && c.kind === kind && c.id !== exceptId && c.name.toLowerCase() === needle
 	);
 	if (clash) {
 		throw new Error(`A ${kind} category named "${name}" already exists`);

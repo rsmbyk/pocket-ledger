@@ -220,10 +220,7 @@ export function buildMonthSummary(
 			const fee = transferFeeMinor(tx);
 			if (fee > 0) {
 				expenseMinor += fee;
-				expenseMap.set(
-					ADMIN_FEE_CATEGORY_ID,
-					(expenseMap.get(ADMIN_FEE_CATEGORY_ID) ?? 0) + fee
-				);
+				expenseMap.set(ADMIN_FEE_CATEGORY_ID, (expenseMap.get(ADMIN_FEE_CATEGORY_ID) ?? 0) + fee);
 			}
 		}
 	}

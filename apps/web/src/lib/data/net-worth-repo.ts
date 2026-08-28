@@ -10,6 +10,8 @@ export async function putNetWorthSnapshot(snapshot: NetWorthSnapshot): Promise<v
 	await db.netWorthSnapshots.put(snapshot);
 }
 
-export async function findSnapshotByDate(capturedOn: string): Promise<NetWorthSnapshot | undefined> {
+export async function findSnapshotByDate(
+	capturedOn: string
+): Promise<NetWorthSnapshot | undefined> {
 	return db.netWorthSnapshots.where('capturedOn').equals(capturedOn).first();
 }

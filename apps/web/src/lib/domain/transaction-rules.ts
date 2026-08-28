@@ -76,10 +76,7 @@ export type TxFormBaseline = {
 };
 
 /** True when create form has any non-default user input vs initial baseline. */
-export function isCreateTxDirty(
-	current: TxFormBaseline,
-	baseline: TxFormBaseline
-): boolean {
+export function isCreateTxDirty(current: TxFormBaseline, baseline: TxFormBaseline): boolean {
 	return (
 		current.type !== baseline.type ||
 		current.amountDigits !== baseline.amountDigits ||
@@ -117,7 +114,9 @@ export function balanceDelta(
 }
 
 export function sumBalance(
-	transactions: Array<Pick<LedgerTransaction, 'type' | 'amountMinor'> & { voidedAt?: string | null }>
+	transactions: Array<
+		Pick<LedgerTransaction, 'type' | 'amountMinor'> & { voidedAt?: string | null }
+	>
 ): MinorUnits {
 	return transactions.reduce((total, tx) => total + balanceDelta(tx), 0);
 }
@@ -126,9 +125,7 @@ export function isValidOccurredOn(value: string): boolean {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
 	const [year, month, day] = value.split('-').map(Number) as [number, number, number];
 	const date = new Date(year, month - 1, day);
-	return (
-		date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
-	);
+	return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
 export function todayOccurredOn(now = new Date()): string {

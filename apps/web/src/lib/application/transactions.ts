@@ -59,9 +59,7 @@ export async function ensureSeedCategories(): Promise<CategoryRow[]> {
 	return revealCategories(await listCategories());
 }
 
-export async function getCategoriesForType(
-	type: AddableTransactionType
-): Promise<CategoryRow[]> {
+export async function getCategoriesForType(type: AddableTransactionType): Promise<CategoryRow[]> {
 	await ensureSeedCategories();
 	return revealCategories(await listCategoriesByKind(type));
 }

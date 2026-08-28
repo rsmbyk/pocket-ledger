@@ -57,10 +57,7 @@ function defaultSessionStorage(): StorageLike | null | undefined {
 	}
 }
 
-function readRaw(
-	key: string,
-	storage: Pick<Storage, 'getItem'> | null | undefined
-): string | null {
+function readRaw(key: string, storage: Pick<Storage, 'getItem'> | null | undefined): string | null {
 	try {
 		return storage?.getItem(key) ?? null;
 	} catch {

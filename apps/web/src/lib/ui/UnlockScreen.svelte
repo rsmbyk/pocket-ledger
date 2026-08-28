@@ -83,7 +83,9 @@
 				}}
 			>
 				<div class="space-y-2">
-					<Label for="unlock-pass">{variant === 'account' ? 'Account passphrase' : 'Device passphrase'}</Label>
+					<Label for="unlock-pass"
+						>{variant === 'account' ? 'Account passphrase' : 'Device passphrase'}</Label
+					>
 					<Input
 						id="unlock-pass"
 						type="password"
@@ -95,7 +97,11 @@
 						oninput={() => (error = null)}
 					/>
 					{#if error}
-						<p class="text-destructive text-sm" role="alert" data-testid="unlock-field-error-passphrase">
+						<p
+							class="text-destructive text-sm"
+							role="alert"
+							data-testid="unlock-field-error-passphrase"
+						>
 							{error}
 						</p>
 					{/if}
@@ -121,7 +127,13 @@
 						autocomplete="off"
 						spellcheck={false}
 					/>
-					<Button type="submit" variant="outline" class="w-full" disabled={busy} data-testid="unlock-hex-submit">
+					<Button
+						type="submit"
+						variant="outline"
+						class="w-full"
+						disabled={busy}
+						data-testid="unlock-hex-submit"
+					>
 						Unlock with kit
 					</Button>
 				</form>

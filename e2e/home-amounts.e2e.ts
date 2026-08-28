@@ -37,10 +37,12 @@ test.describe('048 home amount hide + by-category icons', () => {
 	test('by-category titles have icons; sum tiles do not', async ({ page }) => {
 		await expect(page.getByTestId('month-income').locator('svg')).toHaveCount(0);
 		await expect(page.getByTestId('month-expense').locator('svg')).toHaveCount(0);
-		await expect(page.getByTestId('income-category-chart').locator('p').first().locator('svg')).toHaveCount(
-			1
-		);
-		await expect(page.getByTestId('category-chart').locator('p').first().locator('svg')).toHaveCount(1);
+		await expect(
+			page.getByTestId('income-category-chart').locator('p').first().locator('svg')
+		).toHaveCount(1);
+		await expect(
+			page.getByTestId('category-chart').locator('p').first().locator('svg')
+		).toHaveCount(1);
 	});
 
 	test('show money requires passphrase when lock is on', async ({ page }) => {

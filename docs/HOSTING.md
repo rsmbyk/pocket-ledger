@@ -2,17 +2,17 @@
 
 ## Target: GCP Cloud Run (two services)
 
-| Item | Value |
-|------|--------|
-| Project | `pocket-ledger-rsmbyk` |
-| Region | **asia-southeast2** (Jakarta) |
-| Web | Cloud Run serving **static** SvelteKit assets (`Dockerfile.web`) |
-| API | Cloud Run running Hono (`Dockerfile.api`) |
-| URLs | Web: https://pocket-ledger-web-w6fanfnuqa-et.a.run.app — API: https://pocket-ledger-api-w6fanfnuqa-et.a.run.app. Custom domain is **parked**. |
-| Origins | **Two origins** + CORS. Session cookie lives on the **API** host (not same-origin cookies). |
-| Deploy | GitHub Actions + Workload Identity Federation. **Path-filtered:** `apps/web/**` does not deploy API; `apps/api/**` does not deploy web. |
-| Images | Artifact Registry `cloud-run-source-deploy` in `asia-southeast2`; Cloud Build uses `cloudbuild.web.yaml` / `cloudbuild.api.yaml` because `gcloud run deploy` has no `--dockerfile` flag. |
-| Blobs | Postgres `bytea` until size hurts (GCS parked). Schema: `apps/api/schema.sql`. Local/dev/CI uses an in-memory store unless `DATABASE_URL` is set later. |
+| Item    | Value                                                                                                                                                                                    |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Project | `pocket-ledger-rsmbyk`                                                                                                                                                                   |
+| Region  | **asia-southeast2** (Jakarta)                                                                                                                                                            |
+| Web     | Cloud Run serving **static** SvelteKit assets (`Dockerfile.web`)                                                                                                                         |
+| API     | Cloud Run running Hono (`Dockerfile.api`)                                                                                                                                                |
+| URLs    | Web: https://pocket-ledger-web-w6fanfnuqa-et.a.run.app — API: https://pocket-ledger-api-w6fanfnuqa-et.a.run.app. Custom domain is **parked**.                                            |
+| Origins | **Two origins** + CORS. Session cookie lives on the **API** host (not same-origin cookies).                                                                                              |
+| Deploy  | GitHub Actions + Workload Identity Federation. **Path-filtered:** `apps/web/**` does not deploy API; `apps/api/**` does not deploy web.                                                  |
+| Images  | Artifact Registry `cloud-run-source-deploy` in `asia-southeast2`; Cloud Build uses `cloudbuild.web.yaml` / `cloudbuild.api.yaml` because `gcloud run deploy` has no `--dockerfile` flag. |
+| Blobs   | Postgres `bytea` until size hurts (GCS parked). Schema: `apps/api/schema.sql`. Local/dev/CI uses an in-memory store unless `DATABASE_URL` is set later.                                  |
 
 Cutover to Cloud Run is a **new origin** = **empty IndexedDB**. Data on the Cloudflare origin does not move. Users who need local history should export an encrypted backup (Spec 120) before switching hosts.
 

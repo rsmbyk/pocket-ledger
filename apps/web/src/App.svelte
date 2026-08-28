@@ -53,11 +53,7 @@
 		type MonthKey,
 		type MonthSummary
 	} from '$lib/domain/month-summary';
-	import {
-		parseThemePreference,
-		THEME_STORAGE_KEY,
-		type ThemePreference
-	} from '$lib/shared/theme';
+	import { parseThemePreference, THEME_STORAGE_KEY, type ThemePreference } from '$lib/shared/theme';
 	import AccountPassphraseScreen from '$lib/ui/AccountPassphraseScreen.svelte';
 	import HexKitScreen from '$lib/ui/HexKitScreen.svelte';
 	import ScreensaverOverlay from '$lib/ui/ScreensaverOverlay.svelte';
@@ -84,11 +80,20 @@
 	} from '$lib/application/account-lock';
 	import { parseIdleSettings } from '$lib/application/idle';
 	import { enrollWebAuthn } from '$lib/application/webauthn';
-	import { SETTINGS_IDLE_LEAVE_TAB, SETTINGS_IDLE_MINUTES, SETTINGS_WEBAUTHN, db } from '$lib/data/db';
+	import {
+		SETTINGS_IDLE_LEAVE_TAB,
+		SETTINGS_IDLE_MINUTES,
+		SETTINGS_WEBAUTHN,
+		db
+	} from '$lib/data/db';
 	import { getSetting, setSetting } from '$lib/data/settings-repo';
 	import { loadLockout, saveLockout } from '$lib/application/device-lockout-repo';
 	import { isLockedOut, recordSuccess, recordWrongGuess } from '$lib/application/device-lockout';
-	import { pullAndApply, pushSealedEntity, pushTransactionById } from '$lib/application/sync-client';
+	import {
+		pullAndApply,
+		pushSealedEntity,
+		pushTransactionById
+	} from '$lib/application/sync-client';
 	import { promptGoogleIdToken } from '$lib/application/google-signin';
 	import { clearDataKey } from '$lib/data/session-key';
 	import type { AuthMe } from '$lib/application/cloud-api';
@@ -123,9 +128,7 @@
 	let lastActivity = $state(Date.now());
 	let webauthnEnrolled = $state(false);
 
-	let canPrevMonth = $derived(
-		monthBounds ? canShiftMonth(monthKey, -1, monthBounds) : false
-	);
+	let canPrevMonth = $derived(monthBounds ? canShiftMonth(monthKey, -1, monthBounds) : false);
 	let canNextMonth = $derived(monthBounds ? canShiftMonth(monthKey, 1, monthBounds) : false);
 
 	async function refreshLedger(active: Account, key: MonthKey = monthKey) {

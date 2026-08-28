@@ -145,9 +145,7 @@
 				</DropdownMenu.Item>
 			{/if}
 			{#if showUncategorized}
-				<DropdownMenu.Item
-					onclick={() => onValueChange(showAllOption ? UNCATEGORIZED_FILTER : '')}
-				>
+				<DropdownMenu.Item onclick={() => onValueChange(showAllOption ? UNCATEGORIZED_FILTER : '')}>
 					<UncategorizedLabel system />
 				</DropdownMenu.Item>
 			{/if}

@@ -15,7 +15,10 @@
 	let busy = $state(false);
 </script>
 
-<div class="bg-background flex min-h-svh items-center justify-center px-4" data-testid="account-passphrase-screen">
+<div
+	class="bg-background flex min-h-svh items-center justify-center px-4"
+	data-testid="account-passphrase-screen"
+>
 	<Card.Root class="w-full max-w-sm">
 		<Card.Header>
 			<Card.Title>{title}</Card.Title>

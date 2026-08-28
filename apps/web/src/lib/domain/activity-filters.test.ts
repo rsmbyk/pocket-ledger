@@ -38,9 +38,27 @@ function tx(
 
 describe('activity-filters', () => {
 	const rows = [
-		tx({ type: 'expense', amountMinor: 100_000, occurredOn: '2026-07-15', categoryId: 'food', note: 'secret lunch' }),
-		tx({ type: 'income', amountMinor: 50_000, occurredOn: '2026-07-01', categoryId: 'sal', note: 'pay' }),
-		tx({ type: 'expense', amountMinor: 15_000, occurredOn: '2026-06-20', categoryId: 'food', note: 'old' })
+		tx({
+			type: 'expense',
+			amountMinor: 100_000,
+			occurredOn: '2026-07-15',
+			categoryId: 'food',
+			note: 'secret lunch'
+		}),
+		tx({
+			type: 'income',
+			amountMinor: 50_000,
+			occurredOn: '2026-07-01',
+			categoryId: 'sal',
+			note: 'pay'
+		}),
+		tx({
+			type: 'expense',
+			amountMinor: 15_000,
+			occurredOn: '2026-06-20',
+			categoryId: 'food',
+			note: 'old'
+		})
 	];
 
 	it('matches amounts with or without separators', () => {
@@ -52,9 +70,9 @@ describe('activity-filters', () => {
 	it('filters by type, category, dates, and search', () => {
 		expect(filterTransactions(rows, { type: 'expense' })).toHaveLength(2);
 		expect(filterTransactions(rows, { categoryId: 'sal' })).toHaveLength(1);
-		expect(filterTransactions(rows, { startDate: '2026-07-10', endDate: '2026-07-31' })).toHaveLength(
-			1
-		);
+		expect(
+			filterTransactions(rows, { startDate: '2026-07-10', endDate: '2026-07-31' })
+		).toHaveLength(1);
 		expect(filterTransactions(rows, { search: 'lunch' })[0]?.note).toBe('secret lunch');
 		expect(filterTransactions(rows, { search: '100,000' })).toHaveLength(1);
 	});
@@ -88,7 +106,13 @@ describe('activity-filters', () => {
 	it('filters uncategorized via sentinel', () => {
 		const mixed = [
 			...rows,
-			tx({ type: 'expense', amountMinor: 9, occurredOn: '2026-07-16', categoryId: null, note: 'bare' })
+			tx({
+				type: 'expense',
+				amountMinor: 9,
+				occurredOn: '2026-07-16',
+				categoryId: null,
+				note: 'bare'
+			})
 		];
 		expect(filterTransactions(mixed, { categoryId: UNCATEGORIZED_FILTER })).toHaveLength(1);
 		expect(filterTransactions(mixed, { categoryId: UNCATEGORIZED_FILTER })[0]?.note).toBe('bare');
@@ -119,9 +143,9 @@ describe('activity-filters', () => {
 				feeMinor: 50
 			}
 		];
-		expect(filterTransactions(mixed, { categoryId: ADMIN_FEE_CATEGORY_ID }).map((t) => t.note)).toEqual(
-			['paid', 'void-fee']
-		);
+		expect(
+			filterTransactions(mixed, { categoryId: ADMIN_FEE_CATEGORY_ID }).map((t) => t.note)
+		).toEqual(['paid', 'void-fee']);
 		expect(
 			filterTransactions(mixed, { categoryId: ADMIN_FEE_CATEGORY_ID, hideVoided: true }).map(
 				(t) => t.note
@@ -142,14 +166,12 @@ describe('activity-filters', () => {
 			tx({ type: 'expense', amountMinor: 30_000, occurredOn: '2026-07-15', note: 'c' })
 		];
 		expect(filterTransactions(mixed, { hideVoided: true })).toHaveLength(2);
-		expect(filterTransactions(mixed, { amountOp: 'lt', amountRaw: '25000' }).map((t) => t.note)).toEqual([
-			'a',
-			'b'
-		]);
-		expect(filterTransactions(mixed, { amountOp: 'gt', amountRaw: '15,000' }).map((t) => t.note)).toEqual([
-			'b',
-			'c'
-		]);
+		expect(
+			filterTransactions(mixed, { amountOp: 'lt', amountRaw: '25000' }).map((t) => t.note)
+		).toEqual(['a', 'b']);
+		expect(
+			filterTransactions(mixed, { amountOp: 'gt', amountRaw: '15,000' }).map((t) => t.note)
+		).toEqual(['b', 'c']);
 	});
 
 	it('filters by pocket including transfer either side', () => {
@@ -290,10 +312,12 @@ describe('activity-filters', () => {
 		const dateSorted = [...dayA, ...dayB];
 		const first = initialRevealEndIndex(dateSorted, 'occurredOn-desc', 40);
 		expect(first).toBe(60);
-		expect(dateSorted.slice(0, first).every((t, _, arr) => {
-			const days = new Set(arr.map((x) => x.occurredOn));
-			return days.size === 2;
-		})).toBe(true);
+		expect(
+			dateSorted.slice(0, first).every((t, _, arr) => {
+				const days = new Set(arr.map((x) => x.occurredOn));
+				return days.size === 2;
+			})
+		).toBe(true);
 		const lastDay = dateSorted[first - 1]!.occurredOn;
 		expect(dateSorted[first] === undefined || dateSorted[first]!.occurredOn !== lastDay).toBe(true);
 	});

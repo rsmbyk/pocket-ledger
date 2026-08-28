@@ -80,9 +80,7 @@
 					<p
 						class={[
 							'mt-1 font-semibold',
-							hideAmounts
-								? 'text-muted-foreground'
-								: 'text-emerald-600 dark:text-emerald-400'
+							hideAmounts ? 'text-muted-foreground' : 'text-emerald-600 dark:text-emerald-400'
 						]}
 						data-testid="month-income"
 					>
@@ -165,8 +163,7 @@
 						!hideAmounts && summary.netMinor < 0 && 'text-destructive',
 						!hideAmounts && summary.netMinor === 0 && 'text-muted-foreground'
 					]}
-					data-testid="month-footer-net"
-					>{money(summary.netMinor)}</span
+					data-testid="month-footer-net">{money(summary.netMinor)}</span
 				>
 			</div>
 			<div class="flex justify-between gap-2 font-medium">

@@ -52,10 +52,7 @@
 				{@const key = rowKey(row)}
 				{@const active = hoveredKey === key}
 				<li
-					class={cn(
-						'space-y-1 rounded-md px-1 py-1 transition-colors',
-						active && 'bg-muted/70'
-					)}
+					class={cn('space-y-1 rounded-md px-1 py-1 transition-colors', active && 'bg-muted/70')}
 					onmouseenter={() => (hoveredKey = key)}
 					onmouseleave={() => (hoveredKey = null)}
 				>
