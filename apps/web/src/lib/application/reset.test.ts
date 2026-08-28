@@ -1,16 +1,18 @@
 	import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { db } from '$lib/data/db';
+import { db, SETTINGS_RAW_DEK } from '$lib/data/db';
+import { clearDataKey } from '$lib/data/session-key';
 import { ensureDefaultAccount } from '$lib/application/accounts';
 import { createCategory, listCategories } from '$lib/application/categories';
 import { addTransaction, listRecentTransactions } from '$lib/application/transactions';
 import { createGoal, listGoals } from '$lib/application/goals';
 import { listNetWorthSnapshots, putNetWorthSnapshot } from '$lib/data/net-worth-repo';
-import { enableLock, isLockEnabled, unlockWithPassphrase } from '$lib/application/lock';
+import { enableLock, ensureLocalDek, isLockEnabled, unlockWithPassphrase } from '$lib/application/lock';
 import { resetLocalData } from './reset';
 
 describe('resetLocalData', () => {
 	beforeEach(async () => {
+		clearDataKey();
 		await db.delete();
 		await db.open();
 	});
@@ -60,5 +62,19 @@ describe('resetLocalData', () => {
 		const cats = await listCategories();
 		expect(cats.some((c) => c.name === 'Food')).toBe(true);
 		expect(await listRecentTransactions((await ensureDefaultAccount()).id)).toHaveLength(0);
+	});
+
+	it('keeps category names readable when preserving categories without the passphrase lock', async () => {
+		await ensureDefaultAccount();
+		await ensureLocalDek();
+		await createCategory('Food', 'expense');
+
+		await resetLocalData({ preserveCategories: true, preservePassphrase: false });
+		expect((await db.settings.get(SETTINGS_RAW_DEK))?.value).toBeTruthy();
+		await ensureLocalDek();
+
+		const cats = await listCategories();
+		expect(cats.some((c) => c.name === 'Food')).toBe(true);
+		expect(await isLockEnabled()).toBe(false);
 	});
 });

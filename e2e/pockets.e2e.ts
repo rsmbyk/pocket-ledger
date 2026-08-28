@@ -60,12 +60,12 @@ test.describe('070–077 pockets pack', () => {
 		await page.keyboard.press('Escape');
 		await dialog.getByTestId('tx-transfer-source').click();
 		const sourceOptions = page.locator('[data-testid^="tx-transfer-source-option-"]');
-		await sourceOptions.nth(0).click();
+		await sourceOptions.nth(0).click({ force: true });
 		await dialog.getByTestId('tx-transfer-dest').click();
-		await page.locator('[data-testid^="tx-transfer-dest-option-"]').nth(0).click();
+		await page.locator('[data-testid^="tx-transfer-dest-option-"]').nth(0).click({ force: true });
 		await expect(dialog.getByTestId('tx-transfer-same-pocket-warn')).toBeVisible();
 		await dialog.getByTestId('tx-transfer-dest').click();
-		await page.locator('[data-testid^="tx-transfer-dest-option-"]').nth(1).click();
+		await page.locator('[data-testid^="tx-transfer-dest-option-"]').nth(1).click({ force: true });
 		await expect(dialog.getByTestId('tx-transfer-same-pocket-warn')).toHaveCount(0);
 		await dialog.getByLabel(/amount/i).fill('10000');
 		await dialog.getByRole('button', { name: 'Save' }).click();

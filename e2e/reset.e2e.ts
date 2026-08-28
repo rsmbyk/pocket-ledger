@@ -23,6 +23,7 @@ test.describe('024 reset everything', () => {
 		await expect(page.getByTestId('account-balance')).toContainText('0');
 
 		await page.goto('/categories');
+		await expect(page.getByTestId('categories-panel')).toBeVisible();
 		await expect(page.getByRole('textbox', { name: 'Name for Food' })).toBeVisible();
 	});
 });
