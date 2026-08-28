@@ -6,6 +6,7 @@ on:
     paths:
       - 'apps/api/**'
       - 'Dockerfile.api'
+      - 'cloudbuild.api.yaml'
       - 'package-lock.json'
       - '.github/workflows/deploy-api.yml'
   workflow_dispatch:
@@ -45,9 +46,14 @@ jobs:
           REGION: ${{ vars.GCP_REGION }}
         run: |
           gcloud config set project "$PROJECT_ID"
+          REGION="${REGION:-asia-southeast2}"
+          IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/pocket-ledger-api"
+          gcloud builds submit \
+            --config cloudbuild.api.yaml \
+            --substitutions=_IMAGE="$IMAGE" \
+            --timeout=1200s
           gcloud run deploy pocket-ledger-api \
-            --source . \
-            --dockerfile Dockerfile.api \
-            --region "${REGION:-us-central1}" \
+            --image "$IMAGE" \
+            --region "$REGION" \
             --allow-unauthenticated \
             --quiet

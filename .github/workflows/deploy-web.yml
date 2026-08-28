@@ -6,6 +6,7 @@ on:
     paths:
       - 'apps/web/**'
       - 'Dockerfile.web'
+      - 'cloudbuild.web.yaml'
       - 'docker/nginx-web.conf'
       - 'package-lock.json'
       - '.github/workflows/deploy-web.yml'
@@ -46,9 +47,14 @@ jobs:
           REGION: ${{ vars.GCP_REGION }}
         run: |
           gcloud config set project "$PROJECT_ID"
+          REGION="${REGION:-asia-southeast2}"
+          IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/pocket-ledger-web"
+          gcloud builds submit \
+            --config cloudbuild.web.yaml \
+            --substitutions=_IMAGE="$IMAGE" \
+            --timeout=1200s
           gcloud run deploy pocket-ledger-web \
-            --source . \
-            --dockerfile Dockerfile.web \
-            --region "${REGION:-us-central1}" \
+            --image "$IMAGE" \
+            --region "$REGION" \
             --allow-unauthenticated \
             --quiet

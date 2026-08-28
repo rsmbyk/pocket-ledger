@@ -13,6 +13,7 @@ async function seedIncomeAndExpense(page: Page): Promise<void> {
 	await form.getByRole('textbox', { name: 'Amount' }).fill('100000');
 	await selectTxCategory(page, 'Salary', form);
 	await form.getByRole('button', { name: 'Save' }).click();
+	await expect(form).toBeHidden({ timeout: 10_000 });
 
 	await openAdd(page);
 	form = (await sheet.isVisible().catch(() => false)) ? sheet : dialog;
@@ -21,6 +22,7 @@ async function seedIncomeAndExpense(page: Page): Promise<void> {
 	await selectTxCategory(page, 'Food', form);
 	await form.getByRole('textbox', { name: 'Note' }).fill('secret lunch');
 	await form.getByRole('button', { name: 'Save' }).click();
+	await expect(form).toBeHidden({ timeout: 10_000 });
 }
 
 /** Filters surface is bottom sheet, right sheet, or xl drawer depending on viewport. */
@@ -205,6 +207,8 @@ test.describe('020 / 045 activity filters mobile', () => {
 	test('opens bottom sheet; Apply commits; Clear then Apply resets', async ({ page }) => {
 		test.setTimeout(60_000);
 		await seedIncomeAndExpense(page);
+		await expect(page.getByTestId('recent-list')).toContainText('Food');
+		await expect(page.getByTestId('recent-list')).toContainText('Salary');
 
 		// Hash nav avoids flaky mobile drawer open after seeding (see desktop-layout for menu path).
 		await page.goto('/activity');
@@ -220,6 +224,7 @@ test.describe('020 / 045 activity filters mobile', () => {
 		await page.getByTestId('activity-filters-apply').click();
 		await expect(page.getByTestId('activity-filters-sheet')).toBeHidden();
 		await expect(page.getByTestId('activity-filters-badge')).toHaveText('1');
+		await expect(page.getByTestId('activity-list')).toBeVisible();
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
 		await expect(page.getByTestId('activity-list')).not.toContainText('Salary');
 

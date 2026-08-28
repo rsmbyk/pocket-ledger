@@ -2,7 +2,7 @@
 
 Local-first personal finance tracker with optional Google cloud sync. Signed-out: PWA, data stays on the device (IndexedDB). Signed-in: E2E ciphertext on GCP; we never have the passphrase.
 
-**Live (until Cloud Run cutover):** https://pocket-ledger.ronaldsumbayak611.workers.dev/
+**Live:** https://pocket-ledger-web-w6fanfnuqa-et.a.run.app (Cloud Run, `asia-southeast2`). Former Cloudflare origin: https://pocket-ledger.ronaldsumbayak611.workers.dev/ — IndexedDB does not carry over.
 
 ## Stack
 
@@ -41,7 +41,7 @@ npm run build
 
 ## Deploy
 
-**Production:** path-filtered GitHub Actions → Cloud Run (`deploy-web.yml` vs `deploy-api.yml`). A web-only change does not deploy the API service, and vice versa. Set repo variables `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_DEPLOY_SA` (optional `GCP_REGION`). Until those exist, deploy jobs skip Cloud Run.
+**Production:** path-filtered GitHub Actions → Cloud Run (`deploy-web.yml` vs `deploy-api.yml`). A web-only change does not deploy the API service, and vice versa. Repo variables `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_DEPLOY_SA`, and `GCP_REGION` (`asia-southeast2`) are set. Cloud Build uses `cloudbuild.web.yaml` / `cloudbuild.api.yaml` (Artifact Registry `cloud-run-source-deploy`).
 
 Cutover is a **new origin** = empty IndexedDB.
 
@@ -56,7 +56,7 @@ Read these before changing behavior:
 | [docs/PRODUCT.md](docs/PRODUCT.md) | Locked product decisions (two modes, dropped/parked) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, wrapping, workspaces |
 | [docs/PROCESS.md](docs/PROCESS.md) | SDD + TDD + GitHub Flow |
-| [docs/HOSTING.md](docs/HOSTING.md) | GCP Cloud Run (Cloudflare until cutover) |
+| [docs/HOSTING.md](docs/HOSTING.md) | GCP Cloud Run (Jakarta, two services) |
 | [docs/FIRST_WORK.md](docs/FIRST_WORK.md) | Scaffold scope |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Feature order |
 | [specs/](specs/) | Living behavior specs |

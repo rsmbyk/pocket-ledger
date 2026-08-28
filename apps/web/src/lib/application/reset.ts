@@ -26,11 +26,22 @@ const LOCK_SETTING_KEYS = new Set([
  * Wipe ledger data with optional preserve for categories and passphrase lock.
  * Always clears transactions, goals, net-worth, and the session key.
  * Recreates the default Main account.
+ * Preserving categories also keeps the raw DEK so sealed names stay readable
+ * (Spec 024 after always-on DEK).
  */
 export async function resetLocalData(options: ResetLocalDataOptions): Promise<void> {
-	const preservedSettings = options.preservePassphrase
-		? (await db.settings.toArray()).filter((row) => LOCK_SETTING_KEYS.has(row.key))
-		: [];
+	const keepKeys = new Set<string>();
+	if (options.preservePassphrase) {
+		for (const key of LOCK_SETTING_KEYS) keepKeys.add(key);
+	}
+	if (options.preserveCategories) {
+		keepKeys.add(SETTINGS_RAW_DEK);
+		keepKeys.add(SETTINGS_ENCRYPTION_ENABLED);
+	}
+	const preservedSettings =
+		keepKeys.size > 0
+			? (await db.settings.toArray()).filter((row) => keepKeys.has(row.key))
+			: [];
 
 	await db.transaction(
 		'rw',
