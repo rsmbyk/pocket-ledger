@@ -69,9 +69,7 @@ export async function renameCategory(id: string, nameRaw: string): Promise<Categ
 
 /** True when any non-voided transaction references this category (spec 103). */
 export async function isCategoryInUse(id: string): Promise<boolean> {
-	const txCount = await db.transactions
-		.filter((t) => t.categoryId === id && !isVoided(t))
-		.count();
+	const txCount = await db.transactions.filter((t) => t.categoryId === id && !isVoided(t)).count();
 	return txCount > 0;
 }
 
@@ -101,10 +99,7 @@ export async function removeCategory(id: string): Promise<void> {
 }
 
 /** Swap sortOrder with the neighboring category of the same kind. */
-export async function reorderCategory(
-	id: string,
-	direction: 'up' | 'down'
-): Promise<void> {
+export async function reorderCategory(id: string, direction: 'up' | 'down'): Promise<void> {
 	const existing = await listCategories();
 	const current = existing.find((c) => c.id === id);
 	if (!current) throw new Error('Category not found');

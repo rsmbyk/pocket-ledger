@@ -7,7 +7,7 @@ function crc32(buf) {
 	for (let i = 0; i < buf.length; i++) {
 		c ^= buf[i];
 		for (let k = 0; k < 8; k++) {
-			c = c & 1 ? (0xedb88320 ^ (c >>> 1)) : c >>> 1;
+			c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
 		}
 	}
 	return ~c >>> 0;
@@ -57,8 +57,7 @@ function ledgerIcon(x, y, size, maskable = false) {
 	const cx = size / 2;
 	const cy = size / 2;
 	const pad = maskable ? size * 0.12 : size * 0.08;
-	const inBounds =
-		x >= pad && x < size - pad && y >= pad && y < size - pad;
+	const inBounds = x >= pad && x < size - pad && y >= pad && y < size - pad;
 
 	// Dark zinc background
 	if (!inBounds && maskable) return [20, 20, 23, 255];
@@ -92,8 +91,14 @@ function ledgerIcon(x, y, size, maskable = false) {
 const outDir = path.resolve('apps/web/public/icons');
 mkdirSync(outDir, { recursive: true });
 
-writeFileSync(path.join(outDir, 'icon-192.png'), png(192, (x, y, s) => ledgerIcon(x, y, s, false)));
-writeFileSync(path.join(outDir, 'icon-512.png'), png(512, (x, y, s) => ledgerIcon(x, y, s, false)));
+writeFileSync(
+	path.join(outDir, 'icon-192.png'),
+	png(192, (x, y, s) => ledgerIcon(x, y, s, false))
+);
+writeFileSync(
+	path.join(outDir, 'icon-512.png'),
+	png(512, (x, y, s) => ledgerIcon(x, y, s, false))
+);
 writeFileSync(
 	path.join(outDir, 'icon-512-maskable.png'),
 	png(512, (x, y, s) => ledgerIcon(x, y, s, true))

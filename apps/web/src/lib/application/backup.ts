@@ -13,11 +13,7 @@ import {
 	SETTINGS_WRAPPED_DEK
 } from '$lib/data/db';
 import { sealAllSensitiveFields } from '$lib/application/field-crypto';
-import {
-	ensureLocalDek,
-	isLockEnabled,
-	verifyPassphrase
-} from '$lib/application/lock';
+import { ensureLocalDek, isLockEnabled, verifyPassphrase } from '$lib/application/lock';
 import { getDataKey, setDataKey } from '$lib/data/session-key';
 import { assignSortOrdersByName } from '$lib/domain/category-order';
 import { todayOccurredOn } from '$lib/domain/transaction-rules';
@@ -66,7 +62,9 @@ const SECRET_SETTING_KEYS = new Set([
 	SETTINGS_WRAPPED_DEK
 ]);
 
-async function collectSealedSnapshot(): Promise<Omit<LedgerBackup, 'formatVersion' | 'exportedAt'>> {
+async function collectSealedSnapshot(): Promise<
+	Omit<LedgerBackup, 'formatVersion' | 'exportedAt'>
+> {
 	const [accounts, categories, transactions, goals, netWorthSnapshots, settings] =
 		await Promise.all([
 			db.accounts.toArray(),
@@ -224,7 +222,9 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 			]);
 			await db.accounts.bulkPut(accounts);
 			const categories = (
-				normalized.categories as Array<CategoryRow & { sortOrder?: number; deletedAt?: string | null }>
+				normalized.categories as Array<
+					CategoryRow & { sortOrder?: number; deletedAt?: string | null }
+				>
 			).map((c) => ({
 				...c,
 				deletedAt: typeof c.deletedAt === 'string' && c.deletedAt ? c.deletedAt : null
@@ -240,9 +240,7 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 			);
 			/* Goals live on pockets now; leave goals table empty after migrate. */
 			await db.netWorthSnapshots.bulkPut(normalized.netWorthSnapshots);
-			await db.settings.bulkPut(
-				normalized.settings.filter((s) => !SECRET_SETTING_KEYS.has(s.key))
-			);
+			await db.settings.bulkPut(normalized.settings.filter((s) => !SECRET_SETTING_KEYS.has(s.key)));
 		}
 	);
 	if (getDataKey()) {

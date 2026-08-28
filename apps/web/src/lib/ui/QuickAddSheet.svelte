@@ -147,18 +147,15 @@
 	const isDirty = $derived(
 		isTransferEdit
 			? transferEditBaseline !== null &&
-				(transferAmountRaw !== transferEditBaseline.amountDigits ||
-					transferFeeRaw !== transferEditBaseline.feeDigits ||
-					transferSourceId !== transferEditBaseline.sourceId ||
-					transferDestId !== transferEditBaseline.destId ||
-					transferNote !== transferEditBaseline.note ||
-					transferOccurredOn !== transferEditBaseline.occurredOn)
+					(transferAmountRaw !== transferEditBaseline.amountDigits ||
+						transferFeeRaw !== transferEditBaseline.feeDigits ||
+						transferSourceId !== transferEditBaseline.sourceId ||
+						transferDestId !== transferEditBaseline.destId ||
+						transferNote !== transferEditBaseline.note ||
+						transferOccurredOn !== transferEditBaseline.occurredOn)
 			: isEdit
 				? editBaseline !== null &&
-					(isEditTxDirty(
-						{ amountDigits: amountRaw, categoryId, note, occurredOn },
-						editBaseline
-					) ||
+					(isEditTxDirty({ amountDigits: amountRaw, categoryId, note, occurredOn }, editBaseline) ||
 						selectedAccountId !== editBaseline.accountId)
 				: mode === 'transfer'
 					? transferCreateBaseline !== null &&
@@ -536,7 +533,11 @@
 				{#if isVoidedView}
 					<BanIcon class="size-4 shrink-0" data-testid="tx-header-icon-voided" aria-hidden="true" />
 				{:else if isEdit}
-					<PencilIcon class="size-4 shrink-0" data-testid="tx-header-icon-edit" aria-hidden="true" />
+					<PencilIcon
+						class="size-4 shrink-0"
+						data-testid="tx-header-icon-edit"
+						aria-hidden="true"
+					/>
 				{:else}
 					<PlusIcon class="size-4 shrink-0" data-testid="tx-header-icon-add" aria-hidden="true" />
 				{/if}
@@ -651,7 +652,12 @@
 				data-testid="tx-mode-tabs"
 			>
 				<Tabs.List variant="default" class="w-full">
-					<Tabs.Trigger value="normal" disabled={saving} data-testid="tx-mode-normal" class="flex-1">
+					<Tabs.Trigger
+						value="normal"
+						disabled={saving}
+						data-testid="tx-mode-normal"
+						class="flex-1"
+					>
 						Normal
 					</Tabs.Trigger>
 					<Tabs.Trigger
@@ -853,7 +859,7 @@
 						categoryId = next;
 						if (fieldError?.key === 'category') clearFieldError();
 					}}
-					categories={categories}
+					{categories}
 					showUncategorized
 					emptyMeans="uncategorized"
 					disabled={isVoidedView || saving}
@@ -925,8 +931,8 @@
 			showCloseButton={false}
 			interactOutsideBehavior="close"
 			escapeKeydownBehavior="close"
-			onInteractOutside={onInteractOutside}
-			onEscapeKeydown={onEscapeKeydown}
+			{onInteractOutside}
+			{onEscapeKeydown}
 		>
 			<Dialog.Header class="border-border shrink-0 border-b px-4 py-3 text-left">
 				{@render txHeader(Dialog.Title, Dialog.Description)}
@@ -943,8 +949,8 @@
 			showCloseButton={false}
 			interactOutsideBehavior="close"
 			escapeKeydownBehavior="close"
-			onInteractOutside={onInteractOutside}
-			onEscapeKeydown={onEscapeKeydown}
+			{onInteractOutside}
+			{onEscapeKeydown}
 		>
 			<Sheet.Header class="border-border shrink-0 border-b px-4 py-3 text-left">
 				{@render txHeader(Sheet.Title, Sheet.Description)}

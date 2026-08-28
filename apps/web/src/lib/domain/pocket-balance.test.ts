@@ -26,10 +26,16 @@ function tx(
 describe('pocketDelta', () => {
 	it('applies income and expense on the pocket', () => {
 		expect(
-			pocketDelta(tx({ type: 'income', amountMinor: 100, accountId: 'a', occurredOn: '2026-01-01' }), 'a')
+			pocketDelta(
+				tx({ type: 'income', amountMinor: 100, accountId: 'a', occurredOn: '2026-01-01' }),
+				'a'
+			)
 		).toBe(100);
 		expect(
-			pocketDelta(tx({ type: 'expense', amountMinor: 40, accountId: 'a', occurredOn: '2026-01-01' }), 'a')
+			pocketDelta(
+				tx({ type: 'expense', amountMinor: 40, accountId: 'a', occurredOn: '2026-01-01' }),
+				'a'
+			)
 		).toBe(-40);
 	});
 
@@ -77,10 +83,9 @@ describe('derivePocketBalance', () => {
 
 	it('ignores txs before as-of', () => {
 		expect(
-			derivePocketBalance(
-				{ id: 'a', openingBalanceMinor: 50_000, openingAsOf: '2026-06-01' },
-				[tx({ type: 'income', amountMinor: 10_000, accountId: 'a', occurredOn: '2026-05-01' })]
-			)
+			derivePocketBalance({ id: 'a', openingBalanceMinor: 50_000, openingAsOf: '2026-06-01' }, [
+				tx({ type: 'income', amountMinor: 10_000, accountId: 'a', occurredOn: '2026-05-01' })
+			])
 		).toBe(50_000);
 	});
 

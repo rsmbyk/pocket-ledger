@@ -32,11 +32,11 @@ Keep the formatted readout + calendar icon chrome. Make the native date input th
 
 ## Alternatives considered
 
-| Option | Pros | Cons |
-|--------|------|------|
-| **A. Opacity-0 native overlay (preferred)** | Minimal; works with OS pickers; no deps | Softens 047 toggle |
-| B. bits-ui / shadcn Calendar popover | Consistent in-app UI; 047 toggle easy | New surface; out-of-scoped in 047; more code |
-| C. Desktop `showPicker` + mobile overlay only | Preserves 047 on desktop | Dual paths; UA sniffing / coarse-pointer heuristics |
+| Option                                        | Pros                                    | Cons                                                |
+| --------------------------------------------- | --------------------------------------- | --------------------------------------------------- |
+| **A. Opacity-0 native overlay (preferred)**   | Minimal; works with OS pickers; no deps | Softens 047 toggle                                  |
+| B. bits-ui / shadcn Calendar popover          | Consistent in-app UI; 047 toggle easy   | New surface; out-of-scoped in 047; more code        |
+| C. Desktop `showPicker` + mobile overlay only | Preserves 047 on desktop                | Dual paths; UA sniffing / coarse-pointer heuristics |
 
 ## Out of this slice
 

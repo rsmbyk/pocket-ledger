@@ -105,18 +105,14 @@
 
 	const formCreationDate = $derived(
 		formMode === 'edit' && formPocketId
-			? (pockets.find((p) => p.id === formPocketId)?.createdAt.slice(0, 10) ??
-					todayOccurredOn())
+			? (pockets.find((p) => p.id === formPocketId)?.createdAt.slice(0, 10) ?? todayOccurredOn())
 			: todayOccurredOn()
 	);
 
 	const formDirty = $derived.by(() => {
 		if (formMode === 'create') {
 			return (
-				formName.trim() !== '' ||
-				formNotes.trim() !== '' ||
-				formOpeningEnabled ||
-				formGoalEnabled
+				formName.trim() !== '' || formNotes.trim() !== '' || formOpeningEnabled || formGoalEnabled
 			);
 		}
 		if (!formBaseline) return false;
@@ -311,9 +307,7 @@
 				let goalTargetMinor: number | null = null;
 				let goalTargetOn: string | null = null;
 				if (formGoalEnabled) {
-					goalTargetMinor = formGoalTargetRaw.trim()
-						? parseAmountInput(formGoalTargetRaw)
-						: null;
+					goalTargetMinor = formGoalTargetRaw.trim() ? parseAmountInput(formGoalTargetRaw) : null;
 					if (goalTargetMinor == null) throw new Error('Goal target is required');
 					assertGoalTarget(goalTargetMinor);
 					if (formGoalDateEnabled) {
@@ -410,10 +404,7 @@
 			{/if}
 		</div>
 		<div
-			class={[
-				'flex shrink-0 flex-col items-end gap-1',
-				hasGoal && 'justify-between self-stretch'
-			]}
+			class={['flex shrink-0 flex-col items-end gap-1', hasGoal && 'justify-between self-stretch']}
 		>
 			<p class="font-medium tabular-nums">{formatMinor(balance, currencyLabel)}</p>
 			<div class={['flex gap-1', hasGoal && 'mt-auto']}>
@@ -618,7 +609,11 @@
 							}}
 						/>
 						{#if formError?.key === 'asOf' || formError?.key === 'occurredOn'}
-							<p class="text-destructive text-sm" role="alert" data-testid="pocket-field-error-asOf">
+							<p
+								class="text-destructive text-sm"
+								role="alert"
+								data-testid="pocket-field-error-asOf"
+							>
 								{formError.message}
 							</p>
 						{/if}
@@ -668,11 +663,9 @@
 									value={formGoalTargetDisplay}
 									disabled={!formGoalEnabled}
 									data-testid="pocket-goal-target-input"
-									aria-invalid={
-										formError?.key === 'goalTarget' || formError?.key === 'amount'
-											? true
-											: undefined
-									}
+									aria-invalid={formError?.key === 'goalTarget' || formError?.key === 'amount'
+										? true
+										: undefined}
 									onkeydown={onGoalTargetKeydown}
 									onpaste={onGoalTargetPaste}
 									oninput={(e) => onGoalTargetInput(e.currentTarget.value)}

@@ -18,13 +18,13 @@
 2. Mark the related control `aria-invalid` while that field error is active
 3. Surfaces and field mapping:
 
-| Surface | File | Fields |
-|---|---|---|
-| Tx Add/Edit (Normal + Transfer) | `QuickAddSheet.svelte` | Amount; Date; Category; Pocket (078); Transfer Source / Dest |
-| Pocket create/edit | `PocketsPanel.svelte` | Name; Opening balance; As of; Goal target; Goal date |
-| Categories add dialog + rename row | `CategoriesPanel.svelte` | Name |
-| Enable / disable lock | `MorePanel.svelte` | Passphrase; Confirm passphrase |
-| Unlock | `UnlockScreen.svelte` | Passphrase |
+| Surface                            | File                     | Fields                                                       |
+| ---------------------------------- | ------------------------ | ------------------------------------------------------------ |
+| Tx Add/Edit (Normal + Transfer)    | `QuickAddSheet.svelte`   | Amount; Date; Category; Pocket (078); Transfer Source / Dest |
+| Pocket create/edit                 | `PocketsPanel.svelte`    | Name; Opening balance; As of; Goal target; Goal date         |
+| Categories add dialog + rename row | `CategoriesPanel.svelte` | Name                                                         |
+| Enable / disable lock              | `MorePanel.svelte`       | Passphrase; Confirm passphrase                               |
+| Unlock                             | `UnlockScreen.svelte`    | Passphrase                                                   |
 
 4. Transfer same-pocket warning stays inline under Transfer pocket controls (`tx-transfer-same-pocket-warn`)
 5. Errors that are **not** field-specific remain a form-level alert near the actions (e.g. void failure, delete refusals, export/reset, unexpected save failure, “Main cannot be deleted”)

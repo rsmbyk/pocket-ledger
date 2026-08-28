@@ -32,23 +32,29 @@
 	}
 </script>
 
-<div class="bg-background flex min-h-svh items-center justify-center px-4" data-testid="hex-kit-screen">
+<div
+	class="bg-background flex min-h-svh items-center justify-center px-4"
+	data-testid="hex-kit-screen"
+>
 	<Card.Root class="w-full max-w-md">
 		<Card.Header>
 			<Card.Title>Save your recovery kit</Card.Title>
 			<Card.Description>
-				Copy or download this kit. If you forget the account passphrase, this is the only way back in.
+				Copy or download this kit. If you forget the account passphrase, this is the only way back
+				in.
 			</Card.Description>
 		</Card.Header>
 		<Card.Content class="space-y-3">
-			<p
-				class="bg-muted rounded-md p-3 font-mono text-sm break-all"
-				data-testid="hex-kit-value"
-			>
+			<p class="bg-muted rounded-md p-3 font-mono text-sm break-all" data-testid="hex-kit-value">
 				{kit.grouped}
 			</p>
 			<div class="flex gap-2">
-				<Button type="button" variant="outline" onclick={() => void copy()} data-testid="hex-kit-copy">
+				<Button
+					type="button"
+					variant="outline"
+					onclick={() => void copy()}
+					data-testid="hex-kit-copy"
+				>
 					{copied ? 'Copied' : 'Copy'}
 				</Button>
 				<Button type="button" variant="outline" onclick={download} data-testid="hex-kit-download">

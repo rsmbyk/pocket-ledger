@@ -9,6 +9,7 @@
 ## Intent
 
 Two confirm severity levels:
+
 - **High** (delete / wipe persisted data): danger header + icon + destructive confirm button
 - **Lower** (discard filter / unsaved edits): plain layout + **destructive confirm button** (no danger header)
 

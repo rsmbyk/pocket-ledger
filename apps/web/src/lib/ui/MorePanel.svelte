@@ -97,57 +97,57 @@
 	{/if}
 	<div class="flex flex-col gap-4" data-testid="more-sections">
 		{#if !signedIn}
-		<Card.Root class="p-(--card-spacing)" data-testid="more-section-backup">
-			<Card.Header class="px-0">
-				<Card.Title class="flex items-center gap-2 text-base">
-					<HardDriveIcon class="size-5" aria-hidden="true" />
-					Backup
-				</Card.Title>
-				<Card.Description>Encrypted export or replace all local data.</Card.Description>
-			</Card.Header>
-			<Card.Content class="flex flex-col gap-2 px-0">
-				<Button
-					type="button"
-					onclick={() => {
-						exportPass = '';
-						exportPassConfirm = '';
-						exportPassError = null;
-						exportOpen = true;
-					}}
-					data-testid="export-backup"
-				>
-					Export backup
-				</Button>
-				<div class="space-y-2">
-					<Label for="import-file">Import backup (replaces everything)</Label>
-					<Input
-						id="import-file"
-						type="file"
-						accept="application/json,.json"
-						data-testid="import-backup"
-						onchange={(e) => {
-							const file = (e.currentTarget as HTMLInputElement).files?.[0];
-							if (!file) return;
-							pendingImportFile = file;
-							importConfirmOpen = true;
-							e.currentTarget.value = '';
+			<Card.Root class="p-(--card-spacing)" data-testid="more-section-backup">
+				<Card.Header class="px-0">
+					<Card.Title class="flex items-center gap-2 text-base">
+						<HardDriveIcon class="size-5" aria-hidden="true" />
+						Backup
+					</Card.Title>
+					<Card.Description>Encrypted export or replace all local data.</Card.Description>
+				</Card.Header>
+				<Card.Content class="flex flex-col gap-2 px-0">
+					<Button
+						type="button"
+						onclick={() => {
+							exportPass = '';
+							exportPassConfirm = '';
+							exportPassError = null;
+							exportOpen = true;
 						}}
-					/>
-				</div>
-				<Button
-					type="button"
-					variant="destructive"
-					data-testid="reset-all"
-					onclick={() => {
-						preserveCategories = false;
-						preservePassphrase = false;
-						resetOpen = true;
-					}}
-				>
-					Reset everything
-				</Button>
-			</Card.Content>
-		</Card.Root>
+						data-testid="export-backup"
+					>
+						Export backup
+					</Button>
+					<div class="space-y-2">
+						<Label for="import-file">Import backup (replaces everything)</Label>
+						<Input
+							id="import-file"
+							type="file"
+							accept="application/json,.json"
+							data-testid="import-backup"
+							onchange={(e) => {
+								const file = (e.currentTarget as HTMLInputElement).files?.[0];
+								if (!file) return;
+								pendingImportFile = file;
+								importConfirmOpen = true;
+								e.currentTarget.value = '';
+							}}
+						/>
+					</div>
+					<Button
+						type="button"
+						variant="destructive"
+						data-testid="reset-all"
+						onclick={() => {
+							preserveCategories = false;
+							preservePassphrase = false;
+							resetOpen = true;
+						}}
+					>
+						Reset everything
+					</Button>
+				</Card.Content>
+			</Card.Root>
 		{/if}
 
 		<Card.Root class="p-(--card-spacing)" data-testid="more-section-cloud">
@@ -166,7 +166,11 @@
 			</Card.Header>
 			<Card.Content class="flex flex-col gap-2 px-0">
 				{#if cloudConfigured && !signedIn && onGoogleSignIn}
-					<Button type="button" onclick={() => void wrap(onGoogleSignIn)} data-testid="google-sign-in">
+					<Button
+						type="button"
+						onclick={() => void wrap(onGoogleSignIn)}
+						data-testid="google-sign-in"
+					>
 						Sign in with Google
 					</Button>
 				{:else if signedIn}
@@ -211,7 +215,9 @@
 						</Button>
 					{/if}
 				{:else}
-					<p class="text-muted-foreground text-sm">Cloud sign-in is not configured on this build.</p>
+					<p class="text-muted-foreground text-sm">
+						Cloud sign-in is not configured on this build.
+					</p>
 				{/if}
 			</Card.Content>
 		</Card.Root>
@@ -229,7 +235,10 @@
 			</Card.Header>
 			<Card.Content class="space-y-2 px-0">
 				{#if !lockEnabled && !signedIn}
-					<DeviceSkipWarning onSetPassphrase={() => document.querySelector<HTMLInputElement>('[data-testid=enable-lock-pass]')?.focus()} />
+					<DeviceSkipWarning
+						onSetPassphrase={() =>
+							document.querySelector<HTMLInputElement>('[data-testid=enable-lock-pass]')?.focus()}
+					/>
 				{/if}
 				<p class="text-sm" data-testid="lock-status">
 					Lock is <strong>{lockEnabled ? 'on' : 'off'}</strong>
@@ -277,8 +286,7 @@
 									lockPass = '';
 									lockPassConfirm = '';
 								} catch (err) {
-									lockPassError =
-										err instanceof Error ? err.message : 'Could not enable lock';
+									lockPassError = err instanceof Error ? err.message : 'Could not enable lock';
 								}
 							})();
 						}}
@@ -359,8 +367,8 @@
 		<Dialog.Header>
 			<Dialog.Title>Reset everything?</Dialog.Title>
 			<Dialog.Description>
-				This permanently deletes transactions, goals, and related local data. Export a backup first if
-				you might need the data. Cannot be undone.
+				This permanently deletes transactions, goals, and related local data. Export a backup first
+				if you might need the data. Cannot be undone.
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="space-y-3 py-2">
@@ -393,8 +401,7 @@
 					void wrap(async () => {
 						await onResetLocalData({ preserveCategories, preservePassphrase });
 						resetOpen = false;
-					})
-				}
+					})}
 			>
 				Reset
 			</Button>
@@ -513,8 +520,7 @@
 							await onImportFile(file, importPass);
 							importPass = '';
 							importConfirmOpen = false;
-						})
-					}
+						})}
 				>
 					Import
 				</Button>

@@ -16,7 +16,7 @@ Make the add/edit transaction surface feel selectable and predictable: pointer o
 
 1. **Dropdown cursor** — category (and shared) dropdown menu items use `cursor: pointer` on hover
 2. **Currency prefix padding** — amount InputGroup currency addon has matching left and right padding
-3. **DateField toggle** — ~~clicking the visible date control while the picker is open closes it instead of re-opening~~ *(relaxed by Spec 100 — native hit-target open path; OS owns picker chrome)*
+3. **DateField toggle** — ~~clicking the visible date control while the picker is open closes it instead of re-opening~~ _(relaxed by Spec 100 — native hit-target open path; OS owns picker chrome)_
 4. **Labels inert** — clicking the visible field label (Amount, Category, Date, Note) does not focus or open the control; only the inner control does
 5. **Void chrome** — Void is an outlined danger button and is vertically centered in the transaction modal/sheet header
 

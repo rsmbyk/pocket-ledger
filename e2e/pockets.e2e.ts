@@ -118,9 +118,10 @@ test.describe('070–077 pockets pack', () => {
 		await selectTxCategory(page, 'Food', dialog);
 		await dialog.getByRole('button', { name: 'Save' }).click();
 		await expect(
-			page.locator('[data-testid^="recent-row-"][data-testid$="-pocket"]').or(
-				page.locator('[data-testid^="recent-row-"] >> [data-testid$="-pocket"]')
-			).first()
+			page
+				.locator('[data-testid^="recent-row-"][data-testid$="-pocket"]')
+				.or(page.locator('[data-testid^="recent-row-"] >> [data-testid$="-pocket"]'))
+				.first()
 		).toBeVisible({ timeout: 10_000 });
 	});
 

@@ -28,11 +28,7 @@ export async function listGoalsNearestFirst(balanceMinor: number): Promise<Goal[
 	return sortGoalsByNearestDeadline(await listGoals(), balanceMinor);
 }
 
-export async function createGoal(
-	name: string,
-	targetRaw: string,
-	targetOn: string
-): Promise<Goal> {
+export async function createGoal(name: string, targetRaw: string, targetOn: string): Promise<Goal> {
 	const targetMinor = parseAmountInput(targetRaw);
 	assertGoalTarget(targetMinor);
 	assertGoalDeadline(targetOn);

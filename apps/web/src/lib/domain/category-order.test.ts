@@ -8,16 +8,10 @@ import {
 describe('category-order', () => {
 	it('compares by sortOrder then name', () => {
 		expect(
-			compareCategoriesBySortOrder(
-				{ sortOrder: 1, name: 'B' },
-				{ sortOrder: 0, name: 'A' }
-			)
+			compareCategoriesBySortOrder({ sortOrder: 1, name: 'B' }, { sortOrder: 0, name: 'A' })
 		).toBeGreaterThan(0);
 		expect(
-			compareCategoriesBySortOrder(
-				{ sortOrder: 0, name: 'A' },
-				{ sortOrder: 0, name: 'B' }
-			)
+			compareCategoriesBySortOrder({ sortOrder: 0, name: 'A' }, { sortOrder: 0, name: 'B' })
 		).toBeLessThan(0);
 	});
 

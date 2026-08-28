@@ -89,6 +89,8 @@ export function goalProgressRatioFromSaved(goal: Pick<Goal, 'targetMinor' | 'sav
 }
 
 /** @deprecated Prefer balance-based helpers. */
-export function goalProgressPercentFromSaved(goal: Pick<Goal, 'targetMinor' | 'savedMinor'>): number {
+export function goalProgressPercentFromSaved(
+	goal: Pick<Goal, 'targetMinor' | 'savedMinor'>
+): number {
 	return goalProgressPercent(goal.targetMinor, goal.savedMinor);
 }

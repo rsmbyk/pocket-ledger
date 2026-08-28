@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { Button } from "$lib/components/ui/button/index.js";
+	import { Button } from '$lib/components/ui/button/index.js';
 	import PanelLeftIcon from '@lucide/svelte/icons/panel-left';
 	import PanelLeftCloseIcon from '@lucide/svelte/icons/panel-left-close';
-	import { cn } from "$lib/utils.js";
+	import { cn } from '$lib/utils.js';
 	import { crossfade } from 'svelte/transition';
-	import type { ComponentProps } from "svelte";
-	import { useSidebar } from "./context.svelte.js";
+	import type { ComponentProps } from 'svelte';
+	import { useSidebar } from './context.svelte.js';
 
 	let {
 		ref = $bindable(null),
@@ -28,7 +28,7 @@
 	data-slot="sidebar-trigger"
 	variant="ghost"
 	size="icon-sm"
-	class={cn("cn-sidebar-trigger", className)}
+	class={cn('cn-sidebar-trigger', className)}
 	type="button"
 	aria-label={menuLabel}
 	onclick={(e) => {

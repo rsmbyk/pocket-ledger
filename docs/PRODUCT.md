@@ -15,38 +15,38 @@ Code still matches the pre-cloud client until Specs 116–121 land; this file is
 
 ## Locked
 
-| Area | Decision |
-|------|----------|
-| Name | `pocket-ledger` |
-| Hosting | **GCP** two Cloud Run services (static web + API). Default `*.run.app` is OK. Custom domain parked. |
-| Client | Svelte 5 + shadcn-svelte + Tailwind. Target: SvelteKit `adapter-static`, **path** URLs, keep PWA (Spec 117). |
-| Repo | npm workspaces: `apps/web` + `apps/api` (Hono). `openapi.yaml` in this repo. Android is a **second GitHub repo**, not this tree. |
-| Auth | Google Sign-In **only** for cloud. No email/password. |
-| Storage (signed out) | IndexedDB via Dexie is the only ledger |
-| Storage (signed in) | Dexie cache; Cloud SQL stores ciphertext + sync metadata |
-| Encryption | Always-on DEK after one-time migrate. Device passphrase optional; account passphrase **mandatory** while signed in. |
-| Backup | Encrypted envelope, **signed-out only**. Old plaintext `formatVersion: 1` rejected. Hidden while signed in. |
-| Sync | Signed-in only. Server `rev` CAS; **409** closes the editor. Gravestones. 30s poll. No offline queue. |
-| Session | API cookie, 7-day rolling, HttpOnly Secure. Session manager (list + revoke). |
-| UI kit | shadcn-svelte (Vega / Lucide) + Tailwind |
-| Theme | Dark mode from day one; default **system**; Light / Dark / System override. Theme and idle **sync with the ledger** while signed in. |
-| Ledger | Simple ledger now; schema open for double-entry later |
-| Accounts | Multi-account capable; **single-pot UX** when only one account; start with default `Main` |
-| Pockets | User-managed sub-accounts (**Pockets** nav item); `Main` is pinned first, never deleted, always the default for new transactions; non-Main pockets are user-reorderable (drag), renameable, and deletable once empty (spec 070) |
-| Pocket opening balance | Each pocket has an opening balance + as-of date that seeds its derived running balance (spec 071) |
-| Month Opening / Ending | Home month Opening = sum of each pocket’s balance at month-start, inferred by walking txs backward/forward from that pocket’s opening as-of; Ending = Opening + Net (spec 110) |
-| Goals | Per-pocket balance + deadline goal (target amount, target date), not a separate global feature; editable/clearable from the pocket's edit dialog (spec 072) |
-| Transfers | Move money between pockets as a single `transfer` transaction (source → dest, amount sent, optional admin fee, optional note); shown as a neutral row; fee counts as expense under synthetic **Admin Fee** (spec 073 / 106) |
-| Currency | Single currency; display label only (default `IDR`) |
-| Budgets | None for now |
-| Multi-currency / FX | None |
-| UX | **Desktop-first dashboard chrome**, responsive down to mobile (inset sidebar → sheet + stacked layouts below `md`) |
-| Features (shipped) | Charts, export — specs 001–008; net worth UI removed (059); recurring removed (087); Pockets nav + CRUD, per-pocket opening balance, per-pocket goals, transfers, Activity pocket filter, Activity row pocket labels — specs 070–077; month Opening from pocket openings — spec 110 |
-| Categories | User add / rename / delete; unused → hard-delete; voided-only refs → soft-delete (`deletedAt`); active txs still block delete (spec 103) |
-| Tests | Vitest + Playwright from the start |
-| Process | Spec-Driven Development + TDD + GitHub Flow |
-| Desktop shell | No Tauri; desktop-first dashboard shell (inset sidebar + KPI home + wide stage, spec 013) |
-| Insights / receipts / household sync | Out of scope for now |
+| Area                                 | Decision                                                                                                                                                                                                                                                                            |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Name                                 | `pocket-ledger`                                                                                                                                                                                                                                                                     |
+| Hosting                              | **GCP** two Cloud Run services (static web + API). Default `*.run.app` is OK. Custom domain parked.                                                                                                                                                                                 |
+| Client                               | Svelte 5 + shadcn-svelte + Tailwind. Target: SvelteKit `adapter-static`, **path** URLs, keep PWA (Spec 117).                                                                                                                                                                        |
+| Repo                                 | npm workspaces: `apps/web` + `apps/api` (Hono). `openapi.yaml` in this repo. Android is a **second GitHub repo**, not this tree.                                                                                                                                                    |
+| Auth                                 | Google Sign-In **only** for cloud. No email/password.                                                                                                                                                                                                                               |
+| Storage (signed out)                 | IndexedDB via Dexie is the only ledger                                                                                                                                                                                                                                              |
+| Storage (signed in)                  | Dexie cache; Cloud SQL stores ciphertext + sync metadata                                                                                                                                                                                                                            |
+| Encryption                           | Always-on DEK after one-time migrate. Device passphrase optional; account passphrase **mandatory** while signed in.                                                                                                                                                                 |
+| Backup                               | Encrypted envelope, **signed-out only**. Old plaintext `formatVersion: 1` rejected. Hidden while signed in.                                                                                                                                                                         |
+| Sync                                 | Signed-in only. Server `rev` CAS; **409** closes the editor. Gravestones. 30s poll. No offline queue.                                                                                                                                                                               |
+| Session                              | API cookie, 7-day rolling, HttpOnly Secure. Session manager (list + revoke).                                                                                                                                                                                                        |
+| UI kit                               | shadcn-svelte (Vega / Lucide) + Tailwind                                                                                                                                                                                                                                            |
+| Theme                                | Dark mode from day one; default **system**; Light / Dark / System override. Theme and idle **sync with the ledger** while signed in.                                                                                                                                                |
+| Ledger                               | Simple ledger now; schema open for double-entry later                                                                                                                                                                                                                               |
+| Accounts                             | Multi-account capable; **single-pot UX** when only one account; start with default `Main`                                                                                                                                                                                           |
+| Pockets                              | User-managed sub-accounts (**Pockets** nav item); `Main` is pinned first, never deleted, always the default for new transactions; non-Main pockets are user-reorderable (drag), renameable, and deletable once empty (spec 070)                                                     |
+| Pocket opening balance               | Each pocket has an opening balance + as-of date that seeds its derived running balance (spec 071)                                                                                                                                                                                   |
+| Month Opening / Ending               | Home month Opening = sum of each pocket’s balance at month-start, inferred by walking txs backward/forward from that pocket’s opening as-of; Ending = Opening + Net (spec 110)                                                                                                      |
+| Goals                                | Per-pocket balance + deadline goal (target amount, target date), not a separate global feature; editable/clearable from the pocket's edit dialog (spec 072)                                                                                                                         |
+| Transfers                            | Move money between pockets as a single `transfer` transaction (source → dest, amount sent, optional admin fee, optional note); shown as a neutral row; fee counts as expense under synthetic **Admin Fee** (spec 073 / 106)                                                         |
+| Currency                             | Single currency; display label only (default `IDR`)                                                                                                                                                                                                                                 |
+| Budgets                              | None for now                                                                                                                                                                                                                                                                        |
+| Multi-currency / FX                  | None                                                                                                                                                                                                                                                                                |
+| UX                                   | **Desktop-first dashboard chrome**, responsive down to mobile (inset sidebar → sheet + stacked layouts below `md`)                                                                                                                                                                  |
+| Features (shipped)                   | Charts, export — specs 001–008; net worth UI removed (059); recurring removed (087); Pockets nav + CRUD, per-pocket opening balance, per-pocket goals, transfers, Activity pocket filter, Activity row pocket labels — specs 070–077; month Opening from pocket openings — spec 110 |
+| Categories                           | User add / rename / delete; unused → hard-delete; voided-only refs → soft-delete (`deletedAt`); active txs still block delete (spec 103)                                                                                                                                            |
+| Tests                                | Vitest + Playwright from the start                                                                                                                                                                                                                                                  |
+| Process                              | Spec-Driven Development + TDD + GitHub Flow                                                                                                                                                                                                                                         |
+| Desktop shell                        | No Tauri; desktop-first dashboard shell (inset sidebar + KPI home + wide stage, spec 013)                                                                                                                                                                                           |
+| Insights / receipts / household sync | Out of scope for now                                                                                                                                                                                                                                                                |
 
 ## Modes
 
@@ -143,17 +143,17 @@ API cookie: **7-day rolling**, HttpOnly Secure, on the **API** host (two Cloud R
 
 ## Crypto numbers
 
-| Item | Value |
-|------|--------|
-| Passphrase min | 8 characters (device and account) |
-| PBKDF2 | SHA-256, 600,000 iterations |
-| Recovery kit | 32 bytes, grouped hex, case-insensitive |
-| Sync poll | 30s + pull on unlock + after save |
-| Session cookie | 7-day rolling, HttpOnly Secure |
-| Blobs | Postgres `bytea` |
-| Idle choices | 5 / 10 / 15 / 30 min (default 30) |
+| Item           | Value                                    |
+| -------------- | ---------------------------------------- |
+| Passphrase min | 8 characters (device and account)        |
+| PBKDF2         | SHA-256, 600,000 iterations              |
+| Recovery kit   | 32 bytes, grouped hex, case-insensitive  |
+| Sync poll      | 30s + pull on unlock + after save        |
+| Session cookie | 7-day rolling, HttpOnly Secure           |
+| Blobs          | Postgres `bytea`                         |
+| Idle choices   | 5 / 10 / 15 / 30 min (default 30)        |
 | Device lockout | 3 wrongs per rung; 15m…1 day at midnight |
-| Kit UX | copy **or** download + checkbox |
+| Kit UX         | copy **or** download + checkbox          |
 
 Argon2id is **parked** (envelope stores `kdf` + params so we can switch later). AES-GCM for wraps and rows.
 

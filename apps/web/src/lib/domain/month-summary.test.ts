@@ -233,12 +233,9 @@ describe('month-summary', () => {
 				voidedAt: '2026-07-16T00:00:00.000Z'
 			})
 		];
-		const summary = buildMonthSummary(
-			rows,
-			'2026-07',
-			{ food: { name: 'Food', sortOrder: 0 } },
-			[pocket]
-		);
+		const summary = buildMonthSummary(rows, '2026-07', { food: { name: 'Food', sortOrder: 0 } }, [
+			pocket
+		]);
 		expect(summary.expenseMinor).toBe(15_000);
 		expect(summary.openingMinor).toBe(0);
 		expect(summary.endingMinor).toBe(-15_000);

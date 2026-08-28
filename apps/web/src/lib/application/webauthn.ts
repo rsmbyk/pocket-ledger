@@ -24,9 +24,7 @@ export async function assertWebAuthn(credentialIdB64: string): Promise<boolean> 
 		const cred = await navigator.credentials.get({
 			publicKey: {
 				challenge: crypto.getRandomValues(new Uint8Array(32)),
-				allowCredentials: [
-					{ type: 'public-key', id: b64ToBuffer(credentialIdB64) }
-				],
+				allowCredentials: [{ type: 'public-key', id: b64ToBuffer(credentialIdB64) }],
 				userVerification: 'required',
 				timeout: 60_000
 			}

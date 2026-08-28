@@ -66,4 +66,3 @@ export function assertTypeImmutable(
 		throw new Error('Transaction type cannot be changed');
 	}
 }
-

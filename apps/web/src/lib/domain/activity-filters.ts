@@ -87,8 +87,7 @@ export type ActivityDateGroup = {
 };
 
 export type ActivityListSection =
-	| { kind: 'header'; occurredOn: string }
-	| { kind: 'row'; tx: LedgerTransaction };
+	{ kind: 'header'; occurredOn: string } | { kind: 'row'; tx: LedgerTransaction };
 
 export const DEFAULT_ACTIVITY_FILTERS: Required<
 	Pick<
@@ -135,9 +134,7 @@ function parseCompareAmount(raw: string | null | undefined): number | null {
 	return value;
 }
 
-export function isDefaultActivityFilters(
-	criteria: ActivityFilterCriteria
-): boolean {
+export function isDefaultActivityFilters(criteria: ActivityFilterCriteria): boolean {
 	const type = criteria.type ?? 'all';
 	const categoryId = criteria.categoryId ?? '';
 	const start = criteria.startDate?.trim() || '';

@@ -1,5 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd, selectActivityFilterCategory, selectTxCategory } from './nav';
+import {
+	ensureCategory,
+	goToNav,
+	openAdd,
+	selectActivityFilterCategory,
+	selectTxCategory
+} from './nav';
 
 async function seedIncomeAndExpense(page: Page): Promise<void> {
 	await ensureCategory(page, 'Salary', 'income');
@@ -147,7 +153,9 @@ test.describe('017 / 045 activity filters', () => {
 		await seedIncomeAndExpense(page);
 		await goToNav(page, 'activity');
 
-		const foodRow = page.locator('button[data-testid^="activity-row-"]').filter({ hasText: 'Food' });
+		const foodRow = page
+			.locator('button[data-testid^="activity-row-"]')
+			.filter({ hasText: 'Food' });
 		await expect(foodRow.getByTestId(/-note$/)).toContainText('secret lunch');
 		// Spec 076: default (createdAt) sort shows date on the row secondary line.
 		await expect(foodRow.getByTestId(/-date$/)).toBeVisible();
@@ -253,7 +261,10 @@ test.describe('101 activity date sort secondary createdAt', () => {
 		await ensureCategory(page, 'Food', 'expense');
 
 		await openAdd(page);
-		let form = (await page.getByTestId('tx-sheet').isVisible().catch(() => false))
+		let form = (await page
+			.getByTestId('tx-sheet')
+			.isVisible()
+			.catch(() => false))
 			? page.getByTestId('tx-sheet')
 			: page.getByTestId('tx-dialog');
 		await form.getByRole('button', { name: 'Expense', exact: true }).click();
@@ -263,7 +274,10 @@ test.describe('101 activity date sort secondary createdAt', () => {
 		await form.getByRole('button', { name: 'Save' }).click();
 
 		await openAdd(page);
-		form = (await page.getByTestId('tx-sheet').isVisible().catch(() => false))
+		form = (await page
+			.getByTestId('tx-sheet')
+			.isVisible()
+			.catch(() => false))
 			? page.getByTestId('tx-sheet')
 			: page.getByTestId('tx-dialog');
 		await form.getByRole('button', { name: 'Expense', exact: true }).click();
@@ -276,9 +290,7 @@ test.describe('101 activity date sort secondary createdAt', () => {
 		await page.getByTestId('activity-sort-open').click();
 		await page.getByTestId('activity-sort-occurredOn-desc').click();
 
-		const notesDesc = page.locator(
-			'[data-testid="activity-list"] [data-testid$="-note"]'
-		);
+		const notesDesc = page.locator('[data-testid="activity-list"] [data-testid$="-note"]');
 		await expect(notesDesc).toHaveCount(2);
 		await expect(notesDesc.nth(0)).toContainText('later-created');
 		await expect(notesDesc.nth(1)).toContainText('earlier-created');
@@ -286,9 +298,7 @@ test.describe('101 activity date sort secondary createdAt', () => {
 		await page.getByTestId('activity-sort-open').click();
 		await page.getByTestId('activity-sort-occurredOn-asc').click();
 
-		const notesAsc = page.locator(
-			'[data-testid="activity-list"] [data-testid$="-note"]'
-		);
+		const notesAsc = page.locator('[data-testid="activity-list"] [data-testid$="-note"]');
 		await expect(notesAsc.nth(0)).toContainText('earlier-created');
 		await expect(notesAsc.nth(1)).toContainText('later-created');
 	});

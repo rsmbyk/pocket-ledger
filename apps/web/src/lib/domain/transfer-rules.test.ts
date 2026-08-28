@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-	assertTransferParties,
-	assertTypeImmutable,
-	buildTransferFields
-} from './transfer-rules';
+import { assertTransferParties, assertTypeImmutable, buildTransferFields } from './transfer-rules';
 
 describe('transfer rules', () => {
 	it('rejects same source and dest', () => {

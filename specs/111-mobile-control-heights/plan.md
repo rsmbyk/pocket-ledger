@@ -33,5 +33,5 @@ Primary interactive controls are **`h-9` (36px)** on every viewport — buttons,
 
 ## Out of this slice
 
-- Changing Spec 039 type-control *semantics* beyond inheriting the shared mobile height bump
+- Changing Spec 039 type-control _semantics_ beyond inheriting the shared mobile height bump
 - Reworking layout spacing beyond control height

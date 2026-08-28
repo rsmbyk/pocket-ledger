@@ -108,9 +108,9 @@ Unit = one encrypted entity + plain `id`, `kind`, server monotonic `rev`, `delet
 
 ## Testing map
 
-| Layer | Tool |
-|-------|------|
-| domain / shared | Vitest (node) |
-| application (fakes) | Vitest |
-| API (Hono, after 119) | Vitest |
-| acceptance | Playwright against built preview |
+| Layer                 | Tool                             |
+| --------------------- | -------------------------------- |
+| domain / shared       | Vitest (node)                    |
+| application (fakes)   | Vitest                           |
+| API (Hono, after 119) | Vitest                           |
+| acceptance            | Playwright against built preview |

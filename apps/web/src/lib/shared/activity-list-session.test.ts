@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-	DEFAULT_ACTIVITY_FILTERS,
-	DEFAULT_ACTIVITY_SORT
-} from '$lib/domain/activity-filters';
+import { DEFAULT_ACTIVITY_FILTERS, DEFAULT_ACTIVITY_SORT } from '$lib/domain/activity-filters';
 import {
 	ACTIVITY_LIST_SESSION_KEY,
 	parseActivityListSession,

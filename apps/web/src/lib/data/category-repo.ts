@@ -21,9 +21,7 @@ export async function listAllCategories(): Promise<CategoryRow[]> {
 	return sortCategories((await db.categories.toArray()).map(normalizeCategory));
 }
 
-export async function listCategoriesByKind(
-	kind: CategoryRow['kind']
-): Promise<CategoryRow[]> {
+export async function listCategoriesByKind(kind: CategoryRow['kind']): Promise<CategoryRow[]> {
 	const rows = (await db.categories.where('kind').equals(kind).toArray()).map(normalizeCategory);
 	return sortCategories(rows.filter(isCategoryActive));
 }

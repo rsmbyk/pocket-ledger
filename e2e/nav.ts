@@ -49,21 +49,14 @@ export async function openAdd(page: Page): Promise<void> {
 }
 
 /** Pick a category from the custom tx category dropdown. */
-export async function selectTxCategory(
-	page: Page,
-	name: string,
-	root?: Locator
-): Promise<void> {
+export async function selectTxCategory(page: Page, name: string, root?: Locator): Promise<void> {
 	const scope = root ?? page;
 	await scope.getByTestId('tx-category').click();
 	await page.getByRole('menuitem', { name, exact: true }).click();
 }
 
 /** Pick a category from the Activity filter CategoryPicker. */
-export async function selectActivityFilterCategory(
-	page: Page,
-	name: string
-): Promise<void> {
+export async function selectActivityFilterCategory(page: Page, name: string): Promise<void> {
 	await page.getByTestId('activity-filter-category').click();
 	await page.getByRole('menuitem', { name, exact: true }).click();
 }

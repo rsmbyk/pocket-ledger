@@ -37,7 +37,7 @@
 
 <Command.Dialog
 	bind:open
-	onOpenChange={onOpenChange}
+	{onOpenChange}
 	title="Command palette"
 	description="Jump to a page or add a transaction"
 	data-testid="command-palette"

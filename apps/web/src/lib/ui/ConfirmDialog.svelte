@@ -102,7 +102,7 @@
 	</Button>
 {/snippet}
 
-<Dialog.Root {open} onOpenChange={onOpenChange}>
+<Dialog.Root {open} {onOpenChange}>
 	<Dialog.Content
 		class={cn('sm:max-w-md z-[60]', dangerChrome && 'gap-0 overflow-hidden p-0')}
 		overlayClass="z-[60]"

@@ -2,7 +2,7 @@
 
 - **ID:** 00N
 - **Status:** Draft | Accepted | Deprecated
-- **Owner:** 
+- **Owner:**
 
 ## Intent
 

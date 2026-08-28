@@ -116,10 +116,9 @@ describe('categories application', () => {
 	it('reorders categories within a kind and persists sortOrder', async () => {
 		const a = await createCategory('Alpha', 'expense');
 		const b = await createCategory('Beta', 'expense');
-		expect((await listCategories()).filter((c) => c.kind === 'expense').map((c) => c.name)).toEqual([
-			'Alpha',
-			'Beta'
-		]);
+		expect((await listCategories()).filter((c) => c.kind === 'expense').map((c) => c.name)).toEqual(
+			['Alpha', 'Beta']
+		);
 
 		await reorderCategory(b.id, 'up');
 		const after = await listCategories();

@@ -51,15 +51,15 @@ See [docs/HOSTING.md](docs/HOSTING.md).
 
 Read these before changing behavior:
 
-| Doc | Purpose |
-|-----|---------|
-| [docs/PRODUCT.md](docs/PRODUCT.md) | Locked product decisions (two modes, dropped/parked) |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, wrapping, workspaces |
-| [docs/PROCESS.md](docs/PROCESS.md) | SDD + TDD + GitHub Flow |
-| [docs/HOSTING.md](docs/HOSTING.md) | GCP Cloud Run (Jakarta, two services) |
-| [docs/FIRST_WORK.md](docs/FIRST_WORK.md) | Scaffold scope |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Feature order |
-| [specs/](specs/) | Living behavior specs |
+| Doc                                          | Purpose                                              |
+| -------------------------------------------- | ---------------------------------------------------- |
+| [docs/PRODUCT.md](docs/PRODUCT.md)           | Locked product decisions (two modes, dropped/parked) |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, wrapping, workspaces                         |
+| [docs/PROCESS.md](docs/PROCESS.md)           | SDD + TDD + GitHub Flow                              |
+| [docs/HOSTING.md](docs/HOSTING.md)           | GCP Cloud Run (Jakarta, two services)                |
+| [docs/FIRST_WORK.md](docs/FIRST_WORK.md)     | Scaffold scope                                       |
+| [docs/ROADMAP.md](docs/ROADMAP.md)           | Feature order                                        |
+| [specs/](specs/)                             | Living behavior specs                                |
 
 ## License
 

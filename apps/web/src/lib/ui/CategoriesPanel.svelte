@@ -28,10 +28,7 @@
 		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
 		onRenameCategory: (id: string, name: string) => void | Promise<void>;
 		onDeleteCategory: (id: string) => void | Promise<void>;
-		onReorderCategories: (
-			kind: CategoryRow['kind'],
-			orderedIds: string[]
-		) => void | Promise<void>;
+		onReorderCategories: (kind: CategoryRow['kind'], orderedIds: string[]) => void | Promise<void>;
 	};
 
 	let {
@@ -68,9 +65,7 @@
 		expenseItems = [...expenseCategories];
 	});
 
-	const addTitle = $derived(
-		addKind === 'expense' ? 'Add expense category' : 'Add income category'
-	);
+	const addTitle = $derived(addKind === 'expense' ? 'Add expense category' : 'Add income category');
 
 	const addSubmitDisabled = $derived(busy || addName.trim() === '');
 
@@ -109,9 +104,7 @@
 		}
 	]);
 
-	const activeDialogGroup = $derived(
-		groups.find((group) => group.kind === addKind) ?? groups[1]
-	);
+	const activeDialogGroup = $derived(groups.find((group) => group.kind === addKind) ?? groups[1]);
 
 	function itemsForKind(kind: CategoryRow['kind']): CategoryRow[] {
 		return kind === 'income' ? incomeItems : expenseItems;
@@ -451,12 +444,7 @@
 				</p>
 			{/if}
 			<div class="flex justify-end gap-2">
-				<Button
-					type="button"
-					variant="outline"
-					disabled={busy}
-					onclick={() => requestAddDiscard()}
-				>
+				<Button type="button" variant="outline" disabled={busy} onclick={() => requestAddDiscard()}>
 					Cancel
 				</Button>
 				<Button type="submit" disabled={addSubmitDisabled} data-testid="category-add">Add</Button>
