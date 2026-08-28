@@ -6,7 +6,7 @@
 2. Branch from `main`: `feat/…`, `fix/…`, `chore/…`, `docs/…`.
 3. TDD domain/application changes; keep Playwright scenarios green.
 4. Open a PR using the template. Link the spec.
-5. Wait for CI; merge to `main` (Pages deploys automatically).
+5. Wait for CI; merge to `main` (path-filtered GitHub Actions deploy Cloud Run).
 
 ## Local checks
 
