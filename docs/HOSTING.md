@@ -16,7 +16,7 @@
 
 Cutover to Cloud Run is a **new origin** = **empty IndexedDB**. Data on the Cloudflare origin does not move. Users who need local history should export an encrypted backup (Spec 120) before switching hosts.
 
-**Production deploy path is GitHub Actions → Cloud Run** (Spec 118). Wrangler is not used for production. Repo variables `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_DEPLOY_SA`, and `GCP_REGION` (`asia-southeast2`) are set. If `GCP_PROJECT_ID` is missing, the deploy workflows still skip Cloud Run so PRs can CI. The API still uses the in-memory store (no Cloud SQL yet); a Cloud Run restart drops signed-in rows. Google’s frontend reserves `/healthz`, so probe `/v1/me` (401 when signed out) instead.
+**Production deploy path is GitHub Actions → Cloud Run** (Spec 118). Repo variables `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_DEPLOY_SA`, and `GCP_REGION` (`asia-southeast2`) are set. If `GCP_PROJECT_ID` is missing, the deploy workflows still skip Cloud Run so PRs can CI. The API still uses the in-memory store (no Cloud SQL yet); a Cloud Run restart drops signed-in rows. Google’s frontend reserves `/healthz`, so probe `/v1/me` (401 when signed out) instead.
 
 ## Cookie and CORS
 
@@ -51,12 +51,6 @@ On this machine you may also run a separate Nginx Proxy Manager stack under `/ho
 
 Ledger data is stored per browser origin. Changing the public URL (Cloudflare → Cloud Run, or a custom domain later) starts an empty database unless the user restores an encrypted export (signed out) or signs in (cloud copy).
 
-## Former: Cloudflare Workers + static assets
+## Former hosts
 
-**Retired as the production path** (Spec 118). Do not `wrangler deploy` to ship the app.
-
-The last Cloudflare hostname was https://pocket-ledger.ronaldsumbayak611.workers.dev/ — a different origin from Cloud Run, so IndexedDB does not carry over.
-
-## Former: GitHub Pages / classic Cloudflare Pages
-
-Deprecated. GitHub Actions billing once blocked GH Pages; the interim hostname was `*.workers.dev`.
+Cloudflare Workers and GitHub Pages were interim hosts before Cloud Run. Those origins do not share IndexedDB with `*.run.app`. GitHub Pages for this repo is disabled.

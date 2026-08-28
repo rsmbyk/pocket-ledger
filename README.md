@@ -2,7 +2,7 @@
 
 Local-first personal finance tracker with optional Google cloud sync. Signed-out: PWA, data stays on the device (IndexedDB). Signed-in: E2E ciphertext on GCP; we never have the passphrase.
 
-**Live:** https://pocket-ledger-web-w6fanfnuqa-et.a.run.app (Cloud Run, `asia-southeast2`). Former Cloudflare origin: https://pocket-ledger.ronaldsumbayak611.workers.dev/ — IndexedDB does not carry over.
+**Live:** https://pocket-ledger-web-w6fanfnuqa-et.a.run.app (Cloud Run, `asia-southeast2`). Changing origin starts an empty IndexedDB; restore an encrypted backup or sign in if you need history.
 
 ## Stack
 
