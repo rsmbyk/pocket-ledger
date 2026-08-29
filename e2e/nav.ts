@@ -72,6 +72,11 @@ export async function confirmVoid(page: Page): Promise<void> {
 	await page.getByTestId('tx-void-confirm').click();
 }
 
+/** Category row on `/categories` (exact name, not substring). */
+export function categoryChip(page: Page, name: string): Locator {
+	return page.getByTestId('category-chip').filter({ has: page.getByText(name, { exact: true }) });
+}
+
 /** Create a custom category via the group add chip, or no-op when the name is stock. */
 export async function ensureCategory(
 	page: Page,
@@ -80,12 +85,16 @@ export async function ensureCategory(
 ): Promise<void> {
 	await page.goto('/categories');
 	await expect(page.getByTestId('categories-panel')).toBeVisible();
-	const chip = page.getByTestId('category-chip').filter({ hasText: new RegExp(`^${name}$`) });
+	const chip = categoryChip(page, name);
 	if ((await chip.count()) === 0) {
 		const list = page.getByTestId(kind === 'expense' ? 'category-list-expense' : 'category-list-income');
-		await list.getByTestId('category-add-in-group').last().click();
+		const add = list.getByTestId('category-add-in-group').last();
+		await add.scrollIntoViewIfNeeded();
+		await add.click();
+		await expect(page.getByTestId('category-name-input')).toBeVisible();
 		await page.getByTestId('category-name-input').fill(name);
 		await page.getByTestId('category-add').click();
+		await chip.scrollIntoViewIfNeeded();
 		await expect(chip).toBeVisible();
 	}
 	await page.goto('/');

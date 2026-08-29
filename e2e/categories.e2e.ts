@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openAdd, selectTxCategory } from './nav';
+import { categoryChip, openAdd, selectTxCategory } from './nav';
 
 test.describe('123 overlay catalog / categories list / picker', () => {
 	test('virgin catalog lists groups and stock chips without seeding Dexie add controls as names', async ({
@@ -7,10 +7,14 @@ test.describe('123 overlay catalog / categories list / picker', () => {
 	}) => {
 		await page.goto('/categories');
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
-		await expect(page.getByTestId('category-chip').filter({ hasText: /^Salary$/ })).toBeVisible();
-		await expect(page.getByTestId('category-chip').filter({ hasText: /^Groceries$/ })).toBeVisible();
 		await expect(page.getByTestId('category-group-stock-group:work')).toBeVisible();
 		await expect(page.getByTestId('category-group-stock-group:home')).toBeVisible();
+		const salary = categoryChip(page, 'Salary');
+		await salary.scrollIntoViewIfNeeded();
+		await expect(salary).toBeVisible();
+		const groceries = categoryChip(page, 'Groceries');
+		await groceries.scrollIntoViewIfNeeded();
+		await expect(groceries).toBeVisible();
 
 		const incomeBeforeExpense = await page.evaluate(() => {
 			const income = document.querySelector('[data-testid="category-list-income"]');
@@ -38,7 +42,7 @@ test.describe('123 overlay catalog / categories list / picker', () => {
 			.click();
 		await page.getByTestId('category-name-input').fill('Warung');
 		await page.getByTestId('category-add').click();
-		await expect(page.getByTestId('category-chip').filter({ hasText: /^Warung$/ })).toBeVisible();
+		await expect(categoryChip(page, 'Warung')).toBeVisible();
 
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
@@ -50,7 +54,8 @@ test.describe('123 overlay catalog / categories list / picker', () => {
 	test('hides a stock category from the picker and can show it again', async ({ page }) => {
 		await page.goto('/categories');
 		await page.getByTestId('category-edit-mode').click();
-		const groceries = page.getByTestId('category-chip').filter({ hasText: /^Groceries$/ });
+		const groceries = categoryChip(page, 'Groceries');
+		await groceries.scrollIntoViewIfNeeded();
 		await groceries.getByTestId('category-hide').click();
 
 		await page.goto('/');
@@ -64,15 +69,14 @@ test.describe('123 overlay catalog / categories list / picker', () => {
 
 		await page.goto('/categories');
 		await page.getByTestId('category-edit-mode').click();
-		await page
-			.getByTestId('category-chip')
-			.filter({ hasText: /^Groceries$/ })
-			.getByTestId('category-show')
-			.click();
+		const groceriesAgain = categoryChip(page, 'Groceries');
+		await groceriesAgain.scrollIntoViewIfNeeded();
+		await groceriesAgain.getByTestId('category-show').click();
 	});
 
 	test('reorder mode shows group names and discard restores factory order', async ({ page }) => {
 		await page.goto('/categories');
+		await expect(page.getByTestId('categories-panel')).toBeVisible();
 		await page.getByTestId('category-reorder').click();
 		await expect(page.getByTestId('category-reorder-save')).toBeVisible();
 		await expect(page.getByTestId('category-reorder-discard')).toBeVisible();
@@ -89,8 +93,12 @@ test.describe('123 overlay catalog / categories list / picker', () => {
 		const sheet = page.getByRole('dialog');
 		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
 		await sheet.getByTestId('tx-category').click();
-		await expect(page.getByTestId('picker-group-stock-group:food-drink')).toBeVisible();
-		await expect(page.getByRole('option', { name: 'Groceries', exact: true })).toBeVisible();
+		const foodDrink = page.getByTestId('picker-group-stock-group:food-drink');
+		await foodDrink.scrollIntoViewIfNeeded();
+		await expect(foodDrink).toBeVisible();
+		const groceriesOption = page.getByRole('option', { name: 'Groceries', exact: true });
+		await groceriesOption.scrollIntoViewIfNeeded();
+		await expect(groceriesOption).toBeVisible();
 		await expect(page.getByRole('option', { name: 'Salary', exact: true })).toHaveCount(0);
 		await page.getByTestId('category-picker-search').fill('groc');
 		await expect(page.getByRole('option', { name: 'Groceries', exact: true })).toBeVisible();

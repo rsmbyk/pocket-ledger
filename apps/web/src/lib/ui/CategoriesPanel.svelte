@@ -371,7 +371,7 @@
 								{/each}
 							</ul>
 						{:else}
-							<div class="max-h-[32rem] space-y-4 overflow-y-auto p-3">
+							<div class="space-y-4 p-3">
 								{#each kindGroups as group (group.id)}
 									{@const items = catsInGroup(group.id)}
 									<section data-testid={`category-group-${group.id}`}>
@@ -386,6 +386,7 @@
 														cat.hidden && 'opacity-60'
 													)}
 													data-testid="category-chip"
+													data-name={cat.name}
 													aria-label={cat.name}
 												>
 													<CategoryIcon slug={cat.icon} />

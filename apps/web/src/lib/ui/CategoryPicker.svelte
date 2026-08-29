@@ -55,6 +55,16 @@
 	}: Props = $props();
 
 	let open = $state(false);
+	let search = $state('');
+
+	$effect(() => {
+		if (!open) search = '';
+	});
+
+	function matchesSearch(label: string): boolean {
+		const q = search.trim().toLowerCase();
+		return q === '' || label.toLowerCase().includes(q);
+	}
 
 	const allNamed = $derived(
 		groupByKind
@@ -115,6 +125,25 @@
 		return [{ groups: bucketsFor(rows) }];
 	});
 
+	const visibleSections = $derived.by((): PickerSection[] => {
+		return sections
+			.map((section) => ({
+				...section,
+				groups: section.groups
+					.map((group) => ({
+						...group,
+						items: group.items.filter((c) => matchesSearch(c.name))
+					}))
+					.filter((g) => g.items.length > 0)
+			}))
+			.filter((s) => s.groups.length > 0);
+	});
+
+	const showAllRow = $derived(showAllOption && matchesSearch('All'));
+	const showAdminRow = $derived(showAdminFee && matchesSearch(ADMIN_FEE_LABEL));
+	const showUncategorizedRow = $derived(showUncategorized && matchesSearch('Uncategorized'));
+	const showSpecials = $derived(showAdminRow || showUncategorizedRow);
+
 	function select(next: string) {
 		onValueChange(next);
 		open = false;
@@ -166,18 +195,22 @@
 			align="start"
 			sideOffset={4}
 		>
-			<Command.Root>
-				<Command.Input placeholder="Search categories…" data-testid="category-picker-search" />
+			<Command.Root shouldFilter={false}>
+				<Command.Input
+					placeholder="Search categories…"
+					data-testid="category-picker-search"
+					bind:value={search}
+				/>
 				<Command.List>
 					<Command.Empty>No matching categories.</Command.Empty>
-					{#if showAllOption}
+					{#if showAllRow}
 						<Command.Group>
 							<Command.Item value="all" onSelect={() => select('')} data-testid="category-option-all">
 								All
 							</Command.Item>
 						</Command.Group>
 					{/if}
-					{#each sections as section (section.kindTestId ?? 'single')}
+					{#each visibleSections as section (section.kindTestId ?? 'single')}
 						{#if section.kindLabel}
 							<div
 								class="text-muted-foreground px-2 pt-2 pb-1 text-xs font-medium"
@@ -201,10 +234,10 @@
 							</Command.Group>
 						{/each}
 					{/each}
-					{#if showAdminFee || showUncategorized}
+					{#if showSpecials}
 						<Command.Separator />
 						<Command.Group>
-							{#if showAdminFee}
+							{#if showAdminRow}
 								<Command.Item
 									value={ADMIN_FEE_LABEL}
 									onSelect={() => select(ADMIN_FEE_CATEGORY_ID)}
@@ -213,7 +246,7 @@
 									<UncategorizedLabel system label={ADMIN_FEE_LABEL} showIcon={false} />
 								</Command.Item>
 							{/if}
-							{#if showUncategorized}
+							{#if showUncategorizedRow}
 								<Command.Item
 									value="Uncategorized"
 									onSelect={() => select(showAllOption ? UNCATEGORIZED_FILTER : '')}
