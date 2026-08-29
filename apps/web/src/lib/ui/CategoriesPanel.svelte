@@ -514,12 +514,12 @@
 										{:else}
 											<span class="max-w-36 truncate">{cat.name}</span>
 											<span
-												class="flex items-center gap-0.5 opacity-0 group-hover/chip:opacity-100 group-focus-within/chip:opacity-100"
+												class="ml-0.5 hidden items-center gap-0.5 group-hover/chip:flex group-focus-within/chip:flex"
 											>
 												{#if cat.source === 'custom'}
 													<Button
 														size="icon-xs"
-														variant="ghost"
+														variant="outline"
 														aria-label={`Edit ${cat.name}`}
 														data-testid="category-edit-name"
 														disabled={busy}
@@ -530,7 +530,7 @@
 												{/if}
 												<Button
 													size="icon-xs"
-													variant="ghost"
+													variant="outline"
 													aria-label={cat.hidden ? `Show ${cat.name}` : `Hide ${cat.name}`}
 													data-testid={cat.hidden ? 'category-show' : 'category-hide'}
 													disabled={busy}
