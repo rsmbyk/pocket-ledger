@@ -72,14 +72,8 @@
 	let savedIncomeOrder = $state<string[]>([]);
 	let savedExpenseOrder = $state<string[]>([]);
 
-	$effect(() => {
-		if (mode !== 'reorder') {
-			incomeGroupItems = groups.filter((g) => g.kind === 'income');
-			expenseGroupItems = groups.filter((g) => g.kind === 'expense');
-			savedIncomeOrder = incomeGroupItems.map((g) => g.id);
-			savedExpenseOrder = expenseGroupItems.map((g) => g.id);
-		}
-	});
+	const viewIncomeGroups = $derived(groups.filter((g) => g.kind === 'income'));
+	const viewExpenseGroups = $derived(groups.filter((g) => g.kind === 'expense'));
 
 	const addDirty = $derived(addName.trim() !== '');
 	const addGroupDirty = $derived(addGroupName.trim() !== '');
@@ -141,8 +135,8 @@
 
 	function enterReorder() {
 		mode = 'reorder';
-		incomeGroupItems = groups.filter((g) => g.kind === 'income');
-		expenseGroupItems = groups.filter((g) => g.kind === 'expense');
+		incomeGroupItems = [...viewIncomeGroups];
+		expenseGroupItems = [...viewExpenseGroups];
 		savedIncomeOrder = incomeGroupItems.map((g) => g.id);
 		savedExpenseOrder = expenseGroupItems.map((g) => g.id);
 		setDirty(false);
@@ -182,8 +176,6 @@
 	}
 
 	function discardReorder() {
-		incomeGroupItems = groups.filter((g) => g.kind === 'income');
-		expenseGroupItems = groups.filter((g) => g.kind === 'expense');
 		incomeGroupItems = savedIncomeOrder
 			.map((id) => groups.find((g) => g.id === id))
 			.filter((g): g is OverlayGroup => Boolean(g));

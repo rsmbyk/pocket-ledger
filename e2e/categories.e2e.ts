@@ -40,6 +40,7 @@ test.describe('123 overlay catalog / categories list / picker', () => {
 			.getByTestId('category-group-stock-group:food-drink')
 			.getByTestId('category-add-in-group')
 			.click();
+		await expect(page.getByTestId('category-add-dialog')).toBeVisible();
 		await page.getByTestId('category-name-input').fill('Warung');
 		await page.getByTestId('category-add').click();
 		await expect(categoryChip(page, 'Warung')).toBeVisible();
@@ -53,7 +54,9 @@ test.describe('123 overlay catalog / categories list / picker', () => {
 
 	test('hides a stock category from the picker and can show it again', async ({ page }) => {
 		await page.goto('/categories');
+		await expect(page.getByTestId('categories-panel')).toBeVisible();
 		await page.getByTestId('category-edit-mode').click();
+		await expect(page.getByTestId('category-edit-mode')).toHaveText('Done');
 		const groceries = categoryChip(page, 'Groceries');
 		await groceries.scrollIntoViewIfNeeded();
 		await groceries.getByTestId('category-hide').click();
@@ -68,7 +71,9 @@ test.describe('123 overlay catalog / categories list / picker', () => {
 		await page.keyboard.press('Escape');
 
 		await page.goto('/categories');
+		await expect(page.getByTestId('categories-panel')).toBeVisible();
 		await page.getByTestId('category-edit-mode').click();
+		await expect(page.getByTestId('category-edit-mode')).toHaveText('Done');
 		const groceriesAgain = categoryChip(page, 'Groceries');
 		await groceriesAgain.scrollIntoViewIfNeeded();
 		await groceriesAgain.getByTestId('category-show').click();
