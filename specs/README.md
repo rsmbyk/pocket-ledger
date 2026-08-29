@@ -139,3 +139,4 @@ Living behavior contracts for Pocket Ledger.
 | [120](120-local-dek-wrapping-encrypted-backup/spec.md) | Always-on local DEK wrapping; encrypted local-only backup    | Accepted                                                                     |
 | [121](121-signed-in-sync/spec.md)                      | Signed-in sync (rev, 409, gravestones, poll, settings)       | Accepted                                                                     |
 | [122](122-android-second-repo-parked/spec.md)          | Android later (second GitHub repo)                           | Accepted (parked)                                                            |
+| [123](123-category-groups-default-catalog/spec.md)     | Overlay catalog, Categories list, searchable form picker     | Accepted                                                                     |

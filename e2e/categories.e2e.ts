@@ -1,36 +1,17 @@
 import { expect, test } from '@playwright/test';
-import { confirmVoid, ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
+import { openAdd, selectTxCategory } from './nav';
 
-test.describe('010 / 018 / 022 custom categories', () => {
-	test('adds a category from expense card modal and shows it in quick-add', async ({ page }) => {
+test.describe('123 overlay catalog / categories list / picker', () => {
+	test('virgin catalog lists groups and stock chips without seeding Dexie add controls as names', async ({
+		page
+	}) => {
 		await page.goto('/categories');
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
-		await page.getByTestId('category-add-expense').click();
-		await page.getByTestId('category-name-input').fill('Coffee');
-		await page.getByTestId('category-add').click();
-		await expect(page.getByRole('textbox', { name: 'Name for Coffee' })).toBeVisible();
-		await expect(page.getByTestId('category-save-name').first()).toBeDisabled();
-		await expect(page.getByTestId('category-add-expense')).toHaveAttribute(
-			'aria-label',
-			'Add expense category'
-		);
+		await expect(page.getByTestId('category-chip').filter({ hasText: /^Salary$/ })).toBeVisible();
+		await expect(page.getByTestId('category-chip').filter({ hasText: /^Groceries$/ })).toBeVisible();
+		await expect(page.getByTestId('category-group-stock-group:work')).toBeVisible();
+		await expect(page.getByTestId('category-group-stock-group:home')).toBeVisible();
 
-		await openAdd(page);
-		const sheet = page.getByRole('dialog');
-		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
-		await sheet.getByTestId('tx-category').click();
-		await expect(page.getByRole('menuitem', { name: 'Coffee', exact: true })).toBeVisible();
-	});
-
-	test('deep-links to categories', async ({ page }) => {
-		await page.goto('/categories');
-		await expect(page.getByTestId('categories-panel')).toBeVisible();
-		await expect(page.getByTestId('nav-categories')).toHaveAttribute('aria-current', 'page');
-	});
-
-	test('021 shows income list before expense list', async ({ page }) => {
-		await page.goto('/categories');
-		await expect(page.getByTestId('categories-panel')).toBeVisible();
 		const incomeBeforeExpense = await page.evaluate(() => {
 			const income = document.querySelector('[data-testid="category-list-income"]');
 			const expense = document.querySelector('[data-testid="category-list-expense"]');
@@ -40,82 +21,81 @@ test.describe('010 / 018 / 022 custom categories', () => {
 		expect(incomeBeforeExpense).toBe(true);
 	});
 
-	test('050 delete is outlined danger', async ({ page }) => {
+	test('deep-links to categories', async ({ page }) => {
 		await page.goto('/categories');
-		await page.getByTestId('category-add-expense').click();
-		await page.getByTestId('category-name-input').fill('Snack');
-		await page.getByTestId('category-add').click();
-		await expect(page.getByRole('textbox', { name: 'Name for Snack' })).toBeVisible();
-		const del = page.getByTestId('category-delete').first();
-		await expect(del).toHaveClass(/border-destructive/);
-		await expect(del).toHaveClass(/text-destructive/);
+		await expect(page.getByTestId('categories-panel')).toBeVisible();
+		await expect(page.getByTestId('nav-categories')).toHaveAttribute('aria-current', 'page');
 	});
 
-	test('056 warns when category is in use; 057 danger chrome on unused delete', async ({
+	test('adds a custom category from a group chip and shows it in quick-add search', async ({
 		page
 	}) => {
-		await page.goto('/');
-		await ensureCategory(page, 'Coffee', 'expense');
+		await page.goto('/categories');
+		await expect(page.getByTestId('categories-panel')).toBeVisible();
+		await page
+			.getByTestId('category-group-stock-group:food-drink')
+			.getByTestId('category-add-in-group')
+			.click();
+		await page.getByTestId('category-name-input').fill('Warung');
+		await page.getByTestId('category-add').click();
+		await expect(page.getByTestId('category-chip').filter({ hasText: /^Warung$/ })).toBeVisible();
+
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
 		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
-		await sheet.getByLabel(/amount/i).fill('5000');
-		await selectTxCategory(page, 'Coffee', sheet);
-		await sheet.getByRole('button', { name: 'Save' }).click();
-		await expect(sheet).toBeHidden();
-
-		await page.goto('/categories');
-		const coffeeRow = page.locator('li', {
-			has: page.getByRole('textbox', { name: 'Name for Coffee' })
-		});
-		await coffeeRow.getByTestId('category-delete').click();
-		await expect(page.getByTestId('category-in-use-dialog')).toBeVisible();
-		await expect(page.getByTestId('confirm-dialog-danger-header')).toHaveCount(0);
-		await page.getByTestId('category-in-use-dismiss').click();
-		await expect(page.getByRole('textbox', { name: 'Name for Coffee' })).toBeVisible();
-
-		await page.getByTestId('category-add-expense').click();
-		await page.getByTestId('category-name-input').fill('UnusedCat');
-		await page.getByTestId('category-add').click();
-		await expect(page.getByRole('textbox', { name: 'Name for UnusedCat' })).toBeVisible();
-		const unusedRow = page.locator('li', {
-			has: page.getByRole('textbox', { name: 'Name for UnusedCat' })
-		});
-		await unusedRow.getByTestId('category-delete').click();
-		await expect(page.getByTestId('confirm-dialog-danger-header')).toBeVisible();
-		await page.getByTestId('category-delete-confirm').click();
-		await expect(page.getByRole('textbox', { name: 'Name for UnusedCat' })).toHaveCount(0);
+		await selectTxCategory(page, 'Warung', sheet);
+		await expect(sheet.getByTestId('tx-category')).toContainText('Warung');
 	});
 
-	test('103 soft-deletes category used only by voided transactions', async ({ page }) => {
+	test('hides a stock category from the picker and can show it again', async ({ page }) => {
+		await page.goto('/categories');
+		await page.getByTestId('category-edit-mode').click();
+		const groceries = page.getByTestId('category-chip').filter({ hasText: /^Groceries$/ });
+		await groceries.getByTestId('category-hide').click();
+
 		await page.goto('/');
-		await ensureCategory(page, 'VoidOnly', 'expense');
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
 		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
-		await sheet.getByLabel(/amount/i).fill('2500');
-		await selectTxCategory(page, 'VoidOnly', sheet);
-		await sheet.getByRole('button', { name: 'Save' }).click();
-		await expect(page.getByTestId('recent-list')).toContainText('VoidOnly');
+		await sheet.getByTestId('tx-category').click();
+		await page.getByTestId('category-picker-search').fill('Groceries');
+		await expect(page.getByRole('option', { name: 'Groceries', exact: true })).toHaveCount(0);
+		await page.keyboard.press('Escape');
 
-		await page.getByTestId('recent-list').locator('[data-testid^="recent-row-"]').first().click();
-		const editSheet = page.getByRole('dialog');
-		await editSheet.getByRole('button', { name: 'Void' }).click();
-		await confirmVoid(page);
-		await expect(page.getByTestId('tx-dialog')).toBeHidden();
+		await page.goto('/categories');
+		await page.getByTestId('category-edit-mode').click();
+		await page
+			.getByTestId('category-chip')
+			.filter({ hasText: /^Groceries$/ })
+			.getByTestId('category-show')
+			.click();
+	});
 
-		await goToNav(page, 'categories');
-		const row = page.locator('li', {
-			has: page.getByRole('textbox', { name: 'Name for VoidOnly' })
-		});
-		await row.getByTestId('category-delete').click();
-		await expect(page.getByTestId('confirm-dialog-danger-header')).toBeVisible();
-		await page.getByTestId('category-delete-confirm').click();
-		await expect(page.getByRole('textbox', { name: 'Name for VoidOnly' })).toHaveCount(0);
+	test('reorder mode shows group names and discard restores factory order', async ({ page }) => {
+		await page.goto('/categories');
+		await page.getByTestId('category-reorder').click();
+		await expect(page.getByTestId('category-reorder-save')).toBeVisible();
+		await expect(page.getByTestId('category-reorder-discard')).toBeVisible();
+		await expect(page.getByTestId('category-reorder-reset')).toBeVisible();
+		await expect(page.getByTestId('category-chip')).toHaveCount(0);
+		await expect(page.getByTestId('category-group-row-stock-group:home')).toBeVisible();
+		await page.getByTestId('category-reorder-discard').click();
+		await expect(page.getByTestId('category-reorder-save')).toBeDisabled();
+	});
 
-		await goToNav(page, 'home');
-		await expect(
-			page.getByTestId('recent-list').locator('[data-testid^="recent-row-"]').first()
-		).toContainText('VoidOnly');
+	test('form picker groups expense categories and filters by search', async ({ page }) => {
+		await page.goto('/');
+		await openAdd(page);
+		const sheet = page.getByRole('dialog');
+		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
+		await sheet.getByTestId('tx-category').click();
+		await expect(page.getByTestId('picker-group-stock-group:food-drink')).toBeVisible();
+		await expect(page.getByRole('option', { name: 'Groceries', exact: true })).toBeVisible();
+		await expect(page.getByRole('option', { name: 'Salary', exact: true })).toHaveCount(0);
+		await page.getByTestId('category-picker-search').fill('groc');
+		await expect(page.getByRole('option', { name: 'Groceries', exact: true })).toBeVisible();
+		await expect(page.getByTestId('picker-group-stock-group:home')).toHaveCount(0);
+		await page.getByRole('option', { name: 'Groceries', exact: true }).click();
+		await expect(sheet.getByTestId('tx-category')).toContainText('Groceries');
 	});
 });

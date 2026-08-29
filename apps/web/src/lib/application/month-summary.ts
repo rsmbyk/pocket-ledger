@@ -9,7 +9,7 @@ import {
 	type MonthKey,
 	type MonthSummary
 } from '$lib/domain/month-summary';
-import { listCategories } from '$lib/application/categories';
+import { listAllCategories } from '$lib/application/categories';
 
 export type MonthSummaryLoad = {
 	monthKey: MonthKey;
@@ -26,7 +26,7 @@ export async function loadMonthSummary(
 ): Promise<MonthSummaryLoad> {
 	const [transactions, categories, pockets] = await Promise.all([
 		listAllTransactions(),
-		listCategories(),
+		listAllCategories(),
 		listAccounts()
 	]);
 	const bounds = resolveMonthBounds(

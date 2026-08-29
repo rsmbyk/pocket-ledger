@@ -13,7 +13,7 @@ import {
 	voidTransaction
 } from './transactions';
 import { ensureDefaultAccount, createPocket } from './accounts';
-import { createCategory } from './categories';
+import { createCategory, listCategories } from './categories';
 
 describe('transactions application', () => {
 	beforeEach(async () => {
@@ -21,15 +21,17 @@ describe('transactions application', () => {
 		await db.open();
 	});
 
-	it('does not seed categories when empty', async () => {
-		expect(await ensureSeedCategories()).toEqual([]);
-		expect(await ensureSeedCategories()).toEqual([]);
+	it('resolves the overlay catalog without inserting Dexie rows', async () => {
+		const first = await ensureSeedCategories();
+		expect(first).toHaveLength(139);
+		expect(await db.categories.count()).toBe(0);
+		expect(await ensureSeedCategories()).toHaveLength(139);
 	});
 
 	it('adds expense and income and computes balance', async () => {
 		const account = await ensureDefaultAccount();
-		const expense = await createCategory('Food', 'expense');
-		const income = await createCategory('Salary', 'income');
+		const expense = (await listCategories()).find((c) => c.id === 'stock:expense:food')!;
+		const income = (await listCategories()).find((c) => c.id === 'stock:income:salary')!;
 
 		await addTransaction({
 			accountId: account.id,
@@ -66,7 +68,7 @@ describe('transactions application', () => {
 
 	it('rejects mismatched category kind', async () => {
 		const account = await ensureDefaultAccount();
-		const income = await createCategory('Salary', 'income');
+		const income = (await listCategories()).find((c) => c.id === 'stock:income:salary')!;
 		await expect(
 			addTransaction({
 				accountId: account.id,
@@ -79,7 +81,7 @@ describe('transactions application', () => {
 
 	it('updates and voids a transaction', async () => {
 		const account = await ensureDefaultAccount();
-		const expense = await createCategory('Food', 'expense');
+		const expense = (await listCategories()).find((c) => c.id === 'stock:expense:food')!;
 		const created = await addTransaction({
 			accountId: account.id,
 			type: 'expense',
@@ -120,8 +122,8 @@ describe('transactions application', () => {
 
 	it('rejects changing transaction type on update', async () => {
 		const account = await ensureDefaultAccount();
-		const expense = await createCategory('Food', 'expense');
-		const income = await createCategory('Salary', 'income');
+		const expense = (await listCategories()).find((c) => c.id === 'stock:expense:food')!;
+		const income = (await listCategories()).find((c) => c.id === 'stock:income:salary')!;
 		const created = await addTransaction({
 			accountId: account.id,
 			type: 'expense',

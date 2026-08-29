@@ -22,14 +22,39 @@ Backup JSON may still key this collection as `accounts`.
 
 ## categories
 
-| Field     | Notes                                                                                     |
-| --------- | ----------------------------------------------------------------------------------------- |
-| id        | UUID                                                                                      |
-| name      |                                                                                           |
-| kind      | `income` \| `expense`                                                                     |
-| sortOrder | Sibling order within kind                                                                 |
-| createdAt |                                                                                           |
-| deletedAt | ISO timestamp or null; soft-delete when only voided txs reference the category (spec 103) |
+Stock catalog is **not** stored here (spec 123). This table holds **custom** categories only.
+
+| Field     | Notes                                                                                          |
+| --------- | ---------------------------------------------------------------------------------------------- |
+| id        | UUID (custom). Stock ids like `stock:expense:groceries` live in the app bundle, not this table |
+| name      | Encrypted display name                                                                         |
+| kind      | `income` \| `expense`                                                                          |
+| sortOrder | Unused for UI order (catalog then custom `createdAt`)                                          |
+| createdAt |                                                                                                |
+| deletedAt | Legacy; hide uses `hidden`                                                                     |
+| groupId   | Stock or custom group id                                                                       |
+| icon      | Always `tag` for custom                                                                        |
+| hidden    | When true, omitted from pickers; still listed on Categories                                    |
+
+## categoryGroups
+
+Custom groups only. Stock groups (`stock-group:home`, …) are in the bundle.
+
+| Field     | Notes                                      |
+| --------- | ------------------------------------------ |
+| id        | UUID                                       |
+| name      | Encrypted                                  |
+| kind      | `income` \| `expense`                      |
+| createdAt | New groups are last among that kind        |
+
+## Overlay prefs (`settings`)
+
+| Key                       | Notes                                                                                          |
+| ------------------------- | ---------------------------------------------------------------------------------------------- |
+| `category.overlayPrefs`   | JSON: `hiddenStockIds`, `groupOrderByKind` (only when order differs from factory)              |
+| `category.catalogMigrated`| `123` after one-time UUID → stock migrate                                                      |
+
+Backup JSON includes custom `categories`, `categoryGroups`, and these settings — not the stock catalog.
 
 ## transactions
 

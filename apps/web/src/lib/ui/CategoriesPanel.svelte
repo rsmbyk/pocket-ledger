@@ -1,9 +1,10 @@
 <script lang="ts">
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import EyeIcon from '@lucide/svelte/icons/eye';
+	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import GripVerticalIcon from '@lucide/svelte/icons/grip-vertical';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import ShoppingBagIcon from '@lucide/svelte/icons/shopping-bag';
-	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 	import { flip } from 'svelte/animate';
 	import { dragHandle, dragHandleZone, type DndEvent } from 'svelte-dnd-action';
@@ -12,133 +13,104 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import type { CategoryRow } from '$lib/data/db';
-	import { isCategoryInUse } from '$lib/application/categories';
+	import type { OverlayGroup } from '$lib/domain/category-overlay';
+	import {
+		createCategory,
+		createCategoryGroup,
+		hideCategory,
+		renameCategory,
+		saveCategoryGroupOrder,
+		showCategory
+	} from '$lib/application/categories';
 	import {
 		clearCategoryCreateDraft,
 		readCategoryCreateDraft,
 		writeCategoryCreateDraft
 	} from '$lib/shared/create-form-drafts';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
-	import EmptyState from '$lib/ui/EmptyState.svelte';
+	import CategoryIcon from '$lib/ui/CategoryIcon.svelte';
+	import { STOCK_CUSTOM_ICON } from '$lib/domain/default-category-catalog';
 	import { cn } from '$lib/utils.js';
 
 	type Props = {
-		expenseCategories: CategoryRow[];
-		incomeCategories: CategoryRow[];
-		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
-		onRenameCategory: (id: string, name: string) => void | Promise<void>;
-		onDeleteCategory: (id: string) => void | Promise<void>;
-		onReorderCategories: (kind: CategoryRow['kind'], orderedIds: string[]) => void | Promise<void>;
+		categories: CategoryRow[];
+		groups: OverlayGroup[];
+		onRefresh: () => void | Promise<void>;
+		reorderDirty?: boolean;
+		onReorderDirtyChange?: (dirty: boolean) => void;
 	};
 
 	let {
-		expenseCategories,
-		incomeCategories,
-		onCreateCategory,
-		onRenameCategory,
-		onDeleteCategory,
-		onReorderCategories
+		categories,
+		groups,
+		onRefresh,
+		reorderDirty = $bindable(false),
+		onReorderDirtyChange
 	}: Props = $props();
 
 	const flipDurationMs = 180;
+	type Mode = 'view' | 'edit' | 'reorder';
+	let mode = $state<Mode>('view');
 
 	let addDialogOpen = $state(false);
 	let addKind = $state<CategoryRow['kind']>('expense');
+	let addGroupId = $state('');
 	let addName = $state('');
+	let addGroupDialogOpen = $state(false);
+	let addGroupKind = $state<CategoryRow['kind']>('expense');
+	let addGroupName = $state('');
 	let discardConfirmOpen = $state(false);
+	let leaveReorderOpen = $state(false);
 	let busy = $state(false);
 	let error = $state('');
 	let nameFieldError = $state('');
 	let renameErrorId = $state<string | null>(null);
 	let renameDrafts = $state<Record<string, string>>({});
-	let deleteTarget = $state<{ id: string; name: string } | null>(null);
-	let inUseTarget = $state<{ id: string; name: string } | null>(null);
 
-	let incomeItems = $state<CategoryRow[]>([]);
-	let expenseItems = $state<CategoryRow[]>([]);
-
-	$effect(() => {
-		incomeItems = [...incomeCategories];
-	});
+	let incomeGroupItems = $state<OverlayGroup[]>([]);
+	let expenseGroupItems = $state<OverlayGroup[]>([]);
+	let savedIncomeOrder = $state<string[]>([]);
+	let savedExpenseOrder = $state<string[]>([]);
 
 	$effect(() => {
-		expenseItems = [...expenseCategories];
+		if (mode !== 'reorder') {
+			incomeGroupItems = groups.filter((g) => g.kind === 'income');
+			expenseGroupItems = groups.filter((g) => g.kind === 'expense');
+			savedIncomeOrder = incomeGroupItems.map((g) => g.id);
+			savedExpenseOrder = expenseGroupItems.map((g) => g.id);
+		}
 	});
-
-	const addTitle = $derived(addKind === 'expense' ? 'Add expense category' : 'Add income category');
-
-	const addSubmitDisabled = $derived(busy || addName.trim() === '');
 
 	const addDirty = $derived(addName.trim() !== '');
+	const addGroupDirty = $derived(addGroupName.trim() !== '');
 
-	const groups = $derived([
-		{
-			title: 'Income',
-			kind: 'income' as const,
-			listTestId: 'category-list-income',
-			addTestId: 'category-add-income',
-			addAriaLabel: 'Add income category',
-			emptyTestId: 'category-empty-income',
-			emptyTitle: 'No income categories',
-			emptyDescription: 'Labels for money coming in.',
-			cardClass: 'border-emerald-500/30 ring-emerald-500/20',
-			headerClass: 'border-emerald-500/20 bg-emerald-500/5',
-			iconClass: 'text-emerald-600 dark:text-emerald-400',
-			dialogClass: 'border-emerald-500/40 ring-emerald-500/30',
-			dialogHeaderClass: 'border-emerald-500/20 bg-emerald-500/5'
-		},
-		{
-			title: 'Expense',
-			kind: 'expense' as const,
-			listTestId: 'category-list-expense',
-			addTestId: 'category-add-expense',
-			addAriaLabel: 'Add expense category',
-			emptyTestId: 'category-empty-expense',
-			emptyTitle: 'No expense categories',
-			emptyDescription: 'Labels for money going out.',
-			cardClass: 'border-destructive/30 ring-destructive/20',
-			headerClass: 'border-destructive/20 bg-destructive/5',
-			iconClass: 'text-destructive',
-			dialogClass: 'border-destructive/40 ring-destructive/30',
-			dialogHeaderClass: 'border-destructive/20 bg-destructive/5'
-		}
-	]);
-
-	const activeDialogGroup = $derived(groups.find((group) => group.kind === addKind) ?? groups[1]);
-
-	function itemsForKind(kind: CategoryRow['kind']): CategoryRow[] {
-		return kind === 'income' ? incomeItems : expenseItems;
+	function setDirty(next: boolean) {
+		reorderDirty = next;
+		onReorderDirtyChange?.(next);
 	}
 
-	function setItemsForKind(kind: CategoryRow['kind'], items: CategoryRow[]) {
-		if (kind === 'income') {
-			incomeItems = items;
-		} else {
-			expenseItems = items;
-		}
+	function catsInGroup(groupId: string): CategoryRow[] {
+		return categories.filter((c) => c.groupId === groupId);
 	}
 
-	function revertItemsForKind(kind: CategoryRow['kind']) {
-		if (kind === 'income') {
-			incomeItems = [...incomeCategories];
-		} else {
-			expenseItems = [...expenseCategories];
-		}
+	function draftFor(cat: CategoryRow): string {
+		return renameDrafts[cat.id] ?? cat.name;
 	}
 
-	async function runAction(action: () => void | Promise<void>, opts?: { renameId?: string }) {
+	async function runAction(action: () => unknown | Promise<unknown>, opts?: { renameId?: string }) {
 		busy = true;
 		error = '';
 		nameFieldError = '';
 		renameErrorId = null;
 		try {
 			await action();
+			await onRefresh();
 		} catch (e) {
 			const message = e instanceof Error ? e.message : 'Something went wrong';
 			if (opts?.renameId) {
 				renameErrorId = opts.renameId;
 				nameFieldError = message;
-			} else if (addDialogOpen) {
+			} else if (addDialogOpen || addGroupDialogOpen) {
 				nameFieldError = message;
 			} else {
 				error = message;
@@ -149,16 +121,9 @@
 		}
 	}
 
-	function draftFor(cat: CategoryRow): string {
-		return renameDrafts[cat.id] ?? cat.name;
-	}
-
-	function saveDisabled(cat: CategoryRow): boolean {
-		return busy || draftFor(cat).trim() === cat.name || draftFor(cat).trim() === '';
-	}
-
-	function openAdd(kind: CategoryRow['kind']) {
+	function openAdd(kind: CategoryRow['kind'], groupId: string) {
 		addKind = kind;
+		addGroupId = groupId;
 		addName = '';
 		nameFieldError = '';
 		const draft = readCategoryCreateDraft(kind);
@@ -174,208 +139,338 @@
 		discardConfirmOpen = true;
 	}
 
-	function handleAddOpenChange(next: boolean) {
-		if (next) {
-			addDialogOpen = true;
+	function enterReorder() {
+		mode = 'reorder';
+		incomeGroupItems = groups.filter((g) => g.kind === 'income');
+		expenseGroupItems = groups.filter((g) => g.kind === 'expense');
+		savedIncomeOrder = incomeGroupItems.map((g) => g.id);
+		savedExpenseOrder = expenseGroupItems.map((g) => g.id);
+		setDirty(false);
+	}
+
+	function currentDirty(): boolean {
+		const incomeIds = incomeGroupItems.map((g) => g.id).join(',');
+		const expenseIds = expenseGroupItems.map((g) => g.id).join(',');
+		return incomeIds !== savedIncomeOrder.join(',') || expenseIds !== savedExpenseOrder.join(',');
+	}
+
+	function handleConsider(kind: CategoryRow['kind'], e: CustomEvent<DndEvent<OverlayGroup>>) {
+		if (kind === 'income') incomeGroupItems = e.detail.items;
+		else expenseGroupItems = e.detail.items;
+		setDirty(currentDirty());
+	}
+
+	function handleFinalize(kind: CategoryRow['kind'], e: CustomEvent<DndEvent<OverlayGroup>>) {
+		handleConsider(kind, e);
+	}
+
+	async function saveReorder() {
+		await runAction(async () => {
+			await saveCategoryGroupOrder(
+				'income',
+				incomeGroupItems.map((g) => g.id)
+			);
+			await saveCategoryGroupOrder(
+				'expense',
+				expenseGroupItems.map((g) => g.id)
+			);
+		});
+		savedIncomeOrder = incomeGroupItems.map((g) => g.id);
+		savedExpenseOrder = expenseGroupItems.map((g) => g.id);
+		setDirty(false);
+		mode = 'view';
+	}
+
+	function discardReorder() {
+		incomeGroupItems = groups.filter((g) => g.kind === 'income');
+		expenseGroupItems = groups.filter((g) => g.kind === 'expense');
+		incomeGroupItems = savedIncomeOrder
+			.map((id) => groups.find((g) => g.id === id))
+			.filter((g): g is OverlayGroup => Boolean(g));
+		expenseGroupItems = savedExpenseOrder
+			.map((id) => groups.find((g) => g.id === id))
+			.filter((g): g is OverlayGroup => Boolean(g));
+		setDirty(false);
+	}
+
+	function resetReorder() {
+		incomeGroupItems = groups
+			.filter((g) => g.kind === 'income' && g.source === 'stock')
+			.concat(groups.filter((g) => g.kind === 'income' && g.source === 'custom'));
+		expenseGroupItems = groups
+			.filter((g) => g.kind === 'expense' && g.source === 'stock')
+			.concat(groups.filter((g) => g.kind === 'expense' && g.source === 'custom'));
+		setDirty(currentDirty());
+	}
+
+	function requestLeaveReorder() {
+		if (!reorderDirty) {
+			mode = 'view';
 			return;
 		}
-		requestAddDiscard();
+		leaveReorderOpen = true;
 	}
 
-	function onAddInteractOutside(e: PointerEvent) {
-		if (!addDirty && !discardConfirmOpen) return;
-		e.preventDefault();
-		if (addDirty) discardConfirmOpen = true;
-	}
-
-	function onAddEscapeKeydown(e: KeyboardEvent) {
-		if (!addDirty && !discardConfirmOpen) return;
-		e.preventDefault();
-		if (addDirty) discardConfirmOpen = true;
-	}
-
-	function confirmAddDiscard() {
-		clearCategoryCreateDraft(addKind);
-		discardConfirmOpen = false;
-		addDialogOpen = false;
-		addName = '';
-	}
-
-	function saveCategoryCreateDraft() {
-		writeCategoryCreateDraft(addKind, { name: addName });
-		discardConfirmOpen = false;
-		addDialogOpen = false;
-	}
-
-	function handleConsider(kind: CategoryRow['kind'], e: CustomEvent<DndEvent<CategoryRow>>) {
-		setItemsForKind(kind, e.detail.items);
-	}
-
-	async function handleFinalize(kind: CategoryRow['kind'], e: CustomEvent<DndEvent<CategoryRow>>) {
-		const items = e.detail.items;
-		setItemsForKind(kind, items);
-		busy = true;
-		error = '';
-		try {
-			await onReorderCategories(
-				kind,
-				items.map((item) => item.id)
-			);
-		} catch (err) {
-			revertItemsForKind(kind);
-			error = err instanceof Error ? err.message : 'Something went wrong';
-		} finally {
-			busy = false;
+	const kindMeta = {
+		income: {
+			title: 'Income',
+			listTestId: 'category-list-income',
+			iconClass: 'text-emerald-600 dark:text-emerald-400',
+			cardClass: 'border-emerald-500/30 ring-emerald-500/20',
+			headerClass: 'border-emerald-500/20 bg-emerald-500/5'
+		},
+		expense: {
+			title: 'Expense',
+			listTestId: 'category-list-expense',
+			iconClass: 'text-destructive',
+			cardClass: 'border-destructive/30 ring-destructive/20',
+			headerClass: 'border-destructive/20 bg-destructive/5'
 		}
-	}
-
-	async function openDeleteConfirm(id: string, name: string) {
-		busy = true;
-		error = '';
-		try {
-			if (await isCategoryInUse(id)) {
-				inUseTarget = { id, name };
-			} else {
-				deleteTarget = { id, name };
-			}
-		} catch (e) {
-			error = e instanceof Error ? e.message : 'Something went wrong';
-		} finally {
-			busy = false;
-		}
-	}
+	} as const;
 </script>
 
 <div class="space-y-4" data-testid="categories-panel">
+	<div class="flex flex-wrap items-center justify-end gap-2">
+		{#if mode === 'reorder'}
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				disabled={busy}
+				data-testid="category-reorder-reset"
+				onclick={resetReorder}
+			>
+				Reset
+			</Button>
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				disabled={busy}
+				data-testid="category-reorder-discard"
+				onclick={discardReorder}
+			>
+				Discard
+			</Button>
+			<Button
+				type="button"
+				size="sm"
+				disabled={busy || !reorderDirty}
+				data-testid="category-reorder-save"
+				onclick={() => void saveReorder()}
+			>
+				Save
+			</Button>
+			<Button
+				type="button"
+				variant="ghost"
+				size="sm"
+				disabled={busy}
+				onclick={requestLeaveReorder}
+			>
+				Done
+			</Button>
+		{:else}
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				disabled={busy}
+				data-testid="category-add-group"
+				onclick={() => {
+					addGroupName = '';
+					nameFieldError = '';
+					addGroupDialogOpen = true;
+				}}
+			>
+				Add group
+			</Button>
+			<Button
+				type="button"
+				variant={mode === 'edit' ? 'default' : 'outline'}
+				size="sm"
+				disabled={busy}
+				data-testid="category-edit-mode"
+				onclick={() => (mode = mode === 'edit' ? 'view' : 'edit')}
+			>
+				{mode === 'edit' ? 'Done' : 'Edit'}
+			</Button>
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				disabled={busy}
+				data-testid="category-reorder"
+				onclick={enterReorder}
+			>
+				Reorder
+			</Button>
+		{/if}
+	</div>
+
+	{#if error}
+		<p class="text-destructive text-sm" role="alert">{error}</p>
+	{/if}
+
 	<div class="grid gap-4 md:grid-cols-2 md:items-start" data-testid="categories-desktop-grid">
-		{#each groups as group (group.kind)}
-			{@const items = itemsForKind(group.kind)}
-			<Card.Root class={cn('gap-0 overflow-hidden py-0', group.cardClass)}>
+		{#each (['income', 'expense'] as const) as kind (kind)}
+			{@const meta = kindMeta[kind]}
+			{@const kindGroups =
+				mode === 'reorder'
+					? kind === 'income'
+						? incomeGroupItems
+						: expenseGroupItems
+					: groups.filter((g) => g.kind === kind)}
+			<Card.Root class={cn('gap-0 overflow-hidden py-0', meta.cardClass)}>
 				<Card.Header
 					class={cn(
 						'flex flex-row items-center justify-between gap-2 space-y-0 border-b px-4 pt-2 !pb-2',
-						group.headerClass
+						meta.headerClass
 					)}
 				>
 					<div class="flex items-center gap-2">
-						{#if group.kind === 'income'}
-							<TrendingUpIcon class={cn('size-5 shrink-0', group.iconClass)} aria-hidden="true" />
+						{#if kind === 'income'}
+							<TrendingUpIcon class={cn('size-5 shrink-0', meta.iconClass)} aria-hidden="true" />
 						{:else}
-							<ShoppingBagIcon class={cn('size-5 shrink-0', group.iconClass)} aria-hidden="true" />
+							<ShoppingBagIcon class={cn('size-5 shrink-0', meta.iconClass)} aria-hidden="true" />
 						{/if}
-						<Card.Title class="text-base">{group.title}</Card.Title>
+						<Card.Title class="text-base">{meta.title}</Card.Title>
 					</div>
-					<Button
-						type="button"
-						size="icon-sm"
-						variant="outline"
-						disabled={busy}
-						aria-label={group.addAriaLabel}
-						data-testid={group.addTestId}
-						onclick={() => openAdd(group.kind)}
-					>
-						<PlusIcon class="size-4" />
-					</Button>
 				</Card.Header>
 				<Card.Content class="p-0">
-					<div data-testid={group.listTestId}>
-						{#if items.length === 0}
-							<EmptyState
-								testid={group.emptyTestId}
-								title={group.emptyTitle}
-								description={group.emptyDescription}
+					<div data-testid={meta.listTestId} data-kind={kind}>
+						{#if mode === 'reorder'}
+							<ul
+								class="divide-border m-0 list-none divide-y p-0"
+								use:dragHandleZone={{
+									items: kindGroups,
+									flipDurationMs,
+									type: kind,
+									dragDisabled: busy
+								}}
+								onconsider={(e) => handleConsider(kind, e)}
+								onfinalize={(e) => handleFinalize(kind, e)}
+								aria-label={`${meta.title} groups`}
 							>
-								{#snippet icon()}
-									{#if group.kind === 'income'}
-										<TrendingUpIcon class="size-5" aria-hidden="true" />
-									{:else}
-										<ShoppingBagIcon class="size-5" aria-hidden="true" />
-									{/if}
-								{/snippet}
-							</EmptyState>
-						{:else}
-							<div class="max-h-80 overflow-y-auto">
-								<ul
-									class="divide-border m-0 list-none divide-y p-0 text-sm"
-									use:dragHandleZone={{
-										items,
-										flipDurationMs,
-										type: group.kind,
-										dragDisabled: busy
-									}}
-									onconsider={(e) => handleConsider(group.kind, e)}
-									onfinalize={(e) => void handleFinalize(group.kind, e)}
-									aria-label={`${group.title} categories`}
-								>
-									{#each items as cat (cat.id)}
-										<li
-											class="flex items-center gap-2 px-4 py-2.5"
-											animate:flip={{ duration: flipDurationMs }}
-											aria-label={draftFor(cat)}
+								{#each kindGroups as group (group.id)}
+									<li
+										class="flex items-center gap-2 px-4 py-2.5"
+										animate:flip={{ duration: flipDurationMs }}
+										data-testid={`category-group-row-${group.id}`}
+									>
+										<button
+											type="button"
+											use:dragHandle
+											class="dnd-handle text-muted-foreground hover:text-foreground shrink-0 cursor-grab rounded-sm p-1 active:cursor-grabbing"
+											aria-label={`Drag to reorder ${group.name}`}
 										>
-											<button
-												type="button"
-												use:dragHandle
-												class="dnd-handle text-muted-foreground hover:text-foreground shrink-0 cursor-grab rounded-sm p-1 active:cursor-grabbing"
-												aria-label={`Drag to reorder ${draftFor(cat)}`}
-											>
-												<GripVerticalIcon class="size-4" aria-hidden="true" />
-											</button>
-											<div class="min-w-0 flex-1 space-y-1">
-												<Input
-													class="w-full"
-													aria-label={`Name for ${cat.name}`}
-													aria-invalid={renameErrorId === cat.id ? true : undefined}
-													value={draftFor(cat)}
-													oninput={(e) => {
-														renameDrafts = {
-															...renameDrafts,
-															[cat.id]: (e.currentTarget as HTMLInputElement).value
-														};
-														if (renameErrorId === cat.id) {
-															renameErrorId = null;
-															nameFieldError = '';
-														}
-													}}
-												/>
-												{#if renameErrorId === cat.id && nameFieldError}
-													<p
-														class="text-destructive text-sm"
-														role="alert"
-														data-testid="category-field-error-name"
-													>
-														{nameFieldError}
-													</p>
-												{/if}
-											</div>
-											<div class="flex shrink-0 justify-end gap-1">
+											<GripVerticalIcon class="size-4" aria-hidden="true" />
+										</button>
+										<span class="text-sm font-medium">{group.name}</span>
+									</li>
+								{/each}
+							</ul>
+						{:else}
+							<div class="max-h-[32rem] space-y-4 overflow-y-auto p-3">
+								{#each kindGroups as group (group.id)}
+									{@const items = catsInGroup(group.id)}
+									<section data-testid={`category-group-${group.id}`}>
+										<h3 class="text-muted-foreground mb-2 text-xs font-medium tracking-wide">
+											{group.name}
+										</h3>
+										<ul class="m-0 flex list-none flex-col gap-1.5 p-0">
+											{#each items as cat (cat.id)}
+												<li
+													class={cn(
+														'border-border flex items-center gap-2 rounded-md border px-2 py-1.5',
+														cat.hidden && 'opacity-60'
+													)}
+													data-testid="category-chip"
+													aria-label={cat.name}
+												>
+													<CategoryIcon slug={cat.icon} />
+													{#if mode === 'edit' && cat.source === 'custom'}
+														<div class="min-w-0 flex-1 space-y-1">
+															<Input
+																class="h-8"
+																aria-label={`Name for ${cat.name}`}
+																aria-invalid={renameErrorId === cat.id ? true : undefined}
+																value={draftFor(cat)}
+																oninput={(e) => {
+																	renameDrafts = {
+																		...renameDrafts,
+																		[cat.id]: (e.currentTarget as HTMLInputElement).value
+																	};
+																}}
+															/>
+															{#if renameErrorId === cat.id && nameFieldError}
+																<p
+																	class="text-destructive text-sm"
+																	role="alert"
+																	data-testid="category-field-error-name"
+																>
+																	{nameFieldError}
+																</p>
+															{/if}
+														</div>
+														<Button
+															size="icon-sm"
+															variant="outline"
+															aria-label={`Save name for ${cat.name}`}
+															data-testid="category-save-name"
+															disabled={busy ||
+																draftFor(cat).trim() === cat.name ||
+																draftFor(cat).trim() === ''}
+															onclick={() =>
+																void runAction(async () => {
+																	await renameCategory(cat.id, draftFor(cat));
+																}, {
+																	renameId: cat.id
+																})}
+														>
+															<CheckIcon class="size-4" />
+														</Button>
+													{:else}
+														<span class="min-w-0 flex-1 truncate text-sm">{cat.name}</span>
+													{/if}
+													{#if mode === 'edit'}
+														<Button
+															size="icon-sm"
+															variant="outline"
+															aria-label={cat.hidden ? `Show ${cat.name}` : `Hide ${cat.name}`}
+															data-testid={cat.hidden ? 'category-show' : 'category-hide'}
+															disabled={busy}
+															onclick={() =>
+																void runAction(() =>
+																	cat.hidden ? showCategory(cat.id) : hideCategory(cat.id)
+																)}
+														>
+															{#if cat.hidden}
+																<EyeIcon class="size-4" />
+															{:else}
+																<EyeOffIcon class="size-4" />
+															{/if}
+														</Button>
+													{/if}
+												</li>
+											{/each}
+											<li>
 												<Button
-													size="icon-sm"
+													type="button"
 													variant="outline"
-													aria-label={`Save name for ${cat.name}`}
-													data-testid="category-save-name"
-													disabled={saveDisabled(cat)}
-													onclick={() =>
-														void runAction(() => onRenameCategory(cat.id, draftFor(cat)), {
-															renameId: cat.id
-														})}
-												>
-													<CheckIcon class="size-4" />
-												</Button>
-												<Button
-													size="icon-sm"
-													variant="destructive"
-													aria-label={`Delete ${cat.name}`}
-													data-testid="category-delete"
+													class="w-full justify-start gap-2"
+													data-testid="category-add-in-group"
+													aria-label={`Add category to ${group.name}`}
 													disabled={busy}
-													onclick={() => void openDeleteConfirm(cat.id, cat.name)}
+													onclick={() => openAdd(kind, group.id)}
 												>
-													<Trash2Icon class="size-4" />
+													<CategoryIcon slug={STOCK_CUSTOM_ICON} />
+													Add
 												</Button>
-											</div>
-										</li>
-									{/each}
-								</ul>
+											</li>
+										</ul>
+									</section>
+								{/each}
 							</div>
 						{/if}
 					</div>
@@ -385,43 +480,24 @@
 	</div>
 </div>
 
-<Dialog.Root open={addDialogOpen} onOpenChange={handleAddOpenChange}>
-	<Dialog.Content
-		class={cn('sm:max-w-md overflow-hidden p-0', activeDialogGroup.dialogClass)}
-		showCloseButton={false}
-		interactOutsideBehavior="close"
-		escapeKeydownBehavior="close"
-		onInteractOutside={onAddInteractOutside}
-		onEscapeKeydown={onAddEscapeKeydown}
-		data-testid="category-add-dialog"
-	>
-		<Dialog.Header
-			class={cn('gap-1 space-y-0 border-b px-6 py-3', activeDialogGroup.dialogHeaderClass)}
-		>
-			<div class="flex items-center gap-2">
-				{#if addKind === 'income'}
-					<TrendingUpIcon
-						class={cn('size-5 shrink-0', activeDialogGroup.iconClass)}
-						aria-hidden="true"
-					/>
-				{:else}
-					<ShoppingBagIcon
-						class={cn('size-5 shrink-0', activeDialogGroup.iconClass)}
-						aria-hidden="true"
-					/>
-				{/if}
-				<Dialog.Title>{addTitle}</Dialog.Title>
-			</div>
-			<Dialog.Description>
-				Custom labels for {addKind === 'expense' ? 'expenses' : 'income'}.
-			</Dialog.Description>
+<Dialog.Root
+	open={addDialogOpen}
+	onOpenChange={(next) => {
+		if (next) addDialogOpen = true;
+		else requestAddDiscard();
+	}}
+>
+	<Dialog.Content class="sm:max-w-md" showCloseButton={false} data-testid="category-add-dialog">
+		<Dialog.Header>
+			<Dialog.Title>Add category</Dialog.Title>
+			<Dialog.Description>Custom labels use the tag icon.</Dialog.Description>
 		</Dialog.Header>
 		<form
-			class="space-y-4 px-6 py-4"
+			class="space-y-4"
 			onsubmit={(e) => {
 				e.preventDefault();
 				void runAction(async () => {
-					await onCreateCategory(addName, addKind);
+					await createCategory(addName, addKind, addGroupId);
 					clearCategoryCreateDraft(addKind);
 					addName = '';
 					addDialogOpen = false;
@@ -434,9 +510,6 @@
 				required
 				data-testid="category-name-input"
 				aria-invalid={nameFieldError && addDialogOpen ? true : undefined}
-				oninput={() => {
-					if (nameFieldError) nameFieldError = '';
-				}}
 			/>
 			{#if nameFieldError && addDialogOpen && !renameErrorId}
 				<p class="text-destructive text-sm" role="alert" data-testid="category-field-error-name">
@@ -447,7 +520,64 @@
 				<Button type="button" variant="outline" disabled={busy} onclick={() => requestAddDiscard()}>
 					Cancel
 				</Button>
-				<Button type="submit" disabled={addSubmitDisabled} data-testid="category-add">Add</Button>
+				<Button type="submit" disabled={busy || addName.trim() === ''} data-testid="category-add">
+					Add
+				</Button>
+			</div>
+		</form>
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={addGroupDialogOpen}>
+	<Dialog.Content class="sm:max-w-md" data-testid="category-add-group-dialog">
+		<Dialog.Header>
+			<Dialog.Title>Add group</Dialog.Title>
+			<Dialog.Description>Placed last among that kind.</Dialog.Description>
+		</Dialog.Header>
+		<form
+			class="space-y-4"
+			onsubmit={(e) => {
+				e.preventDefault();
+				void runAction(async () => {
+					await createCategoryGroup(addGroupName, addGroupKind);
+					addGroupName = '';
+					addGroupDialogOpen = false;
+				});
+			}}
+		>
+			<label class="space-y-1 text-sm">
+				<span>Kind</span>
+				<select
+					class="border-input bg-background flex h-11 w-full rounded-md border px-3 text-sm md:h-9"
+					bind:value={addGroupKind}
+					data-testid="category-group-kind"
+				>
+					<option value="income">Income</option>
+					<option value="expense">Expense</option>
+				</select>
+			</label>
+			<Input
+				placeholder="Name"
+				bind:value={addGroupName}
+				required
+				data-testid="category-group-name-input"
+			/>
+			{#if nameFieldError && addGroupDialogOpen}
+				<p class="text-destructive text-sm" role="alert">{nameFieldError}</p>
+			{/if}
+			<div class="flex justify-end gap-2">
+				<Button
+					type="button"
+					variant="outline"
+					onclick={() => {
+						addGroupDialogOpen = false;
+					}}
+				>
+					Cancel
+				</Button>
+				<Button type="submit" disabled={busy || !addGroupDirty} data-testid="category-group-add">
+					Add
+				</Button>
 			</div>
 		</form>
 	</Dialog.Content>
@@ -463,43 +593,30 @@
 	secondaryLabel="Save draft"
 	secondaryTestId="category-discard-save-draft"
 	onOpenChange={(next) => (discardConfirmOpen = next)}
-	onConfirm={confirmAddDiscard}
-	onSecondary={saveCategoryCreateDraft}
-/>
-
-<ConfirmDialog
-	open={deleteTarget !== null}
-	title="Delete category?"
-	description={deleteTarget
-		? `Delete "${deleteTarget.name}"? This cannot be undone.`
-		: 'This cannot be undone.'}
-	confirmLabel="Delete"
-	destructive
-	dangerChrome
-	confirmTestId="category-delete-confirm"
-	onOpenChange={(open) => {
-		if (!open) deleteTarget = null;
-	}}
-	onConfirm={async () => {
-		if (!deleteTarget) return;
-		const { id } = deleteTarget;
-		await runAction(() => onDeleteCategory(id));
-		deleteTarget = null;
-	}}
-/>
-
-<ConfirmDialog
-	open={inUseTarget !== null}
-	title="Category in use"
-	description="This category is still used by transactions and cannot be deleted."
-	confirmLabel="Got it"
-	hideCancel
-	confirmTestId="category-in-use-dismiss"
-	contentTestId="category-in-use-dialog"
-	onOpenChange={(open) => {
-		if (!open) inUseTarget = null;
-	}}
 	onConfirm={() => {
-		inUseTarget = null;
+		clearCategoryCreateDraft(addKind);
+		discardConfirmOpen = false;
+		addDialogOpen = false;
+		addName = '';
+	}}
+	onSecondary={() => {
+		writeCategoryCreateDraft(addKind, { name: addName });
+		discardConfirmOpen = false;
+		addDialogOpen = false;
+	}}
+/>
+
+<ConfirmDialog
+	open={leaveReorderOpen}
+	title="Discard group order?"
+	description="Leave reorder without saving? Your last saved order stays."
+	confirmLabel="Leave"
+	destructive
+	confirmTestId="category-reorder-leave-confirm"
+	onOpenChange={(next) => (leaveReorderOpen = next)}
+	onConfirm={() => {
+		discardReorder();
+		mode = 'view';
+		leaveReorderOpen = false;
 	}}
 />

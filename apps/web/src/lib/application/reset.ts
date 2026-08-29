@@ -1,5 +1,7 @@
 import { db } from '$lib/data/db';
 import {
+	SETTINGS_CATEGORY_MIGRATED,
+	SETTINGS_CATEGORY_OVERLAY,
 	SETTINGS_ENCRYPTION_ENABLED,
 	SETTINGS_LOCK_SALT,
 	SETTINGS_LOCK_VERIFIER,
@@ -37,13 +39,23 @@ export async function resetLocalData(options: ResetLocalDataOptions): Promise<vo
 	if (options.preserveCategories) {
 		keepKeys.add(SETTINGS_RAW_DEK);
 		keepKeys.add(SETTINGS_ENCRYPTION_ENABLED);
+		keepKeys.add(SETTINGS_CATEGORY_OVERLAY);
+		keepKeys.add(SETTINGS_CATEGORY_MIGRATED);
 	}
 	const preservedSettings =
 		keepKeys.size > 0 ? (await db.settings.toArray()).filter((row) => keepKeys.has(row.key)) : [];
 
 	await db.transaction(
 		'rw',
-		[db.accounts, db.categories, db.transactions, db.goals, db.netWorthSnapshots, db.settings],
+		[
+			db.accounts,
+			db.categories,
+			db.categoryGroups,
+			db.transactions,
+			db.goals,
+			db.netWorthSnapshots,
+			db.settings
+		],
 		async () => {
 			await Promise.all([
 				db.accounts.clear(),
@@ -51,7 +63,7 @@ export async function resetLocalData(options: ResetLocalDataOptions): Promise<vo
 				db.goals.clear(),
 				db.netWorthSnapshots.clear(),
 				db.settings.clear(),
-				...(options.preserveCategories ? [] : [db.categories.clear()])
+				...(options.preserveCategories ? [] : [db.categories.clear(), db.categoryGroups.clear()])
 			]);
 			if (preservedSettings.length > 0) {
 				await db.settings.bulkPut(preservedSettings);

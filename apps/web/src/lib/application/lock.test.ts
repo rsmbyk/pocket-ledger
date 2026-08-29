@@ -4,7 +4,7 @@ import { db } from '$lib/data/db';
 import { SETTINGS_RAW_DEK, SETTINGS_WRAPPED_DEK } from '$lib/data/db';
 import { getSetting } from '$lib/data/settings-repo';
 import { ensureDefaultAccount } from '$lib/application/accounts';
-import { createCategory } from '$lib/application/categories';
+import { listCategories } from '$lib/application/categories';
 import { addTransaction } from '$lib/application/transactions';
 import { clearDataKey } from '$lib/data/session-key';
 import { disableLock, enableLock, ensureLocalDek, isLockEnabled, verifyPassphrase } from './lock';
@@ -35,7 +35,7 @@ describe('lock', () => {
 
 	it('stores a raw DEK when passphrase is off and wraps without rewriting rows', async () => {
 		const account = await ensureDefaultAccount();
-		const food = await createCategory('Food', 'expense');
+		const food = (await listCategories()).find((c) => c.id === 'stock:expense:food')!;
 		await ensureLocalDek();
 		await addTransaction({
 			accountId: account.id,

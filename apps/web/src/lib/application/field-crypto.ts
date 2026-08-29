@@ -56,10 +56,11 @@ export async function openField(
 
 /** Seal every sensitive field currently stored in plaintext. */
 export async function sealAllSensitiveFields(key: CryptoKey): Promise<void> {
-	const [transactions, goals, categories] = await Promise.all([
+	const [transactions, goals, categories, categoryGroups] = await Promise.all([
 		db.transactions.toArray(),
 		db.goals.toArray(),
-		db.categories.toArray()
+		db.categories.toArray(),
+		db.categoryGroups.toArray()
 	]);
 
 	// Crypto work stays outside Dexie transactions (avoids PrematureCommitError).
@@ -72,20 +73,32 @@ export async function sealAllSensitiveFields(key: CryptoKey): Promise<void> {
 	const nextCats = await Promise.all(
 		categories.map(async (cat) => ({ ...cat, name: await sealField(cat.name, key) }))
 	);
+	const nextGroups = await Promise.all(
+		categoryGroups.map(async (group) => ({ ...group, name: await sealField(group.name, key) }))
+	);
 
-	await db.transaction('rw', db.transactions, db.goals, db.categories, async () => {
-		await db.transactions.bulkPut(nextTx);
-		await db.goals.bulkPut(nextGoals);
-		await db.categories.bulkPut(nextCats);
-	});
+	await db.transaction(
+		'rw',
+		db.transactions,
+		db.goals,
+		db.categories,
+		db.categoryGroups,
+		async () => {
+			await db.transactions.bulkPut(nextTx);
+			await db.goals.bulkPut(nextGoals);
+			await db.categories.bulkPut(nextCats);
+			await db.categoryGroups.bulkPut(nextGroups);
+		}
+	);
 }
 
 /** Open every sealed sensitive field back to plaintext. */
 export async function openAllSensitiveFields(key: CryptoKey): Promise<void> {
-	const [transactions, goals, categories] = await Promise.all([
+	const [transactions, goals, categories, categoryGroups] = await Promise.all([
 		db.transactions.toArray(),
 		db.goals.toArray(),
-		db.categories.toArray()
+		db.categories.toArray(),
+		db.categoryGroups.toArray()
 	]);
 
 	const nextTx = await Promise.all(
@@ -97,10 +110,21 @@ export async function openAllSensitiveFields(key: CryptoKey): Promise<void> {
 	const nextCats = await Promise.all(
 		categories.map(async (cat) => ({ ...cat, name: await openField(cat.name, key) }))
 	);
+	const nextGroups = await Promise.all(
+		categoryGroups.map(async (group) => ({ ...group, name: await openField(group.name, key) }))
+	);
 
-	await db.transaction('rw', db.transactions, db.goals, db.categories, async () => {
-		await db.transactions.bulkPut(nextTx);
-		await db.goals.bulkPut(nextGoals);
-		await db.categories.bulkPut(nextCats);
-	});
+	await db.transaction(
+		'rw',
+		db.transactions,
+		db.goals,
+		db.categories,
+		db.categoryGroups,
+		async () => {
+			await db.transactions.bulkPut(nextTx);
+			await db.goals.bulkPut(nextGoals);
+			await db.categories.bulkPut(nextCats);
+			await db.categoryGroups.bulkPut(nextGroups);
+		}
+	);
 }

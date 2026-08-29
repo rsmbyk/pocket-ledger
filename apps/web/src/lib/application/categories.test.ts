@@ -9,14 +9,17 @@ import {
 } from '$lib/application/transactions';
 import {
 	createCategory,
-	isCategoryInUse,
+	createCategoryGroup,
+	hideCategory,
 	listAllCategories,
 	listCategories,
+	listResolvedGroups,
 	removeCategory,
 	renameCategory,
-	reorderCategory,
-	reorderCategories
+	saveCategoryGroupOrder,
+	showCategory
 } from './categories';
+import { putCategory } from '$lib/data/category-repo';
 
 describe('categories application', () => {
 	beforeEach(async () => {
@@ -24,117 +27,144 @@ describe('categories application', () => {
 		await db.open();
 	});
 
-	it('creates and renames a custom category', async () => {
-		await createCategory('Coffee', 'expense');
+	it('resolves the stock catalog without inserting Dexie rows', async () => {
 		const rows = await listCategories();
-		expect(rows.some((c) => c.name === 'Coffee' && c.kind === 'expense')).toBe(true);
+		expect(rows).toHaveLength(139);
+		expect(await db.categories.count()).toBe(0);
+		expect(rows.some((c) => c.id === 'stock:expense:groceries')).toBe(true);
+		expect(rows.find((c) => c.id === 'stock:income:salary')?.icon).toBe('briefcase');
+	});
 
-		const coffee = rows.find((c) => c.name === 'Coffee')!;
+	it('creates a custom category in a group with tag icon', async () => {
+		await createCategory('Warung', 'expense', 'stock-group:food-drink');
+		expect(await db.categories.count()).toBe(1);
+		const food = (await listCategories()).filter((c) => c.groupId === 'stock-group:food-drink');
+		expect(food.at(-1)).toEqual(
+			expect.objectContaining({ name: 'Warung', icon: 'tag', source: 'custom' })
+		);
+	});
+
+	it('rejects custom names that collide with stock', async () => {
+		await expect(createCategory('Groceries', 'expense')).rejects.toThrow(/already exists/i);
+	});
+
+	it('creates and renames a custom category', async () => {
+		await createCategory('Warung', 'expense');
+		const coffee = (await listCategories()).find((c) => c.name === 'Warung')!;
 		await renameCategory(coffee.id, 'Cafe');
 		expect((await listCategories()).some((c) => c.name === 'Cafe')).toBe(true);
+		await expect(renameCategory('stock:expense:groceries', 'Food')).rejects.toThrow(/cannot be renamed/i);
 	});
 
-	it('reports in-use when an active transaction references the category', async () => {
-		const account = await ensureDefaultAccount();
-		const viaTx = await createCategory('Coffee', 'expense');
-		expect(await isCategoryInUse(viaTx.id)).toBe(false);
-		await addTransaction({
-			accountId: account.id,
-			type: 'expense',
-			amountRaw: '15000',
-			categoryId: viaTx.id
-		});
-		expect(await isCategoryInUse(viaTx.id)).toBe(true);
+	it('hides stock and custom without hard-deleting custom rows', async () => {
+		const created = await createCategory('Warung', 'expense');
+		await hideCategory('stock:expense:groceries');
+		await hideCategory(created.id);
+		const picker = await listCategories();
+		expect(picker.some((c) => c.id === 'stock:expense:groceries')).toBe(false);
+		expect(picker.some((c) => c.id === created.id)).toBe(false);
+		expect(await db.categories.get(created.id)).toBeTruthy();
+		const listed = await listAllCategories();
+		expect(listed.find((c) => c.id === created.id)?.hidden).toBe(true);
+		await showCategory(created.id);
+		await showCategory('stock:expense:groceries');
+		expect((await listCategories()).some((c) => c.id === created.id)).toBe(true);
+		expect((await listCategories()).some((c) => c.id === 'stock:expense:groceries')).toBe(true);
 	});
 
-	it('blocks delete when an active transaction uses the category', async () => {
-		const account = await ensureDefaultAccount();
-		const created = await createCategory('Coffee', 'expense');
-		await addTransaction({
-			accountId: account.id,
-			type: 'expense',
-			amountRaw: '15000',
-			categoryId: created.id
+	it('maps a Groceries UUID onto stock and parks Coffee as custom', async () => {
+		const groceriesId = crypto.randomUUID();
+		const coffeeId = crypto.randomUUID();
+		await putCategory({
+			id: groceriesId,
+			name: 'Groceries',
+			kind: 'expense',
+			sortOrder: 0,
+			createdAt: new Date().toISOString(),
+			deletedAt: null,
+			groupId: '',
+			icon: 'tag',
+			hidden: false
 		});
-		await expect(removeCategory(created.id)).rejects.toThrow(/still used/i);
-		expect(await getCategoriesForType('expense')).toEqual(
-			expect.arrayContaining([expect.objectContaining({ id: created.id })])
+		await putCategory({
+			id: coffeeId,
+			name: 'Warung',
+			kind: 'expense',
+			sortOrder: 1,
+			createdAt: new Date().toISOString(),
+			deletedAt: null,
+			groupId: '',
+			icon: 'tag',
+			hidden: false
+		});
+		const account = await ensureDefaultAccount();
+		await db.transactions.put({
+			id: crypto.randomUUID(),
+			accountId: account.id,
+			counterAccountId: null,
+			type: 'expense',
+			amountMinor: 1000,
+			feeMinor: 0,
+			categoryId: groceriesId,
+			note: '',
+			occurredOn: account.openingAsOf,
+			createdAt: new Date().toISOString(),
+			voidedAt: null
+		});
+
+		const cats = await listCategories();
+		expect(cats.some((c) => c.id === groceriesId)).toBe(false);
+		expect(cats.some((c) => c.id === 'stock:expense:groceries')).toBe(true);
+		expect(await db.categories.get(groceriesId)).toBeUndefined();
+		expect((await db.transactions.toArray())[0]?.categoryId).toBe('stock:expense:groceries');
+		const coffee = cats.find((c) => c.name === 'Warung');
+		expect(coffee?.groupId).toBe('stock-group:catch-all');
+		expect(coffee?.icon).toBe('tag');
+	});
+
+	it('appends a custom group last in kind', async () => {
+		await createCategoryGroup('Side', 'expense');
+		const groups = await listResolvedGroups();
+		expect(groups.filter((g) => g.kind === 'expense').at(-1)?.name).toBe('Side');
+	});
+
+	it('persists group order prefs', async () => {
+		const factory = (await listResolvedGroups()).filter((g) => g.kind === 'expense').map((g) => g.id);
+		const swapped = [factory[1]!, factory[0]!, ...factory.slice(2)];
+		await saveCategoryGroupOrder('expense', swapped);
+		expect((await listResolvedGroups()).filter((g) => g.kind === 'expense').map((g) => g.id)).toEqual(
+			swapped
 		);
 	});
 
-	it('soft-deletes when only voided transactions reference the category', async () => {
+	it('hides instead of blocking when a transaction uses the category', async () => {
 		const account = await ensureDefaultAccount();
-		const created = await createCategory('Coffee', 'expense');
-		const tx = await addTransaction({
+		const created = await createCategory('Warung', 'expense');
+		await addTransaction({
 			accountId: account.id,
 			type: 'expense',
 			amountRaw: '15000',
 			categoryId: created.id
 		});
-		await voidTransaction(tx.id);
-		expect(await isCategoryInUse(created.id)).toBe(false);
-
 		await removeCategory(created.id);
-
-		expect(await listCategories()).not.toEqual(
-			expect.arrayContaining([expect.objectContaining({ id: created.id })])
-		);
 		expect(await getCategoriesForType('expense')).not.toEqual(
 			expect.arrayContaining([expect.objectContaining({ id: created.id })])
 		);
-
-		const stored = await db.categories.get(created.id);
-		expect(stored?.deletedAt).toBeTruthy();
-		expect((await listAllCategories()).find((c) => c.id === created.id)?.name).toBe('Coffee');
+		expect(await db.categories.get(created.id)).toBeTruthy();
 	});
 
-	it('hard-deletes unused categories', async () => {
-		const created = await createCategory('Unused', 'expense');
-		await removeCategory(created.id);
-		expect(await db.categories.get(created.id)).toBeUndefined();
-	});
-
-	it('allows recreating a soft-deleted category name', async () => {
+	it('keeps hidden custom names after void-only use', async () => {
 		const account = await ensureDefaultAccount();
-		const created = await createCategory('Coffee', 'expense');
+		const created = await createCategory('Warung', 'expense');
 		const tx = await addTransaction({
 			accountId: account.id,
 			type: 'expense',
-			amountRaw: '1000',
+			amountRaw: '15000',
 			categoryId: created.id
 		});
 		await voidTransaction(tx.id);
 		await removeCategory(created.id);
-
-		const again = await createCategory('Coffee', 'expense');
-		expect(again.id).not.toBe(created.id);
-		expect((await listCategories()).some((c) => c.id === again.id && c.name === 'Coffee')).toBe(
-			true
-		);
-	});
-
-	it('reorders categories within a kind and persists sortOrder', async () => {
-		const a = await createCategory('Alpha', 'expense');
-		const b = await createCategory('Beta', 'expense');
-		expect((await listCategories()).filter((c) => c.kind === 'expense').map((c) => c.name)).toEqual(
-			['Alpha', 'Beta']
-		);
-
-		await reorderCategory(b.id, 'up');
-		const after = await listCategories();
-		expect(after.filter((c) => c.kind === 'expense').map((c) => c.name)).toEqual(['Beta', 'Alpha']);
-		expect(after.find((c) => c.id === b.id)!.sortOrder).toBeLessThan(
-			after.find((c) => c.id === a.id)!.sortOrder
-		);
-	});
-
-	it('reorders categories by ordered ids', async () => {
-		const a = await createCategory('Alpha', 'expense');
-		const b = await createCategory('Beta', 'expense');
-		const c = await createCategory('Gamma', 'expense');
-		await reorderCategories('expense', [c.id, a.id, b.id]);
-		expect(
-			(await listCategories()).filter((row) => row.kind === 'expense').map((row) => row.name)
-		).toEqual(['Gamma', 'Alpha', 'Beta']);
+		expect((await listAllCategories()).find((c) => c.id === created.id)?.name).toBe('Warung');
+		expect((await listCategories()).some((c) => c.id === created.id)).toBe(false);
 	});
 });

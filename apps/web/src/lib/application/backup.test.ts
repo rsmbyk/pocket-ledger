@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '$lib/data/db';
 import { ensureDefaultAccount } from '$lib/application/accounts';
-import { createCategory } from '$lib/application/categories';
+import { createCategory, createCategoryGroup, listCategories } from '$lib/application/categories';
 import { addTransaction, listRecentTransactions } from '$lib/application/transactions';
 import { enableLock, isLockEnabled } from '$lib/application/lock';
 import { clearDataKey } from '$lib/data/session-key';
@@ -26,7 +26,7 @@ describe('backup', () => {
 
 	it('builds and restores a round-trip backup', async () => {
 		const account = await ensureDefaultAccount();
-		const food = await createCategory('Food', 'expense');
+		const food = (await listCategories()).find((c) => c.id === 'stock:expense:food')!;
 		await addTransaction({
 			accountId: account.id,
 			type: 'expense',
@@ -45,6 +45,21 @@ describe('backup', () => {
 		await restoreBackup(backup);
 		expect(await db.transactions.count()).toBe(1);
 		expect((await listRecentTransactions(account.id))[0]?.note).toBe('lunch');
+	});
+
+	it('round-trips custom groups and categories without stock rows', async () => {
+		await ensureDefaultAccount();
+		await createCategoryGroup('Side', 'expense');
+		await createCategory('Warung', 'expense', 'stock-group:food-drink');
+		const backup = await buildBackup();
+		expect(backup.categories).toHaveLength(1);
+		expect(backup.categoryGroups).toHaveLength(1);
+		expect(backup.categories.some((c) => c.id.startsWith('stock:'))).toBe(false);
+
+		await db.categories.clear();
+		await db.categoryGroups.clear();
+		await restoreBackup(backup);
+		expect((await listCategories()).some((c) => c.name === 'Warung')).toBe(true);
 	});
 
 	it('rejects bad JSON, plaintext v1, and wrong versions', () => {
@@ -66,7 +81,7 @@ describe('backup', () => {
 
 	it('ignores legacy recurringRules key on import', async () => {
 		const account = await ensureDefaultAccount();
-		const food = await createCategory('Food', 'expense');
+		const food = (await listCategories()).find((c) => c.id === 'stock:expense:food')!;
 		await addTransaction({
 			accountId: account.id,
 			type: 'expense',
@@ -113,7 +128,7 @@ describe('backup', () => {
 
 	it('round-trips an encrypted envelope and rejects a wrong file passphrase', async () => {
 		const account = await ensureDefaultAccount();
-		const food = await createCategory('Food', 'expense');
+		const food = (await listCategories()).find((c) => c.id === 'stock:expense:food')!;
 		await addTransaction({
 			accountId: account.id,
 			type: 'expense',

@@ -1,4 +1,9 @@
-import { countCategories, listCategories, listCategoriesByKind } from '$lib/data/category-repo';
+import {
+	ensureCategoryCatalog,
+	listAllCategories,
+	listCategories,
+	listCategoriesByKind
+} from '$lib/application/categories';
 import {
 	getTransaction,
 	listAllTransactions,
@@ -44,24 +49,15 @@ function createId(): string {
 	return crypto.randomUUID();
 }
 
-async function revealCategories(rows: CategoryRow[]): Promise<CategoryRow[]> {
-	return Promise.all(
-		rows.map(async (c) => ({
-			...c,
-			name: await openField(c.name)
-		}))
-	);
-}
-
-/** Lists categories; never auto-inserts defaults when empty (spec 025). */
+/** Resolves the overlay catalog; never inserts stock rows (spec 123). */
 export async function ensureSeedCategories(): Promise<CategoryRow[]> {
-	if ((await countCategories()) === 0) return [];
-	return revealCategories(await listCategories());
+	await ensureCategoryCatalog();
+	return listCategories();
 }
 
 export async function getCategoriesForType(type: AddableTransactionType): Promise<CategoryRow[]> {
-	await ensureSeedCategories();
-	return revealCategories(await listCategoriesByKind(type));
+	await ensureCategoryCatalog();
+	return listCategoriesByKind(type);
 }
 
 export async function addTransaction(input: AddTransactionInput): Promise<LedgerTransaction> {
@@ -132,7 +128,8 @@ export async function updateTransaction(input: UpdateTransactionInput): Promise<
 
 	const categoryId = await resolveCategoryId(
 		existing.type as AddableTransactionType,
-		input.categoryId
+		input.categoryId,
+		existing.categoryId
 	);
 
 	const notePlain = (input.note ?? '').trim();
@@ -180,16 +177,20 @@ export async function updateTransfer(input: UpdateTransferInput): Promise<Ledger
 
 async function resolveCategoryId(
 	type: AddableTransactionType,
-	raw: string | null | undefined
+	raw: string | null | undefined,
+	allowHiddenId?: string | null
 ): Promise<string | null> {
 	const trimmed = (raw ?? '').trim();
 	if (!trimmed) return null;
 	const categories = await getCategoriesForType(type);
-	const category = categories.find((c) => c.id === trimmed);
-	if (!category) {
-		throw new Error('Choose a category for this type');
+	const visible = categories.find((c) => c.id === trimmed);
+	if (visible) return visible.id;
+	if (allowHiddenId && allowHiddenId === trimmed) {
+		const all = await listAllCategories();
+		const hidden = all.find((c) => c.id === trimmed && c.kind === type);
+		if (hidden) return hidden.id;
 	}
-	return category.id;
+	throw new Error('Choose a category for this type');
 }
 
 /** Irreversibly void a transaction (keeps the row; excludes from balances). */
