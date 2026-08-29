@@ -61,7 +61,7 @@ test.describe('123 overlay catalog / 124 categories chrome', () => {
 		await page.getByTestId('category-add').click();
 		await expect(categoryChip(page, 'Warung')).toBeVisible();
 		await expect(
-			page.getByTestId('category-group-stock-group:food-drink').getByRole('button', { name: 'Add' })
+			page.getByTestId('category-group-stock-group:food-drink').getByRole('button', { name: 'Add', exact: true })
 		).toHaveCount(0);
 
 		await openAdd(page);
@@ -127,7 +127,7 @@ test.describe('123 overlay catalog / 124 categories chrome', () => {
 		const warung = categoryChip(page, 'Warung');
 		await warung.hover();
 		await warung.getByTestId('category-edit-name').click();
-		await page.getByLabel('Name for Warung').fill('Warung kopi');
+		await page.getByRole('textbox', { name: 'Name for Warung' }).fill('Warung kopi');
 		await page.getByTestId('category-save-name').click();
 		await expect(categoryChip(page, 'Warung kopi')).toBeVisible();
 		const groceries = categoryChip(page, 'Groceries');

@@ -564,10 +564,11 @@
 
 	<div
 		class={[
-			'mx-auto flex w-full flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8',
-			activityStageWide || route === 'categories' ? 'max-w-none' : 'max-w-3xl',
+			'mx-auto flex w-full flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8 max-w-3xl',
+			'data-[stage=wide]:max-w-none!',
 			route === 'categories' && 'h-full min-h-0 overflow-hidden pb-4 md:pb-6'
 		]}
+		data-stage={route === 'categories' || activityStageWide ? 'wide' : 'narrow'}
 		data-testid="app-stage"
 	>
 		{#if route === 'home'}

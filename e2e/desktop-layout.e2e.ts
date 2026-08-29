@@ -91,6 +91,7 @@ test.describe('013 desktop layout', () => {
 		await expect(page.getByTestId('home-panel')).toBeVisible();
 		const homeWidth = await page.getByTestId('app-stage').evaluate((el) => el.getBoundingClientRect().width);
 		await goToNav(page, 'categories');
+		await expect(page.getByTestId('categories-panel')).toBeVisible();
 		const categoriesWidth = await page
 			.getByTestId('app-stage')
 			.evaluate((el) => el.getBoundingClientRect().width);
