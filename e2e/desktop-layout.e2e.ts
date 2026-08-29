@@ -74,38 +74,50 @@ test.describe('013 desktop layout', () => {
 		await expect(sheet.getByTestId('nav-add')).toHaveCount(0);
 	});
 
-	test('desktop categories split into two columns', async ({ page }) => {
+	test('categories shows one kind at a time on a wide viewport', async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 800 });
 		await page.goto('/');
 		await goToNav(page, 'categories');
 		await expect(page.getByTestId('page-title')).toHaveText('Categories');
 		await expect(page.getByTestId('categories-desktop-grid')).toBeVisible();
-		await expect(page.getByTestId('category-list-expense')).toBeVisible();
 		await expect(page.getByTestId('category-list-income')).toBeVisible();
+		await expect(page.getByTestId('category-list-expense')).toHaveCount(0);
+		await expect(page.getByTestId('category-kind-tabs')).toBeVisible();
+	});
+
+	test('categories uses the full inset width', async ({ page }) => {
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await page.goto('/');
+		await expect(page.getByTestId('home-panel')).toBeVisible();
+		const homeWidth = await page.getByTestId('app-stage').evaluate((el) => el.getBoundingClientRect().width);
+		await goToNav(page, 'categories');
+		const categoriesWidth = await page
+			.getByTestId('app-stage')
+			.evaluate((el) => el.getBoundingClientRect().width);
+		expect(categoriesWidth).toBeGreaterThan(homeWidth + 40);
 	});
 
 	test('categories stays viewport-tall instead of lengthening the document', async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 800 });
 		await page.goto('/categories');
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
+		await page.getByTestId('category-kind-expense').click();
 		await expect(page.getByTestId('category-chip').first()).toBeVisible();
 
 		const metrics = await page.evaluate(() => {
-			const expense = document.querySelector('[data-testid="category-list-expense"]');
-			const scrollParent = expense?.closest('[class*="overflow-y-auto"]');
+			const grid = document.querySelector('[data-testid="categories-desktop-grid"]');
+			const tabs = document.querySelector('[data-testid="category-kind-tabs"]');
 			return {
 				docOverflow: document.documentElement.scrollHeight - window.innerHeight,
-				panelBottom: document.querySelector('[data-testid="categories-panel"]')?.getBoundingClientRect()
-					.bottom,
-				expenseScrollable: Boolean(
-					scrollParent && scrollParent.scrollHeight > scrollParent.clientHeight + 8
-				)
+				tabsBottom: tabs?.getBoundingClientRect().bottom ?? 0,
+				gridScrollable: Boolean(grid && grid.scrollHeight > grid.clientHeight + 8)
 			};
 		});
 
 		expect(metrics.docOverflow).toBeLessThanOrEqual(8);
-		expect(metrics.panelBottom).toBeLessThanOrEqual(800 + 8);
-		expect(metrics.expenseScrollable).toBe(true);
+		expect(metrics.tabsBottom).toBeGreaterThan(0);
+		expect(metrics.tabsBottom).toBeLessThanOrEqual(800);
+		expect(metrics.gridScrollable).toBe(true);
 	});
 
 	test('command palette navigates and opens add', async ({ page }) => {

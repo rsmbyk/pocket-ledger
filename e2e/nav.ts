@@ -77,7 +77,17 @@ export function categoryChip(page: Page, name: string): Locator {
 	return page.getByTestId('category-chip').filter({ has: page.getByText(name, { exact: true }) });
 }
 
-/** Create a custom category via the group add chip, or no-op when the name is stock. */
+/** Switch Categories Income | Expenses tab. */
+export async function selectCategoriesKind(
+	page: Page,
+	kind: 'expense' | 'income'
+): Promise<void> {
+	const tab = page.getByTestId(kind === 'expense' ? 'category-kind-expense' : 'category-kind-income');
+	await tab.click();
+	await expect(tab).toHaveAttribute('aria-selected', 'true');
+}
+
+/** Create a custom category via the group header plus, or no-op when the name is stock. */
 export async function ensureCategory(
 	page: Page,
 	name: string,
@@ -85,10 +95,10 @@ export async function ensureCategory(
 ): Promise<void> {
 	await page.goto('/categories');
 	await expect(page.getByTestId('categories-panel')).toBeVisible();
+	await selectCategoriesKind(page, kind);
 	const chip = categoryChip(page, name);
 	if ((await chip.count()) === 0) {
-		const list = page.getByTestId(kind === 'expense' ? 'category-list-expense' : 'category-list-income');
-		const add = list.getByTestId('category-add-in-group').last();
+		const add = page.getByTestId('category-add-in-group').last();
 		await add.scrollIntoViewIfNeeded();
 		await add.click();
 		await expect(page.getByTestId('category-name-input')).toBeVisible();
@@ -101,10 +111,10 @@ export async function ensureCategory(
 	await expect(page.getByTestId('home-panel')).toBeVisible();
 }
 
-/** Open the add-category dialog from a kind column's first group chip. */
+/** Open the add-category dialog from the selected kind's first group plus. */
 export async function openAddCategory(page: Page, kind: 'expense' | 'income'): Promise<void> {
-	const list = page.getByTestId(kind === 'expense' ? 'category-list-expense' : 'category-list-income');
-	const add = list.getByTestId('category-add-in-group').first();
+	await selectCategoriesKind(page, kind);
+	const add = page.getByTestId('category-add-in-group').first();
 	await add.scrollIntoViewIfNeeded();
 	await add.click();
 	await expect(page.getByTestId('category-add-dialog')).toBeVisible();
