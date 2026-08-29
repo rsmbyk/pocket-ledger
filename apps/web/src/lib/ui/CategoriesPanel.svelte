@@ -450,7 +450,7 @@
 								{#each row.categories as cat (cat.id)}
 									<li
 										class={cn(
-											'group border-border relative flex items-center gap-1 rounded-lg border bg-background px-2 py-1 text-sm transition',
+											'group/chip border-border relative flex items-center gap-1 rounded-lg border bg-background px-2 py-1 text-sm transition',
 											cat.hidden
 												? 'opacity-60 shadow-none'
 												: 'shadow-sm -translate-y-px',
@@ -514,7 +514,7 @@
 										{:else}
 											<span class="max-w-36 truncate">{cat.name}</span>
 											<span
-												class="flex items-center gap-0.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+												class="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/chip:opacity-100 group-focus-within/chip:opacity-100"
 											>
 												{#if cat.source === 'custom'}
 													<Button
