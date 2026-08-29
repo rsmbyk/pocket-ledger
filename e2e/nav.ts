@@ -100,3 +100,12 @@ export async function ensureCategory(
 	await page.goto('/');
 	await expect(page.getByTestId('home-panel')).toBeVisible();
 }
+
+/** Open the add-category dialog from a kind column's first group chip. */
+export async function openAddCategory(page: Page, kind: 'expense' | 'income'): Promise<void> {
+	const list = page.getByTestId(kind === 'expense' ? 'category-list-expense' : 'category-list-income');
+	const add = list.getByTestId('category-add-in-group').first();
+	await add.scrollIntoViewIfNeeded();
+	await add.click();
+	await expect(page.getByTestId('category-add-dialog')).toBeVisible();
+}

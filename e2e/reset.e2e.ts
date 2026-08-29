@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
+import { categoryChip, ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
 
 test.describe('024 reset everything', () => {
 	test('wipes transactions and can keep categories', async ({ page }) => {
@@ -24,6 +24,6 @@ test.describe('024 reset everything', () => {
 
 		await page.goto('/categories');
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
-		await expect(page.getByRole('textbox', { name: 'Name for Food' })).toBeVisible();
+		await expect(categoryChip(page, 'Food')).toBeVisible();
 	});
 });
