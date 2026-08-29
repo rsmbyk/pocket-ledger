@@ -84,6 +84,30 @@ test.describe('013 desktop layout', () => {
 		await expect(page.getByTestId('category-list-income')).toBeVisible();
 	});
 
+	test('categories stays viewport-tall instead of lengthening the document', async ({ page }) => {
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await page.goto('/categories');
+		await expect(page.getByTestId('categories-panel')).toBeVisible();
+		await expect(page.getByTestId('category-chip').first()).toBeVisible();
+
+		const metrics = await page.evaluate(() => {
+			const expense = document.querySelector('[data-testid="category-list-expense"]');
+			const scrollParent = expense?.closest('[class*="overflow-y-auto"]');
+			return {
+				docOverflow: document.documentElement.scrollHeight - window.innerHeight,
+				panelBottom: document.querySelector('[data-testid="categories-panel"]')?.getBoundingClientRect()
+					.bottom,
+				expenseScrollable: Boolean(
+					scrollParent && scrollParent.scrollHeight > scrollParent.clientHeight + 8
+				)
+			};
+		});
+
+		expect(metrics.docOverflow).toBeLessThanOrEqual(8);
+		expect(metrics.panelBottom).toBeLessThanOrEqual(800 + 8);
+		expect(metrics.expenseScrollable).toBe(true);
+	});
+
 	test('command palette navigates and opens add', async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 800 });
 		await page.goto('/');

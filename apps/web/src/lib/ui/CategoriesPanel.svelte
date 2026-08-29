@@ -221,8 +221,8 @@
 	} as const;
 </script>
 
-<div class="space-y-4" data-testid="categories-panel">
-	<div class="flex flex-wrap items-center justify-end gap-2">
+<div class="flex min-h-0 flex-1 flex-col gap-3" data-testid="categories-panel">
+	<div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
 		{#if mode === 'reorder'}
 			<Button
 				type="button"
@@ -304,7 +304,10 @@
 		<p class="text-destructive text-sm" role="alert">{error}</p>
 	{/if}
 
-	<div class="grid gap-4 md:grid-cols-2 md:items-start" data-testid="categories-desktop-grid">
+	<div
+		class="grid min-h-0 flex-1 gap-4 overflow-y-auto overscroll-contain md:grid-cols-2 md:grid-rows-1 md:overflow-hidden"
+		data-testid="categories-desktop-grid"
+	>
 		{#each (['income', 'expense'] as const) as kind (kind)}
 			{@const meta = kindMeta[kind]}
 			{@const kindGroups =
@@ -313,10 +316,10 @@
 						? incomeGroupItems
 						: expenseGroupItems
 					: groups.filter((g) => g.kind === kind)}
-			<Card.Root class={cn('gap-0 overflow-hidden py-0', meta.cardClass)}>
+			<Card.Root class={cn('flex min-h-0 flex-col gap-0 overflow-hidden py-0 md:h-full', meta.cardClass)}>
 				<Card.Header
 					class={cn(
-						'flex flex-row items-center justify-between gap-2 space-y-0 border-b px-4 pt-2 !pb-2',
+						'flex shrink-0 flex-row items-center justify-between gap-2 space-y-0 border-b px-4 pt-2 !pb-2',
 						meta.headerClass
 					)}
 				>
@@ -329,7 +332,7 @@
 						<Card.Title class="text-base">{meta.title}</Card.Title>
 					</div>
 				</Card.Header>
-				<Card.Content class="p-0">
+				<Card.Content class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-0">
 					<div data-testid={meta.listTestId} data-kind={kind}>
 						{#if mode === 'reorder'}
 							<ul
@@ -363,18 +366,18 @@
 								{/each}
 							</ul>
 						{:else}
-							<div class="space-y-4 p-3">
+							<div class="space-y-3 p-3">
 								{#each kindGroups as group (group.id)}
 									{@const items = catsInGroup(group.id)}
 									<section data-testid={`category-group-${group.id}`}>
-										<h3 class="text-muted-foreground mb-2 text-xs font-medium tracking-wide">
+										<h3 class="text-muted-foreground mb-1.5 text-xs font-medium tracking-wide">
 											{group.name}
 										</h3>
-										<ul class="m-0 flex list-none flex-col gap-1.5 p-0">
+										<ul class="m-0 flex list-none flex-col gap-1 p-0">
 											{#each items as cat (cat.id)}
 												<li
 													class={cn(
-														'border-border flex items-center gap-2 rounded-md border px-2 py-1.5',
+														'border-border flex items-center gap-2 rounded-md border px-2 py-1',
 														cat.hidden && 'opacity-60'
 													)}
 													data-testid="category-chip"

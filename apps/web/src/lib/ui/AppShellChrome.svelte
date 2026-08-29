@@ -521,7 +521,7 @@
 	</Sidebar.Content>
 </Sidebar.Root>
 
-<Sidebar.Inset>
+<Sidebar.Inset class={route === 'categories' ? 'h-svh min-h-0 overflow-hidden' : undefined}>
 	<header
 		class="bg-background sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4 md:px-6"
 	>
@@ -565,7 +565,8 @@
 	<div
 		class={[
 			'mx-auto flex w-full flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8',
-			activityStageWide ? 'max-w-none' : 'max-w-3xl'
+			activityStageWide ? 'max-w-none' : 'max-w-3xl',
+			route === 'categories' && 'min-h-0 overflow-hidden pb-4 md:pb-6'
 		]}
 		data-testid="app-stage"
 	>
