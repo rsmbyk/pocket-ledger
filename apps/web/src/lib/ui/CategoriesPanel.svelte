@@ -316,7 +316,7 @@
 						? incomeGroupItems
 						: expenseGroupItems
 					: groups.filter((g) => g.kind === kind)}
-			<Card.Root class={cn('flex min-h-0 flex-col gap-0 overflow-hidden py-0 md:h-full', meta.cardClass)}>
+			<Card.Root class={cn('flex max-h-full min-h-0 flex-col gap-0 overflow-hidden py-0 md:h-full', meta.cardClass)}>
 				<Card.Header
 					class={cn(
 						'flex shrink-0 flex-row items-center justify-between gap-2 space-y-0 border-b px-4 pt-2 !pb-2',

@@ -178,7 +178,13 @@
 	}
 </script>
 
-<div class="text-foreground bg-background flex min-h-svh flex-col" data-testid="app-shell">
+<div
+	class={[
+		'text-foreground bg-background flex min-h-svh flex-col',
+		route === 'categories' && 'h-svh overflow-hidden'
+	]}
+	data-testid="app-shell"
+>
 	{#if error}
 		<main class="mx-auto w-full max-w-3xl px-6 py-8">
 			<Card.Root class="border-destructive/40">
@@ -198,7 +204,7 @@
 			</Card.Root>
 		</main>
 	{:else}
-		<Sidebar.Provider class="min-h-svh">
+		<Sidebar.Provider class={route === 'categories' ? 'h-svh min-h-0 overflow-hidden' : 'min-h-svh'}>
 			<AppShellChrome
 				{account}
 				{accounts}
