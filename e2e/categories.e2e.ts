@@ -269,7 +269,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await selectCategoriesKind(page, 'expense');
 		const groceries = categoryChip(page, 'Groceries');
 		await groceries.scrollIntoViewIfNeeded();
-		await longPress(groceries);
+		await longPress(groceries.getByRole('button', { name: 'Hide Groceries' }));
 		await expect(groceries).not.toHaveAttribute('data-hidden', 'true');
 		await expect(page.getByRole('textbox', { name: 'Name for Groceries' })).toHaveCount(0);
 	});

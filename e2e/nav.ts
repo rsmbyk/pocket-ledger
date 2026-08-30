@@ -2,15 +2,30 @@ import { expect, type Locator, type Page } from '@playwright/test';
 
 /** Hold the primary button on a locator's center (Spec 126 long-press). */
 export async function longPress(locator: Locator, holdMs = 600): Promise<void> {
-	const box = await locator.boundingBox();
-	if (!box) throw new Error('longPress: locator has no bounding box');
-	const page = locator.page();
-	const x = box.x + box.width / 2;
-	const y = box.y + box.height / 2;
-	await page.mouse.move(x, y);
-	await page.mouse.down();
-	await page.waitForTimeout(holdMs);
-	await page.mouse.up();
+	await locator.evaluate((el, ms) => {
+		const rect = el.getBoundingClientRect();
+		const clientX = rect.left + rect.width / 2;
+		const clientY = rect.top + rect.height / 2;
+		const opts: PointerEventInit = {
+			bubbles: true,
+			cancelable: true,
+			button: 0,
+			buttons: 1,
+			clientX,
+			clientY,
+			pointerId: 1,
+			pointerType: 'touch'
+		};
+		el.dispatchEvent(new PointerEvent('pointerdown', opts));
+		return new Promise<void>((resolve) => {
+			window.setTimeout(() => {
+				el.dispatchEvent(
+					new PointerEvent('pointerup', { ...opts, buttons: 0 })
+				);
+				resolve();
+			}, ms);
+		});
+	}, holdMs);
 }
 
 /** Navigate via the app drawer (desktop rail) or overlay sheet (mobile). */
