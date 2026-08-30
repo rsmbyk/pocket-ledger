@@ -645,17 +645,16 @@
 												<span class="min-w-0 flex-1 truncate pr-1">{cat.name}</span>
 											</button>
 											{#if cat.source === 'custom'}
-												<Button
-													size="icon-xs"
-													variant="outline"
+												<button
+													type="button"
 													class="sr-only"
 													aria-label={`Edit ${cat.name}`}
 													data-testid="category-edit-name"
 													disabled={busy}
 													onclick={() => startRename(cat)}
 												>
-													<PencilIcon class="size-3.5" />
-												</Button>
+													Edit {cat.name}
+												</button>
 											{/if}
 										{:else}
 											<CategoryIcon slug={cat.icon} />
