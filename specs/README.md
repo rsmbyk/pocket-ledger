@@ -6,7 +6,7 @@ Living behavior contracts for Pocket Ledger.
 
 1. Spec **before** implementation for user-visible behavior or money rules.
 2. Use the [template](_template.md) (or `spec.md` inside a slice folder).
-3. Number specs: `000-scaffold.md`, `001-…`. From **047** onward use a folder: `NNN-slug/{plan,spec,tasks}.md`.
+3. Number specs: `000-scaffold.md`, `001-…`. From **047** onward use a folder: `NNN-slug/{plan,spec,tasks}.md`. IDs are **consecutive** — never skip a number (if two concerns merge into one spec, the next slice still uses the next integer).
 4. Keep acceptance scenarios in Given / When / Then.
 5. Link Vitest and Playwright files under **Traceability**; tasks list those paths for TDD.
 6. Update the spec in the same PR as behavior changes.
@@ -144,3 +144,8 @@ Living behavior contracts for Pocket Ledger.
 | [125](125-categories-reorder-session-chrome/spec.md)   | Categories reorder session and chrome                        | Accepted                                                                     |
 | [126](126-categories-mobile-chrome-tap-hide/spec.md)   | Categories mobile chrome, tap-to-hide, long-press edit       | Accepted                                                                     |
 | [127](127-categories-reorder-drop-between/spec.md)     | Categories reorder drop-between                              | Accepted                                                                     |
+| [128](128-categories-stage-grid/spec.md)               | Categories stage-width grid                                  | Draft                                                                        |
+| [129](129-categories-toolbar-full-width/spec.md)        | Categories toolbar full width on small screens               | Draft                                                                        |
+| [130](130-picker-search-group-label/spec.md)            | CategoryPicker search matches group labels                   | Draft                                                                        |
+| [131](131-group-header-actions/spec.md)                 | Categories group header actions                              | Draft                                                                        |
+| [132](132-activity-filter-used-categories/spec.md)      | Activity category filter used-only                           | Draft                                                                        |

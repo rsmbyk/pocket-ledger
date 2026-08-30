@@ -14,7 +14,7 @@ Every behavior change follows this loop. Agents and humans both use it.
 ### Spec layout
 
 - **000–046:** flat files `specs/NNN-….md` (historical).
-- **047 onward:** one folder per slice — `specs/NNN-slug/{plan,spec,tasks}.md` — so plan, contract, and checklist stay together.
+- **047 onward:** one folder per slice — `specs/NNN-slug/{plan,spec,tasks}.md` — so plan, contract, and checklist stay together. Spec IDs are **consecutive**. If two concerns merge into one spec, do not skip the unused number — the next slice takes the next integer.
 
 Playwright covers acceptance; Vitest covers domain/use-case rules. Tasks must name the Vitest/Playwright paths used for red→green.
 
