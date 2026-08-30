@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '$lib/data/db';
 import { ensureDefaultAccount } from '$lib/application/accounts';
-import { createCategory } from '$lib/application/categories';
+import { listCategories } from '$lib/application/categories';
 import { addTransaction, listRecentTransactions } from '$lib/application/transactions';
 import { disableLock, enableLock, unlockWithPassphrase } from '$lib/application/lock';
 import { CIPHER_PREFIX, isSealed } from '$lib/application/field-crypto';
@@ -17,7 +17,7 @@ describe('field encryption', () => {
 
 	it('seals notes at rest when lock is enabled and reveals after unlock', async () => {
 		const account = await ensureDefaultAccount();
-		const food = await createCategory('Food', 'expense');
+		const food = (await listCategories()).find((c) => c.id === 'stock:expense:food')!;
 		await addTransaction({
 			accountId: account.id,
 			type: 'expense',

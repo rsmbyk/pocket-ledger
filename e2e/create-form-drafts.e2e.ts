@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
+import { ensureCategory, goToNav, openAdd, openAddCategory, selectTxCategory } from './nav';
 
 test.describe('Create-form draft on discard (104)', () => {
 	test.beforeEach(async ({ page }) => {
@@ -103,26 +103,25 @@ test.describe('Create-form draft on discard (104)', () => {
 		await page.goto('/categories');
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
 
-		await page.getByTestId('category-add-expense').click();
-		await expect(page.getByTestId('category-add-dialog')).toBeVisible();
+		await openAddCategory(page, 'expense');
 		await page.getByTestId('category-name-input').fill('Draft Expense');
 		await page.getByRole('button', { name: 'Cancel' }).click();
 		await expect(page.getByTestId('category-discard-confirm')).toBeVisible();
 		await page.getByTestId('category-discard-save-draft').click();
 
-		await page.getByTestId('category-add-income').click();
+		await openAddCategory(page, 'income');
 		await expect(page.getByTestId('category-name-input')).toHaveValue('');
 		await page.getByTestId('category-name-input').fill('Draft Income');
 		await page.getByRole('button', { name: 'Cancel' }).click();
 		await page.getByTestId('category-discard-save-draft').click();
 
-		await page.getByTestId('category-add-expense').click();
+		await openAddCategory(page, 'expense');
 		await expect(page.getByTestId('category-name-input')).toHaveValue('Draft Expense');
 		await page.getByRole('button', { name: 'Cancel' }).click();
 		await expect(page.getByTestId('category-discard-confirm')).toBeVisible();
 		await page.getByTestId('category-discard-confirm').click();
 
-		await page.getByTestId('category-add-income').click();
+		await openAddCategory(page, 'income');
 		await expect(page.getByTestId('category-name-input')).toHaveValue('Draft Income');
 		await page.getByRole('button', { name: 'Cancel' }).click();
 		await page.getByTestId('category-discard-confirm').click();

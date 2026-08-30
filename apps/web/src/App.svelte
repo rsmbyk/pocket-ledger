@@ -16,7 +16,6 @@
 	} from '$lib/application/accounts';
 	import {
 		getAllPocketsBalance,
-		getCategoriesForType,
 		listRecentTransactions
 	} from '$lib/application/transactions';
 	import { loadMonthSummary } from '$lib/application/month-summary';
@@ -35,16 +34,11 @@
 		lockSession,
 		unlockWithPassphrase
 	} from '$lib/application/lock';
-	import {
-		createCategory,
-		listAllCategories,
-		removeCategory,
-		renameCategory,
-		reorderCategories
-	} from '$lib/application/categories';
+	import { listAllCategories, listResolvedGroups } from '$lib/application/categories';
 	import type { Account } from '$lib/domain/account';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
+	import type { OverlayGroup } from '$lib/domain/category-overlay';
 	import {
 		canShiftMonth,
 		currentMonthKey,
@@ -106,6 +100,7 @@
 	let categoriesById = $state<Record<string, CategoryRow>>({});
 	let expenseCategories = $state<CategoryRow[]>([]);
 	let incomeCategories = $state<CategoryRow[]>([]);
+	let categoryGroups = $state<OverlayGroup[]>([]);
 	let monthKey = $state<MonthKey>(currentMonthKey());
 	let monthSummary = $state<MonthSummary | null>(null);
 	let monthBounds = $state<MonthBounds | null>(null);
@@ -132,14 +127,13 @@
 	let canNextMonth = $derived(monthBounds ? canShiftMonth(monthKey, 1, monthBounds) : false);
 
 	async function refreshLedger(active: Account, key: MonthKey = monthKey) {
-		const [overview, balance, recent, allCategories, monthLoad, exp, inc] = await Promise.all([
+		const [overview, balance, recent, allCategories, monthLoad, groups] = await Promise.all([
 			getAccountsOverview(),
 			getAllPocketsBalance(),
 			listRecentTransactions(active.id),
 			listAllCategories(),
 			loadMonthSummary(active.id, key),
-			getCategoriesForType('expense'),
-			getCategoriesForType('income')
+			listResolvedGroups()
 		]);
 		accounts = overview.accounts;
 		isSinglePot = overview.isSinglePot;
@@ -149,8 +143,9 @@
 		monthKey = monthLoad.monthKey;
 		monthBounds = monthLoad.bounds;
 		monthSummary = monthLoad.summary;
-		expenseCategories = exp;
-		incomeCategories = inc;
+		categoryGroups = groups;
+		expenseCategories = allCategories.filter((c) => c.kind === 'expense' && !c.hidden);
+		incomeCategories = allCategories.filter((c) => c.kind === 'income' && !c.hidden);
 	}
 
 	async function bootstrap() {
@@ -449,6 +444,7 @@
 		{canNextMonth}
 		{expenseCategories}
 		{incomeCategories}
+		{categoryGroups}
 		{lockEnabled}
 		{signedIn}
 		{themePreference}
@@ -470,22 +466,6 @@
 		onLockSession={() => {
 			lockSession();
 			unlocked = false;
-		}}
-		onCreateCategory={async (name, kind) => {
-			await createCategory(name, kind);
-			await onRefreshLedger();
-		}}
-		onRenameCategory={async (id, name) => {
-			await renameCategory(id, name);
-			await onRefreshLedger();
-		}}
-		onDeleteCategory={async (id) => {
-			await removeCategory(id);
-			await onRefreshLedger();
-		}}
-		onReorderCategories={async (kind, orderedIds) => {
-			await reorderCategories(kind, orderedIds);
-			await onRefreshLedger();
 		}}
 		onCreatePocket={async (input: CreatePocketInput) => {
 			await createPocket(input);

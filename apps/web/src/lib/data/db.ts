@@ -13,8 +13,19 @@ export type CategoryRow = {
 	kind: 'income' | 'expense';
 	sortOrder: number;
 	createdAt: string;
-	/** ISO timestamp when soft-deleted; null = active (spec 103). */
+	/** Legacy soft-delete; overlay hide uses `hidden` (spec 123). */
 	deletedAt: string | null;
+	groupId: string;
+	icon: string;
+	hidden: boolean;
+	source?: 'stock' | 'custom';
+};
+
+export type CategoryGroupRow = {
+	id: string;
+	name: string;
+	kind: 'income' | 'expense';
+	createdAt: string;
 };
 
 export type SettingsRow = {
@@ -30,6 +41,7 @@ export type SyncRevRow = {
 export class PocketLedgerDb extends Dexie {
 	accounts!: EntityTable<Account, 'id'>;
 	categories!: EntityTable<CategoryRow, 'id'>;
+	categoryGroups!: EntityTable<CategoryGroupRow, 'id'>;
 	transactions!: EntityTable<LedgerTransaction, 'id'>;
 	settings!: EntityTable<SettingsRow, 'key'>;
 	goals!: EntityTable<Goal, 'id'>;
@@ -223,6 +235,30 @@ export class PocketLedgerDb extends Dexie {
 			netWorthSnapshots: 'id, capturedOn',
 			syncRevs: 'id'
 		});
+		this.version(8)
+			.stores({
+				accounts: 'id, name, sortOrder, isMain',
+				categories: 'id, kind, name, sortOrder, deletedAt, groupId, hidden',
+				categoryGroups: 'id, kind',
+				transactions: 'id, accountId, type, occurredOn, categoryId',
+				settings: 'key',
+				goals: 'id, name',
+				netWorthSnapshots: 'id, capturedOn',
+				syncRevs: 'id'
+			})
+			.upgrade(async (tx) => {
+				const table = tx.table('categories');
+				const rows = (await table.toArray()) as Array<Record<string, unknown>>;
+				for (const row of rows) {
+					await table.put({
+						...row,
+						groupId: typeof row.groupId === 'string' ? row.groupId : '',
+						icon: typeof row.icon === 'string' && row.icon ? row.icon : 'tag',
+						hidden: row.hidden === true,
+						deletedAt: typeof row.deletedAt === 'string' && row.deletedAt ? row.deletedAt : null
+					});
+				}
+			});
 	}
 }
 
@@ -238,3 +274,5 @@ export const SETTINGS_IDLE_LEAVE_TAB = 'idle.leaveTab';
 export const SETTINGS_LOCKOUT = 'lock.lockout';
 export const SETTINGS_WRAP_REV = 'cloud.wrapRev';
 export const SETTINGS_WEBAUTHN = 'lock.webauthn';
+export const SETTINGS_CATEGORY_OVERLAY = 'category.overlayPrefs';
+export const SETTINGS_CATEGORY_MIGRATED = 'category.catalogMigrated';

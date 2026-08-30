@@ -24,7 +24,7 @@ describe('resetLocalData', () => {
 
 	it('always wipes txs goals snapshots; recreates Main', async () => {
 		const account = await ensureDefaultAccount();
-		const food = await createCategory('Food', 'expense');
+		const food = (await listCategories()).find((c) => c.id === 'stock:expense:food')!;
 		await addTransaction({
 			accountId: account.id,
 			type: 'expense',
@@ -44,13 +44,14 @@ describe('resetLocalData', () => {
 		expect(await listRecentTransactions((await ensureDefaultAccount()).id)).toHaveLength(0);
 		expect(await listGoals()).toHaveLength(0);
 		expect(await listNetWorthSnapshots()).toHaveLength(0);
-		expect(await listCategories()).toHaveLength(0);
+		expect(await db.categories.count()).toBe(0);
+		expect(await listCategories()).toHaveLength(139);
 		expect(await isLockEnabled()).toBe(false);
 	});
 
 	it('can preserve categories and passphrase settings', async () => {
 		const account = await ensureDefaultAccount();
-		const food = await createCategory('Food', 'expense');
+		const food = await createCategory('Warung', 'expense');
 		await addTransaction({
 			accountId: account.id,
 			type: 'expense',
@@ -65,21 +66,21 @@ describe('resetLocalData', () => {
 		expect(await isLockEnabled()).toBe(true);
 		expect(await unlockWithPassphrase('secret-pass')).toBe(true);
 		const cats = await listCategories();
-		expect(cats.some((c) => c.name === 'Food')).toBe(true);
+		expect(cats.some((c) => c.name === 'Warung')).toBe(true);
 		expect(await listRecentTransactions((await ensureDefaultAccount()).id)).toHaveLength(0);
 	});
 
 	it('keeps category names readable when preserving categories without the passphrase lock', async () => {
 		await ensureDefaultAccount();
 		await ensureLocalDek();
-		await createCategory('Food', 'expense');
+		await createCategory('Warung', 'expense');
 
 		await resetLocalData({ preserveCategories: true, preservePassphrase: false });
 		expect((await db.settings.get(SETTINGS_RAW_DEK))?.value).toBeTruthy();
 		await ensureLocalDek();
 
 		const cats = await listCategories();
-		expect(cats.some((c) => c.name === 'Food')).toBe(true);
+		expect(cats.some((c) => c.name === 'Warung')).toBe(true);
 		expect(await isLockEnabled()).toBe(false);
 	});
 });

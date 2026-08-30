@@ -7,6 +7,7 @@
 	import type { Account } from '$lib/domain/account';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
+	import type { OverlayGroup } from '$lib/domain/category-overlay';
 	import type { ThemePreference } from '$lib/shared/theme';
 	import type { MonthSummary } from '$lib/domain/month-summary';
 	import type { CreatePocketInput, UpdatePocketInput } from '$lib/application/accounts';
@@ -26,6 +27,7 @@
 		canNextMonth?: boolean;
 		expenseCategories: CategoryRow[];
 		incomeCategories: CategoryRow[];
+		categoryGroups: OverlayGroup[];
 		lockEnabled: boolean;
 		signedIn?: boolean;
 		themePreference: ThemePreference;
@@ -42,10 +44,6 @@
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
 		onLockSession: () => void;
-		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
-		onRenameCategory: (id: string, name: string) => void | Promise<void>;
-		onDeleteCategory: (id: string) => void | Promise<void>;
-		onReorderCategories: (kind: CategoryRow['kind'], orderedIds: string[]) => void | Promise<void>;
 		onCreatePocket: (input: CreatePocketInput) => void | Promise<void>;
 		onUpdatePocket: (input: UpdatePocketInput) => void | Promise<void>;
 		onDeletePocket: (id: string) => void | Promise<void>;
@@ -86,6 +84,7 @@
 		canNextMonth = false,
 		expenseCategories,
 		incomeCategories,
+		categoryGroups,
 		lockEnabled,
 		signedIn = false,
 		themePreference,
@@ -99,10 +98,6 @@
 		onEnableLock,
 		onDisableLock,
 		onLockSession,
-		onCreateCategory,
-		onRenameCategory,
-		onDeleteCategory,
-		onReorderCategories,
 		onCreatePocket,
 		onUpdatePocket,
 		onDeletePocket,
@@ -183,7 +178,13 @@
 	}
 </script>
 
-<div class="text-foreground bg-background flex min-h-svh flex-col" data-testid="app-shell">
+<div
+	class={[
+		'text-foreground bg-background flex min-h-svh flex-col',
+		route === 'categories' && 'h-svh overflow-hidden'
+	]}
+	data-testid="app-shell"
+>
 	{#if error}
 		<main class="mx-auto w-full max-w-3xl px-6 py-8">
 			<Card.Root class="border-destructive/40">
@@ -203,7 +204,7 @@
 			</Card.Root>
 		</main>
 	{:else}
-		<Sidebar.Provider class="min-h-svh">
+		<Sidebar.Provider class={route === 'categories' ? 'h-svh min-h-0 overflow-hidden' : 'min-h-svh'}>
 			<AppShellChrome
 				{account}
 				{accounts}
@@ -215,6 +216,8 @@
 				{canNextMonth}
 				{expenseCategories}
 				{incomeCategories}
+				{categoryGroups}
+				{onRefreshLedger}
 				{lockEnabled}
 				{signedIn}
 				{themePreference}
@@ -229,10 +232,6 @@
 				{onEnableLock}
 				{onDisableLock}
 				{onLockSession}
-				{onCreateCategory}
-				{onRenameCategory}
-				{onDeleteCategory}
-				{onReorderCategories}
 				{onCreatePocket}
 				{onUpdatePocket}
 				{onDeletePocket}
