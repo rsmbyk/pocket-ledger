@@ -289,6 +289,59 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await expect(groceries.getByTestId('category-hide')).toBeVisible();
 	});
 
+	test('reorder drop lands a group between two neighbors', async ({ page }) => {
+		await page.goto('/categories');
+		await selectCategoriesKind(page, 'expense');
+		await page.getByTestId('category-reorder').click();
+		const home = page.getByTestId('category-group-row-stock-group:home');
+		const utilities = page.getByTestId('category-group-row-stock-group:utilities');
+		const food = page.getByTestId('category-group-row-stock-group:food-drink');
+		await expect(home).toBeVisible();
+		const homeBox = await home.boundingBox();
+		const utilitiesBox = await utilities.boundingBox();
+		expect(homeBox).toBeTruthy();
+		expect(utilitiesBox).toBeTruthy();
+		expect(utilitiesBox!.y - (homeBox!.y + homeBox!.height)).toBeGreaterThanOrEqual(8);
+
+		const handle = food.getByRole('button', { name: /Drag to reorder/ });
+		const handleBox = await handle.boundingBox();
+		expect(handleBox).toBeTruthy();
+		const dropY = homeBox!.y + homeBox!.height + 4;
+		const dropX = (homeBox!.x + homeBox!.width / 2);
+		await page.mouse.move(handleBox!.x + handleBox!.width / 2, handleBox!.y + handleBox!.height / 2);
+		await page.mouse.down();
+		await page.mouse.move(dropX, dropY, { steps: 24 });
+		await page.mouse.up();
+
+		const rows = page.locator('[data-testid^="category-group-row-"]');
+		await expect(rows.nth(0)).toHaveAttribute('data-testid', 'category-group-row-stock-group:home');
+		await expect(rows.nth(1)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:food-drink'
+		);
+		await expect(rows.nth(2)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:utilities'
+		);
+		await expect(page.getByTestId('category-reorder-save')).toBeEnabled();
+
+		await page.getByTestId('category-reorder-discard').click();
+		await page.getByTestId('category-reorder').click();
+		const rowsAgain = page.locator('[data-testid^="category-group-row-"]');
+		await expect(rowsAgain.nth(0)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:home'
+		);
+		await expect(rowsAgain.nth(1)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:utilities'
+		);
+		await expect(rowsAgain.nth(2)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:food-drink'
+		);
+	});
+
 	test('form picker groups expense categories and filters by search', async ({ page }) => {
 		await page.goto('/');
 		await openAdd(page);

@@ -15,11 +15,11 @@ TDD for the press-outcome helper; Playwright for chrome and gestures. Do not sta
 ## Playwright
 
 - [x] `e2e/categories.e2e.ts` — header title/plus midline; tabs vs search inset at 390×844; tap Groceries hide/show at 390 (no eye); long-press Warung → rename, not hidden; long-press Groceries → still shown; 1280 hover hide + pencil still pass
-- [ ] Keep `e2e/desktop-layout.e2e.ts` categories coverage green
+- [x] Keep `e2e/desktop-layout.e2e.ts` categories coverage green
 
 ## Verify
 
-- [ ] `npm run check`
-- [ ] `npm run test:unit:run` (web shared helper)
-- [ ] `npx playwright test e2e/categories.e2e.ts e2e/desktop-layout.e2e.ts`
+- [x] `npm run check`
+- [x] `npm run test:unit:run` (web shared helper)
+- [x] `npx playwright test e2e/categories.e2e.ts e2e/desktop-layout.e2e.ts`
 - [ ] Manual: phone-width tap hide, long-press custom, tab width vs cards, header plus vs title

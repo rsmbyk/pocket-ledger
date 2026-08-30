@@ -9,7 +9,6 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import SearchXIcon from '@lucide/svelte/icons/search-x';
-	import { flip } from 'svelte/animate';
 	import { dragHandle, dragHandleZone, type DndEvent } from 'svelte-dnd-action';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -497,12 +496,13 @@
 			{#if mode === 'reorder'}
 				<Card.Root class={cn('col-span-full min-h-0 overflow-visible py-0', meta.cardClass)}>
 					<ul
-						class="divide-border m-0 list-none divide-y p-0"
+						class="m-0 flex list-none flex-col gap-3 p-2"
 						use:dragHandleZone={{
 							items: reorderItems,
 							flipDurationMs,
 							type: selectedKind,
-							dragDisabled: busy
+							dragDisabled: busy,
+							dropFromOthersDisabled: true
 						}}
 						onconsider={handleConsider}
 						onfinalize={handleConsider}
@@ -510,8 +510,7 @@
 					>
 						{#each reorderItems as group (group.id)}
 							<li
-								class="flex items-center gap-2 px-4 py-2.5"
-								animate:flip={{ duration: flipDurationMs }}
+								class="flex items-center gap-2 rounded-md px-4 py-2.5"
 								data-testid={`category-group-row-${group.id}`}
 							>
 								<button
