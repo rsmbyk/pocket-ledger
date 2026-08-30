@@ -74,7 +74,7 @@
 		onReorderDirtyChange
 	}: Props = $props();
 
-	const flipDurationMs = 180;
+	const flipDurationMs = 0;
 	const belowMd = new IsMobile();
 	type Mode = 'view' | 'reorder';
 	type ChipPress = {
@@ -649,7 +649,12 @@
 			data-kind={selectedKind}
 		>
 			<div
-				class="grid content-start gap-4 [grid-template-columns:repeat(auto-fill,minmax(min(100%,22rem),1fr))]"
+				class={cn(
+					'grid content-start gap-4',
+					mode === 'reorder'
+						? 'grid-cols-1'
+						: '[grid-template-columns:repeat(auto-fill,minmax(min(100%,22rem),1fr))]'
+				)}
 				data-testid={meta.listTestId}
 				data-kind={selectedKind}
 			>
@@ -662,7 +667,8 @@
 							flipDurationMs,
 							type: selectedKind,
 							dragDisabled: busy,
-							dropFromOthersDisabled: true
+							dropFromOthersDisabled: true,
+							useCursorForDetection: true
 						}}
 						onconsider={handleConsider}
 						onfinalize={handleConsider}

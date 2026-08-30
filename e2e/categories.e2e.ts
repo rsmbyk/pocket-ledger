@@ -321,7 +321,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		const home = page.getByTestId('category-group-row-stock-group:home');
 		const utilities = page.getByTestId('category-group-row-stock-group:utilities');
 		const food = page.getByTestId('category-group-row-stock-group:food-drink');
-		await expect(home).toBeVisible();
+		await home.scrollIntoViewIfNeeded();
 		const homeBox = await home.boundingBox();
 		const utilitiesBox = await utilities.boundingBox();
 		expect(homeBox).toBeTruthy();
@@ -331,14 +331,20 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		const handle = food.getByRole('button', { name: /Drag to reorder/ });
 		const handleBox = await handle.boundingBox();
 		expect(handleBox).toBeTruthy();
-		const dropY = homeBox!.y + homeBox!.height + 4;
-		const dropX = (homeBox!.x + homeBox!.width / 2);
+		const dropX = utilitiesBox!.x + Math.min(48, utilitiesBox!.width / 2);
+		const dropY = utilitiesBox!.y + 6;
 		await page.mouse.move(handleBox!.x + handleBox!.width / 2, handleBox!.y + handleBox!.height / 2);
 		await page.mouse.down();
 		await page.mouse.move(dropX, dropY, { steps: 24 });
-		await page.mouse.up();
-
 		const rows = page.locator('[data-testid^="category-group-row-"]');
+		await expect(rows.nth(1)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:food-drink'
+		);
+		await page.mouse.up();
+		await expect(page.locator('[data-is-dnd-shadow-item-internal]')).toHaveCount(0);
+
+		await expect(page.getByTestId('category-reorder-save')).toBeEnabled();
 		await expect(rows.nth(0)).toHaveAttribute('data-testid', 'category-group-row-stock-group:home');
 		await expect(rows.nth(1)).toHaveAttribute(
 			'data-testid',
@@ -348,7 +354,6 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 			'data-testid',
 			'category-group-row-stock-group:utilities'
 		);
-		await expect(page.getByTestId('category-reorder-save')).toBeEnabled();
 
 		await page.getByTestId('category-reorder-discard').click();
 		await page.getByTestId('category-reorder').click();
