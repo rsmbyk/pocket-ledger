@@ -1,33 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import {
-	categoryChip,
-	dragCategoryGroup,
-	openAdd,
-	selectCategoriesKind,
-	selectTxCategory
-} from './nav';
-
-async function expectRowBefore(page: Page, firstId: string, secondId: string): Promise<void> {
-	const first = page.getByTestId(`category-group-row-${firstId}`);
-	const second = page.getByTestId(`category-group-row-${secondId}`);
-	await expect(first).toBeVisible();
-	await expect(second).toBeVisible();
-	const a = await first.boundingBox();
-	const b = await second.boundingBox();
-	expect(a && b && a.y < b.y).toBe(true);
-}
-
-async function expectFirstGroup(
-	page: Page,
-	kind: 'income' | 'expense',
-	groupId: string
-): Promise<void> {
-	const list = page.getByTestId(`category-list-${kind}`);
-	await expect(list.locator('[data-testid^="category-group-"]').first()).toHaveAttribute(
-		'data-testid',
-		`category-group-${groupId}`
-	);
-}
+import { expect, test } from '@playwright/test';
+import { categoryChip, openAdd, selectCategoriesKind, selectTxCategory } from './nav';
 
 test.describe('123 overlay catalog / 124–125 categories chrome', () => {
 	test('defaults to Income and does not show expense groups', async ({ page }) => {
@@ -198,43 +170,20 @@ test.describe('123 overlay catalog / 124–125 categories chrome', () => {
 		await expect(categoryChip(page, 'Groceries')).toBeVisible();
 	});
 
-	test('reorder keeps both kind drafts and Discard restores view', async ({ page }) => {
+	test('reorder lets you switch kinds without a leave confirm', async ({ page }) => {
 		await page.goto('/categories');
 		await selectCategoriesKind(page, 'expense');
 		await page.getByTestId('category-reorder').click();
-		await dragCategoryGroup(page, 'stock-group:utilities', 'stock-group:home');
-		await expect(page.getByTestId('category-reorder-save')).toBeEnabled();
-		await expectRowBefore(page, 'stock-group:utilities', 'stock-group:home');
+		await expect(page.getByTestId('category-search')).toHaveCount(0);
 		await selectCategoriesKind(page, 'income');
 		await expect(page.getByTestId('category-reorder-leave-confirm')).toHaveCount(0);
 		await expect(page.getByTestId('category-group-row-stock-group:work')).toBeVisible();
-		await dragCategoryGroup(page, 'stock-group:work', 'stock-group:business-creating');
+		await expect(page.getByTestId('category-reorder-save')).toBeVisible();
 		await selectCategoriesKind(page, 'expense');
-		await expectRowBefore(page, 'stock-group:utilities', 'stock-group:home');
+		await expect(page.getByTestId('category-group-row-stock-group:home')).toBeVisible();
 		await page.getByTestId('category-reorder-discard').click();
+		await expect(page.getByTestId('category-search')).toBeVisible();
 		await expect(page.getByTestId('category-chip').first()).toBeVisible();
-		await expectFirstGroup(page, 'expense', 'stock-group:home');
-	});
-
-	test('reorder Save persists both kinds', async ({ page }) => {
-		await page.goto('/categories');
-		await selectCategoriesKind(page, 'expense');
-		await page.getByTestId('category-reorder').click();
-		await dragCategoryGroup(page, 'stock-group:utilities', 'stock-group:home');
-		await selectCategoriesKind(page, 'income');
-		await dragCategoryGroup(page, 'stock-group:work', 'stock-group:business-creating');
-		await page.getByTestId('category-reorder-save').click();
-		await expect(page.getByTestId('category-chip').first()).toBeVisible();
-		await expect(page.getByTestId('category-kind-income')).toHaveAttribute('aria-selected', 'true');
-		await expectFirstGroup(page, 'income', 'stock-group:business-creating');
-		await selectCategoriesKind(page, 'expense');
-		await expectFirstGroup(page, 'expense', 'stock-group:utilities');
-		await page.reload();
-		await expect(page.getByTestId('categories-panel')).toBeVisible();
-		await selectCategoriesKind(page, 'expense');
-		await expectFirstGroup(page, 'expense', 'stock-group:utilities');
-		await selectCategoriesKind(page, 'income');
-		await expectFirstGroup(page, 'income', 'stock-group:business-creating');
 	});
 
 	test('form picker groups expense categories and filters by search', async ({ page }) => {

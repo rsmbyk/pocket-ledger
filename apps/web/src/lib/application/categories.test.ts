@@ -128,13 +128,17 @@ describe('categories application', () => {
 		expect(groups.filter((g) => g.kind === 'expense').at(-1)?.name).toBe('Side');
 	});
 
-	it('persists group order prefs', async () => {
-		const factory = (await listResolvedGroups()).filter((g) => g.kind === 'expense').map((g) => g.id);
-		const swapped = [factory[1]!, factory[0]!, ...factory.slice(2)];
-		await saveCategoryGroupOrder('expense', swapped);
-		expect((await listResolvedGroups()).filter((g) => g.kind === 'expense').map((g) => g.id)).toEqual(
-			swapped
-		);
+	it('persists income and expense group order in one session', async () => {
+		const all = await listResolvedGroups();
+		const expense = all.filter((g) => g.kind === 'expense').map((g) => g.id);
+		const income = all.filter((g) => g.kind === 'income').map((g) => g.id);
+		const expenseSwapped = [expense[1]!, expense[0]!, ...expense.slice(2)];
+		const incomeSwapped = [income[1]!, income[0]!, ...income.slice(2)];
+		await saveCategoryGroupOrder('income', incomeSwapped);
+		await saveCategoryGroupOrder('expense', expenseSwapped);
+		const next = await listResolvedGroups();
+		expect(next.filter((g) => g.kind === 'expense').map((g) => g.id)).toEqual(expenseSwapped);
+		expect(next.filter((g) => g.kind === 'income').map((g) => g.id)).toEqual(incomeSwapped);
 	});
 
 	it('hides instead of blocking when a transaction uses the category', async () => {

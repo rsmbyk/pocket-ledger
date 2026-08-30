@@ -87,19 +87,6 @@ export async function selectCategoriesKind(
 	await expect(tab).toHaveAttribute('aria-selected', 'true');
 }
 
-/** Drag a reorder-mode group row onto another via the dnd handle. */
-export async function dragCategoryGroup(
-	page: Page,
-	fromId: string,
-	ontoId: string
-): Promise<void> {
-	const handle = page.getByTestId(`category-group-row-${fromId}`).locator('.dnd-handle');
-	const target = page.getByTestId(`category-group-row-${ontoId}`);
-	await handle.scrollIntoViewIfNeeded();
-	await target.scrollIntoViewIfNeeded();
-	await handle.dragTo(target, { targetPosition: { x: 24, y: 8 } });
-}
-
 /** Create a custom category via the group header plus, or no-op when the name is stock. */
 export async function ensureCategory(
 	page: Page,

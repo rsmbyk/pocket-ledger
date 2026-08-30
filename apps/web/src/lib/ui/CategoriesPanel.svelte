@@ -373,7 +373,7 @@
 				data-kind={selectedKind}
 			>
 			{#if mode === 'reorder'}
-				<Card.Root class={cn('col-span-full min-h-0 overflow-hidden py-0', meta.cardClass)}>
+				<Card.Root class={cn('col-span-full min-h-0 overflow-visible py-0', meta.cardClass)}>
 					<ul
 						class="divide-border m-0 list-none divide-y p-0"
 						use:dragHandleZone={{
