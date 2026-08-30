@@ -367,16 +367,17 @@
 		<p class="text-destructive text-sm" role="alert">{error}</p>
 	{/if}
 
-	<div
-		class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 [scrollbar-gutter:stable]"
-		data-testid="categories-desktop-grid"
-		data-kind={selectedKind}
-	>
+	<div class="min-h-0 flex-1 overflow-hidden p-3">
 		<div
-			class="grid content-start gap-4 sm:grid-cols-2 xl:grid-cols-3"
-			data-testid={meta.listTestId}
+			class="h-full min-h-0 overflow-y-auto overscroll-contain p-1 [scrollbar-gutter:stable]"
+			data-testid="categories-desktop-grid"
 			data-kind={selectedKind}
 		>
+			<div
+				class="grid content-start gap-4 sm:grid-cols-2 xl:grid-cols-3"
+				data-testid={meta.listTestId}
+				data-kind={selectedKind}
+			>
 			{#if mode === 'reorder'}
 				<Card.Root class={cn('col-span-full min-h-0 overflow-hidden py-0', meta.cardClass)}>
 					<ul
@@ -553,6 +554,7 @@
 					</Card.Root>
 				{/each}
 			{/if}
+			</div>
 		</div>
 	</div>
 </div>

@@ -153,22 +153,23 @@ test.describe('013 desktop layout', () => {
 
 		const inset = await page.evaluate(() => {
 			const scroller = document.querySelector('[data-testid="categories-desktop-grid"]');
+			const frame = scroller?.parentElement;
 			const card = scroller?.querySelector('[data-slot="card"]');
-			if (!scroller || !card) return null;
-			const s = scroller.getBoundingClientRect();
+			if (!scroller || !frame || !card) return null;
+			const f = frame.getBoundingClientRect();
 			const c = card.getBoundingClientRect();
-			const style = getComputedStyle(scroller);
+			const style = getComputedStyle(frame);
 			return {
-				top: c.top - s.top,
-				left: c.left - s.left,
+				top: c.top - f.top,
+				left: c.left - f.left,
 				paddingTop: Number.parseFloat(style.paddingTop),
 				paddingLeft: Number.parseFloat(style.paddingLeft)
 			};
 		});
 
 		expect(inset).not.toBeNull();
-		expect(inset!.paddingTop).toBeGreaterThanOrEqual(16);
-		expect(inset!.paddingLeft).toBeGreaterThanOrEqual(16);
+		expect(inset!.paddingTop).toBeGreaterThanOrEqual(12);
+		expect(inset!.paddingLeft).toBeGreaterThanOrEqual(12);
 		expect(inset!.top).toBeGreaterThanOrEqual(12);
 		expect(inset!.left).toBeGreaterThanOrEqual(12);
 	});
