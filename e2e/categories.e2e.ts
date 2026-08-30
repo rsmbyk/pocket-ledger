@@ -259,8 +259,11 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await expect(warung.getByTestId('category-hide')).toHaveCount(0);
 		await expect(warung.getByTestId('category-edit-name')).toHaveClass(/sr-only/);
 		await longPress(warung.getByRole('button', { name: 'Hide Warung' }));
-		await expect(page.getByRole('textbox', { name: 'Name for Warung' })).toBeVisible();
-		await expect(warung).not.toHaveAttribute('data-hidden', 'true');
+		const renameField = page.getByRole('textbox', { name: 'Name for Warung' });
+		await expect(renameField).toBeVisible();
+		await expect(
+			page.getByTestId('category-chip').filter({ has: renameField })
+		).not.toHaveAttribute('data-hidden', 'true');
 	});
 
 	test('long-press on stock does not toggle below md', async ({ page }) => {
