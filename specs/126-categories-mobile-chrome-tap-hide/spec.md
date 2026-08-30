@@ -1,7 +1,7 @@
 # Spec 126: Categories mobile chrome, tap-to-hide, long-press edit
 
 - **ID:** 126
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

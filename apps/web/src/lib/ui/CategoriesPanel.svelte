@@ -46,6 +46,12 @@
 		readCategoriesKind,
 		writeCategoriesKind
 	} from '$lib/shared/categories-kind-session';
+	import {
+		CATEGORY_CHIP_LONG_PRESS_MS,
+		chipPressMovedBeyondSlop,
+		chipPressOutcome
+	} from '$lib/shared/category-chip-press';
+	import { IsMobile } from '$lib/hooks/is-mobile.svelte.js';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import CategoryIcon from '$lib/ui/CategoryIcon.svelte';
 	import EmptyState from '$lib/ui/EmptyState.svelte';
@@ -68,7 +74,17 @@
 	}: Props = $props();
 
 	const flipDurationMs = 180;
+	const belowMd = new IsMobile();
 	type Mode = 'view' | 'reorder';
+	type ChipPress = {
+		categoryId: string;
+		pointerId: number;
+		startX: number;
+		startY: number;
+		startedAt: number;
+		slop: boolean;
+		timer: ReturnType<typeof setTimeout> | null;
+	};
 	let mode = $state<Mode>('view');
 	let selectedKind = $state<CategoryKind>(readCategoriesKind());
 	let searchQuery = $state('');
@@ -248,9 +264,112 @@
 			nameFieldError = '';
 		}
 	}
+
+	let chipPress = $state<ChipPress | null>(null);
+
+	function clearChipPress() {
+		if (chipPress?.timer) clearTimeout(chipPress.timer);
+		chipPress = null;
+	}
+
+	function chipAriaLabel(cat: CategoryRow): string {
+		if (!belowMd.current || editingId === cat.id) return cat.name;
+		return cat.hidden ? `Show ${cat.name}` : `Hide ${cat.name}`;
+	}
+
+	function applyChipOutcome(cat: CategoryRow, outcome: ReturnType<typeof chipPressOutcome>) {
+		if (outcome === 'rename') {
+			startRename(cat);
+			return;
+		}
+		if (outcome === 'toggle') {
+			void runAction(() => (cat.hidden ? showCategory(cat.id) : hideCategory(cat.id)));
+		}
+	}
+
+	function onChipPointerDown(cat: CategoryRow, e: PointerEvent) {
+		if (!belowMd.current) return;
+		if (editingId === cat.id) return;
+		if (e.button !== 0) return;
+		clearChipPress();
+		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+		const timer = setTimeout(() => {
+			if (!chipPress || chipPress.categoryId !== cat.id || chipPress.slop) return;
+			applyChipOutcome(
+				cat,
+				chipPressOutcome({
+					durationMs: CATEGORY_CHIP_LONG_PRESS_MS,
+					movedBeyondSlop: false,
+					isCustom: cat.source === 'custom',
+					renameOpen: editingId === cat.id
+				})
+			);
+			clearChipPress();
+		}, CATEGORY_CHIP_LONG_PRESS_MS);
+		chipPress = {
+			categoryId: cat.id,
+			pointerId: e.pointerId,
+			startX: e.clientX,
+			startY: e.clientY,
+			startedAt: performance.now(),
+			slop: false,
+			timer
+		};
+	}
+
+	function onChipPointerMove(e: PointerEvent) {
+		if (!chipPress || e.pointerId !== chipPress.pointerId) return;
+		if (chipPress.slop) return;
+		if (chipPressMovedBeyondSlop(chipPress.startX, chipPress.startY, e.clientX, e.clientY)) {
+			chipPress.slop = true;
+			if (chipPress.timer) {
+				clearTimeout(chipPress.timer);
+				chipPress.timer = null;
+			}
+		}
+	}
+
+	function onChipPointerUp(cat: CategoryRow, e: PointerEvent) {
+		if (!belowMd.current) return;
+		if (!chipPress || chipPress.categoryId !== cat.id || e.pointerId !== chipPress.pointerId) {
+			return;
+		}
+		const durationMs = performance.now() - chipPress.startedAt;
+		const slop = chipPress.slop;
+		clearChipPress();
+		applyChipOutcome(
+			cat,
+			chipPressOutcome({
+				durationMs,
+				movedBeyondSlop: slop,
+				isCustom: cat.source === 'custom',
+				renameOpen: editingId === cat.id
+			})
+		);
+	}
+
+	function onChipContextMenu(e: MouseEvent) {
+		if (belowMd.current) e.preventDefault();
+	}
+
+	function onChipKeydown(cat: CategoryRow, e: KeyboardEvent) {
+		if (!belowMd.current || editingId === cat.id) return;
+		if (e.key !== 'Enter' && e.key !== ' ') return;
+		e.preventDefault();
+		applyChipOutcome(
+			cat,
+			chipPressOutcome({
+				durationMs: 0,
+				movedBeyondSlop: false,
+				isCustom: cat.source === 'custom',
+				renameOpen: false
+			})
+		);
+	}
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col gap-3" data-testid="categories-panel">
+	<div class="flex min-h-0 flex-1 flex-col gap-3 px-3">
 	<Tabs.Root
 		value={selectedKind}
 		onValueChange={requestKindChange}
@@ -275,7 +394,6 @@
 		</Tabs.List>
 	</Tabs.Root>
 
-	<div class="flex min-h-0 flex-1 flex-col gap-3 px-3">
 	{#if mode !== 'reorder'}
 		<div class="relative shrink-0" data-testid="category-search-wrap">
 			<SearchIcon
@@ -426,12 +544,14 @@
 					>
 						<Card.Header
 							class={cn(
-								'items-center border-b px-3 py-1 [.border-b]:pb-1',
+								'grid-rows-1 items-center border-b px-3 py-1 [.border-b]:pb-1',
 								meta.headerClass
 							)}
 						>
-							<Card.Title class="text-sm font-medium">{group.name}</Card.Title>
-							<Card.Action class="self-center">
+							<Card.Title class="self-center text-sm leading-none font-medium"
+								>{group.name}</Card.Title
+							>
+							<Card.Action class="row-span-1 self-center">
 								<Button
 									type="button"
 									variant="ghost"
@@ -458,7 +578,15 @@
 										data-testid="category-chip"
 										data-name={cat.name}
 										data-hidden={cat.hidden ? 'true' : undefined}
-										aria-label={cat.name}
+										aria-label={chipAriaLabel(cat)}
+										role={belowMd.current && editingId !== cat.id ? 'button' : undefined}
+										tabindex={belowMd.current && editingId !== cat.id ? 0 : undefined}
+										onpointerdown={(e) => onChipPointerDown(cat, e)}
+										onpointermove={onChipPointerMove}
+										onpointerup={(e) => onChipPointerUp(cat, e)}
+										onpointercancel={clearChipPress}
+										oncontextmenu={onChipContextMenu}
+										onkeydown={(e) => onChipKeydown(cat, e)}
 									>
 										<CategoryIcon slug={cat.icon} />
 										{#if editingId === cat.id}
@@ -512,39 +640,59 @@
 											</Button>
 										{:else}
 											<span class="min-w-0 flex-1 truncate pr-1">{cat.name}</span>
-											<span
-												class="absolute top-1/2 right-1 z-10 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover/chip:opacity-100 group-focus-within/chip:opacity-100"
-											>
+											{#if belowMd.current}
 												{#if cat.source === 'custom'}
 													<Button
 														size="icon-xs"
 														variant="outline"
+														class="sr-only"
 														aria-label={`Edit ${cat.name}`}
 														data-testid="category-edit-name"
 														disabled={busy}
-														onclick={() => startRename(cat)}
+														onpointerdown={(e) => e.stopPropagation()}
+														onclick={(e) => {
+															e.stopPropagation();
+															startRename(cat);
+														}}
 													>
 														<PencilIcon class="size-3.5" />
 													</Button>
 												{/if}
-												<Button
-													size="icon-xs"
-													variant="outline"
-													aria-label={cat.hidden ? `Show ${cat.name}` : `Hide ${cat.name}`}
-													data-testid={cat.hidden ? 'category-show' : 'category-hide'}
-													disabled={busy}
-													onclick={() =>
-														void runAction(() =>
-															cat.hidden ? showCategory(cat.id) : hideCategory(cat.id)
-														)}
+											{:else}
+												<span
+													class="absolute top-1/2 right-1 z-10 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover/chip:opacity-100 group-focus-within/chip:opacity-100"
 												>
-													{#if cat.hidden}
-														<EyeIcon class="size-3.5" />
-													{:else}
-														<EyeOffIcon class="size-3.5" />
+													{#if cat.source === 'custom'}
+														<Button
+															size="icon-xs"
+															variant="outline"
+															aria-label={`Edit ${cat.name}`}
+															data-testid="category-edit-name"
+															disabled={busy}
+															onclick={() => startRename(cat)}
+														>
+															<PencilIcon class="size-3.5" />
+														</Button>
 													{/if}
-												</Button>
-											</span>
+													<Button
+														size="icon-xs"
+														variant="outline"
+														aria-label={cat.hidden ? `Show ${cat.name}` : `Hide ${cat.name}`}
+														data-testid={cat.hidden ? 'category-show' : 'category-hide'}
+														disabled={busy}
+														onclick={() =>
+															void runAction(() =>
+																cat.hidden ? showCategory(cat.id) : hideCategory(cat.id)
+															)}
+													>
+														{#if cat.hidden}
+															<EyeIcon class="size-3.5" />
+														{:else}
+															<EyeOffIcon class="size-3.5" />
+														{/if}
+													</Button>
+												</span>
+											{/if}
 										{/if}
 									</li>
 								{/each}

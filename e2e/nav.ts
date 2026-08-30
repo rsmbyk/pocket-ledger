@@ -1,5 +1,18 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
+/** Hold the primary button on a locator's center (Spec 126 long-press). */
+export async function longPress(locator: Locator, holdMs = 600): Promise<void> {
+	const box = await locator.boundingBox();
+	if (!box) throw new Error('longPress: locator has no bounding box');
+	const page = locator.page();
+	const x = box.x + box.width / 2;
+	const y = box.y + box.height / 2;
+	await page.mouse.move(x, y);
+	await page.mouse.down();
+	await page.waitForTimeout(holdMs);
+	await page.mouse.up();
+}
+
 /** Navigate via the app drawer (desktop rail) or overlay sheet (mobile). */
 export async function goToNav(
 	page: Page,
