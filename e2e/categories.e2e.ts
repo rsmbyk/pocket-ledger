@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { categoryChip, openAdd, selectCategoriesKind, selectTxCategory } from './nav';
+import { categoryChip, longPress, openAdd, selectCategoriesKind, selectTxCategory } from './nav';
 
-test.describe('123 overlay catalog / 124–125 categories chrome', () => {
+test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 	test('defaults to Income and does not show expense groups', async ({ page }) => {
 		await page.goto('/categories');
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
@@ -184,6 +184,109 @@ test.describe('123 overlay catalog / 124–125 categories chrome', () => {
 		await page.getByTestId('category-reorder-discard').click();
 		await expect(page.getByTestId('category-search')).toBeVisible();
 		await expect(page.getByTestId('category-chip').first()).toBeVisible();
+	});
+
+	test('group header title and plus share a midline', async ({ page }) => {
+		await page.goto('/categories');
+		const card = page.getByTestId('category-group-stock-group:work');
+		await expect(card).toBeVisible();
+		const title = card.locator('[data-slot=card-title]');
+		const plus = card.getByTestId('category-add-in-group');
+		const titleBox = await title.boundingBox();
+		const plusBox = await plus.boundingBox();
+		expect(titleBox).toBeTruthy();
+		expect(plusBox).toBeTruthy();
+		const titleMid = titleBox!.y + titleBox!.height / 2;
+		const plusMid = plusBox!.y + plusBox!.height / 2;
+		expect(Math.abs(titleMid - plusMid)).toBeLessThanOrEqual(3);
+	});
+
+	test('tabs match search inset below md', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await page.goto('/categories');
+		await expect(page.getByTestId('categories-panel')).toBeVisible();
+		const tabs = page.getByTestId('category-kind-tabs');
+		const search = page.getByTestId('category-search');
+		const tabsBox = await tabs.boundingBox();
+		const searchBox = await search.boundingBox();
+		expect(tabsBox).toBeTruthy();
+		expect(searchBox).toBeTruthy();
+		expect(Math.abs(tabsBox!.x - searchBox!.x)).toBeLessThanOrEqual(2);
+		expect(Math.abs(tabsBox!.x + tabsBox!.width - (searchBox!.x + searchBox!.width))).toBeLessThanOrEqual(
+			2
+		);
+		expect(tabsBox!.width).toBeLessThanOrEqual(searchBox!.width + 2);
+	});
+
+	test('tap toggles hide below md without an eye button', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await page.goto('/categories');
+		await selectCategoriesKind(page, 'expense');
+		const groceries = categoryChip(page, 'Groceries');
+		await groceries.scrollIntoViewIfNeeded();
+		await expect(groceries.getByTestId('category-hide')).toHaveCount(0);
+		await groceries.click();
+		await expect(groceries).toHaveAttribute('data-hidden', 'true');
+
+		await page.goto('/');
+		await openAdd(page);
+		const sheet = page.getByRole('dialog');
+		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
+		await sheet.getByTestId('tx-category').click();
+		await page.getByTestId('category-picker-search').fill('Groceries');
+		await expect(page.getByRole('option', { name: 'Groceries', exact: true })).toHaveCount(0);
+		await page.keyboard.press('Escape');
+
+		await page.goto('/categories');
+		const groceriesAgain = categoryChip(page, 'Groceries');
+		await groceriesAgain.scrollIntoViewIfNeeded();
+		await groceriesAgain.click();
+		await expect(groceriesAgain).not.toHaveAttribute('data-hidden', 'true');
+	});
+
+	test('long-press renames custom and does not hide it below md', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await page.goto('/categories');
+		await selectCategoriesKind(page, 'expense');
+		await page
+			.getByTestId('category-group-stock-group:food-drink')
+			.getByTestId('category-add-in-group')
+			.click();
+		await page.getByTestId('category-name-input').fill('Warung');
+		await page.getByTestId('category-add').click();
+		const warung = categoryChip(page, 'Warung');
+		await warung.scrollIntoViewIfNeeded();
+		await expect(warung.getByTestId('category-hide')).toHaveCount(0);
+		await expect(warung.getByTestId('category-edit-name')).toHaveClass(/sr-only/);
+		await longPress(warung.getByRole('button', { name: 'Hide Warung' }));
+		const renameField = page.getByRole('textbox', { name: 'Name for Warung' });
+		await expect(renameField).toBeVisible();
+		await expect(
+			page.getByTestId('category-chip').filter({ has: renameField })
+		).not.toHaveAttribute('data-hidden', 'true');
+	});
+
+	test('long-press on stock does not toggle below md', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await page.goto('/categories');
+		await selectCategoriesKind(page, 'expense');
+		const groceries = categoryChip(page, 'Groceries');
+		await groceries.scrollIntoViewIfNeeded();
+		await longPress(groceries.getByRole('button', { name: 'Hide Groceries' }));
+		await expect(groceries).not.toHaveAttribute('data-hidden', 'true');
+		await expect(page.getByRole('textbox', { name: 'Name for Groceries' })).toHaveCount(0);
+	});
+
+	test('desktop click on chip label does not toggle', async ({ page }) => {
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await page.goto('/categories');
+		await selectCategoriesKind(page, 'expense');
+		const groceries = categoryChip(page, 'Groceries');
+		await groceries.scrollIntoViewIfNeeded();
+		await groceries.getByText('Groceries', { exact: true }).click();
+		await expect(groceries).not.toHaveAttribute('data-hidden', 'true');
+		await groceries.hover();
+		await expect(groceries.getByTestId('category-hide')).toBeVisible();
 	});
 
 	test('form picker groups expense categories and filters by search', async ({ page }) => {

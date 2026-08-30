@@ -1,5 +1,33 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
+/** Hold the primary button on a locator's center (Spec 126 long-press). */
+export async function longPress(locator: Locator, holdMs = 600): Promise<void> {
+	await locator.evaluate((el, ms) => {
+		const rect = el.getBoundingClientRect();
+		const clientX = rect.left + rect.width / 2;
+		const clientY = rect.top + rect.height / 2;
+		const opts: PointerEventInit = {
+			bubbles: true,
+			cancelable: true,
+			button: 0,
+			buttons: 1,
+			clientX,
+			clientY,
+			pointerId: 1,
+			pointerType: 'touch'
+		};
+		el.dispatchEvent(new PointerEvent('pointerdown', opts));
+		return new Promise<void>((resolve) => {
+			window.setTimeout(() => {
+				el.dispatchEvent(
+					new PointerEvent('pointerup', { ...opts, buttons: 0 })
+				);
+				resolve();
+			}, ms);
+		});
+	}, holdMs);
+}
+
 /** Navigate via the app drawer (desktop rail) or overlay sheet (mobile). */
 export async function goToNav(
 	page: Page,
