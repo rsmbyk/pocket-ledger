@@ -256,7 +256,8 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await page.getByTestId('category-add').click();
 		const warung = categoryChip(page, 'Warung');
 		await warung.scrollIntoViewIfNeeded();
-		await expect(warung.getByTestId('category-edit-name')).toBeHidden();
+		await expect(warung.getByTestId('category-hide')).toHaveCount(0);
+		await expect(warung.getByTestId('category-edit-name')).toHaveClass(/sr-only/);
 		await longPress(warung);
 		await expect(page.getByRole('textbox', { name: 'Name for Warung' })).toBeVisible();
 		await expect(warung).not.toHaveAttribute('data-hidden', 'true');
