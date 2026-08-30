@@ -145,33 +145,32 @@ test.describe('013 desktop layout', () => {
 		expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
 	});
 
-	test('category group cards sit inside the scroller padding', async ({ page }) => {
+	test('category search lines up with the catalog cards', async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 800 });
 		await page.goto('/categories');
 		await page.getByTestId('category-kind-expense').click();
 		await expect(page.getByTestId('category-chip').first()).toBeVisible();
 
 		const inset = await page.evaluate(() => {
+			const search = document.querySelector('[data-testid="category-search"]');
 			const scroller = document.querySelector('[data-testid="categories-desktop-grid"]');
-			const frame = scroller?.parentElement;
 			const card = scroller?.querySelector('[data-slot="card"]');
-			if (!scroller || !frame || !card) return null;
-			const f = frame.getBoundingClientRect();
+			if (!search || !scroller || !card) return null;
+			const q = search.getBoundingClientRect();
 			const c = card.getBoundingClientRect();
-			const style = getComputedStyle(frame);
+			const s = scroller.getBoundingClientRect();
 			return {
-				top: c.top - f.top,
-				left: c.left - f.left,
-				paddingTop: Number.parseFloat(style.paddingTop),
-				paddingLeft: Number.parseFloat(style.paddingLeft)
+				searchLeft: q.left,
+				cardLeft: c.left,
+				scrollerLeft: s.left,
+				searchWidth: q.width,
+				cardRowRight: c.right
 			};
 		});
 
 		expect(inset).not.toBeNull();
-		expect(inset!.paddingTop).toBeGreaterThanOrEqual(12);
-		expect(inset!.paddingLeft).toBeGreaterThanOrEqual(12);
-		expect(inset!.top).toBeGreaterThanOrEqual(12);
-		expect(inset!.left).toBeGreaterThanOrEqual(12);
+		expect(Math.abs(inset!.searchLeft - inset!.cardLeft)).toBeLessThanOrEqual(8);
+		expect(inset!.searchLeft).toBeGreaterThanOrEqual(inset!.scrollerLeft - 1);
 	});
 
 	test('command palette navigates and opens add', async ({ page }) => {

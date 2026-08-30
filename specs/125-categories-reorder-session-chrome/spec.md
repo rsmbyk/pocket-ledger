@@ -1,7 +1,7 @@
 # Spec 125: Categories reorder session and chrome
 
 - **ID:** 125
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

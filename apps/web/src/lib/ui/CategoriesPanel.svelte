@@ -19,6 +19,15 @@
 	import type { CategoryRow } from '$lib/data/db';
 	import type { OverlayGroup } from '$lib/domain/category-overlay';
 	import { filterCatalogGroups } from '$lib/domain/category-catalog-filter';
+	import {
+		cloneKindGroupOrder,
+		groupsInOrder,
+		isReorderDirty,
+		resetKindInOrder,
+		setKindOrder,
+		snapshotGroupOrders,
+		type KindGroupOrder
+	} from '$lib/domain/category-reorder-session';
 	import type { CategoryKind } from '$lib/domain/default-category-catalog';
 	import {
 		createCategory,
@@ -71,16 +80,16 @@
 	let addGroupDialogOpen = $state(false);
 	let addGroupName = $state('');
 	let discardConfirmOpen = $state(false);
-	let leaveReorderOpen = $state(false);
-	let pendingKind = $state<CategoryKind | null>(null);
 	let busy = $state(false);
 	let error = $state('');
 	let nameFieldError = $state('');
 	let renameErrorId = $state<string | null>(null);
 	let renameDrafts = $state<Record<string, string>>({});
 
+	const emptyOrder = (): KindGroupOrder => ({ income: [], expense: [] });
 	let reorderItems = $state<OverlayGroup[]>([]);
-	let savedReorderOrder = $state<string[]>([]);
+	let reorderDraft = $state<KindGroupOrder>(emptyOrder());
+	let reorderSnapshot = $state<KindGroupOrder>(emptyOrder());
 
 	const kindGroups = $derived(groups.filter((g) => g.kind === selectedKind));
 	const kindCategories = $derived(categories.filter((c) => c.kind === selectedKind));
@@ -142,19 +151,16 @@
 	function applyKind(next: CategoryKind) {
 		selectedKind = next;
 		writeCategoriesKind(next);
-		searchQuery = '';
+		if (mode !== 'reorder') searchQuery = '';
 		editingId = null;
-		if (mode === 'reorder') loadReorder(next);
+		if (mode === 'reorder') {
+			reorderItems = groupsInOrder(groups, reorderDraft[next]);
+		}
 	}
 
 	function requestKindChange(next: string) {
 		if (next !== 'income' && next !== 'expense') return;
 		if (next === selectedKind) return;
-		if (mode === 'reorder' && reorderDirty) {
-			pendingKind = next;
-			leaveReorderOpen = true;
-			return;
-		}
 		applyKind(next);
 	}
 
@@ -175,68 +181,54 @@
 		discardConfirmOpen = true;
 	}
 
-	function loadReorder(kind: CategoryKind) {
-		reorderItems = groups.filter((g) => g.kind === kind);
-		savedReorderOrder = reorderItems.map((g) => g.id);
-		setDirty(false);
+	function showReorderList(kind: CategoryKind) {
+		reorderItems = groupsInOrder(groups, reorderDraft[kind]);
 	}
 
 	function enterReorder() {
+		searchQuery = '';
+		reorderSnapshot = snapshotGroupOrders(groups);
+		reorderDraft = cloneKindGroupOrder(reorderSnapshot);
 		mode = 'reorder';
-		loadReorder(selectedKind);
+		showReorderList(selectedKind);
+		setDirty(false);
 	}
 
-	function currentDirty(): boolean {
-		return reorderItems.map((g) => g.id).join(',') !== savedReorderOrder.join(',');
+	function exitReorder() {
+		mode = 'view';
+		searchQuery = '';
+		reorderItems = [];
+		reorderDraft = emptyOrder();
+		reorderSnapshot = emptyOrder();
+		setDirty(false);
 	}
 
 	function handleConsider(e: CustomEvent<DndEvent<OverlayGroup>>) {
 		reorderItems = e.detail.items;
-		setDirty(currentDirty());
+		reorderDraft = setKindOrder(
+			reorderDraft,
+			selectedKind,
+			e.detail.items.map((g) => g.id)
+		);
+		setDirty(isReorderDirty(reorderDraft, reorderSnapshot));
 	}
 
 	async function saveReorder() {
 		await runAction(async () => {
-			await saveCategoryGroupOrder(
-				selectedKind,
-				reorderItems.map((g) => g.id)
-			);
+			await saveCategoryGroupOrder('income', reorderDraft.income);
+			await saveCategoryGroupOrder('expense', reorderDraft.expense);
 		});
-		savedReorderOrder = reorderItems.map((g) => g.id);
-		setDirty(false);
-		mode = 'view';
+		exitReorder();
 	}
 
 	function discardReorder() {
-		reorderItems = savedReorderOrder
-			.map((id) => groups.find((g) => g.id === id))
-			.filter((g): g is OverlayGroup => Boolean(g));
-		setDirty(false);
+		exitReorder();
 	}
 
 	function resetReorder() {
-		reorderItems = groups
-			.filter((g) => g.kind === selectedKind && g.source === 'stock')
-			.concat(groups.filter((g) => g.kind === selectedKind && g.source === 'custom'));
-		setDirty(currentDirty());
-	}
-
-	function requestLeaveReorder() {
-		if (!reorderDirty) {
-			mode = 'view';
-			return;
-		}
-		pendingKind = null;
-		leaveReorderOpen = true;
-	}
-
-	function confirmLeaveReorder() {
-		discardReorder();
-		mode = 'view';
-		leaveReorderOpen = false;
-		const dest = pendingKind;
-		pendingKind = null;
-		if (dest) applyKind(dest);
+		reorderDraft = resetKindInOrder(reorderDraft, groups, selectedKind);
+		showReorderList(selectedKind);
+		setDirty(isReorderDirty(reorderDraft, reorderSnapshot));
 	}
 
 	function startRename(cat: CategoryRow) {
@@ -269,35 +261,38 @@
 			<Tabs.Trigger
 				value="income"
 				data-testid="category-kind-income"
-				class="data-active:bg-emerald-500/15 data-active:text-emerald-800 dark:data-active:text-emerald-300"
+				class="data-active:bg-emerald-500/20 data-active:text-emerald-800 dark:data-active:border-emerald-500/50 dark:data-active:bg-emerald-500/30 dark:data-active:text-emerald-300"
 			>
 				Income
 			</Tabs.Trigger>
 			<Tabs.Trigger
 				value="expense"
 				data-testid="category-kind-expense"
-				class="data-active:bg-destructive/15 data-active:text-destructive"
+				class="data-active:bg-destructive/20 data-active:text-destructive dark:data-active:border-destructive/50 dark:data-active:bg-destructive/35 dark:data-active:text-red-300"
 			>
 				Expenses
 			</Tabs.Trigger>
 		</Tabs.List>
 	</Tabs.Root>
 
-	<div class="relative shrink-0" data-testid="category-search-wrap">
-		<SearchIcon
-			class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-			aria-hidden="true"
-		/>
-		<Input
-			id="category-search"
-			type="search"
-			placeholder="Search categories or groups"
-			class="pl-9"
-			bind:value={searchQuery}
-			data-testid="category-search"
-			aria-label="Search categories or groups"
-		/>
-	</div>
+	<div class="flex min-h-0 flex-1 flex-col gap-3 px-3">
+	{#if mode !== 'reorder'}
+		<div class="relative shrink-0" data-testid="category-search-wrap">
+			<SearchIcon
+				class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+				aria-hidden="true"
+			/>
+			<Input
+				id="category-search"
+				type="search"
+				placeholder="Search categories or groups"
+				class="pl-9"
+				bind:value={searchQuery}
+				data-testid="category-search"
+				aria-label="Search categories or groups"
+			/>
+		</div>
+	{/if}
 
 	<div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
 		{#if mode === 'reorder'}
@@ -330,14 +325,12 @@
 			>
 				Save
 			</Button>
-			<Button type="button" variant="ghost" size="sm" disabled={busy} onclick={requestLeaveReorder}>
-				Done
-			</Button>
 		{:else}
 			<Button
 				type="button"
 				variant="outline"
 				size="sm"
+				class="gap-1.5 [&_svg]:size-3.5"
 				disabled={busy}
 				data-testid="category-add-group"
 				onclick={() => {
@@ -346,18 +339,19 @@
 					addGroupDialogOpen = true;
 				}}
 			>
-				<FolderPlusIcon class="size-4" />
+				<FolderPlusIcon />
 				Add group
 			</Button>
 			<Button
 				type="button"
 				variant="outline"
 				size="sm"
+				class="gap-1.5 [&_svg]:size-3.5"
 				disabled={busy}
 				data-testid="category-reorder"
 				onclick={enterReorder}
 			>
-				<ListOrderedIcon class="size-4" />
+				<ListOrderedIcon />
 				Reorder
 			</Button>
 		{/if}
@@ -367,7 +361,7 @@
 		<p class="text-destructive text-sm" role="alert">{error}</p>
 	{/if}
 
-	<div class="min-h-0 flex-1 overflow-hidden p-3">
+	<div class="min-h-0 flex-1 overflow-hidden">
 		<div
 			class="h-full min-h-0 overflow-y-auto overscroll-contain p-1 [scrollbar-gutter:stable]"
 			data-testid="categories-desktop-grid"
@@ -430,19 +424,24 @@
 						class={cn('flex min-h-0 flex-col gap-0 overflow-hidden py-0', meta.cardClass)}
 						data-testid={`category-group-${group.id}`}
 					>
-						<Card.Header class={cn('items-center border-b px-4 py-2', meta.headerClass)}>
+						<Card.Header
+							class={cn(
+								'items-center border-b px-3 py-1 [.border-b]:pb-1',
+								meta.headerClass
+							)}
+						>
 							<Card.Title class="text-sm font-medium">{group.name}</Card.Title>
-							<Card.Action>
+							<Card.Action class="self-center">
 								<Button
 									type="button"
 									variant="ghost"
-									size="icon-sm"
+									size="icon-xs"
 									data-testid="category-add-in-group"
 									aria-label={`Add category to ${group.name}`}
 									disabled={busy}
 									onclick={() => openAdd(group.id)}
 								>
-									<PlusIcon class="size-4" />
+									<PlusIcon class="size-3.5" />
 								</Button>
 							</Card.Action>
 						</Card.Header>
@@ -451,7 +450,7 @@
 								{#each row.categories as cat (cat.id)}
 									<li
 										class={cn(
-											'group/chip border-border relative flex w-full min-w-0 items-center gap-1.5 rounded-lg border bg-background px-2 py-1 text-sm transition',
+											'group/chip border-border relative flex w-full min-w-0 cursor-default items-center gap-1.5 rounded-lg border bg-background px-2 py-1 text-sm select-none transition',
 											cat.hidden ? 'opacity-60 shadow-none' : 'shadow-sm',
 											'hover:bg-accent/70 hover:ring-foreground/10 hover:ring-1',
 											'focus-within:bg-accent/70 focus-within:ring-foreground/10 focus-within:ring-1'
@@ -556,6 +555,7 @@
 			{/if}
 			</div>
 		</div>
+	</div>
 	</div>
 </div>
 
@@ -672,15 +672,4 @@
 		discardConfirmOpen = false;
 		addDialogOpen = false;
 	}}
-/>
-
-<ConfirmDialog
-	open={leaveReorderOpen}
-	title="Discard group order?"
-	description="Leave reorder without saving? Your last saved order stays."
-	confirmLabel="Leave"
-	destructive
-	confirmTestId="category-reorder-leave-confirm"
-	onOpenChange={(next) => (leaveReorderOpen = next)}
-	onConfirm={confirmLeaveReorder}
 />
