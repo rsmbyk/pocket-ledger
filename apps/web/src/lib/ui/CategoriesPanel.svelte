@@ -289,9 +289,13 @@
 	function onChipPointerDown(cat: CategoryRow, e: PointerEvent) {
 		if (!belowMd.current) return;
 		if (editingId === cat.id) return;
-		if (e.button !== 0) return;
+		if (e.button > 0) return;
 		clearChipPress();
-		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+		try {
+			(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+		} catch {
+			// Synthetic Playwright presses may not have a capturable pointer.
+		}
 		const timer = setTimeout(() => {
 			if (!chipPress || chipPress.categoryId !== cat.id || chipPress.slop) return;
 			applyChipOutcome(
