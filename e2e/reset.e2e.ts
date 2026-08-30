@@ -24,6 +24,7 @@ test.describe('024 reset everything', () => {
 
 		await page.goto('/categories');
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
+		await page.getByTestId('category-kind-expense').click();
 		await expect(categoryChip(page, 'Food')).toBeVisible();
 	});
 });
