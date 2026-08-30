@@ -121,6 +121,58 @@ test.describe('013 desktop layout', () => {
 		expect(metrics.gridScrollable).toBe(true);
 	});
 
+	test('category chips in a group share one width', async ({ page }) => {
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await page.goto('/categories');
+		await page.getByTestId('category-kind-expense').click();
+		await expect(page.getByTestId('category-chip').first()).toBeVisible();
+
+		const widths = await page.evaluate(() => {
+			const groups = [
+				...document.querySelectorAll(
+					'[data-testid="category-list-expense"] [data-testid^="category-group-"]'
+				)
+			];
+			for (const group of groups) {
+				const chips = [...group.querySelectorAll('[data-testid="category-chip"]')];
+				if (chips.length < 2) continue;
+				return chips.map((el) => Math.round(el.getBoundingClientRect().width));
+			}
+			return [];
+		});
+
+		expect(widths.length).toBeGreaterThan(1);
+		expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
+	});
+
+	test('category group cards sit inside the scroller padding', async ({ page }) => {
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await page.goto('/categories');
+		await page.getByTestId('category-kind-expense').click();
+		await expect(page.getByTestId('category-chip').first()).toBeVisible();
+
+		const inset = await page.evaluate(() => {
+			const scroller = document.querySelector('[data-testid="categories-desktop-grid"]');
+			const card = scroller?.querySelector('[data-slot="card"]');
+			if (!scroller || !card) return null;
+			const s = scroller.getBoundingClientRect();
+			const c = card.getBoundingClientRect();
+			const style = getComputedStyle(scroller);
+			return {
+				top: c.top - s.top,
+				left: c.left - s.left,
+				paddingTop: Number.parseFloat(style.paddingTop),
+				paddingLeft: Number.parseFloat(style.paddingLeft)
+			};
+		});
+
+		expect(inset).not.toBeNull();
+		expect(inset!.paddingTop).toBeGreaterThanOrEqual(8);
+		expect(inset!.paddingLeft).toBeGreaterThanOrEqual(8);
+		expect(inset!.top).toBeGreaterThanOrEqual(6);
+		expect(inset!.left).toBeGreaterThanOrEqual(6);
+	});
+
 	test('command palette navigates and opens add', async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 800 });
 		await page.goto('/');

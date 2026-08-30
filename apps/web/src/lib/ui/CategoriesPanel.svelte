@@ -368,7 +368,7 @@
 	{/if}
 
 	<div
-		class="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+		class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 pb-5 [scrollbar-gutter:stable]"
 		data-testid="categories-desktop-grid"
 		data-kind={selectedKind}
 	>
@@ -446,14 +446,14 @@
 							</Card.Action>
 						</Card.Header>
 						<Card.Content class="p-3">
-							<ul class="m-0 flex list-none flex-wrap gap-2 p-0">
+							<ul
+								class="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2 p-0"
+							>
 								{#each row.categories as cat (cat.id)}
 									<li
 										class={cn(
-											'group/chip border-border relative flex items-center gap-1 rounded-lg border bg-background px-2 py-1 text-sm transition',
-											cat.hidden
-												? 'opacity-60 shadow-none'
-												: 'shadow-sm -translate-y-px',
+											'group/chip border-border relative flex w-full min-w-0 items-center gap-1.5 rounded-lg border bg-background px-2 py-1 text-sm transition',
+											cat.hidden ? 'opacity-60 shadow-none' : 'shadow-sm',
 											'hover:bg-accent/70 hover:ring-foreground/10 hover:ring-1',
 											'focus-within:bg-accent/70 focus-within:ring-foreground/10 focus-within:ring-1'
 										)}
@@ -464,9 +464,9 @@
 									>
 										<CategoryIcon slug={cat.icon} />
 										{#if editingId === cat.id}
-											<div class="min-w-0 space-y-1">
+											<div class="min-w-0 flex-1 space-y-1">
 												<Input
-													class="h-8 w-36"
+													class="h-8 min-w-0 w-full"
 													aria-label={`Name for ${cat.name}`}
 													aria-invalid={renameErrorId === cat.id ? true : undefined}
 													value={draftFor(cat)}
@@ -494,8 +494,9 @@
 												{/if}
 											</div>
 											<Button
-												size="icon-sm"
+												size="icon-xs"
 												variant="outline"
+												class="shrink-0"
 												aria-label={`Save name for ${cat.name}`}
 												data-testid="category-save-name"
 												disabled={busy ||
@@ -509,42 +510,46 @@
 														renameId: cat.id
 													})}
 											>
-												<CheckIcon class="size-4" />
+												<CheckIcon class="size-3.5" />
 											</Button>
 										{:else}
-											<span class="max-w-36 truncate">{cat.name}</span>
+											<span class="min-w-0 flex-1 truncate">{cat.name}</span>
 											<span
-												class="ml-0.5 hidden items-center gap-0.5 group-hover/chip:flex group-focus-within/chip:flex"
+												class="flex h-6 w-[3.25rem] shrink-0 items-center justify-end gap-0.5"
 											>
-												{#if cat.source === 'custom'}
+												<span
+													class="hidden items-center gap-0.5 group-hover/chip:flex group-focus-within/chip:flex"
+												>
+													{#if cat.source === 'custom'}
+														<Button
+															size="icon-xs"
+															variant="outline"
+															aria-label={`Edit ${cat.name}`}
+															data-testid="category-edit-name"
+															disabled={busy}
+															onclick={() => startRename(cat)}
+														>
+															<PencilIcon class="size-3.5" />
+														</Button>
+													{/if}
 													<Button
 														size="icon-xs"
 														variant="outline"
-														aria-label={`Edit ${cat.name}`}
-														data-testid="category-edit-name"
+														aria-label={cat.hidden ? `Show ${cat.name}` : `Hide ${cat.name}`}
+														data-testid={cat.hidden ? 'category-show' : 'category-hide'}
 														disabled={busy}
-														onclick={() => startRename(cat)}
+														onclick={() =>
+															void runAction(() =>
+																cat.hidden ? showCategory(cat.id) : hideCategory(cat.id)
+															)}
 													>
-														<PencilIcon class="size-3.5" />
+														{#if cat.hidden}
+															<EyeIcon class="size-3.5" />
+														{:else}
+															<EyeOffIcon class="size-3.5" />
+														{/if}
 													</Button>
-												{/if}
-												<Button
-													size="icon-xs"
-													variant="outline"
-													aria-label={cat.hidden ? `Show ${cat.name}` : `Hide ${cat.name}`}
-													data-testid={cat.hidden ? 'category-show' : 'category-hide'}
-													disabled={busy}
-													onclick={() =>
-														void runAction(() =>
-															cat.hidden ? showCategory(cat.id) : hideCategory(cat.id)
-														)}
-												>
-													{#if cat.hidden}
-														<EyeIcon class="size-3.5" />
-													{:else}
-														<EyeOffIcon class="size-3.5" />
-													{/if}
-												</Button>
+												</span>
 											</span>
 										{/if}
 									</li>
