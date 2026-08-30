@@ -1,37 +1,37 @@
-# Tasks 123: Default catalog, groups, chip Categories page
+# Tasks 123: Overlay catalog, Categories list, searchable form picker
 
-TDD: red → green on the paths below. Do not start until Ronald Accepts the Draft.
+TDD: red → green on the paths below.
 
 ## Domain
 
-- [ ] Catalog table + uniqueness of slugs/names: `apps/web/src/lib/domain/default-category-catalog.test.ts`
-- [ ] Group name normalize / unique-in-kind; factory order; reset built-in vs user groups: `apps/web/src/lib/domain/category-groups.test.ts`
-- [ ] Category A–Z in group; migrate match vs Catch-all: same file or `apps/web/src/lib/domain/categories.test.ts`
+- [x] Catalog table + stable ids + unique slugs/names (except locked duplicate **Other**): `apps/web/src/lib/domain/default-category-catalog.test.ts`
+- [x] Overlay merge, hide, factory vs user group order, migrate match vs Catch-all, uniqueness vs stock: `apps/web/src/lib/domain/category-overlay.test.ts`
 
 ## Application
 
-- [ ] Empty seed inserts groups + catalog: `apps/web/src/lib/application/categories.test.ts`
-- [ ] Non-empty migrate (Coffee → Catch-all `tag`; Groceries → Food & drink): same
-- [ ] `createCategory` requires `groupId`; icon `tag` for user add: same
-- [ ] `createCategoryGroup` appends last in kind: same
-- [ ] `reorderCategoryGroups` + reset-to-factory: same
-- [ ] Backup / restore `categoryGroups`, `groupId`, `icon`: `apps/web/src/lib/application/backup.test.ts`
-- [ ] Month summary order = group order then A–Z: `apps/web/src/lib/domain/month-summary.test.ts`
+- [x] Virgin resolve inserts no Dexie stock rows: `apps/web/src/lib/application/categories.test.ts`
+- [x] Non-empty migrate (Coffee → custom Catch-all `tag`; Groceries UUID → stock id): same
+- [x] `createCategory` in a group; icon `tag`; uniqueness vs stock names: same
+- [x] Hide/show stock (prefs) and custom (`hidden`); never hard-delete: same
+- [x] `createCategoryGroup` appends last in kind: same
+- [x] Group-order prefs + reset-to-factory: same
+- [x] Backup / restore overlay only (custom groups, custom cats, prefs): `apps/web/src/lib/application/backup.test.ts`
+- [x] Month summary order = group order then stock-then-custom: `apps/web/src/lib/domain/month-summary.test.ts`
 
 ## UI
 
-- [ ] Chip grid, add chip, add group, Income-first: `apps/web/src/lib/ui/CategoriesPanel.svelte`
-- [ ] Reorder mode + Save / Discard / Reset + dirty leave: same
-- [ ] CategoryPicker / charts show icon and group-then-A–Z order
+- [x] List per group, add chip, add group, Income-first, edit/hide: `apps/web/src/lib/ui/CategoriesPanel.svelte`
+- [x] Reorder mode + Save / Discard / Reset + dirty leave: same
+- [x] CategoryPicker Command search, group headings, icons, type coupling: `apps/web/src/lib/ui/CategoryPicker.svelte`
 
 ## Playwright
 
-- [ ] Rewrite `e2e/categories.e2e.ts` for seed, chips, add, group add, reorder save/discard/reset, dirty leave
-- [ ] Adjust helpers in `e2e/nav.ts` (`ensureCategory`, `selectTxCategory`) for chips / grouped picker
-- [ ] Smoke Activity filter / month chart if order assertions break
+- [x] Rewrite `e2e/categories.e2e.ts` for catalog list, add, hide, group add, reorder, picker search
+- [x] Adjust helpers in `e2e/nav.ts` (`ensureCategory`, `selectTxCategory`, `selectActivityFilterCategory`) for add-chip / Command options
+- [x] Activity filter grouping (`e2e/activity-filters.e2e.ts`) and other e2e that assumed a flat menu
 
 ## Docs
 
-- [ ] `docs/PRODUCT.md` categories row
-- [ ] `docs/DATA_MODEL.md` `categoryGroups` + category `groupId` / `icon`
-- [ ] `specs/README.md` index 123 Accepted when it lands
+- [x] `docs/PRODUCT.md` categories row
+- [x] `docs/DATA_MODEL.md` overlay + `categoryGroups` + prefs
+- [x] `specs/README.md` index 123 Accepted

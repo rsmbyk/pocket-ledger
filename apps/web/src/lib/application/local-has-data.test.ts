@@ -19,7 +19,7 @@ describe('localHasData', () => {
 
 	it('counts categories or settings-only changes as data', async () => {
 		await ensureDefaultAccount();
-		await createCategory('Food', 'expense');
+		await createCategory('Warung', 'expense');
 		expect(await localHasData()).toBe(true);
 	});
 

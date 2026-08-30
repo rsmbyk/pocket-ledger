@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '$lib/data/db';
 import { ensureDefaultAccount, updatePocket } from './accounts';
-import { createCategory } from './categories';
+import { listCategories } from './categories';
 import { addTransaction } from './transactions';
 import { getMonthSummary, loadMonthSummary } from './month-summary';
 import { currentMonthKey } from '$lib/domain/month-summary';
@@ -15,7 +15,7 @@ describe('month-summary application', () => {
 
 	it('builds a month summary for the account', async () => {
 		const account = await ensureDefaultAccount();
-		const food = await createCategory('Food', 'expense');
+		const food = (await listCategories()).find((c) => c.id === 'stock:expense:food')!;
 		await addTransaction({
 			accountId: account.id,
 			type: 'expense',
@@ -79,7 +79,7 @@ describe('month-summary application', () => {
 			openingBalanceMinor: 100_000,
 			openingAsOf: '2026-06-15'
 		});
-		const food = await createCategory('Food', 'expense');
+		const food = (await listCategories()).find((c) => c.id === 'stock:expense:food')!;
 		await addTransaction({
 			accountId: account.id,
 			type: 'expense',

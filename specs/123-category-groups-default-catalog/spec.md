@@ -1,36 +1,38 @@
-# Spec 123: Default catalog, category groups, chip Categories page
+# Spec 123: Overlay catalog, Categories list, searchable form picker
 
 - **ID:** 123
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 
 ## Intent
 
-Make the locked generalized catalog the **default** ledger categories, introduce **category groups**, and rebuild the Categories page as an alphabetical **chip grid** per group. Users reorder **groups**, not categories, and only after entering reorder mode.
+Make the locked generalized catalog the **default** categories without seeding Dexie. Stock lives in the app bundle with stable ids. Each ledger stores only an overlay (custom groups/categories, hidden stock ids, group order if it differs from factory). Categories is a **list per group** with edit/hide. Transaction forms (and Activity filters) use a **searchable grouped** category picker.
 
 ## Scope
 
 ### In scope
 
-1. **Default catalog** — virgin / empty category table seeds the locked catalog (46 income, 93 expense) with Lucide icons and the locked group list (see Domain rules)
-2. **Groups** — first-class rows: name, `kind` (`income` | `expense`), `sortOrder` among siblings of that kind
-3. **Category fields** — `groupId`, `icon` (Lucide slug); `kind` still on the category and must match its group
-4. **Categories page (normal)** — groups in default/user `sortOrder`; chips inside a group A–Z by name; chip = icon above label; trailing **add** chip per group (`tag` icon); toolbar **Add group** and **Reorder**
-5. **Add category** — add chip in a group; name only; icon always `tag`; kind and group from that group
-6. **Add group** — name + kind; placed last among that kind
-7. **Reorder mode** — only group names; DnD within kind; **Save**, **Discard**, **Reset**; leave-page / leave-mode confirm if dirty
-8. **Pickers & month charts** — list order is group `sortOrder` (Income groups then Expense groups where both show), then A–Z within group; show category icon; Uncategorized / Admin Fee unchanged (043 / 106)
-9. Docs: `docs/PRODUCT.md`, `docs/DATA_MODEL.md`
+1. **Stock catalog in the bundle** — 46 income + 93 expense, locked names/icons/groups, stable ids. Not Dexie rows, not synced, not backup blobs.
+2. **Overlay** — custom groups; custom categories (encrypted, icon always `tag`); prefs: hidden stock ids; group order only when it differs from factory.
+3. **Resolve at read** — factory groups + custom groups; factory cats in catalog order then customs after; pickers omit hidden.
+4. **Migrate** — existing UUID categories by name+kind onto stock ids; leftovers become custom `tag` rows. Do not insert unused stock rows.
+5. **Categories page (list)** — groups in user/factory order; chips = icon + label; stock cannot rename/delete; custom in-place rename in edit mode; delete = hide; hidden still listed; add-chip at end of each group; add group (kind + name, last in kind).
+6. **Reorder mode** — group names only; DnD within kind; Save / Discard / Reset; dirty leave confirm.
+7. **Form picker** — searchable Command combobox; income tx → income groups; expense tx → expense groups; transfer → no category field; group headings; icon + label; Uncategorized stays; hidden omitted; trigger shows icon + name.
+8. **Activity filters** — same `CategoryPicker`; type All groups Income vs Expense then category groups inside; Transfer filter stays disabled + All.
+9. **Month charts** — group order, then stock-then-custom (not A–Z).
+10. Docs: `docs/PRODUCT.md`, `docs/DATA_MODEL.md`.
 
 ### Out of scope
 
 - Custom icon picker (user chips stay `tag`)
-- Dragging a category between groups or changing category order
-- Delete / rename group
+- Deleting stock, deleting or renaming groups
+- Dragging a category between groups or user-defined category order
 - Changing system Uncategorized (`circle-dashed`) or Admin Fee (`percent`)
 - Per-account category sets
+- Android
 
 ## Domain rules
 
@@ -66,30 +68,37 @@ Expense group order (factory):
 16. Legal & life
 17. Catch-all
 
-Category names, icons, and group membership are the locked preview set (≤ 2 words, unique Lucide slugs). Implementation copies that table into domain (`default-category-catalog`). Uncategorized and Admin Fee are **not** catalog rows. Custom user chips use `tag` (never a catalog slug).
+Category names, icons, and group membership are the locked preview set (≤ 2 words). Implementation copies that table into domain (`default-category-catalog`). Uncategorized and Admin Fee are **not** catalog rows. Custom user chips use `tag` (never a catalog slug).
 
-### Rows
+Stock ids are stable, e.g. `stock:expense:groceries`, `stock-group:home`. Duplicate display names in the same kind (two expense **Other** rows) disambiguate in the id with the group slug.
 
-- **Group:** `id`, `name` (trim, collapse spaces, max 40, unique among **active groups of the same kind**, case-insensitive), `kind`, `sortOrder`, `createdAt`
-- **Category:** existing fields plus `groupId`, `icon`; `sortOrder` on a category is unused for UI (A–Z wins)
-- Name uniqueness for categories remains **within kind** (010), among active rows
-- Delete category: 103 (in-use block / void-only soft-delete / unused hard-delete)
-- Soft-deleted categories stay out of the grid and pickers; names still resolve on voided txs
+### Overlay rows
+
+- **Custom group:** `id` (UUID), `name` (trim, collapse spaces, max 40, unique among **active groups of the same kind**, case-insensitive), `kind`, `createdAt`. Encrypted name.
+- **Custom category:** `id` (UUID), `name`, `kind`, `groupId`, `icon` (`tag`), `hidden`, `createdAt`. Encrypted name. Never hard-deleted.
+- **Prefs:** `hiddenStockIds`; `groupOrderByKind` only when the order is not factory (stock catalog order, then custom groups by `createdAt`).
+- Name uniqueness for categories remains **within kind** (010), among **visible** stock + non-hidden custom, plus hidden custom (names stay reserved). New custom names cannot match a stock name of that kind.
+
+### Hide vs delete
+
+- Stock: hide/show via prefs. No rename. No delete.
+- Custom: hide/show via `hidden` on the row. “Delete” in the UI means hide. Supersedes Spec 103 hard/soft delete and in-use blocking.
+- Hidden omitted from pickers. Still listed on Categories so they can be shown. Existing txs keep their `categoryId`; edit may keep a hidden category already on the row.
 
 ### Seed vs migrate
 
-- **Empty** categories (and no groups): insert factory groups + catalog categories
-- **Existing** categories: one-time migrate — create factory groups if missing; map each active category to a catalog group by **name + kind** when the name matches a catalog item (apply catalog `icon` + `groupId`); otherwise assign `tag` and the kind’s last factory group (**Care, land, other** / **Catch-all**). Do not delete user categories. Do not insert catalog rows the ledger does not already have.
+- **Virgin / empty overlay:** no Dexie category or group rows. Resolve still returns the full catalog.
+- **Existing UUID categories:** one-time migrate after decrypt — if name+kind matches a unique stock item (or the first catalog match when names collide), rewrite referencing `transaction.categoryId` to the stock id and drop the UUID row; if that UUID row was soft-deleted (`deletedAt`), hide the stock id. Otherwise keep as custom `tag` in the kind’s last factory group (**Care, land, other** / **Catch-all**), `hidden` if it had `deletedAt`. Do not insert unused stock rows.
 
 ### Order
 
-- Groups of a kind: `sortOrder` ascending, then `createdAt`, then `id`
-- New user group: `sortOrder = max(kind) + 1`
-- Categories in a group: `name` locale-insensitive A–Z (same fold as uniqueness)
-- Reorder writes group `sortOrder` only; categories never change order via DnD
-- **Reset** (reorder mode): built-in groups return to factory order; user-created groups stay after them, stable by `createdAt`. Dirty until Save
-- **Discard** (reorder mode): restore last **persisted** group order; stay in reorder mode
-- **Save**: persist current draft order; dirty flag clears
+- Groups of a kind: user order if persisted, else factory stock order then custom groups by `createdAt`, then `id`.
+- New user group: last among that kind.
+- Categories in a group: stock in **catalog order**, then custom by `createdAt`, then `id`.
+- Reorder writes group-order prefs only.
+- **Reset** (reorder mode): built-in groups return to factory order; user-created groups stay after them, stable by `createdAt`. Dirty until Save.
+- **Discard** (reorder mode): restore last **persisted** group order; stay in reorder mode.
+- **Save**: persist current draft order (omit prefs key when it matches factory); dirty flag clears.
 
 ### Icons
 
@@ -98,53 +107,84 @@ Category names, icons, and group membership are the locked preview set (≤ 2 wo
 | Uncategorized | `circle-dashed` | `categoryId == null` only |
 | Admin Fee | `percent` | transfer fee bucket only |
 | Custom chip | `tag` | user-created category |
-| Catalog chip | locked slug | seeded / name-matched migrate |
+| Catalog chip | locked slug | stock catalog |
+
+### Form picker
+
+- Income transaction: income groups only. Expense: expense groups only. Transfer: no category field (unchanged).
+- Group headings = category groups in user/factory order. Items = Lucide icon + label.
+- Uncategorized remains (`circle-dashed`). Hidden cats omitted.
+- Search filters by category name; empty groups drop out; empty state when nothing matches.
+- Trigger shows icon + name (not name-only).
+- Activity type All: kind layer (Income / Expense) then category groups inside. Transfer filter stays disabled + All.
 
 ## Acceptance scenarios
 
-### Scenario: Virgin seed
+### Scenario: Virgin overlay
 
-- **Given** an empty category table
-- **When** bootstrap / `ensureSeedCategories` runs
-- **Then** factory groups and all catalog categories exist with locked icons and `groupId`s
-- **And** Categories shows Work before Business & creating, Home before Utilities
+- **Given** an empty category table and no overlay prefs
+- **When** Categories or a transaction picker opens
+- **Then** Dexie still has no stock rows
+- **And** the full catalog is visible (Work before Business & creating, Home before Utilities, Groceries under Food & drink)
 
 ### Scenario: Existing ledger migrate
 
-- **Given** an expense category named `Coffee` and no groups
+- **Given** an expense category named `Coffee` (UUID) and no groups
 - **When** migrate runs
-- **Then** factory groups exist
-- **And** `Coffee` is in Catch-all with icon `tag`
+- **Then** Dexie has a custom `Coffee` row in Catch-all with icon `tag`
 - **And** no extra catalog rows are inserted
 
 ### Scenario: Existing name matches catalog
 
-- **Given** an expense category named `Groceries`
+- **Given** an expense category named `Groceries` (UUID) referenced by a transaction
 - **When** migrate runs
-- **Then** it is in Food & drink with the catalog grocery icon
+- **Then** the transaction’s `categoryId` is the stock groceries id
+- **And** the UUID row is gone
 
-### Scenario: Chip grid
+### Scenario: Categories list
 
-- **Given** a seeded ledger
+- **Given** a virgin overlay
 - **When** the user opens `/categories` in normal mode
-- **Then** each group heading is followed by rectangular chips (icon above label), categories A–Z
-- **And** the last chip in each group is add (`tag`, not a category)
+- **Then** each group heading is followed by rectangular chips (icon + label) in catalog order
+- **And** the last control in each group is add (`tag`, not a category)
 - **And** Income groups appear before Expense groups
+- **And** stock chips have no rename or delete control
 
 ### Scenario: Add category in group
 
 - **Given** the Food & drink group
 - **When** the user activates the add chip, types `Warung`, and saves
 - **Then** an expense category `Warung` exists in that group with icon `tag`
-- **And** it appears in A–Z order among that group’s chips
-- **And** the tx expense picker lists it under that group’s order
+- **And** it appears after stock chips in that group
+- **And** the expense picker lists it under Food & drink
+
+### Scenario: Uniqueness vs stock
+
+- **Given** stock Groceries
+- **When** the user tries to add expense `Groceries`
+- **Then** the save is rejected as a duplicate name
 
 ### Scenario: Add group last
 
 - **Given** factory expense groups
 - **When** the user adds expense group `Side`
 - **Then** `Side` is last among expense groups
-- **And** it has an add chip and no catalog categories
+- **And** it has an add chip and no stock categories
+
+### Scenario: Hide stock and custom
+
+- **Given** stock Groceries and custom Warung
+- **When** the user hides both
+- **Then** both remain on the Categories list
+- **And** neither appears in the expense picker
+- **And** showing them restores them to the picker
+
+### Scenario: Edit mode rename custom only
+
+- **Given** edit mode
+- **When** the user renames Warung to `Warung kopi`
+- **Then** the custom row is renamed
+- **And** stock names stay read-only
 
 ### Scenario: Reorder mode chrome
 
@@ -165,7 +205,7 @@ Category names, icons, and group membership are the locked preview set (≤ 2 wo
 - **Given** Utilities above Home in the reorder draft
 - **When** the user saves
 - **Then** that order persists after leaving reorder mode
-- **And** pickers / month expense buckets follow the new group order, then A–Z
+- **And** pickers / month expense buckets follow the new group order, then stock-then-custom
 
 ### Scenario: Reset factory order
 
@@ -180,12 +220,21 @@ Category names, icons, and group membership are the locked preview set (≤ 2 wo
 - **When** the user navigates to Activity (or leaves reorder without Save/Discard)
 - **Then** a confirm offers to stay or leave (leave discards the draft)
 
-### Scenario: Category order not draggable
+### Scenario: Searchable form picker
 
-- **Given** normal mode
-- **When** the user views chips
-- **Then** there is no drag handle on a category chip
-- **And** renaming `Dining` to `Auberge` only changes A–Z position, not group order
+- **Given** an expense transaction sheet
+- **When** the user opens Category
+- **Then** the list is grouped (Food & drink contains Groceries)
+- **And** typing `groc` leaves Groceries and drops empty groups
+- **And** the trigger shows the groceries icon and name after select
+- **And** income groups are absent
+
+### Scenario: Activity filter type All
+
+- **Given** the Activity category filter with type All
+- **When** the picker opens
+- **Then** Income and Expense kind layers each contain category groups
+- **And** search still filters by category name
 
 ### Scenario: System buckets unchanged
 
@@ -196,9 +245,9 @@ Category names, icons, and group membership are the locked preview set (≤ 2 wo
 
 ## Traceability
 
-- Vitest: `apps/web/src/lib/domain/default-category-catalog.test.ts`, `apps/web/src/lib/domain/category-groups.test.ts`, `apps/web/src/lib/application/categories.test.ts`, `apps/web/src/lib/domain/month-summary.test.ts` (group then A–Z), `apps/web/src/lib/application/backup.test.ts` (groups + icon + groupId)
-- Playwright: `e2e/categories.e2e.ts` (seed, chips, add chip, add group, reorder save/discard/reset, dirty leave); picker order in `e2e/activity-filters.e2e.ts` as needed
-- Implementation: catalog module; Dexie version for `categoryGroups` + category `groupId`/`icon`; `CategoriesPanel.svelte`; pickers / month summary sort
-- Docs: `docs/PRODUCT.md` (categories + groups), `docs/DATA_MODEL.md`
-- Supersedes: 025 empty-start seed; 038/040 category DnD as the order UX
-- Depends on: 010, 018, 021, 025 (supersede seed), 043, 103, 106, 107
+- Vitest: `apps/web/src/lib/domain/default-category-catalog.test.ts`, `apps/web/src/lib/domain/category-overlay.test.ts`, `apps/web/src/lib/application/categories.test.ts`, `apps/web/src/lib/domain/month-summary.test.ts` (group then stock-then-custom), `apps/web/src/lib/application/backup.test.ts` (custom groups + overlay prefs, no stock rows)
+- Playwright: `e2e/categories.e2e.ts` (list, add chip, add group, hide, reorder save/discard/reset, dirty leave, picker search/groups/icons/type coupling); helpers in `e2e/nav.ts`
+- Implementation: catalog module; Dexie `categoryGroups` + category overlay fields; `CategoriesPanel.svelte`; `CategoryPicker.svelte` Command combobox
+- Docs: `docs/PRODUCT.md`, `docs/DATA_MODEL.md`
+- Supersedes: 025 empty-start seed as “insert rows”; 038/040 category DnD; 103 delete
+- Depends on: 010, 018, 021, 043, 106, 107

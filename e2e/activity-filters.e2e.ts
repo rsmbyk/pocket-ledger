@@ -364,20 +364,18 @@ test.describe('107 filter category picker + type coupling', () => {
 		await page.getByTestId('activity-filters-open').click();
 		await expect(filtersSurface(page)).toBeVisible();
 		await page.getByTestId('activity-filter-category').click();
-		const categoryMenu = page.getByRole('menu');
-		await expect(categoryMenu.getByRole('group', { name: 'Income' })).toBeVisible();
-		await expect(categoryMenu.getByRole('group', { name: 'Expenses' })).toBeVisible();
-		await expect(categoryMenu.getByRole('menuitem', { name: 'Salary', exact: true })).toBeVisible();
-		await expect(categoryMenu.getByRole('menuitem', { name: 'Food', exact: true })).toBeVisible();
-		await expect(categoryMenu.getByRole('menuitem', { name: 'Admin Fee' })).toBeVisible();
+		await expect(page.getByTestId('picker-kind-income')).toBeVisible();
+		await expect(page.getByTestId('picker-kind-expense')).toBeVisible();
+		await expect(page.getByRole('option', { name: 'Salary', exact: true })).toBeVisible();
+		await expect(page.getByRole('option', { name: 'Food', exact: true })).toBeVisible();
+		await expect(page.getByRole('option', { name: 'Admin Fee' })).toBeVisible();
 		await page.keyboard.press('Escape');
 
 		await page.getByTestId('activity-filter-type').selectOption('income');
 		await page.getByTestId('activity-filter-category').click();
-		const incomeMenu = page.getByRole('menu');
-		await expect(incomeMenu.getByRole('menuitem', { name: 'Salary', exact: true })).toBeVisible();
-		await expect(incomeMenu.getByRole('menuitem', { name: 'Food', exact: true })).toHaveCount(0);
-		await expect(incomeMenu.getByRole('menuitem', { name: 'Admin Fee' })).toHaveCount(0);
+		await expect(page.getByRole('option', { name: 'Salary', exact: true })).toBeVisible();
+		await expect(page.getByRole('option', { name: 'Food', exact: true })).toHaveCount(0);
+		await expect(page.getByRole('option', { name: 'Admin Fee' })).toHaveCount(0);
 		await page.keyboard.press('Escape');
 
 		await page.getByTestId('activity-filter-type').selectOption('transfer');

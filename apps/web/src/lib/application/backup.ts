@@ -1,6 +1,6 @@
 import { db } from '$lib/data/db';
 import { normalizeAccount, type Account } from '$lib/domain/account';
-import type { CategoryRow } from '$lib/data/db';
+import type { CategoryGroupRow, CategoryRow } from '$lib/data/db';
 import type { LedgerTransaction } from '$lib/domain/transaction';
 import { withVoidedAt } from '$lib/domain/transaction';
 import type { Goal } from '$lib/domain/goals';
@@ -35,6 +35,7 @@ export type LedgerBackup = {
 	exportedAt: string;
 	accounts: Account[];
 	categories: CategoryRow[];
+	categoryGroups: CategoryGroupRow[];
 	transactions: LedgerTransaction[];
 	goals: Goal[];
 	netWorthSnapshots: NetWorthSnapshot[];
@@ -48,6 +49,7 @@ export type EncryptedBackup = WrapEnvelope & {
 	exportedAt: string;
 	accounts: Account[];
 	categories: CategoryRow[];
+	categoryGroups: CategoryGroupRow[];
 	transactions: LedgerTransaction[];
 	goals: Goal[];
 	netWorthSnapshots: NetWorthSnapshot[];
@@ -65,10 +67,11 @@ const SECRET_SETTING_KEYS = new Set([
 async function collectSealedSnapshot(): Promise<
 	Omit<LedgerBackup, 'formatVersion' | 'exportedAt'>
 > {
-	const [accounts, categories, transactions, goals, netWorthSnapshots, settings] =
+	const [accounts, categories, categoryGroups, transactions, goals, netWorthSnapshots, settings] =
 		await Promise.all([
 			db.accounts.toArray(),
 			db.categories.toArray(),
+			db.categoryGroups.toArray(),
 			db.transactions.toArray(),
 			db.goals.toArray(),
 			db.netWorthSnapshots.toArray(),
@@ -77,7 +80,14 @@ async function collectSealedSnapshot(): Promise<
 
 	return {
 		accounts,
-		categories: categories.map((c) => ({ ...c, deletedAt: c.deletedAt ?? null })),
+		categories: categories.map((c) => ({
+			...c,
+			deletedAt: c.deletedAt ?? null,
+			groupId: c.groupId ?? '',
+			icon: c.icon || 'tag',
+			hidden: c.hidden === true
+		})),
+		categoryGroups,
 		transactions: transactions.map((t) => withVoidedAt(t)),
 		goals,
 		netWorthSnapshots,
@@ -210,11 +220,20 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 
 	await db.transaction(
 		'rw',
-		[db.accounts, db.categories, db.transactions, db.goals, db.netWorthSnapshots, db.settings],
+		[
+			db.accounts,
+			db.categories,
+			db.categoryGroups,
+			db.transactions,
+			db.goals,
+			db.netWorthSnapshots,
+			db.settings
+		],
 		async () => {
 			await Promise.all([
 				db.accounts.clear(),
 				db.categories.clear(),
+				db.categoryGroups.clear(),
 				db.transactions.clear(),
 				db.goals.clear(),
 				db.netWorthSnapshots.clear(),
@@ -223,16 +242,20 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 			await db.accounts.bulkPut(accounts);
 			const categories = (
 				normalized.categories as Array<
-					CategoryRow & { sortOrder?: number; deletedAt?: string | null }
+					CategoryRow & { sortOrder?: number; deletedAt?: string | null; groupId?: string; icon?: string; hidden?: boolean }
 				>
 			).map((c) => ({
 				...c,
-				deletedAt: typeof c.deletedAt === 'string' && c.deletedAt ? c.deletedAt : null
+				deletedAt: typeof c.deletedAt === 'string' && c.deletedAt ? c.deletedAt : null,
+				groupId: typeof c.groupId === 'string' ? c.groupId : '',
+				icon: typeof c.icon === 'string' && c.icon ? c.icon : 'tag',
+				hidden: c.hidden === true
 			}));
 			const toPut = categories.every((c) => typeof c.sortOrder === 'number')
 				? categories
 				: assignSortOrdersByName(categories);
 			await db.categories.bulkPut(toPut);
+			await db.categoryGroups.bulkPut(normalized.categoryGroups ?? []);
 			await db.transactions.bulkPut(
 				normalized.transactions.map((t) =>
 					withVoidedAt({ ...t, voidedAt: t.voidedAt ?? null, feeMinor: t.feeMinor })
@@ -274,6 +297,7 @@ function snapshotFromUnknown(parsed: object): LedgerBackup {
 		exportedAt?: string;
 		accounts?: Account[];
 		categories?: CategoryRow[];
+		categoryGroups?: CategoryGroupRow[];
 		transactions?: LedgerTransaction[];
 		goals?: Goal[];
 		netWorthSnapshots?: NetWorthSnapshot[];
@@ -294,6 +318,7 @@ function snapshotFromUnknown(parsed: object): LedgerBackup {
 		exportedAt: backup.exportedAt ?? new Date().toISOString(),
 		accounts: backup.accounts ?? [],
 		categories: backup.categories ?? [],
+		categoryGroups: backup.categoryGroups ?? [],
 		transactions: (backup.transactions ?? []).map((t) => withVoidedAt(t as LedgerTransaction)),
 		goals: (backup.goals ?? []).map((g) => ({
 			...g,

@@ -24,6 +24,8 @@
 		updateTransfer,
 		voidTransaction
 	} from '$lib/application/transactions';
+	import { listResolvedGroups } from '$lib/application/categories';
+	import type { OverlayGroup } from '$lib/domain/category-overlay';
 	import {
 		amountDigitsOnly,
 		formatAmountDigitsDisplay,
@@ -95,6 +97,7 @@
 	let occurredOn = $state(todayOccurredOn());
 	let selectedAccountId = $state('');
 	let categories = $state<CategoryRow[]>([]);
+	let categoryGroups = $state<OverlayGroup[]>([]);
 	let fieldError = $state<{ key: FormFieldKey; message: string } | null>(null);
 	let saving = $state(false);
 	let seeded = $state(false);
@@ -322,6 +325,7 @@
 					occurredOn = editing.occurredOn;
 					selectedAccountId = editing.accountId;
 					categories = await getCategoriesForType(type);
+					categoryGroups = await listResolvedGroups();
 					categoryId = editing.categoryId ?? '';
 					editBaseline = {
 						amountDigits: String(editing.amountMinor),
@@ -346,6 +350,7 @@
 				categoryId = '';
 				selectedAccountId = pocket;
 				categories = await getCategoriesForType('expense');
+				categoryGroups = await listResolvedGroups();
 				transferSourceId = pocket;
 				transferDestId = destDefault;
 				transferAmountRaw = '';
@@ -383,6 +388,7 @@
 					transferOccurredOn = draft.transferOccurredOn || today;
 					if (draft.mode === 'normal') {
 						categories = await getCategoriesForType(draft.type);
+						categoryGroups = await listResolvedGroups();
 					}
 				}
 				seeded = true;
@@ -429,6 +435,7 @@
 		type = next;
 		clearFieldError();
 		categories = await getCategoriesForType(next);
+		categoryGroups = await listResolvedGroups();
 		categoryId = '';
 	}
 
@@ -860,6 +867,7 @@
 						if (fieldError?.key === 'category') clearFieldError();
 					}}
 					{categories}
+					groups={categoryGroups}
 					showUncategorized
 					emptyMeans="uncategorized"
 					disabled={isVoidedView || saving}

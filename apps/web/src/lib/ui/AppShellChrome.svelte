@@ -40,6 +40,7 @@
 	import { verifyPassphrase } from '$lib/application/lock';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
+	import type { OverlayGroup } from '$lib/domain/category-overlay';
 	import type { ThemePreference } from '$lib/shared/theme';
 	import type { MonthSummary } from '$lib/domain/month-summary';
 	import type { CreatePocketInput, UpdatePocketInput } from '$lib/application/accounts';
@@ -77,6 +78,7 @@
 		canNextMonth?: boolean;
 		expenseCategories: CategoryRow[];
 		incomeCategories: CategoryRow[];
+		categoryGroups: OverlayGroup[];
 		lockEnabled: boolean;
 		signedIn?: boolean;
 		themePreference: ThemePreference;
@@ -94,10 +96,7 @@
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
 		onLockSession: () => void;
-		onCreateCategory: (name: string, kind: CategoryRow['kind']) => void | Promise<void>;
-		onRenameCategory: (id: string, name: string) => void | Promise<void>;
-		onDeleteCategory: (id: string) => void | Promise<void>;
-		onReorderCategories: (kind: CategoryRow['kind'], orderedIds: string[]) => void | Promise<void>;
+		onRefreshLedger: () => void | Promise<void>;
 		onCreatePocket: (input: CreatePocketInput) => void | Promise<void>;
 		onUpdatePocket: (input: UpdatePocketInput) => void | Promise<void>;
 		onDeletePocket: (id: string) => void | Promise<void>;
@@ -138,6 +137,7 @@
 		canNextMonth = false,
 		expenseCategories,
 		incomeCategories,
+		categoryGroups,
 		lockEnabled,
 		signedIn = false,
 		themePreference,
@@ -152,10 +152,7 @@
 		onEnableLock,
 		onDisableLock,
 		onLockSession,
-		onCreateCategory,
-		onRenameCategory,
-		onDeleteCategory,
-		onReorderCategories,
+		onRefreshLedger,
 		onCreatePocket,
 		onUpdatePocket,
 		onDeletePocket,
@@ -202,6 +199,9 @@
 	let sortOpen = $state(false);
 	let discardWarnOpen = $state(false);
 	let activitySort = $state<ActivitySortMode>(initialActivitySession.sort);
+	let categoriesReorderDirty = $state(false);
+	let pendingNav = $state<AppRoute | null>(null);
+	let leaveCategoriesOpen = $state(false);
 
 	const categoryKinds = $derived(
 		Object.fromEntries([
@@ -359,6 +359,11 @@
 
 	function navigate(next: string) {
 		if (!isAppRoute(next)) return;
+		if (route === 'categories' && categoriesReorderDirty && next !== 'categories') {
+			pendingNav = next;
+			leaveCategoriesOpen = true;
+			return;
+		}
 		onNavigate(next);
 		sidebar.setOpenMobile(false);
 	}
@@ -516,7 +521,7 @@
 	</Sidebar.Content>
 </Sidebar.Root>
 
-<Sidebar.Inset>
+<Sidebar.Inset class={route === 'categories' ? 'h-svh min-h-0 overflow-hidden' : undefined}>
 	<header
 		class="bg-background sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4 md:px-6"
 	>
@@ -559,9 +564,11 @@
 
 	<div
 		class={[
-			'mx-auto flex w-full flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8',
-			activityStageWide ? 'max-w-none' : 'max-w-3xl'
+			'mx-auto flex w-full flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8 max-w-3xl',
+			'data-[stage=wide]:max-w-none!',
+			route === 'categories' && 'min-h-0 overflow-hidden pb-6 md:pb-8'
 		]}
+		data-stage={route === 'categories' || activityStageWide ? 'wide' : 'narrow'}
 		data-testid="app-stage"
 	>
 		{#if route === 'home'}
@@ -683,6 +690,7 @@
 							categories={categoryPickerFlat}
 							incomeCategories={categoryPickerIncome}
 							expenseCategories={categoryPickerExpense}
+							groups={categoryGroups}
 							groupByKind={categoryGroupByKind}
 							showAllOption
 							showAdminFee={categoryShowAdminFee}
@@ -1020,12 +1028,10 @@
 			/>
 		{:else if route === 'categories'}
 			<CategoriesPanel
-				{expenseCategories}
-				{incomeCategories}
-				{onCreateCategory}
-				{onRenameCategory}
-				{onDeleteCategory}
-				{onReorderCategories}
+				categories={Object.values(categoriesById)}
+				groups={categoryGroups}
+				onRefresh={onRefreshLedger}
+				bind:reorderDirty={categoriesReorderDirty}
 			/>
 		{:else}
 			<MorePanel
@@ -1112,3 +1118,23 @@
 		</form>
 	</Dialog.Content>
 </Dialog.Root>
+
+<ConfirmDialog
+	open={leaveCategoriesOpen}
+	title="Discard group order?"
+	description="Leave Categories without saving reorder? Your last saved order stays."
+	confirmLabel="Leave"
+	destructive
+	confirmTestId="category-reorder-leave-confirm"
+	onOpenChange={(next) => (leaveCategoriesOpen = next)}
+	onConfirm={() => {
+		categoriesReorderDirty = false;
+		leaveCategoriesOpen = false;
+		const dest = pendingNav;
+		pendingNav = null;
+		if (dest) {
+			onNavigate(dest);
+			sidebar.setOpenMobile(false);
+		}
+	}}
+/>

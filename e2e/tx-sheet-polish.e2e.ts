@@ -28,8 +28,8 @@ test.describe('047 tx sheet polish', () => {
 
 		const categoryTrigger = page.getByRole('button', { name: 'Category' });
 		await page.getByText('Category', { exact: true }).first().click({ force: true });
-		await expect(page.getByRole('menuitem', { name: 'Food', exact: true })).toHaveCount(0);
+		await expect(page.getByRole('option', { name: 'Food', exact: true })).toHaveCount(0);
 		await categoryTrigger.click();
-		await expect(page.getByRole('menuitem', { name: 'Food', exact: true })).toBeVisible();
+		await expect(page.getByRole('option', { name: 'Food', exact: true })).toBeVisible();
 	});
 });

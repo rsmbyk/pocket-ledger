@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
+import { ensureCategory, goToNav, openAdd, openAddCategory, selectTxCategory } from './nav';
 
 test.describe('103 modal first-input autofocus', () => {
 	test.beforeEach(async ({ page }) => {
@@ -17,7 +17,7 @@ test.describe('103 modal first-input autofocus', () => {
 	test('Add category focuses name', async ({ page }) => {
 		await goToNav(page, 'categories');
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
-		await page.getByTestId('category-add-expense').click();
+		await openAddCategory(page, 'expense');
 		await expect(page.getByTestId('category-name-input')).toBeFocused();
 	});
 

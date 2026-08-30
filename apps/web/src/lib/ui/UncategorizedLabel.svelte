@@ -9,9 +9,16 @@
 		class?: string;
 		/** Override default system test id. */
 		testid?: string;
+		showIcon?: boolean;
 	};
 
-	let { system = true, label = 'Uncategorized', class: className = '', testid }: Props = $props();
+	let {
+		system = true,
+		label = 'Uncategorized',
+		class: className = '',
+		testid,
+		showIcon = true
+	}: Props = $props();
 
 	const systemTestId = $derived(
 		testid ?? (label === 'Admin Fee' ? 'admin-fee-system' : 'uncategorized-system')
@@ -22,7 +29,7 @@
 	class={cn('inline-flex max-w-full items-center gap-1.5', className)}
 	data-testid={system ? systemTestId : undefined}
 >
-	{#if system}
+	{#if system && showIcon}
 		<CircleDashedIcon class="text-muted-foreground size-3.5 shrink-0" aria-hidden="true" />
 	{/if}
 	<span class="truncate">{label}</span>
