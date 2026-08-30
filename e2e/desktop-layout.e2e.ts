@@ -167,10 +167,10 @@ test.describe('013 desktop layout', () => {
 		});
 
 		expect(inset).not.toBeNull();
-		expect(inset!.paddingTop).toBeGreaterThanOrEqual(8);
-		expect(inset!.paddingLeft).toBeGreaterThanOrEqual(8);
-		expect(inset!.top).toBeGreaterThanOrEqual(6);
-		expect(inset!.left).toBeGreaterThanOrEqual(6);
+		expect(inset!.paddingTop).toBeGreaterThanOrEqual(16);
+		expect(inset!.paddingLeft).toBeGreaterThanOrEqual(16);
+		expect(inset!.top).toBeGreaterThanOrEqual(12);
+		expect(inset!.left).toBeGreaterThanOrEqual(12);
 	});
 
 	test('command palette navigates and opens add', async ({ page }) => {

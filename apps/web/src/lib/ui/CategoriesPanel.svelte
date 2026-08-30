@@ -368,7 +368,7 @@
 	{/if}
 
 	<div
-		class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 pb-5 [scrollbar-gutter:stable]"
+		class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 [scrollbar-gutter:stable]"
 		data-testid="categories-desktop-grid"
 		data-kind={selectedKind}
 	>
@@ -446,9 +446,7 @@
 							</Card.Action>
 						</Card.Header>
 						<Card.Content class="p-3">
-							<ul
-								class="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2 p-0"
-							>
+							<ul class="m-0 grid list-none grid-cols-2 gap-2 p-0">
 								{#each row.categories as cat (cat.id)}
 									<li
 										class={cn(
@@ -513,9 +511,9 @@
 												<CheckIcon class="size-3.5" />
 											</Button>
 										{:else}
-											<span class="min-w-0 flex-1 truncate">{cat.name}</span>
+											<span class="min-w-0 flex-1 truncate pr-1">{cat.name}</span>
 											<span
-												class="flex h-6 w-[3.25rem] shrink-0 items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover/chip:opacity-100 group-focus-within/chip:opacity-100"
+												class="absolute top-1/2 right-1 z-10 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover/chip:opacity-100 group-focus-within/chip:opacity-100"
 											>
 												{#if cat.source === 'custom'}
 													<Button
