@@ -97,6 +97,7 @@ test.describe('123 overlay catalog / 124 categories chrome', () => {
 		await groceries.scrollIntoViewIfNeeded();
 		await groceries.hover();
 		await groceries.getByTestId('category-hide').click();
+		await expect(groceries).toHaveAttribute('data-hidden', 'true');
 
 		await page.goto('/');
 		await openAdd(page);

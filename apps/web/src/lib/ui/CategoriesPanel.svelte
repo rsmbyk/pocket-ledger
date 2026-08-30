@@ -515,41 +515,37 @@
 										{:else}
 											<span class="min-w-0 flex-1 truncate">{cat.name}</span>
 											<span
-												class="flex h-6 w-[3.25rem] shrink-0 items-center justify-end gap-0.5"
+												class="flex h-6 w-[3.25rem] shrink-0 items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover/chip:opacity-100 group-focus-within/chip:opacity-100"
 											>
-												<span
-													class="hidden items-center gap-0.5 group-hover/chip:flex group-focus-within/chip:flex"
-												>
-													{#if cat.source === 'custom'}
-														<Button
-															size="icon-xs"
-															variant="outline"
-															aria-label={`Edit ${cat.name}`}
-															data-testid="category-edit-name"
-															disabled={busy}
-															onclick={() => startRename(cat)}
-														>
-															<PencilIcon class="size-3.5" />
-														</Button>
-													{/if}
+												{#if cat.source === 'custom'}
 													<Button
 														size="icon-xs"
 														variant="outline"
-														aria-label={cat.hidden ? `Show ${cat.name}` : `Hide ${cat.name}`}
-														data-testid={cat.hidden ? 'category-show' : 'category-hide'}
+														aria-label={`Edit ${cat.name}`}
+														data-testid="category-edit-name"
 														disabled={busy}
-														onclick={() =>
-															void runAction(() =>
-																cat.hidden ? showCategory(cat.id) : hideCategory(cat.id)
-															)}
+														onclick={() => startRename(cat)}
 													>
-														{#if cat.hidden}
-															<EyeIcon class="size-3.5" />
-														{:else}
-															<EyeOffIcon class="size-3.5" />
-														{/if}
+														<PencilIcon class="size-3.5" />
 													</Button>
-												</span>
+												{/if}
+												<Button
+													size="icon-xs"
+													variant="outline"
+													aria-label={cat.hidden ? `Show ${cat.name}` : `Hide ${cat.name}`}
+													data-testid={cat.hidden ? 'category-show' : 'category-hide'}
+													disabled={busy}
+													onclick={() =>
+														void runAction(() =>
+															cat.hidden ? showCategory(cat.id) : hideCategory(cat.id)
+														)}
+												>
+													{#if cat.hidden}
+														<EyeIcon class="size-3.5" />
+													{:else}
+														<EyeOffIcon class="size-3.5" />
+													{/if}
+												</Button>
 											</span>
 										{/if}
 									</li>
