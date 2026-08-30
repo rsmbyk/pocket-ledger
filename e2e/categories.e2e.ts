@@ -1,5 +1,39 @@
-import { expect, test } from '@playwright/test';
-import { categoryChip, longPress, openAdd, selectCategoriesKind, selectTxCategory } from './nav';
+import { expect, test, type Page } from '@playwright/test';
+import {
+	categoryChip,
+	clickCategoryGroupAdd,
+	longPress,
+	openAdd,
+	selectCategoriesKind,
+	selectTxCategory
+} from './nav';
+
+async function firstRowCount(
+	page: Page,
+	parentTestId: string,
+	childSelector: string
+): Promise<number> {
+	return page.evaluate(
+		({ parentTestId, childSelector }) => {
+			const parent = document.querySelector(`[data-testid="${parentTestId}"]`);
+			if (!parent) return 0;
+			const kids = [...parent.querySelectorAll(childSelector)];
+			if (kids.length === 0) return 0;
+			const top = kids[0]!.getBoundingClientRect().top;
+			return kids.filter((el) => Math.abs(el.getBoundingClientRect().top - top) < 4).length;
+		},
+		{ parentTestId, childSelector }
+	);
+}
+
+function groupCardByTitle(page: Page, title: string) {
+	return page
+		.locator('[data-testid^="category-group-"]')
+		.filter({ has: page.getByTestId('category-add-in-group') })
+		.filter({
+			has: page.getByTestId('category-group-name').filter({ hasText: new RegExp(`^${title}$`) })
+		});
+}
 
 test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 	test('defaults to Income and does not show expense groups', async ({ page }) => {
@@ -52,10 +86,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 	test('adds a custom category from a group header plus', async ({ page }) => {
 		await page.goto('/categories');
 		await selectCategoriesKind(page, 'expense');
-		await page
-			.getByTestId('category-group-stock-group:food-drink')
-			.getByTestId('category-add-in-group')
-			.click();
+		await clickCategoryGroupAdd(page.getByTestId('category-group-stock-group:food-drink'));
 		await expect(page.getByTestId('category-add-dialog')).toBeVisible();
 		await page.getByTestId('category-name-input').fill('Warung');
 		await page.getByTestId('category-add').click();
@@ -119,10 +150,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 	test('custom chip can be renamed from hover edit', async ({ page }) => {
 		await page.goto('/categories');
 		await selectCategoriesKind(page, 'expense');
-		await page
-			.getByTestId('category-group-stock-group:food-drink')
-			.getByTestId('category-add-in-group')
-			.click();
+		await clickCategoryGroupAdd(page.getByTestId('category-group-stock-group:food-drink'));
 		await page.getByTestId('category-name-input').fill('Warung');
 		await page.getByTestId('category-add').click();
 		const warung = categoryChip(page, 'Warung');
@@ -144,9 +172,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await expect(page.getByTestId('category-group-kind')).toHaveCount(0);
 		await page.getByTestId('category-group-name-input').fill('Side');
 		await page.getByTestId('category-group-add').click();
-		await expect(
-			page.locator('[data-testid^="category-group-"]', { has: page.getByText('Side', { exact: true }) })
-		).toBeVisible();
+		await expect(groupCardByTitle(page, 'Side')).toBeVisible();
 	});
 
 	test('reorder hides search, has no Done, and Discard exits', async ({ page }) => {
@@ -190,7 +216,9 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await page.goto('/categories');
 		const card = page.getByTestId('category-group-stock-group:work');
 		await expect(card).toBeVisible();
-		const title = card.locator('[data-slot=card-title]');
+		const header = card.locator('[data-slot=card-header]');
+		await header.hover();
+		const title = card.getByTestId('category-group-name');
 		const plus = card.getByTestId('category-add-in-group');
 		const titleBox = await title.boundingBox();
 		const plusBox = await plus.boundingBox();
@@ -248,10 +276,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await page.goto('/categories');
 		await selectCategoriesKind(page, 'expense');
-		await page
-			.getByTestId('category-group-stock-group:food-drink')
-			.getByTestId('category-add-in-group')
-			.click();
+		await clickCategoryGroupAdd(page.getByTestId('category-group-stock-group:food-drink'));
 		await page.getByTestId('category-name-input').fill('Warung');
 		await page.getByTestId('category-add').click();
 		const warung = categoryChip(page, 'Warung');
@@ -296,7 +321,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		const home = page.getByTestId('category-group-row-stock-group:home');
 		const utilities = page.getByTestId('category-group-row-stock-group:utilities');
 		const food = page.getByTestId('category-group-row-stock-group:food-drink');
-		await expect(home).toBeVisible();
+		await home.scrollIntoViewIfNeeded();
 		const homeBox = await home.boundingBox();
 		const utilitiesBox = await utilities.boundingBox();
 		expect(homeBox).toBeTruthy();
@@ -306,14 +331,20 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		const handle = food.getByRole('button', { name: /Drag to reorder/ });
 		const handleBox = await handle.boundingBox();
 		expect(handleBox).toBeTruthy();
-		const dropY = homeBox!.y + homeBox!.height + 4;
-		const dropX = (homeBox!.x + homeBox!.width / 2);
+		const dropX = utilitiesBox!.x + Math.min(48, utilitiesBox!.width / 2);
+		const dropY = utilitiesBox!.y + 6;
 		await page.mouse.move(handleBox!.x + handleBox!.width / 2, handleBox!.y + handleBox!.height / 2);
 		await page.mouse.down();
 		await page.mouse.move(dropX, dropY, { steps: 24 });
-		await page.mouse.up();
-
 		const rows = page.locator('[data-testid^="category-group-row-"]');
+		await expect(rows.nth(1)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:food-drink'
+		);
+		await page.mouse.up();
+		await expect(page.locator('[data-is-dnd-shadow-item-internal]')).toHaveCount(0);
+
+		await expect(page.getByTestId('category-reorder-save')).toBeEnabled();
 		await expect(rows.nth(0)).toHaveAttribute('data-testid', 'category-group-row-stock-group:home');
 		await expect(rows.nth(1)).toHaveAttribute(
 			'data-testid',
@@ -323,7 +354,6 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 			'data-testid',
 			'category-group-row-stock-group:utilities'
 		);
-		await expect(page.getByTestId('category-reorder-save')).toBeEnabled();
 
 		await page.getByTestId('category-reorder-discard').click();
 		await page.getByTestId('category-reorder').click();
@@ -360,5 +390,179 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await expect(page.getByTestId('picker-group-stock-group:home')).toHaveCount(0);
 		await page.getByRole('option', { name: 'Groceries', exact: true }).click();
 		await expect(sheet.getByTestId('tx-category')).toContainText('Groceries');
+	});
+
+	test('form picker search matches a group label and shows every member', async ({ page }) => {
+		await page.goto('/');
+		await openAdd(page);
+		const sheet = page.getByRole('dialog');
+		await sheet.getByRole('button', { name: 'Income', exact: true }).click();
+		await sheet.getByTestId('tx-category').click();
+		await page.getByTestId('category-picker-search').fill('work');
+		await expect(page.getByTestId('picker-group-stock-group:work')).toBeVisible();
+		await expect(page.getByRole('option', { name: 'Salary', exact: true })).toBeVisible();
+		await expect(page.getByRole('option', { name: 'Bonus', exact: true })).toBeVisible();
+		await expect(page.getByRole('option', { name: 'Interest', exact: true })).toHaveCount(0);
+		await page.getByTestId('category-picker-search').fill('zzzz');
+		await expect(page.getByText('No matching categories.')).toBeVisible();
+		await expect(page.getByRole('option', { name: 'Salary', exact: true })).toHaveCount(0);
+	});
+
+	test('tablet sidebar keeps one group column and two chip columns', async ({ page }) => {
+		await page.setViewportSize({ width: 834, height: 1112 });
+		await page.goto('/categories');
+		await expect(page.getByTestId('app-drawer-rail')).toBeVisible();
+		await expect(page.getByTestId('category-group-stock-group:work')).toBeVisible();
+		expect(
+			await firstRowCount(page, 'category-list-income', ':scope > [data-testid^="category-group-"]')
+		).toBe(1);
+		expect(
+			await firstRowCount(page, 'category-group-stock-group:work', '[data-testid="category-chip"]')
+		).toBe(2);
+		const commission = categoryChip(page, 'Commission');
+		await commission.scrollIntoViewIfNeeded();
+		const clipped = await commission.locator('span.truncate').evaluate((el) => {
+			return el.scrollWidth > el.clientWidth + 1;
+		});
+		expect(clipped).toBe(false);
+	});
+
+	test('wide catalog prefers a second group before a third chip column', async ({ page }) => {
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await page.goto('/categories');
+		await expect(page.getByTestId('category-group-stock-group:work')).toBeVisible();
+		expect(
+			await firstRowCount(page, 'category-list-income', ':scope > [data-testid^="category-group-"]')
+		).toBeGreaterThanOrEqual(2);
+		expect(
+			await firstRowCount(page, 'category-group-stock-group:work', '[data-testid="category-chip"]')
+		).toBe(2);
+	});
+
+	test('very wide catalog can show four group columns', async ({ page }) => {
+		await page.setViewportSize({ width: 1920, height: 1080 });
+		await page.goto('/categories');
+		await expect(page.getByTestId('category-group-stock-group:work')).toBeVisible();
+		expect(
+			await firstRowCount(page, 'category-list-income', ':scope > [data-testid^="category-group-"]')
+		).toBe(4);
+	});
+
+	test('phone toolbar stretches Add group and Reorder; desktop hugs', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await page.goto('/categories');
+		const add = page.getByTestId('category-add-group');
+		const reorder = page.getByTestId('category-reorder');
+		const search = page.getByTestId('category-search');
+		const addBox = await add.boundingBox();
+		const reorderBox = await reorder.boundingBox();
+		const searchBox = await search.boundingBox();
+		expect(addBox).toBeTruthy();
+		expect(reorderBox).toBeTruthy();
+		expect(searchBox).toBeTruthy();
+		expect(Math.abs(addBox!.width - reorderBox!.width)).toBeLessThanOrEqual(2);
+		const pairLeft = Math.min(addBox!.x, reorderBox!.x);
+		const pairRight = Math.max(addBox!.x + addBox!.width, reorderBox!.x + reorderBox!.width);
+		expect(Math.abs(pairLeft - searchBox!.x)).toBeLessThanOrEqual(2);
+		expect(Math.abs(pairRight - (searchBox!.x + searchBox!.width))).toBeLessThanOrEqual(2);
+
+		await reorder.click();
+		const save = page.getByTestId('category-reorder-save');
+		const saveBox = await save.boundingBox();
+		const grid = page.getByTestId('categories-desktop-grid');
+		const gridBox = await grid.boundingBox();
+		expect(saveBox).toBeTruthy();
+		expect(gridBox).toBeTruthy();
+		expect(saveBox!.width).toBeLessThan(gridBox!.width * 0.4);
+		await page.getByTestId('category-reorder-discard').click();
+
+		await page.setViewportSize({ width: 1024, height: 800 });
+		await page.goto('/categories');
+		const addWide = await page.getByTestId('category-add-group').boundingBox();
+		const searchWide = await page.getByTestId('category-search').boundingBox();
+		expect(addWide).toBeTruthy();
+		expect(searchWide).toBeTruthy();
+		expect(addWide!.width).toBeLessThan(searchWide!.width / 2);
+	});
+
+	test('desktop group header reveals hide, rename, and add on hover', async ({ page }) => {
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await page.goto('/categories');
+		await selectCategoriesKind(page, 'expense');
+		await page.getByTestId('category-add-group').click();
+		await page.getByTestId('category-group-name-input').fill('Side hustle');
+		await page.getByTestId('category-group-add').click();
+		const custom = groupCardByTitle(page, 'Side hustle');
+		await expect(custom).toBeVisible();
+		const addWrap = custom.getByTestId('category-group-add-wrap');
+		expect(Number(await addWrap.evaluate((el) => getComputedStyle(el).opacity))).toBe(0);
+		await custom.locator('[data-slot=card-header]').hover();
+		expect(Number(await addWrap.evaluate((el) => getComputedStyle(el).opacity))).toBe(1);
+		await expect(custom.getByTestId('category-group-hide')).toBeVisible();
+		await expect(custom.getByTestId('category-group-edit')).toBeVisible();
+
+		const work = page.getByTestId('category-group-stock-group:work');
+		await page.getByTestId('category-kind-income').click();
+		await work.locator('[data-slot=card-header]').hover();
+		await expect(work.getByTestId('category-group-hide')).toBeVisible();
+		await expect(work.getByTestId('category-add-in-group')).toBeVisible();
+		await expect(work.getByTestId('category-group-edit')).toHaveCount(0);
+		await work.getByTestId('category-group-hide').click();
+		await expect(work).toHaveAttribute('data-group-hidden', 'true');
+		await expect(categoryChip(page, 'Salary')).toHaveAttribute('data-hidden', 'true');
+		await work.locator('[data-slot=card-header]').hover();
+		await work.getByTestId('category-group-show').click();
+		await expect(work).not.toHaveAttribute('data-group-hidden', 'true');
+	});
+
+	test('desktop pencil renames a custom group', async ({ page }) => {
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await page.goto('/categories');
+		await selectCategoriesKind(page, 'expense');
+		await page.getByTestId('category-add-group').click();
+		await page.getByTestId('category-group-name-input').fill('Side hustle');
+		await page.getByTestId('category-group-add').click();
+		const custom = groupCardByTitle(page, 'Side hustle');
+		await custom.locator('[data-slot=card-header]').hover();
+		await custom.getByTestId('category-group-edit').click();
+		await expect(page.getByTestId('category-rename-group-dialog')).toBeVisible();
+		await page.getByTestId('category-rename-group-name-input').fill('Gig work');
+		await page.getByTestId('category-rename-group-save').click();
+		await expect(page.getByTestId('category-rename-group-dialog')).toHaveCount(0);
+		await expect(groupCardByTitle(page, 'Gig work')).toBeVisible();
+	});
+
+	test('phone group name click renames custom; hold toggles hide', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await page.goto('/categories');
+		await selectCategoriesKind(page, 'expense');
+		await page.getByTestId('category-add-group').click();
+		await page.getByTestId('category-group-name-input').fill('Side hustle');
+		await page.getByTestId('category-group-add').click();
+		const custom = groupCardByTitle(page, 'Side hustle');
+		await expect(custom.getByTestId('category-add-in-group')).toBeVisible();
+		await expect(custom.getByTestId('category-group-hide')).toHaveCount(0);
+		await expect(custom.getByTestId('category-group-edit')).toHaveCount(0);
+		await clickCategoryGroupAdd(custom);
+		await page.getByTestId('category-name-input').fill('Gig');
+		await page.getByTestId('category-add').click();
+
+		await custom.getByTestId('category-group-name').click();
+		await expect(page.getByTestId('category-rename-group-dialog')).toBeVisible();
+		await page.getByRole('button', { name: 'Cancel' }).click();
+
+		await longPress(custom.getByTestId('category-group-name'));
+		await expect(page.getByTestId('category-rename-group-dialog')).toHaveCount(0);
+		await expect(custom).toHaveAttribute('data-group-hidden', 'true');
+	});
+
+	test('phone stock name click does not rename; hold hides the group', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await page.goto('/categories');
+		const work = page.getByTestId('category-group-stock-group:work');
+		await work.getByTestId('category-group-name').click();
+		await expect(page.getByTestId('category-rename-group-dialog')).toHaveCount(0);
+		await longPress(work.getByTestId('category-group-name'));
+		await expect(work).toHaveAttribute('data-group-hidden', 'true');
 	});
 });

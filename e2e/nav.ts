@@ -115,6 +115,14 @@ export async function selectCategoriesKind(
 	await expect(tab).toHaveAttribute('aria-selected', 'true');
 }
 
+/** Hover the group header (md+ actions are pointer-events-none until then), then click plus. */
+export async function clickCategoryGroupAdd(group: Locator): Promise<void> {
+	const add = group.getByTestId('category-add-in-group');
+	await add.scrollIntoViewIfNeeded();
+	await add.locator('xpath=ancestor::*[@data-slot="card-header"]').hover();
+	await add.click();
+}
+
 /** Create a custom category via the group header plus, or no-op when the name is stock. */
 export async function ensureCategory(
 	page: Page,
@@ -128,6 +136,7 @@ export async function ensureCategory(
 	if ((await chip.count()) === 0) {
 		const add = page.getByTestId('category-add-in-group').last();
 		await add.scrollIntoViewIfNeeded();
+		await add.locator('xpath=ancestor::*[@data-slot="card-header"]').hover();
 		await add.click();
 		await expect(page.getByTestId('category-name-input')).toBeVisible();
 		await page.getByTestId('category-name-input').fill(name);
@@ -144,6 +153,7 @@ export async function openAddCategory(page: Page, kind: 'expense' | 'income'): P
 	await selectCategoriesKind(page, kind);
 	const add = page.getByTestId('category-add-in-group').first();
 	await add.scrollIntoViewIfNeeded();
+	await add.locator('xpath=ancestor::*[@data-slot="card-header"]').hover();
 	await add.click();
 	await expect(page.getByTestId('category-add-dialog')).toBeVisible();
 }

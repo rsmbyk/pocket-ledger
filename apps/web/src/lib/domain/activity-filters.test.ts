@@ -12,9 +12,11 @@ import {
 	isDefaultActivityFilters,
 	nextRevealEndIndex,
 	resolveCategoryIdForType,
+	shouldShowActivityCategoryFilter,
 	sortTransactions,
 	sortTransactionsByDate,
-	UNCATEGORIZED_FILTER
+	UNCATEGORIZED_FILTER,
+	usedCategoryIds
 } from './activity-filters';
 
 function tx(
@@ -320,5 +322,49 @@ describe('activity-filters', () => {
 		).toBe(true);
 		const lastDay = dateSorted[first - 1]!.occurredOn;
 		expect(dateSorted[first] === undefined || dateSorted[first]!.occurredOn !== lastDay).toBe(true);
+	});
+});
+
+describe('usedCategoryIds / shouldShowActivityCategoryFilter (Spec 132)', () => {
+	it('includes voided rows and skips null categoryId', () => {
+		const rows = [
+			tx({ type: 'expense', amountMinor: 1, occurredOn: '2026-07-15', categoryId: 'food' }),
+			tx({
+				type: 'expense',
+				amountMinor: 1,
+				occurredOn: '2026-07-16',
+				categoryId: 'food',
+				voidedAt: '2026-07-16T00:00:00.000Z'
+			}),
+			tx({
+				type: 'income',
+				amountMinor: 1,
+				occurredOn: '2026-07-17',
+				categoryId: null
+			}),
+			tx({
+				type: 'expense',
+				amountMinor: 1,
+				occurredOn: '2026-07-18',
+				categoryId: 'groc',
+				voidedAt: '2026-07-18T00:00:00.000Z'
+			})
+		];
+		expect([...usedCategoryIds(rows)].sort()).toEqual(['food', 'groc']);
+		expect(shouldShowActivityCategoryFilter(rows)).toBe(true);
+	});
+
+	it('hides the control for an empty ledger', () => {
+		expect(usedCategoryIds([]).size).toBe(0);
+		expect(shouldShowActivityCategoryFilter([])).toBe(false);
+	});
+
+	it('hides the control when every row is uncategorized', () => {
+		const rows = [
+			tx({ type: 'income', amountMinor: 1, occurredOn: '2026-07-01', categoryId: null }),
+			tx({ type: 'transfer', amountMinor: 1, occurredOn: '2026-07-02', categoryId: null })
+		];
+		expect(usedCategoryIds(rows).size).toBe(0);
+		expect(shouldShowActivityCategoryFilter(rows)).toBe(false);
 	});
 });

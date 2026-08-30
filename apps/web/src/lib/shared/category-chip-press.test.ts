@@ -3,7 +3,8 @@ import {
 	CATEGORY_CHIP_LONG_PRESS_MS,
 	CATEGORY_CHIP_PRESS_SLOP_PX,
 	chipPressMovedBeyondSlop,
-	chipPressOutcome
+	chipPressOutcome,
+	groupHeaderPressOutcome
 } from './category-chip-press';
 
 describe('chipPressOutcome', () => {
@@ -68,6 +69,66 @@ describe('chipPressOutcome', () => {
 				movedBeyondSlop: false,
 				isCustom: true,
 				renameOpen: true
+			})
+		).toBe('none');
+	});
+});
+
+describe('groupHeaderPressOutcome', () => {
+	it('renames a custom group on a short press', () => {
+		expect(
+			groupHeaderPressOutcome({
+				durationMs: 80,
+				movedBeyondSlop: false,
+				isCustom: true
+			})
+		).toBe('rename');
+	});
+
+	it('does nothing on a short press of a stock group', () => {
+		expect(
+			groupHeaderPressOutcome({
+				durationMs: 80,
+				movedBeyondSlop: false,
+				isCustom: false
+			})
+		).toBe('none');
+	});
+
+	it('toggles visibility after the long-press threshold for stock and custom', () => {
+		expect(
+			groupHeaderPressOutcome({
+				durationMs: CATEGORY_CHIP_LONG_PRESS_MS,
+				movedBeyondSlop: false,
+				isCustom: false
+			})
+		).toBe('toggle');
+		expect(
+			groupHeaderPressOutcome({
+				durationMs: CATEGORY_CHIP_LONG_PRESS_MS,
+				movedBeyondSlop: false,
+				isCustom: true
+			})
+		).toBe('toggle');
+	});
+
+	it('does not toggle an empty group on hold', () => {
+		expect(
+			groupHeaderPressOutcome({
+				durationMs: CATEGORY_CHIP_LONG_PRESS_MS,
+				movedBeyondSlop: false,
+				isCustom: true,
+				emptyGroup: true
+			})
+		).toBe('none');
+	});
+
+	it('cancels when the pointer moves past slop', () => {
+		expect(
+			groupHeaderPressOutcome({
+				durationMs: 80,
+				movedBeyondSlop: true,
+				isCustom: true
 			})
 		).toBe('none');
 	});

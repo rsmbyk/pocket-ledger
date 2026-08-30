@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import {
+	confirmVoid,
 	ensureCategory,
 	goToNav,
 	openAdd,
@@ -368,7 +369,8 @@ test.describe('107 filter category picker + type coupling', () => {
 		await expect(page.getByTestId('picker-kind-expense')).toBeVisible();
 		await expect(page.getByRole('option', { name: 'Salary', exact: true })).toBeVisible();
 		await expect(page.getByRole('option', { name: 'Food', exact: true })).toBeVisible();
-		await expect(page.getByRole('option', { name: 'Admin Fee' })).toBeVisible();
+		await expect(page.getByRole('option', { name: 'Admin Fee' })).toHaveCount(0);
+		await expect(page.getByRole('option', { name: 'Bonus', exact: true })).toHaveCount(0);
 		await page.keyboard.press('Escape');
 
 		await page.getByTestId('activity-filter-type').selectOption('income');
@@ -397,5 +399,67 @@ test.describe('107 filter category picker + type coupling', () => {
 		await expect(page.getByTestId('activity-filter-category')).toContainText('Food');
 		await page.getByTestId('activity-filter-type').selectOption('income');
 		await expect(page.getByTestId('activity-filter-category')).toContainText('All');
+	});
+});
+
+test.describe('132 activity category filter used-only', () => {
+	test.use({ viewport: { width: 1024, height: 800 } });
+
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/');
+		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+	});
+
+	test('hides Category when the ledger is empty', async ({ page }) => {
+		await goToNav(page, 'activity');
+		await page.getByTestId('activity-filters-open').click();
+		await expect(filtersSurface(page)).toBeVisible();
+		await expect(page.getByTestId('activity-filter-category')).toHaveCount(0);
+	});
+
+	test('lists only used categories and still shows unused ones on the tx sheet', async ({
+		page
+	}) => {
+		await seedIncomeAndExpense(page);
+		await goToNav(page, 'activity');
+		await page.getByTestId('activity-filters-open').click();
+		await page.getByTestId('activity-filter-category').click();
+		await expect(page.getByRole('option', { name: 'Salary', exact: true })).toBeVisible();
+		await expect(page.getByRole('option', { name: 'Bonus', exact: true })).toHaveCount(0);
+		await page.getByTestId('category-picker-search').fill('work');
+		await expect(page.getByRole('option', { name: 'Salary', exact: true })).toBeVisible();
+		await expect(page.getByRole('option', { name: 'Food', exact: true })).toHaveCount(0);
+		await page.keyboard.press('Escape');
+		await page.goto('/');
+		await openAdd(page);
+		const sheet = page.getByRole('dialog');
+		await sheet.getByRole('button', { name: 'Income', exact: true }).click();
+		await sheet.getByTestId('tx-category').click();
+		await expect(page.getByRole('option', { name: 'Bonus', exact: true })).toBeVisible();
+	});
+
+	test('voided transactions still count as used', async ({ page }) => {
+		await ensureCategory(page, 'Groceries', 'expense');
+		await openAdd(page);
+		const form = page.getByRole('dialog');
+		await form.getByRole('button', { name: 'Expense', exact: true }).click();
+		await form.getByRole('textbox', { name: 'Amount' }).fill('15000');
+		await selectTxCategory(page, 'Groceries', form);
+		await form.getByRole('button', { name: 'Save' }).click();
+		await expect(form).toBeHidden({ timeout: 10_000 });
+
+		await goToNav(page, 'activity');
+		await page
+			.getByTestId('activity-list')
+			.locator('[data-testid^="activity-row-"]')
+			.first()
+			.click();
+		await page.getByTestId('tx-void').click();
+		await confirmVoid(page);
+
+		await page.getByTestId('activity-filters-open').click();
+		await expect(page.getByTestId('activity-filter-category')).toBeVisible();
+		await page.getByTestId('activity-filter-category').click();
+		await expect(page.getByRole('option', { name: 'Groceries', exact: true })).toBeVisible();
 	});
 });

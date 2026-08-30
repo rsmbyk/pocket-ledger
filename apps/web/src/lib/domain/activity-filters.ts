@@ -52,6 +52,31 @@ export function resolveCategoryIdForType(
 	return '';
 }
 
+/** Non-empty user category ids on the ledger, including voided rows (Spec 132). */
+export function usedCategoryIds(transactions: LedgerTransaction[]): Set<string> {
+	const ids = new Set<string>();
+	for (const tx of transactions) {
+		const id = tx.categoryId?.trim() ?? '';
+		if (id) ids.add(id);
+	}
+	return ids;
+}
+
+/** True when Activity should show the Category filter (Spec 132). */
+export function shouldShowActivityCategoryFilter(transactions: LedgerTransaction[]): boolean {
+	return usedCategoryIds(transactions).size > 0;
+}
+
+/** True when some ledger row has a null/empty categoryId (Uncategorized / transfers). */
+export function hasUncategorizedLedgerRow(transactions: LedgerTransaction[]): boolean {
+	return transactions.some((tx) => !(tx.categoryId?.trim() ?? ''));
+}
+
+/** True when some transfer has a positive admin fee. */
+export function hasAdminFeeLedgerRow(transactions: LedgerTransaction[]): boolean {
+	return transactions.some((tx) => tx.type === 'transfer' && (tx.feeMinor ?? 0) > 0);
+}
+
 export type AmountCompareOp = 'none' | 'lt' | 'gt';
 
 export type ActivityFilterCriteria = {

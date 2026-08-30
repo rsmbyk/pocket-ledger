@@ -16,6 +16,7 @@ import {
 	listResolvedGroups,
 	removeCategory,
 	renameCategory,
+	renameCategoryGroup,
 	saveCategoryGroupOrder,
 	showCategory
 } from './categories';
@@ -126,6 +127,21 @@ describe('categories application', () => {
 		await createCategoryGroup('Side', 'expense');
 		const groups = await listResolvedGroups();
 		expect(groups.filter((g) => g.kind === 'expense').at(-1)?.name).toBe('Side');
+	});
+
+	it('renames a custom group and rejects stock or duplicate names', async () => {
+		const created = await createCategoryGroup('Side hustle', 'expense');
+		await createCategoryGroup('Gig work', 'expense');
+		const renamed = await renameCategoryGroup(created.id, 'Freelance');
+		expect(renamed.name).toBe('Freelance');
+		expect((await listResolvedGroups()).some((g) => g.id === created.id && g.name === 'Freelance')).toBe(
+			true
+		);
+		await expect(renameCategoryGroup(created.id, 'gig work')).rejects.toThrow(/already exists/i);
+		await expect(renameCategoryGroup(created.id, 'Home')).rejects.toThrow(/already exists/i);
+		await expect(renameCategoryGroup('stock-group:work', 'Office')).rejects.toThrow(
+			/cannot be renamed/i
+		);
 	});
 
 	it('persists income and expense group order in one session', async () => {
