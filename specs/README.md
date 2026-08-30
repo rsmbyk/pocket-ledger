@@ -141,3 +141,6 @@ Living behavior contracts for Pocket Ledger.
 | [122](122-android-second-repo-parked/spec.md)          | Android later (second GitHub repo)                           | Accepted (parked)                                                            |
 | [123](123-category-groups-default-catalog/spec.md)     | Overlay catalog, Categories list, searchable form picker     | Accepted                                                                     |
 | [124](124-categories-kind-tabs-search/spec.md)         | Categories kind tabs, search, hover chips                    | Accepted                                                                     |
+| [125](125-categories-reorder-session-chrome/spec.md)   | Categories reorder session and chrome                        | Accepted                                                                     |
+| [126](126-categories-mobile-chrome-tap-hide/spec.md)   | Categories mobile chrome, tap-to-hide, long-press edit       | Draft                                                                        |
+| [127](127-categories-reorder-drop-between/spec.md)     | Categories reorder drop-between                              | Draft                                                                        |
