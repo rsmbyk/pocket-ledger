@@ -10,6 +10,7 @@
 		UNCATEGORIZED_FILTER
 	} from '$lib/domain/activity-filters';
 	import { STOCK_ADMIN_FEE_ICON, STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
+	import { filterCatalogGroups } from '$lib/domain/category-catalog-filter';
 	import UncategorizedLabel from '$lib/ui/UncategorizedLabel.svelte';
 	import CategoryIcon from '$lib/ui/CategoryIcon.svelte';
 	import { cn } from '$lib/utils.js';
@@ -127,15 +128,18 @@
 
 	const visibleSections = $derived.by((): PickerSection[] => {
 		return sections
-			.map((section) => ({
-				...section,
-				groups: section.groups
-					.map((group) => ({
-						...group,
-						items: group.items.filter((c) => matchesSearch(c.name))
+			.map((section) => {
+				const items = section.groups.flatMap((g) => g.items);
+				const filtered = filterCatalogGroups(section.groups, items, search);
+				return {
+					...section,
+					groups: filtered.map((row) => ({
+						id: row.group.id,
+						name: row.group.name,
+						items: row.categories
 					}))
-					.filter((g) => g.items.length > 0)
-			}))
+				};
+			})
 			.filter((s) => s.groups.length > 0);
 	});
 

@@ -51,9 +51,13 @@
 		DEFAULT_ACTIVITY_FILTERS,
 		DEFAULT_ACTIVITY_SORT,
 		filterTransactions,
+		hasAdminFeeLedgerRow,
+		hasUncategorizedLedgerRow,
 		isCategoryFilterDisabled,
 		isDefaultActivityFilters,
 		resolveCategoryIdForType,
+		shouldShowActivityCategoryFilter,
+		usedCategoryIds,
 		type ActivityFilterCriteria,
 		type ActivitySortMode,
 		type ActivityTypeFilter
@@ -135,8 +139,8 @@
 		monthSummary,
 		canPrevMonth = false,
 		canNextMonth = false,
-		expenseCategories,
-		incomeCategories,
+		expenseCategories: _expenseCategories,
+		incomeCategories: _incomeCategories,
 		categoryGroups,
 		lockEnabled,
 		signedIn = false,
@@ -204,26 +208,36 @@
 	let leaveCategoriesOpen = $state(false);
 
 	const categoryKinds = $derived(
-		Object.fromEntries([
-			...incomeCategories.map((c) => [c.id, 'income' as const]),
-			...expenseCategories.map((c) => [c.id, 'expense' as const])
-		])
+		Object.fromEntries(Object.values(categoriesById).map((c) => [c.id, c.kind]))
+	);
+	const usedIds = $derived(usedCategoryIds(transactions));
+	const showActivityCategoryFilter = $derived(shouldShowActivityCategoryFilter(transactions));
+	const usedIncomeCategories = $derived(
+		Object.values(categoriesById).filter((c) => c.kind === 'income' && usedIds.has(c.id))
+	);
+	const usedExpenseCategories = $derived(
+		Object.values(categoriesById).filter((c) => c.kind === 'expense' && usedIds.has(c.id))
 	);
 	const draftFilterType = $derived((draft.type ?? 'all') as ActivityTypeFilter);
 	const categoryFilterDisabled = $derived(isCategoryFilterDisabled(draftFilterType));
 	const categoryGroupByKind = $derived(draftFilterType === 'all');
-	const categoryShowAdminFee = $derived(draftFilterType === 'all');
+	const categoryShowAdminFee = $derived(
+		showActivityCategoryFilter && draftFilterType === 'all' && hasAdminFeeLedgerRow(transactions)
+	);
+	const categoryShowUncategorized = $derived(
+		showActivityCategoryFilter && hasUncategorizedLedgerRow(transactions)
+	);
 	const categoryPickerIncome = $derived(
-		draftFilterType === 'expense' || draftFilterType === 'transfer' ? [] : incomeCategories
+		draftFilterType === 'expense' || draftFilterType === 'transfer' ? [] : usedIncomeCategories
 	);
 	const categoryPickerExpense = $derived(
-		draftFilterType === 'income' || draftFilterType === 'transfer' ? [] : expenseCategories
+		draftFilterType === 'income' || draftFilterType === 'transfer' ? [] : usedExpenseCategories
 	);
 	const categoryPickerFlat = $derived(
 		draftFilterType === 'income'
-			? incomeCategories
+			? usedIncomeCategories
 			: draftFilterType === 'expense'
-				? expenseCategories
+				? usedExpenseCategories
 				: []
 	);
 
@@ -399,6 +413,18 @@
 	function persistActivityListSession() {
 		writeActivityListSession({ sort: activitySort, filters: applied });
 	}
+
+	$effect(() => {
+		if (showActivityCategoryFilter) return;
+		const snapDraft = (draft.categoryId ?? '') !== '';
+		const snapApplied = (applied.categoryId ?? '') !== '';
+		if (!snapDraft && !snapApplied) return;
+		if (snapDraft) draft = { ...draft, categoryId: '' };
+		if (snapApplied) {
+			applied = { ...applied, categoryId: '' };
+			persistActivityListSession();
+		}
+	});
 
 	const sortOptions: { mode: ActivitySortMode; label: string; testid: string }[] = [
 		{ mode: 'createdAt-desc', label: 'Default', testid: 'activity-sort-createdAt-desc' },
@@ -680,26 +706,28 @@
 							<option value="transfer">Transfer</option>
 						</select>
 					</div>
-					<div class="space-y-1">
-						<Label for="activity-filter-category">Category</Label>
-						<CategoryPicker
-							id="activity-filter-category"
-							testid="activity-filter-category"
-							value={draft.categoryId ?? ''}
-							onValueChange={onFilterCategoryChange}
-							categories={categoryPickerFlat}
-							incomeCategories={categoryPickerIncome}
-							expenseCategories={categoryPickerExpense}
-							groups={categoryGroups}
-							groupByKind={categoryGroupByKind}
-							showAllOption
-							showAdminFee={categoryShowAdminFee}
-							showUncategorized
-							emptyMeans="all"
-							disabled={categoryFilterDisabled}
-							ariaLabel="Category"
-						/>
-					</div>
+					{#if showActivityCategoryFilter}
+						<div class="space-y-1">
+							<Label for="activity-filter-category">Category</Label>
+							<CategoryPicker
+								id="activity-filter-category"
+								testid="activity-filter-category"
+								value={draft.categoryId ?? ''}
+								onValueChange={onFilterCategoryChange}
+								categories={categoryPickerFlat}
+								incomeCategories={categoryPickerIncome}
+								expenseCategories={categoryPickerExpense}
+								groups={categoryGroups}
+								groupByKind={categoryGroupByKind}
+								showAllOption
+								showAdminFee={categoryShowAdminFee}
+								showUncategorized={categoryShowUncategorized}
+								emptyMeans="all"
+								disabled={categoryFilterDisabled}
+								ariaLabel="Category"
+							/>
+						</div>
+					{/if}
 					<div class="space-y-1">
 						<Label for="activity-filter-pocket">Pocket</Label>
 						<DropdownMenu.Root>

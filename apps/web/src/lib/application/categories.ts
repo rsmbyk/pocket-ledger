@@ -19,6 +19,7 @@ import {
 	STOCK_CUSTOM_ICON,
 	catchAllGroupId,
 	isStockCategoryId,
+	isStockGroupId,
 	stockGroupById
 } from '$lib/domain/default-category-catalog';
 import {
@@ -244,6 +245,22 @@ export async function createCategoryGroup(
 	};
 	await putCategoryGroup(group);
 	return { ...group, name };
+}
+
+export async function renameCategoryGroup(
+	id: string,
+	nameRaw: string
+): Promise<CategoryGroupRow> {
+	if (isStockGroupId(id)) throw new Error('Stock groups cannot be renamed');
+	const name = normalizeGroupName(nameRaw);
+	const { prefs, groups } = await overlayInputs();
+	const current = groups.find((g) => g.id === id);
+	if (!current) throw new Error('Group not found');
+	assertUniqueGroupName(name, current.kind, resolveGroups(prefs, groups), id);
+	const raw = await db.categoryGroups.get(id);
+	if (!raw) throw new Error('Group not found');
+	await putCategoryGroup({ ...raw, name: await sealField(name) });
+	return { ...raw, name };
 }
 
 export async function renameCategory(id: string, nameRaw: string): Promise<CategoryRow> {

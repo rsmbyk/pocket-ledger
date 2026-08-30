@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { confirmVoid, goToNav, openAdd, selectActivityFilterCategory } from './nav';
+import { confirmVoid, ensureCategory, goToNav, openAdd, selectActivityFilterCategory, selectTxCategory } from './nav';
 
 test.describe('106 transfer admin fee', () => {
 	test.beforeEach(async ({ page }) => {
@@ -53,6 +53,14 @@ test.describe('106 transfer admin fee', () => {
 
 	test('Activity Admin Fee filter shows fee transfers', async ({ page }) => {
 		await ensureVacationPocket(page);
+		await ensureCategory(page, 'Salary', 'income');
+		await openAdd(page);
+		const form = page.getByRole('dialog');
+		await form.getByRole('button', { name: 'Income', exact: true }).click();
+		await form.getByRole('textbox', { name: 'Amount' }).fill('1000');
+		await selectTxCategory(page, 'Salary', form);
+		await form.getByRole('button', { name: 'Save' }).click();
+		await expect(form).toBeHidden({ timeout: 10_000 });
 		await createFeeTransfer(page, '8000', '100');
 
 		await page.setViewportSize({ width: 390, height: 844 });

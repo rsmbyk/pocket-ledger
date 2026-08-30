@@ -1,7 +1,7 @@
 # Spec 132: Activity category filter used-only
 
 - **ID:** 132
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

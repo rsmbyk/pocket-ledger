@@ -144,8 +144,8 @@ Living behavior contracts for Pocket Ledger.
 | [125](125-categories-reorder-session-chrome/spec.md)   | Categories reorder session and chrome                        | Accepted                                                                     |
 | [126](126-categories-mobile-chrome-tap-hide/spec.md)   | Categories mobile chrome, tap-to-hide, long-press edit       | Accepted                                                                     |
 | [127](127-categories-reorder-drop-between/spec.md)     | Categories reorder drop-between                              | Accepted                                                                     |
-| [128](128-categories-stage-grid/spec.md)               | Categories stage-width grid                                  | Draft                                                                        |
-| [129](129-categories-toolbar-full-width/spec.md)        | Categories toolbar full width on small screens               | Draft                                                                        |
-| [130](130-picker-search-group-label/spec.md)            | CategoryPicker search matches group labels                   | Draft                                                                        |
-| [131](131-group-header-actions/spec.md)                 | Categories group header actions                              | Draft                                                                        |
-| [132](132-activity-filter-used-categories/spec.md)      | Activity category filter used-only                           | Draft                                                                        |
+| [128](128-categories-stage-grid/spec.md)               | Categories stage-width grid                                  | Accepted                                                                     |
+| [129](129-categories-toolbar-full-width/spec.md)        | Categories toolbar full width on small screens               | Accepted                                                                     |
+| [130](130-picker-search-group-label/spec.md)            | CategoryPicker search matches group labels                   | Accepted                                                                     |
+| [131](131-group-header-actions/spec.md)                 | Categories group header actions                              | Accepted                                                                     |
+| [132](132-activity-filter-used-categories/spec.md)      | Activity category filter used-only                           | Accepted                                                                     |

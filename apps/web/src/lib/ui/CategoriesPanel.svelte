@@ -33,6 +33,7 @@
 		createCategoryGroup,
 		hideCategory,
 		renameCategory,
+		renameCategoryGroup,
 		saveCategoryGroupOrder,
 		showCategory
 	} from '$lib/application/categories';
@@ -48,7 +49,8 @@
 	import {
 		CATEGORY_CHIP_LONG_PRESS_MS,
 		chipPressMovedBeyondSlop,
-		chipPressOutcome
+		chipPressOutcome,
+		groupHeaderPressOutcome
 	} from '$lib/shared/category-chip-press';
 	import { IsMobile } from '$lib/hooks/is-mobile.svelte.js';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
@@ -84,6 +86,15 @@
 		slop: boolean;
 		timer: ReturnType<typeof setTimeout> | null;
 	};
+	type HeaderPress = {
+		groupId: string;
+		pointerId: number;
+		startX: number;
+		startY: number;
+		startedAt: number;
+		slop: boolean;
+		timer: ReturnType<typeof setTimeout> | null;
+	};
 	let mode = $state<Mode>('view');
 	let selectedKind = $state<CategoryKind>(readCategoriesKind());
 	let searchQuery = $state('');
@@ -94,6 +105,9 @@
 	let addName = $state('');
 	let addGroupDialogOpen = $state(false);
 	let addGroupName = $state('');
+	let renameGroupDialogOpen = $state(false);
+	let renameGroupId = $state('');
+	let renameGroupName = $state('');
 	let discardConfirmOpen = $state(false);
 	let busy = $state(false);
 	let error = $state('');
@@ -112,6 +126,9 @@
 
 	const addDirty = $derived(addName.trim() !== '');
 	const addGroupDirty = $derived(addGroupName.trim() !== '');
+	const renameGroupDirty = $derived(renameGroupName.trim() !== '');
+	const headerActionReveal =
+		'md:pointer-events-none md:opacity-0 md:group-hover/card-header:pointer-events-auto md:group-hover/card-header:opacity-100 md:group-focus-within/card-header:pointer-events-auto md:group-focus-within/card-header:opacity-100';
 
 	const kindMeta = {
 		income: {
@@ -152,7 +169,7 @@
 			if (opts?.renameId) {
 				renameErrorId = opts.renameId;
 				nameFieldError = message;
-			} else if (addDialogOpen || addGroupDialogOpen) {
+			} else if (addDialogOpen || addGroupDialogOpen || renameGroupDialogOpen) {
 				nameFieldError = message;
 			} else {
 				error = message;
@@ -369,6 +386,142 @@
 			})
 		);
 	}
+
+	function catsInGroup(groupId: string): CategoryRow[] {
+		return kindCategories.filter((c) => c.groupId === groupId);
+	}
+
+	function isGroupAllHidden(cats: CategoryRow[]): boolean {
+		return cats.length > 0 && cats.every((c) => c.hidden);
+	}
+
+	async function toggleGroupVisibility(cats: CategoryRow[]) {
+		if (cats.length === 0) return;
+		if (isGroupAllHidden(cats)) {
+			for (const cat of cats) {
+				if (cat.hidden) await showCategory(cat.id);
+			}
+			return;
+		}
+		for (const cat of cats) {
+			if (!cat.hidden) await hideCategory(cat.id);
+		}
+	}
+
+	function openRenameGroup(group: OverlayGroup) {
+		if (group.source !== 'custom') return;
+		renameGroupId = group.id;
+		renameGroupName = group.name;
+		nameFieldError = '';
+		renameGroupDialogOpen = true;
+	}
+
+	let headerPress = $state<HeaderPress | null>(null);
+
+	function clearHeaderPress() {
+		if (headerPress?.timer) clearTimeout(headerPress.timer);
+		headerPress = null;
+	}
+
+	function applyHeaderOutcome(
+		group: OverlayGroup,
+		outcome: ReturnType<typeof groupHeaderPressOutcome>
+	) {
+		if (outcome === 'rename') {
+			openRenameGroup(group);
+			return;
+		}
+		if (outcome === 'toggle') {
+			void runAction(() => toggleGroupVisibility(catsInGroup(group.id)));
+		}
+	}
+
+	function onHeaderPointerDown(group: OverlayGroup, e: PointerEvent) {
+		if (!belowMd.current) return;
+		if (e.button > 0) return;
+		clearHeaderPress();
+		try {
+			(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+		} catch {
+			// Synthetic Playwright presses may not have a capturable pointer.
+		}
+		const cats = catsInGroup(group.id);
+		const timer = setTimeout(() => {
+			if (!headerPress || headerPress.groupId !== group.id || headerPress.slop) return;
+			applyHeaderOutcome(
+				group,
+				groupHeaderPressOutcome({
+					durationMs: CATEGORY_CHIP_LONG_PRESS_MS,
+					movedBeyondSlop: false,
+					isCustom: group.source === 'custom',
+					emptyGroup: cats.length === 0,
+					renameOpen: renameGroupDialogOpen
+				})
+			);
+			clearHeaderPress();
+		}, CATEGORY_CHIP_LONG_PRESS_MS);
+		headerPress = {
+			groupId: group.id,
+			pointerId: e.pointerId,
+			startX: e.clientX,
+			startY: e.clientY,
+			startedAt: performance.now(),
+			slop: false,
+			timer
+		};
+	}
+
+	function onHeaderPointerMove(e: PointerEvent) {
+		if (!headerPress || e.pointerId !== headerPress.pointerId) return;
+		if (headerPress.slop) return;
+		if (chipPressMovedBeyondSlop(headerPress.startX, headerPress.startY, e.clientX, e.clientY)) {
+			headerPress.slop = true;
+			if (headerPress.timer) {
+				clearTimeout(headerPress.timer);
+				headerPress.timer = null;
+			}
+		}
+	}
+
+	function onHeaderPointerUp(group: OverlayGroup, e: PointerEvent) {
+		if (!belowMd.current) return;
+		if (!headerPress || headerPress.groupId !== group.id || e.pointerId !== headerPress.pointerId) {
+			return;
+		}
+		const durationMs = performance.now() - headerPress.startedAt;
+		const slop = headerPress.slop;
+		clearHeaderPress();
+		applyHeaderOutcome(
+			group,
+			groupHeaderPressOutcome({
+				durationMs,
+				movedBeyondSlop: slop,
+				isCustom: group.source === 'custom',
+				emptyGroup: catsInGroup(group.id).length === 0,
+				renameOpen: renameGroupDialogOpen
+			})
+		);
+	}
+
+	function onHeaderContextMenu(e: MouseEvent) {
+		if (belowMd.current) e.preventDefault();
+	}
+
+	function onHeaderKeydown(group: OverlayGroup, e: KeyboardEvent) {
+		if (!belowMd.current) return;
+		if (e.key !== 'Enter' && e.key !== ' ') return;
+		e.preventDefault();
+		applyHeaderOutcome(
+			group,
+			groupHeaderPressOutcome({
+				durationMs: 0,
+				movedBeyondSlop: false,
+				isCustom: group.source === 'custom',
+				emptyGroup: catsInGroup(group.id).length === 0,
+				renameOpen: renameGroupDialogOpen
+			})
+		);
+	}
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col gap-3" data-testid="categories-panel">
@@ -415,7 +568,14 @@
 		</div>
 	{/if}
 
-	<div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+	<div
+		class={cn(
+			'flex shrink-0 items-center gap-2',
+			mode === 'reorder'
+				? 'flex-wrap justify-end'
+				: 'max-md:grid max-md:w-full max-md:grid-cols-2 md:flex-wrap md:justify-end'
+		)}
+	>
 		{#if mode === 'reorder'}
 			<Button
 				type="button"
@@ -451,7 +611,7 @@
 				type="button"
 				variant="outline"
 				size="sm"
-				class="gap-1.5 [&_svg]:size-3.5"
+				class="gap-1.5 max-md:w-full [&_svg]:size-3.5"
 				disabled={busy}
 				data-testid="category-add-group"
 				onclick={() => {
@@ -467,7 +627,7 @@
 				type="button"
 				variant="outline"
 				size="sm"
-				class="gap-1.5 [&_svg]:size-3.5"
+				class="gap-1.5 max-md:w-full [&_svg]:size-3.5"
 				disabled={busy}
 				data-testid="category-reorder"
 				onclick={enterReorder}
@@ -489,7 +649,7 @@
 			data-kind={selectedKind}
 		>
 			<div
-				class="grid content-start gap-4 sm:grid-cols-2 xl:grid-cols-3"
+				class="grid content-start gap-4 [grid-template-columns:repeat(auto-fill,minmax(min(100%,22rem),1fr))]"
 				data-testid={meta.listTestId}
 				data-kind={selectedKind}
 			>
@@ -541,9 +701,18 @@
 			{:else}
 				{#each filteredRows as row (row.group.id)}
 					{@const group = row.group}
+					{@const groupCats = catsInGroup(group.id)}
+					{@const groupAllHidden = isGroupAllHidden(groupCats)}
+					{@const groupEmpty = groupCats.length === 0}
+					{@const isCustomGroup = group.source === 'custom'}
 					<Card.Root
-						class={cn('flex min-h-0 flex-col gap-0 overflow-hidden py-0', meta.cardClass)}
+						class={cn(
+							'@container flex min-h-0 flex-col gap-0 overflow-hidden py-0',
+							meta.cardClass,
+							groupAllHidden && 'opacity-60 shadow-none'
+						)}
 						data-testid={`category-group-${group.id}`}
+						data-group-hidden={groupAllHidden ? 'true' : undefined}
 					>
 						<Card.Header
 							class={cn(
@@ -551,25 +720,91 @@
 								meta.headerClass
 							)}
 						>
-							<Card.Title class="self-center text-sm leading-none font-medium"
-								>{group.name}</Card.Title
-							>
-							<Card.Action class="row-span-1 self-center">
-								<Button
+							{#if belowMd.current}
+								<button
 									type="button"
-									variant="ghost"
-									size="icon-xs"
-									data-testid="category-add-in-group"
-									aria-label={`Add category to ${group.name}`}
-									disabled={busy}
-									onclick={() => openAdd(group.id)}
+									class="self-center truncate text-left text-sm leading-none font-medium"
+									data-slot="card-title"
+									data-testid="category-group-name"
+									aria-label={group.name}
+									onpointerdown={(e) => onHeaderPointerDown(group, e)}
+									onpointermove={onHeaderPointerMove}
+									onpointerup={(e) => onHeaderPointerUp(group, e)}
+									onpointercancel={clearHeaderPress}
+									oncontextmenu={onHeaderContextMenu}
+									onkeydown={(e) => onHeaderKeydown(group, e)}
 								>
-									<PlusIcon class="size-3.5" />
-								</Button>
+									{group.name}
+								</button>
+							{:else}
+								<Card.Title
+									class="self-center text-sm leading-none font-medium"
+									data-testid="category-group-name"
+								>
+									{group.name}
+								</Card.Title>
+							{/if}
+							<Card.Action class="row-span-1 self-center">
+								<div class="flex items-center">
+									{#if !belowMd.current}
+										<div class={cn('flex items-center', headerActionReveal)}>
+											<span class="bg-border mx-1 h-4 w-px shrink-0" aria-hidden="true"></span>
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon-xs"
+												data-testid={groupAllHidden ? 'category-group-show' : 'category-group-hide'}
+												aria-label={groupAllHidden ? 'Show group' : 'Hide group'}
+												disabled={busy || groupEmpty}
+												onclick={() =>
+													void runAction(() => toggleGroupVisibility(groupCats))}
+											>
+												{#if groupAllHidden}
+													<EyeIcon class="size-3.5" />
+												{:else}
+													<EyeOffIcon class="size-3.5" />
+												{/if}
+											</Button>
+											{#if isCustomGroup}
+												<span class="bg-border mx-1 h-4 w-px shrink-0" aria-hidden="true"></span>
+												<Button
+													type="button"
+													variant="ghost"
+													size="icon-xs"
+													data-testid="category-group-edit"
+													aria-label={`Rename ${group.name}`}
+													disabled={busy}
+													onclick={() => openRenameGroup(group)}
+												>
+													<PencilIcon class="size-3.5" />
+												</Button>
+											{/if}
+										</div>
+									{/if}
+									<div
+										class={cn('flex items-center', !belowMd.current && headerActionReveal)}
+										data-testid="category-group-add-wrap"
+									>
+										<span class="bg-border mx-1 h-4 w-px shrink-0" aria-hidden="true"></span>
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon-xs"
+											data-testid="category-add-in-group"
+											aria-label={`Add category to ${group.name}`}
+											disabled={busy}
+											onclick={() => openAdd(group.id)}
+										>
+											<PlusIcon class="size-3.5" />
+										</Button>
+									</div>
+								</div>
 							</Card.Action>
 						</Card.Header>
 						<Card.Content class="p-3">
-							<ul class="m-0 grid list-none grid-cols-2 gap-2 p-0">
+							<ul
+								class="m-0 grid list-none grid-cols-1 gap-2 p-0 @min-[22rem]:grid-cols-2 @min-[32rem]:grid-cols-3"
+							>
 								{#each row.categories as cat (cat.id)}
 									<li
 										class={cn(
@@ -795,6 +1030,55 @@
 				</Button>
 				<Button type="submit" disabled={busy || !addGroupDirty} data-testid="category-group-add">
 					Add
+				</Button>
+			</div>
+		</form>
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={renameGroupDialogOpen}>
+	<Dialog.Content class="sm:max-w-md" data-testid="category-rename-group-dialog">
+		<Dialog.Header>
+			<Dialog.Title>Rename group</Dialog.Title>
+			<Dialog.Description>Must be unique among {meta.title.toLowerCase()}.</Dialog.Description>
+		</Dialog.Header>
+		<form
+			class="space-y-4"
+			onsubmit={(e) => {
+				e.preventDefault();
+				void runAction(async () => {
+					await renameCategoryGroup(renameGroupId, renameGroupName);
+					renameGroupName = '';
+					renameGroupId = '';
+					renameGroupDialogOpen = false;
+				});
+			}}
+		>
+			<Input
+				placeholder="Name"
+				bind:value={renameGroupName}
+				required
+				data-testid="category-rename-group-name-input"
+			/>
+			{#if nameFieldError && renameGroupDialogOpen}
+				<p class="text-destructive text-sm" role="alert">{nameFieldError}</p>
+			{/if}
+			<div class="flex justify-end gap-2">
+				<Button
+					type="button"
+					variant="outline"
+					onclick={() => {
+						renameGroupDialogOpen = false;
+					}}
+				>
+					Cancel
+				</Button>
+				<Button
+					type="submit"
+					disabled={busy || !renameGroupDirty}
+					data-testid="category-rename-group-save"
+				>
+					Save
 				</Button>
 			</div>
 		</form>
