@@ -578,18 +578,9 @@
 										data-testid="category-chip"
 										data-name={cat.name}
 										data-hidden={cat.hidden ? 'true' : undefined}
-										aria-label={chipAriaLabel(cat)}
-										role={belowMd.current && editingId !== cat.id ? 'button' : undefined}
-										tabindex={belowMd.current && editingId !== cat.id ? 0 : undefined}
-										onpointerdown={(e) => onChipPointerDown(cat, e)}
-										onpointermove={onChipPointerMove}
-										onpointerup={(e) => onChipPointerUp(cat, e)}
-										onpointercancel={clearChipPress}
-										oncontextmenu={onChipContextMenu}
-										onkeydown={(e) => onChipKeydown(cat, e)}
 									>
-										<CategoryIcon slug={cat.icon} />
 										{#if editingId === cat.id}
+											<CategoryIcon slug={cat.icon} />
 											<div class="min-w-0 flex-1 space-y-1">
 												<Input
 													class="h-8 min-w-0 w-full"
@@ -638,61 +629,70 @@
 											>
 												<CheckIcon class="size-3.5" />
 											</Button>
+										{:else if belowMd.current}
+											<button
+												type="button"
+												class="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+												aria-label={chipAriaLabel(cat)}
+												onpointerdown={(e) => onChipPointerDown(cat, e)}
+												onpointermove={onChipPointerMove}
+												onpointerup={(e) => onChipPointerUp(cat, e)}
+												onpointercancel={clearChipPress}
+												oncontextmenu={onChipContextMenu}
+												onkeydown={(e) => onChipKeydown(cat, e)}
+											>
+												<CategoryIcon slug={cat.icon} />
+												<span class="min-w-0 flex-1 truncate pr-1">{cat.name}</span>
+											</button>
+											{#if cat.source === 'custom'}
+												<Button
+													size="icon-xs"
+													variant="outline"
+													class="sr-only"
+													aria-label={`Edit ${cat.name}`}
+													data-testid="category-edit-name"
+													disabled={busy}
+													onclick={() => startRename(cat)}
+												>
+													<PencilIcon class="size-3.5" />
+												</Button>
+											{/if}
 										{:else}
+											<CategoryIcon slug={cat.icon} />
 											<span class="min-w-0 flex-1 truncate pr-1">{cat.name}</span>
-											{#if belowMd.current}
+											<span
+												class="absolute top-1/2 right-1 z-10 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover/chip:opacity-100 group-focus-within/chip:opacity-100"
+											>
 												{#if cat.source === 'custom'}
 													<Button
 														size="icon-xs"
 														variant="outline"
-														class="sr-only"
 														aria-label={`Edit ${cat.name}`}
 														data-testid="category-edit-name"
 														disabled={busy}
-														onpointerdown={(e) => e.stopPropagation()}
-														onclick={(e) => {
-															e.stopPropagation();
-															startRename(cat);
-														}}
+														onclick={() => startRename(cat)}
 													>
 														<PencilIcon class="size-3.5" />
 													</Button>
 												{/if}
-											{:else}
-												<span
-													class="absolute top-1/2 right-1 z-10 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover/chip:opacity-100 group-focus-within/chip:opacity-100"
+												<Button
+													size="icon-xs"
+													variant="outline"
+													aria-label={cat.hidden ? `Show ${cat.name}` : `Hide ${cat.name}`}
+													data-testid={cat.hidden ? 'category-show' : 'category-hide'}
+													disabled={busy}
+													onclick={() =>
+														void runAction(() =>
+															cat.hidden ? showCategory(cat.id) : hideCategory(cat.id)
+														)}
 												>
-													{#if cat.source === 'custom'}
-														<Button
-															size="icon-xs"
-															variant="outline"
-															aria-label={`Edit ${cat.name}`}
-															data-testid="category-edit-name"
-															disabled={busy}
-															onclick={() => startRename(cat)}
-														>
-															<PencilIcon class="size-3.5" />
-														</Button>
+													{#if cat.hidden}
+														<EyeIcon class="size-3.5" />
+													{:else}
+														<EyeOffIcon class="size-3.5" />
 													{/if}
-													<Button
-														size="icon-xs"
-														variant="outline"
-														aria-label={cat.hidden ? `Show ${cat.name}` : `Hide ${cat.name}`}
-														data-testid={cat.hidden ? 'category-show' : 'category-hide'}
-														disabled={busy}
-														onclick={() =>
-															void runAction(() =>
-																cat.hidden ? showCategory(cat.id) : hideCategory(cat.id)
-															)}
-													>
-														{#if cat.hidden}
-															<EyeIcon class="size-3.5" />
-														{:else}
-															<EyeOffIcon class="size-3.5" />
-														{/if}
-													</Button>
-												</span>
-											{/if}
+												</Button>
+											</span>
 										{/if}
 									</li>
 								{/each}
