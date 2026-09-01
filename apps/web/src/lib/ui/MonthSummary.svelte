@@ -36,7 +36,7 @@
 </script>
 
 {#snippet incomeTitleIcon()}
-	<TrendingUpIcon class="size-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+	<TrendingUpIcon class="text-income size-3.5" aria-hidden="true" />
 {/snippet}
 
 {#snippet expenseTitleIcon()}
@@ -80,7 +80,7 @@
 					<p
 						class={[
 							'mt-1 font-semibold',
-							hideAmounts ? 'text-muted-foreground' : 'text-emerald-600 dark:text-emerald-400'
+							hideAmounts ? 'text-muted-foreground' : 'text-income'
 						]}
 						data-testid="month-income"
 					>
@@ -105,7 +105,7 @@
 						class={[
 							'mt-1 font-semibold',
 							hideAmounts && 'text-muted-foreground',
-							!hideAmounts && summary.netMinor > 0 && 'text-emerald-600 dark:text-emerald-400',
+							!hideAmounts && summary.netMinor > 0 && 'text-income',
 							!hideAmounts && summary.netMinor < 0 && 'text-destructive',
 							!hideAmounts && summary.netMinor === 0 && 'text-muted-foreground'
 						]}
@@ -124,7 +124,7 @@
 				rows={summary.incomeByCategory}
 				{currencyLabel}
 				emptyLabel="No income this month."
-				barClass="bg-emerald-500"
+				barVar="--income"
 				testid="income-category-chart"
 				{hideAmounts}
 			/>
@@ -136,7 +136,7 @@
 				rows={summary.expenseByCategory}
 				{currencyLabel}
 				emptyLabel="No expenses this month."
-				barClass="bg-destructive/80"
+				barVar="--destructive"
 				testid="category-chart"
 				{hideAmounts}
 			/>
@@ -159,7 +159,7 @@
 					class={[
 						'tabular-nums',
 						hideAmounts && 'text-muted-foreground',
-						!hideAmounts && summary.netMinor > 0 && 'text-emerald-600 dark:text-emerald-400',
+						!hideAmounts && summary.netMinor > 0 && 'text-income',
 						!hideAmounts && summary.netMinor < 0 && 'text-destructive',
 						!hideAmounts && summary.netMinor === 0 && 'text-muted-foreground'
 					]}

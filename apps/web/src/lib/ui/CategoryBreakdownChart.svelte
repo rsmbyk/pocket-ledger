@@ -14,6 +14,8 @@
 		currencyLabel: string;
 		emptyLabel: string;
 		barClass?: string;
+		/** CSS variable for Soft Brick bars (`--income` or `--destructive`). */
+		barVar?: string;
 		testid: string;
 		hideAmounts?: boolean;
 	};
@@ -25,6 +27,7 @@
 		currencyLabel,
 		emptyLabel,
 		barClass = 'bg-primary/80',
+		barVar,
 		testid,
 		hideAmounts = false
 	}: Props = $props();
@@ -75,12 +78,14 @@
 					<div class="bg-muted h-2.5 overflow-hidden rounded-full">
 						<div
 							class={cn(
-								'h-full rounded-full transition-[width,opacity] duration-300',
-								barClass,
-								active && 'opacity-100 ring-2 ring-ring/40 ring-offset-1',
-								!active && hoveredKey && 'opacity-50'
+								'h-full rounded-full transition-[width,background-color] duration-300',
+								!barVar && barClass
 							)}
-							style={`width: ${(row.amountMinor / max) * 100}%`}
+							style={`width: ${(row.amountMinor / max) * 100}%;${
+								barVar
+									? ` background-color: color-mix(in srgb, var(${barVar}) ${active ? 100 : 50}%, var(--muted));`
+									: ''
+							}`}
 						></div>
 					</div>
 				</li>

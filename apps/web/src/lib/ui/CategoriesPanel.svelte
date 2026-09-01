@@ -134,8 +134,8 @@
 		income: {
 			title: 'Income',
 			listTestId: 'category-list-income',
-			cardClass: 'border-emerald-500/30 ring-emerald-500/20',
-			headerClass: 'border-emerald-500/20 bg-emerald-500/5'
+			cardClass: 'border-income/30 ring-income/20',
+			headerClass: 'border-income/20 bg-income/5'
 		},
 		expense: {
 			title: 'Expenses',
@@ -536,7 +536,7 @@
 			<Tabs.Trigger
 				value="income"
 				data-testid="category-kind-income"
-				class="data-active:bg-emerald-500/20 data-active:text-emerald-800 dark:data-active:border-emerald-500/50 dark:data-active:bg-emerald-500/30 dark:data-active:text-emerald-300"
+				class="data-active:bg-income/20 data-active:text-income dark:data-active:border-income/50 dark:data-active:bg-income/30"
 			>
 				Income
 			</Tabs.Trigger>

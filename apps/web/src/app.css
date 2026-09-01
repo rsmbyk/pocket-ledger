@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
-@import '@fontsource-variable/inter';
+@import '@fontsource-variable/figtree';
 
 @custom-variant dark (&:is(.dark *));
 /* bits-ui uses data-state; shadcn classes use data-open / data-closed / data-active */
@@ -9,72 +9,78 @@
 @custom-variant data-active (&:is([data-state='active'], [data-active]:not([data-active='false'])));
 
 :root {
-	--radius: 0.625rem;
-	--background: oklch(1 0 0);
-	--foreground: oklch(0.141 0.005 285.823);
-	--card: oklch(1 0 0);
-	--card-foreground: oklch(0.141 0.005 285.823);
-	--popover: oklch(1 0 0);
-	--popover-foreground: oklch(0.141 0.005 285.823);
-	--primary: oklch(0.21 0.006 285.885);
-	--primary-foreground: oklch(0.985 0 0);
-	--secondary: oklch(0.967 0.001 286.375);
-	--secondary-foreground: oklch(0.21 0.006 285.885);
-	--muted: oklch(0.967 0.001 286.375);
-	--muted-foreground: oklch(0.552 0.016 285.938);
-	--accent: oklch(0.967 0.001 286.375);
-	--accent-foreground: oklch(0.21 0.006 285.885);
-	--destructive: oklch(0.577 0.245 27.325);
-	--border: oklch(0.92 0.004 286.32);
-	--input: oklch(0.92 0.004 286.32);
-	--ring: oklch(0.705 0.015 286.067);
-	--chart-1: oklch(0.646 0.222 41.116);
-	--chart-2: oklch(0.6 0.118 184.704);
-	--chart-3: oklch(0.398 0.07 227.392);
-	--chart-4: oklch(0.828 0.189 84.429);
-	--chart-5: oklch(0.769 0.188 70.08);
-	--sidebar: oklch(0.985 0.002 286);
-	--sidebar-foreground: oklch(0.141 0.005 285.823);
-	--sidebar-primary: oklch(0.21 0.006 285.885);
-	--sidebar-primary-foreground: oklch(0.985 0 0);
-	--sidebar-accent: oklch(0.91 0.008 286);
-	--sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-	--sidebar-border: oklch(0.9 0.006 286);
-	--sidebar-ring: oklch(0.705 0.015 286.067);
+	--radius: 0.4375rem;
+	--background: #eef1f4;
+	--foreground: #161a1e;
+	--card: #f6f8fa;
+	--card-foreground: #161a1e;
+	--popover: #f6f8fa;
+	--popover-foreground: #161a1e;
+	--primary: #161a1e;
+	--primary-foreground: #eef1f4;
+	--secondary: #e2e6ea;
+	--secondary-foreground: #161a1e;
+	--muted: #e2e6ea;
+	--muted-foreground: #6b7380;
+	--accent: #e2e6ea;
+	--accent-foreground: #161a1e;
+	--destructive: #c43315;
+	--income: #059669;
+	--border: #d0d5db;
+	--input: #d0d5db;
+	--ring: #161a1e;
+	--chart-1: #059669;
+	--chart-2: #c43315;
+	--chart-3: #6b7380;
+	--chart-4: #161a1e;
+	--chart-5: #d0d5db;
+	--sidebar: #e6eaee;
+	--sidebar-foreground: #161a1e;
+	--sidebar-primary: #161a1e;
+	--sidebar-primary-foreground: #eef1f4;
+	--sidebar-accent: #d8dee4;
+	--sidebar-accent-foreground: #161a1e;
+	--sidebar-border: #d0d5db;
+	--sidebar-ring: #161a1e;
+	--elev-card: 0 1px 2px rgb(22 26 30 / 8%), 0 3px 10px rgb(22 26 30 / 7%);
+	--elev-sheet: 0 8px 32px rgb(22 26 30 / 18%);
 }
 
 .dark {
-	--background: oklch(0.141 0.005 285.823);
-	--foreground: oklch(0.985 0 0);
-	--card: oklch(0.21 0.006 285.885);
-	--card-foreground: oklch(0.985 0 0);
-	--popover: oklch(0.21 0.006 285.885);
-	--popover-foreground: oklch(0.985 0 0);
-	--primary: oklch(0.92 0.004 286.32);
-	--primary-foreground: oklch(0.21 0.006 285.885);
-	--secondary: oklch(0.274 0.006 286.033);
-	--secondary-foreground: oklch(0.985 0 0);
-	--muted: oklch(0.274 0.006 286.033);
-	--muted-foreground: oklch(0.705 0.015 286.067);
-	--accent: oklch(0.274 0.006 286.033);
-	--accent-foreground: oklch(0.985 0 0);
-	--destructive: oklch(0.704 0.191 22.216);
-	--border: oklch(1 0 0 / 10%);
-	--input: oklch(1 0 0 / 15%);
-	--ring: oklch(0.552 0.016 285.938);
-	--chart-1: oklch(0.488 0.243 264.376);
-	--chart-2: oklch(0.696 0.17 162.48);
-	--chart-3: oklch(0.769 0.188 70.08);
-	--chart-4: oklch(0.627 0.265 303.9);
-	--chart-5: oklch(0.645 0.246 16.439);
-	--sidebar: oklch(0.18 0.01 286);
-	--sidebar-foreground: oklch(0.985 0 0);
-	--sidebar-primary: oklch(0.92 0.004 286);
-	--sidebar-primary-foreground: oklch(0.18 0.01 286);
-	--sidebar-accent: oklch(0.25 0.012 286);
-	--sidebar-accent-foreground: oklch(0.985 0 0);
-	--sidebar-border: oklch(1 0 0 / 12%);
-	--sidebar-ring: oklch(0.552 0.016 285.938);
+	--background: #12151a;
+	--foreground: #e8ecf0;
+	--card: #1a1e24;
+	--card-foreground: #e8ecf0;
+	--popover: #1a1e24;
+	--popover-foreground: #e8ecf0;
+	--primary: #e8ecf0;
+	--primary-foreground: #12151a;
+	--secondary: #22272e;
+	--secondary-foreground: #e8ecf0;
+	--muted: #22272e;
+	--muted-foreground: #9aa3ae;
+	--accent: #22272e;
+	--accent-foreground: #e8ecf0;
+	--destructive: #f37850;
+	--income: #34d399;
+	--border: #32383f;
+	--input: #32383f;
+	--ring: #e8ecf0;
+	--chart-1: #34d399;
+	--chart-2: #f37850;
+	--chart-3: #9aa3ae;
+	--chart-4: #e8ecf0;
+	--chart-5: #32383f;
+	--sidebar: #161a20;
+	--sidebar-foreground: #e8ecf0;
+	--sidebar-primary: #e8ecf0;
+	--sidebar-primary-foreground: #12151a;
+	--sidebar-accent: #282e36;
+	--sidebar-accent-foreground: #e8ecf0;
+	--sidebar-border: #32383f;
+	--sidebar-ring: #e8ecf0;
+	--elev-card: 0 1px 2px rgb(0 0 0 / 40%), 0 4px 12px rgb(0 0 0 / 28%);
+	--elev-sheet: 0 12px 40px rgb(0 0 0 / 55%);
 }
 
 @theme inline {
@@ -97,6 +103,7 @@
 	--color-accent: var(--accent);
 	--color-accent-foreground: var(--accent-foreground);
 	--color-destructive: var(--destructive);
+	--color-income: var(--income);
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
@@ -113,7 +120,7 @@
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-ring: var(--sidebar-ring);
-	--font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+	--font-sans: 'Figtree Variable', Figtree, ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
@@ -143,6 +150,45 @@
 	input[type='radio']:not(:disabled),
 	input[type='date']:not(:disabled) {
 		cursor: pointer;
+	}
+
+	html,
+	body,
+	* {
+		scrollbar-width: none;
+	}
+
+	*::-webkit-scrollbar {
+		width: 0;
+		height: 0;
+		display: none;
+	}
+
+	button:focus-visible,
+	a:focus-visible,
+	input:focus-visible,
+	select:focus-visible,
+	textarea:focus-visible,
+	[role='button']:focus-visible,
+	[data-slot='input']:focus-visible,
+	[data-slot='button']:focus-visible {
+		outline: none;
+		box-shadow: 0 0 0 2px color-mix(in srgb, var(--muted-foreground) 50%, transparent);
+	}
+
+	.pl-osb {
+		position: fixed;
+		z-index: 80;
+		pointer-events: none;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--foreground) 32%, transparent);
+		opacity: 0;
+		transition: opacity 0.35s ease;
+	}
+
+	.pl-osb.is-on {
+		opacity: 1;
+		transition: opacity 0.08s linear;
 	}
 
 	button:disabled,
