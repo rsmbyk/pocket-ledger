@@ -643,7 +643,7 @@
 						'mx-auto inline-flex w-fit rounded-md px-2 py-0.5 text-xs font-medium',
 						type === 'expense'
 							? 'bg-destructive/10 text-destructive'
-							: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+							: 'bg-income/10 text-income'
 					)}
 				>
 					{type === 'expense' ? 'Expense' : 'Income'}
@@ -790,9 +790,9 @@
 					<Button
 						type="button"
 						class={cn(
-							'h-11 w-full border font-semibold md:h-9',
+							'w-full border font-semibold',
 							type === 'income'
-								? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400'
+								? 'border-income/40 bg-income/15 text-income hover:bg-income/20'
 								: 'border-border bg-background text-muted-foreground hover:bg-muted/50'
 						)}
 						disabled={saving}
@@ -804,7 +804,7 @@
 					<Button
 						type="button"
 						class={cn(
-							'h-11 w-full border font-semibold md:h-9',
+							'w-full border font-semibold',
 							type === 'expense'
 								? 'border-destructive/40 bg-destructive/15 text-destructive hover:bg-destructive/20'
 								: 'border-border bg-background text-muted-foreground hover:bg-muted/50'

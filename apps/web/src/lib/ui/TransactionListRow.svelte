@@ -154,7 +154,7 @@
 									? 'text-foreground'
 									: tx.type === 'expense'
 										? 'text-destructive'
-										: 'text-emerald-600 dark:text-emerald-400')
+										: 'text-income')
 						]
 			]}
 		>

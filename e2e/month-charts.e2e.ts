@@ -40,8 +40,8 @@ test.describe('002 month charts', () => {
 		await expect(page.getByTestId('month-income')).toContainText('100');
 		await expect(page.getByTestId('month-expense')).toContainText('15');
 		await expect(page.getByTestId('month-net')).toContainText('85');
-		await expect(page.getByTestId('month-net')).toHaveClass(/text-emerald-600/);
-		await expect(page.getByTestId('month-footer-net')).toHaveClass(/text-emerald-600/);
+		await expect(page.getByTestId('month-net')).toHaveClass(/text-income/);
+		await expect(page.getByTestId('month-footer-net')).toHaveClass(/text-income/);
 		await expect(page.getByTestId('income-category-chart')).toContainText('Salary');
 		await expect(page.getByTestId('category-chart')).toContainText('Food');
 		await expect(

@@ -149,3 +149,4 @@ Living behavior contracts for Pocket Ledger.
 | [130](130-picker-search-group-label/spec.md)            | CategoryPicker search matches group labels                   | Accepted                                                                     |
 | [131](131-group-header-actions/spec.md)                 | Categories group header actions                              | Accepted                                                                     |
 | [132](132-activity-filter-used-categories/spec.md)      | Activity category filter used-only                           | Accepted                                                                     |
+| [133](133-visual-system/spec.md)                         | Visual system (Mist / Ink / Figtree)                         | Accepted                                                                     |

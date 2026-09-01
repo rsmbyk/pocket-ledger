@@ -24,8 +24,8 @@
 			</div>
 			<div class="bg-muted h-3 overflow-hidden rounded-full">
 				<div
-					class="h-full rounded-full bg-emerald-500 transition-[width] duration-300"
-					style={`width: ${incomePct}%`}
+					class="h-full rounded-full transition-[width] duration-300"
+					style={`width: ${incomePct}%; background-color: color-mix(in srgb, var(--income) 50%, var(--muted));`}
 				></div>
 			</div>
 		</div>
@@ -36,8 +36,8 @@
 			</div>
 			<div class="bg-muted h-3 overflow-hidden rounded-full">
 				<div
-					class="bg-destructive h-full rounded-full transition-[width] duration-300"
-					style={`width: ${expensePct}%`}
+					class="h-full rounded-full transition-[width] duration-300"
+					style={`width: ${expensePct}%; background-color: color-mix(in srgb, var(--destructive) 50%, var(--muted));`}
 				></div>
 			</div>
 		</div>

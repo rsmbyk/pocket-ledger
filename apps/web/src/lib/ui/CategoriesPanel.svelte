@@ -134,8 +134,8 @@
 		income: {
 			title: 'Income',
 			listTestId: 'category-list-income',
-			cardClass: 'border-emerald-500/30 ring-emerald-500/20',
-			headerClass: 'border-emerald-500/20 bg-emerald-500/5'
+			cardClass: 'border-income/30 ring-income/20',
+			headerClass: 'border-income/20 bg-income/5'
 		},
 		expense: {
 			title: 'Expenses',
@@ -525,7 +525,7 @@
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col gap-3" data-testid="categories-panel">
-	<div class="flex min-h-0 flex-1 flex-col gap-3 px-3">
+	<div class="flex shrink-0 flex-col gap-3 px-7 md:px-9">
 	<Tabs.Root
 		value={selectedKind}
 		onValueChange={requestKindChange}
@@ -536,7 +536,7 @@
 			<Tabs.Trigger
 				value="income"
 				data-testid="category-kind-income"
-				class="data-active:bg-emerald-500/20 data-active:text-emerald-800 dark:data-active:border-emerald-500/50 dark:data-active:bg-emerald-500/30 dark:data-active:text-emerald-300"
+				class="data-active:bg-income/20 data-active:text-income dark:data-active:border-income/50 dark:data-active:bg-income/30"
 			>
 				Income
 			</Tabs.Trigger>
@@ -641,16 +641,17 @@
 	{#if error}
 		<p class="text-destructive text-sm" role="alert">{error}</p>
 	{/if}
+	</div>
 
 	<div class="min-h-0 flex-1 overflow-hidden">
 		<div
-			class="h-full min-h-0 overflow-y-auto overscroll-contain p-1 [scrollbar-gutter:stable]"
+			class="h-full min-h-0 overflow-y-auto overscroll-contain"
 			data-testid="categories-desktop-grid"
 			data-kind={selectedKind}
 		>
 			<div
 				class={cn(
-					'grid content-start gap-4',
+					'grid content-start gap-4 px-7 pt-1 pb-12 md:px-9',
 					mode === 'reorder'
 						? 'grid-cols-1'
 						: '[grid-template-columns:repeat(auto-fill,minmax(min(100%,22rem),1fr))]'
@@ -946,7 +947,6 @@
 			{/if}
 			</div>
 		</div>
-	</div>
 	</div>
 </div>
 
