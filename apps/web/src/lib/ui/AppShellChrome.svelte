@@ -592,7 +592,7 @@
 		class={[
 			'mx-auto flex w-full flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8 max-w-3xl',
 			'data-[stage=wide]:max-w-none!',
-			route === 'categories' && 'min-h-0 overflow-hidden pb-6 md:pb-8'
+			route === 'categories' && 'min-h-0 flex-1 overflow-hidden px-0! pb-0! md:px-0! md:pb-0!'
 		]}
 		data-stage={route === 'categories' || activityStageWide ? 'wide' : 'narrow'}
 		data-testid="app-stage"

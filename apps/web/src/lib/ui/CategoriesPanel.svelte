@@ -525,7 +525,7 @@
 </script>
 
 <div class="flex min-h-0 flex-1 flex-col gap-3" data-testid="categories-panel">
-	<div class="flex min-h-0 flex-1 flex-col gap-3 px-3">
+	<div class="flex shrink-0 flex-col gap-3 px-7 md:px-9">
 	<Tabs.Root
 		value={selectedKind}
 		onValueChange={requestKindChange}
@@ -641,16 +641,17 @@
 	{#if error}
 		<p class="text-destructive text-sm" role="alert">{error}</p>
 	{/if}
+	</div>
 
 	<div class="min-h-0 flex-1 overflow-hidden">
 		<div
-			class="h-full min-h-0 overflow-y-auto overscroll-contain p-1 [scrollbar-gutter:stable]"
+			class="h-full min-h-0 overflow-y-auto overscroll-contain"
 			data-testid="categories-desktop-grid"
 			data-kind={selectedKind}
 		>
 			<div
 				class={cn(
-					'grid content-start gap-4',
+					'grid content-start gap-4 px-7 pt-1 pb-12 md:px-9',
 					mode === 'reorder'
 						? 'grid-cols-1'
 						: '[grid-template-columns:repeat(auto-fill,minmax(min(100%,22rem),1fr))]'
@@ -946,7 +947,6 @@
 			{/if}
 			</div>
 		</div>
-	</div>
 	</div>
 </div>
 
