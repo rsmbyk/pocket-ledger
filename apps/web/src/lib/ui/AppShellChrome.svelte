@@ -554,7 +554,11 @@
 	</Sidebar.Content>
 </Sidebar.Root>
 
-<Sidebar.Inset class={route === 'categories' ? 'h-svh min-h-0 overflow-hidden' : undefined}>
+<Sidebar.Inset
+	class={route === 'categories' || route === 'transactions'
+		? 'h-svh min-h-0 overflow-hidden'
+		: undefined}
+>
 	<header
 		class="bg-background sticky top-0 z-10 flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b px-4 py-2 md:px-6"
 	>
@@ -597,7 +601,7 @@
 
 	{#if route === 'transactions'}
 		<div
-			class="bg-background sticky top-14 z-10 border-b px-4 py-3 md:px-6"
+			class="bg-background shrink-0 border-b px-4 py-3 md:px-6"
 			data-testid="activity-chrome"
 		>
 			<div class="flex flex-col gap-3">
@@ -665,7 +669,8 @@
 			'mx-auto flex w-full flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8 max-w-3xl',
 			'data-[stage=wide]:max-w-none!',
 			route === 'categories' &&
-				'min-h-0 flex-1 overflow-hidden px-0! pt-0! pb-0! md:px-0! md:pt-0! md:pb-0!'
+				'min-h-0 flex-1 overflow-hidden px-0! pt-0! pb-0! md:px-0! md:pt-0! md:pb-0!',
+			route === 'transactions' && 'min-h-0 flex-1 overflow-y-auto'
 		]}
 		data-stage={route === 'categories' || activityStageWide ? 'wide' : 'narrow'}
 		data-testid="app-stage"
@@ -762,7 +767,10 @@
 				</Card.Root>
 			</div>
 		{:else if route === 'transactions'}
-			<div data-testid="activity-panel" class={xlWide.current ? 'flex gap-4' : 'space-y-3'}>
+			<div
+				data-testid="activity-panel"
+				class={xlWide.current ? 'flex min-h-0 gap-4' : 'min-h-0 space-y-3'}
+			>
 				{#snippet filterFormFields()}
 					<div class="space-y-1">
 						<Label for="activity-filter-type">Type</Label>
@@ -937,7 +945,7 @@
 					</div>
 				{/snippet}
 
-				<div class="min-w-0 flex-1 space-y-3">
+				<div class="min-w-0 min-h-0 flex-1 space-y-3">
 					{#if !xlWide.current}
 						<Sheet.Root open={filtersOpen} onOpenChange={onFiltersOpenChange}>
 							<Sheet.Content

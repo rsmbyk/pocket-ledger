@@ -183,12 +183,14 @@
 			void goto('/transactions', { replaceState: true });
 		}
 	});
+
+	const lockViewport = $derived(route === 'categories' || route === 'transactions');
 </script>
 
 <div
 	class={[
 		'text-foreground bg-background flex min-h-svh flex-col',
-		route === 'categories' && 'h-svh overflow-hidden'
+		lockViewport && 'h-svh overflow-hidden'
 	]}
 	data-testid="app-shell"
 >
@@ -211,7 +213,7 @@
 			</Card.Root>
 		</main>
 	{:else}
-		<Sidebar.Provider class={route === 'categories' ? 'h-svh min-h-0 overflow-hidden' : 'min-h-svh'}>
+		<Sidebar.Provider class={lockViewport ? 'h-svh min-h-0 overflow-hidden' : 'min-h-svh'}>
 			<AppShellChrome
 				{account}
 				{accounts}

@@ -249,7 +249,10 @@ test.describe('017 / 045 activity filters', () => {
 		await expect(trigger).toContainText('20 Aug 2026');
 
 		await page.setViewportSize({ width: 1024, height: 480 });
-		await page.evaluate(() => window.scrollTo(0, 800));
+		await page.getByTestId('app-stage').evaluate((el) => {
+			el.scrollTop = 800;
+		});
+		expect(await page.evaluate(() => window.scrollY)).toBe(0);
 		await expect(page.getByTestId('activity-chrome')).toBeInViewport();
 		await expect(trigger).toBeInViewport();
 		await expect(page.getByTestId('activity-filter-search')).toBeInViewport();
