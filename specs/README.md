@@ -160,3 +160,4 @@ Living behavior contracts for Pocket Ledger.
 | [141](141-transactions-date-range/spec.md)               | Transactions header date range (month or custom)             | Accepted — header placement superseded by [142](142-transactions-range-picker/spec.md) |
 | [142](142-transactions-range-picker/spec.md)             | Transactions range picker + sticky chrome band               | Accepted — live-apply superseded by [143](143-range-picker-apply/spec.md) |
 | [143](143-range-picker-apply/spec.md)                    | Range picker Apply / Close draft; To-hover preview           | Accepted                                                                        |
+| [144](144-filter-check-menus/spec.md)                    | Type / Pocket filter checkboxes like Category                | Draft                                                                           |
