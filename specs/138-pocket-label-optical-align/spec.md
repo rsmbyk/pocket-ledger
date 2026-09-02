@@ -57,4 +57,4 @@ On the Transactions row pocket line and pocket **selection dropdowns**, the name
 ## Related
 
 - 070 PocketLabel; 077/096 pocket under amount
-- Follow-up: compact (`optical`) list/picker Main icon is `size-3` to match the Transactions category tag; the name `leading-none` / `translate-y-px` nudge was dropped. Pockets hub stays `size-3.5`.
+- Follow-up: compact (`optical`) list/picker Main icon is `size-3` to match the Transactions category tag. Lucide SVGs are `block` so they do not sit on the text baseline; labels keep the default `text-xs` line box so `items-center` can actually center. Pockets hub stays `size-3.5`.

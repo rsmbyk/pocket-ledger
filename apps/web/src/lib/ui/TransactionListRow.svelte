@@ -89,7 +89,7 @@
 			data-testid={`${testid}-pocket`}
 		>
 			<PocketLabel name={sourcePocket.name} isMain={sourcePocket.isMain} optical />
-			<ArrowRightIcon class="size-3 shrink-0" aria-hidden="true" />
+			<ArrowRightIcon class="block size-3 shrink-0" aria-hidden="true" />
 			<PocketLabel name={destPocket.name} isMain={destPocket.isMain} optical />
 		</div>
 	{:else}
@@ -107,7 +107,7 @@
 {#snippet transferTitle()}
 	<span class="inline-flex items-center gap-1.5">
 		<ArrowLeftRightIcon
-			class="text-muted-foreground size-3 shrink-0"
+			class="text-muted-foreground block size-3 shrink-0"
 			aria-hidden="true"
 			data-testid={`${testid}-transfer-icon`}
 		/>
@@ -118,12 +118,12 @@
 {#snippet categoryTitle()}
 	{#if uncategorized}
 		<span class="inline-flex min-w-0 items-center gap-1.5">
-			<CategoryIcon slug={STOCK_UNCATEGORIZED_ICON} class="text-muted-foreground size-3" />
+			<CategoryIcon slug={STOCK_UNCATEGORIZED_ICON} class="text-muted-foreground block size-3" />
 			<UncategorizedLabel showIcon={false} />
 		</span>
 	{:else}
 		<span class="inline-flex min-w-0 items-center gap-1.5">
-			<CategoryIcon slug={categoryIconSlug} class="size-3" />
+			<CategoryIcon slug={categoryIconSlug} class="block size-3" />
 			<span class="truncate">{categoryLabel}</span>
 		</span>
 	{/if}

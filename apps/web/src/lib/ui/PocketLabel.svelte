@@ -18,7 +18,7 @@
 <span class={cn('inline-flex min-w-0 items-center gap-1.5', className)}>
 	{#if isMain}
 		<LandmarkIcon
-			class={cn('shrink-0', optical ? 'size-3' : 'size-3.5')}
+			class={cn('block shrink-0', optical ? 'size-3' : 'size-3.5')}
 			aria-hidden="true"
 			data-testid={iconTestid}
 		/>
