@@ -10,3 +10,12 @@ export function shouldIgnoreDismissForNativePicker(e: Event): boolean {
 	}
 	return false;
 }
+
+/** Portaled popovers (filter Type/Pocket/Category) sit outside the Filters sheet. */
+export function shouldIgnoreDismissForFloatingMenu(e: Event): boolean {
+	const t = e.target;
+	if (!(t instanceof Element)) return false;
+	return Boolean(
+		t.closest('[data-testid="filter-check-menu"]') || t.closest('[data-slot="popover-content"]')
+	);
+}

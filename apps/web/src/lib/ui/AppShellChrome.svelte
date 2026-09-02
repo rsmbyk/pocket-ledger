@@ -16,12 +16,11 @@
 	import WalletIcon from '@lucide/svelte/icons/wallet';
 	import HistoryIcon from '@lucide/svelte/icons/history';
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
-	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import FilterCheckSelect from '$lib/ui/FilterCheckSelect.svelte';
 	import ThemeMenu from '$lib/ui/ThemeMenu.svelte';
 	import MonthSummaryCard from '$lib/ui/MonthSummary.svelte';
 	import MorePanel from '$lib/ui/MorePanel.svelte';
@@ -51,7 +50,6 @@
 		categoryKindsForTypes,
 		countAdvancedFilters,
 		filterTransactions,
-		filterTriggerSummary,
 		hasAdminFeeLedgerRow,
 		hasUncategorizedLedgerRow,
 		isCategoryFilterDisabled,
@@ -59,7 +57,6 @@
 		normalizeActivityFilters,
 		resolveCategoryIdsForTypes,
 		shouldShowActivityCategoryFilter,
-		typeLabel,
 		usedCategoryIds,
 		type ActivityFilterCriteria,
 		type ActivityTxType
@@ -68,7 +65,7 @@
 		type TransactionDateRange
 	} from '$lib/domain/transaction-date-range';
 	import { STOCK_CUSTOM_ICON, STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
-	import { shouldIgnoreDismissForNativePicker } from '$lib/ui/native-picker-dismiss';
+	import { shouldIgnoreDismissForFloatingMenu, shouldIgnoreDismissForNativePicker } from '$lib/ui/native-picker-dismiss';
 	import { readHideAmounts, writeHideAmounts } from '$lib/shared/hide-amounts';
 	import {
 		readActivityListSession,
@@ -324,10 +321,6 @@
 		return categoriesById[tx.categoryId]?.icon || STOCK_CUSTOM_ICON;
 	}
 
-	function pocketLabel(id: string): string {
-		return accounts.find((a) => a.id === id)?.name ?? id;
-	}
-
 	function homeMoney(amount: number): string {
 		return hideHomeAmounts ? '••••' : formatMinor(amount, currencyLabel);
 	}
@@ -422,20 +415,6 @@
 		});
 	}
 
-	function toggleDraftType(type: ActivityTxType, on: boolean) {
-		const set = new Set(draft.types);
-		if (on) set.add(type);
-		else set.delete(type);
-		onFilterTypesChange([...set]);
-	}
-
-	function toggleDraftPocket(id: string, on: boolean) {
-		const set = new Set(draft.pocketIds);
-		if (on) set.add(id);
-		else set.delete(id);
-		draft = { ...draft, pocketIds: [...set] };
-	}
-
 	function applyFilters() {
 		applied = { ...cloneFilters(draft), search: applied.search };
 		onActivityPocketFilterChange?.([...applied.pocketIds]);
@@ -465,7 +444,7 @@
 	}
 
 	function onFiltersDismissAttempt(e: Event) {
-		if (shouldIgnoreDismissForNativePicker(e)) {
+		if (shouldIgnoreDismissForNativePicker(e) || shouldIgnoreDismissForFloatingMenu(e)) {
 			e.preventDefault();
 			return;
 		}
@@ -774,40 +753,18 @@
 				{#snippet filterFormFields()}
 					<div class="space-y-1">
 						<Label for="activity-filter-type">Type</Label>
-						<DropdownMenu.Root>
-							<DropdownMenu.Trigger
-								id="activity-filter-type"
-								class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-11 w-full items-center justify-between rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none md:h-9"
-								data-testid="activity-filter-type"
-								aria-label="Type"
-							>
-								<span class="truncate">{filterTriggerSummary(draft.types, typeLabel)}</span>
-								<ChevronDownIcon class="text-muted-foreground size-4 shrink-0" />
-							</DropdownMenu.Trigger>
-							<DropdownMenu.Content class="max-h-60 w-(--bits-dropdown-menu-anchor-width)">
-								<DropdownMenu.CheckboxItem
-									checked={draft.types.includes('income')}
-									onCheckedChange={(on) => toggleDraftType('income', on === true)}
-									data-testid="activity-filter-type-income"
-								>
-									Income
-								</DropdownMenu.CheckboxItem>
-								<DropdownMenu.CheckboxItem
-									checked={draft.types.includes('expense')}
-									onCheckedChange={(on) => toggleDraftType('expense', on === true)}
-									data-testid="activity-filter-type-expense"
-								>
-									Expense
-								</DropdownMenu.CheckboxItem>
-								<DropdownMenu.CheckboxItem
-									checked={draft.types.includes('transfer')}
-									onCheckedChange={(on) => toggleDraftType('transfer', on === true)}
-									data-testid="activity-filter-type-transfer"
-								>
-									Transfer
-								</DropdownMenu.CheckboxItem>
-							</DropdownMenu.Content>
-						</DropdownMenu.Root>
+						<FilterCheckSelect
+							id="activity-filter-type"
+							testid="activity-filter-type"
+							ariaLabel="Type"
+							values={[...draft.types]}
+							onValuesChange={onFilterTypesChange}
+							items={[
+								{ id: 'income', label: 'Income', testid: 'activity-filter-type-income' },
+								{ id: 'expense', label: 'Expense', testid: 'activity-filter-type-expense' },
+								{ id: 'transfer', label: 'Transfer', testid: 'activity-filter-type-transfer' }
+							]}
+						/>
 					</div>
 					{#if showActivityCategoryFilter}
 						<div class="space-y-1">
@@ -833,28 +790,27 @@
 					{/if}
 					<div class="space-y-1">
 						<Label for="activity-filter-pocket">Pocket</Label>
-						<DropdownMenu.Root>
-							<DropdownMenu.Trigger
-								id="activity-filter-pocket"
-								class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-11 w-full items-center justify-between rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none md:h-9"
-								data-testid="activity-filter-pocket"
-								aria-label="Pocket"
-							>
-								<span class="truncate">{filterTriggerSummary(draft.pocketIds, pocketLabel)}</span>
-								<ChevronDownIcon class="text-muted-foreground size-4 shrink-0" />
-							</DropdownMenu.Trigger>
-							<DropdownMenu.Content class="max-h-60 w-(--bits-dropdown-menu-anchor-width)">
-								{#each accounts as pocket (pocket.id)}
-									<DropdownMenu.CheckboxItem
-										checked={draft.pocketIds.includes(pocket.id)}
-										onCheckedChange={(on) => toggleDraftPocket(pocket.id, on === true)}
-										data-testid={`activity-filter-pocket-option-${pocket.id}`}
-									>
-										<PocketLabel name={pocket.name} isMain={pocket.isMain} optical />
-									</DropdownMenu.CheckboxItem>
-								{/each}
-							</DropdownMenu.Content>
-						</DropdownMenu.Root>
+						<FilterCheckSelect
+							id="activity-filter-pocket"
+							testid="activity-filter-pocket"
+							ariaLabel="Pocket"
+							values={[...draft.pocketIds]}
+							onValuesChange={(next) => (draft = { ...draft, pocketIds: next })}
+							items={accounts.map((pocket) => ({
+								id: pocket.id,
+								label: pocket.name,
+								testid: `activity-filter-pocket-option-${pocket.id}`
+							}))}
+						>
+							{#snippet item(row)}
+								{@const pocket = accounts.find((a) => a.id === row.id)}
+								{#if pocket}
+									<PocketLabel name={pocket.name} isMain={pocket.isMain} optical />
+								{:else}
+									{row.label}
+								{/if}
+							{/snippet}
+						</FilterCheckSelect>
 					</div>
 					<label class="flex items-center gap-2 text-sm">
 						<input

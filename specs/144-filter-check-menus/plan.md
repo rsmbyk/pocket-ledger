@@ -1,6 +1,6 @@
 # Plan 144: Type / Pocket filter checkboxes like Category
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 

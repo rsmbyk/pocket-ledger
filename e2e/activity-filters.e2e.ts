@@ -50,11 +50,17 @@ async function setFilterTypes(
 	for (const t of ['income', 'expense', 'transfer'] as const) {
 		const item = page.getByTestId(`activity-filter-type-${t}`);
 		await expect(item).toBeVisible();
-		const checked = (await item.getAttribute('aria-checked')) === 'true';
+		const checked =
+			(await item.getAttribute('data-checked')) === 'true' ||
+			(await item.getAttribute('aria-checked')) === 'true';
 		const want = types.includes(t);
 		if (checked !== want) {
 			await item.click({ force: true });
-			await expect(item).toHaveAttribute('aria-checked', want ? 'true' : 'false');
+			if (want) {
+				await expect(item).toHaveAttribute('data-checked', 'true');
+			} else {
+				await expect(item).not.toHaveAttribute('data-checked', 'true');
+			}
 		}
 	}
 	// Close without Escape — Escape on a dirty sheet opens discard.
@@ -410,6 +416,68 @@ test.describe('102 activity session sort + filters', () => {
 
 		await page.getByTestId('activity-filters-open').click();
 		await expect(page.getByTestId('activity-filter-type')).toContainText('Expense');
+	});
+});
+
+test.describe('144 type / pocket check menus', () => {
+	test.use({ viewport: { width: 1024, height: 800 } });
+
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/');
+		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+	});
+
+	test('Type left squares stay open; uncheck returns to All', async ({ page }) => {
+		await goToNav(page, 'transactions');
+		await page.getByTestId('activity-filters-open').click();
+		await expect(filtersSurface(page)).toBeVisible();
+
+		const trigger = page.getByTestId('activity-filter-type');
+		await trigger.click();
+		const income = page.getByTestId('activity-filter-type-income');
+		const expense = page.getByTestId('activity-filter-type-expense');
+		await expect(income).toBeVisible();
+
+		await income.click();
+		await expect(income).toHaveAttribute('data-checked', 'true');
+		await expect(income).toBeVisible();
+		await expect(trigger).toContainText('Income');
+
+		await expense.click();
+		await expect(expense).toHaveAttribute('data-checked', 'true');
+		await expect(income).toBeVisible();
+		await expect(trigger).toContainText('2 selected');
+
+		await income.click();
+		await expense.click();
+		await expect(income).not.toHaveAttribute('data-checked', 'true');
+		await expect(expense).not.toHaveAttribute('data-checked', 'true');
+		await expect(income).toBeVisible();
+		await expect(trigger).toContainText('All');
+	});
+
+	test('Pocket left squares stay open for two checks', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.getByTestId('pocket-add').click();
+		await page.getByTestId('pocket-name-input').fill('Vacation');
+		await page.getByTestId('pocket-save').click();
+		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+
+		await goToNav(page, 'transactions');
+		await page.getByTestId('activity-filters-open').click();
+		await expect(filtersSurface(page)).toBeVisible();
+
+		const trigger = page.getByTestId('activity-filter-pocket');
+		await trigger.click();
+		const options = page.locator('[data-testid^="activity-filter-pocket-option-"]');
+		await expect(options).toHaveCount(2);
+		await options.nth(0).click();
+		await expect(options.nth(0)).toHaveAttribute('data-checked', 'true');
+		await expect(options.nth(0)).toBeVisible();
+		await options.nth(1).click();
+		await expect(options.nth(1)).toHaveAttribute('data-checked', 'true');
+		await expect(options.nth(0)).toBeVisible();
+		await expect(trigger).toContainText('2 selected');
 	});
 });
 
