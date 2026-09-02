@@ -22,7 +22,7 @@
 		cloneKindGroupOrder,
 		groupsInOrder,
 		isReorderDirty,
-		resetKindInOrder,
+		resetBothKindsInOrder,
 		setKindOrder,
 		snapshotGroupOrders,
 		type KindGroupOrder
@@ -109,6 +109,7 @@
 	let renameGroupId = $state('');
 	let renameGroupName = $state('');
 	let discardConfirmOpen = $state(false);
+	let reorderDiscardOpen = $state(false);
 	let busy = $state(false);
 	let error = $state('');
 	let nameFieldError = $state('');
@@ -254,11 +255,20 @@
 	}
 
 	function discardReorder() {
+		if (!isReorderDirty(reorderDraft, reorderSnapshot)) {
+			exitReorder();
+			return;
+		}
+		reorderDiscardOpen = true;
+	}
+
+	function confirmDiscardReorder() {
+		reorderDiscardOpen = false;
 		exitReorder();
 	}
 
 	function resetReorder() {
-		reorderDraft = resetKindInOrder(reorderDraft, groups, selectedKind);
+		reorderDraft = resetBothKindsInOrder(reorderDraft, groups);
 		showReorderList(selectedKind);
 		setDirty(isReorderDirty(reorderDraft, reorderSnapshot));
 	}
@@ -1089,6 +1099,17 @@
 		</form>
 	</Dialog.Content>
 </Dialog.Root>
+
+<ConfirmDialog
+	open={reorderDiscardOpen}
+	title="Discard group order?"
+	description="Discard this reorder without saving? Your last saved order stays."
+	confirmLabel="Discard"
+	destructive
+	confirmTestId="category-reorder-discard-confirm"
+	onOpenChange={(next) => (reorderDiscardOpen = next)}
+	onConfirm={confirmDiscardReorder}
+/>
 
 <ConfirmDialog
 	open={discardConfirmOpen}

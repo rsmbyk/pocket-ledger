@@ -4,7 +4,7 @@ import {
 	cloneKindGroupOrder,
 	groupsInOrder,
 	isReorderDirty,
-	resetKindInOrder,
+	resetBothKindsInOrder,
 	setKindOrder,
 	snapshotGroupOrders
 } from './category-reorder-session';
@@ -43,15 +43,20 @@ describe('category-reorder-session', () => {
 		expect(isReorderDirty(incomeMoved, snapshot)).toBe(true);
 	});
 
-	it('reset restores factory stock then customs for one kind only', () => {
+	it('reset restores factory stock then customs for both kinds', () => {
 		const groups = [utilities, home, side, business, work];
 		const snapshot = snapshotGroupOrders(groups);
-		const draft = setKindOrder(snapshot, 'expense', [side.id, utilities.id, home.id]);
-		const reset = resetKindInOrder(draft, groups, 'expense');
+		const draft = setKindOrder(
+			setKindOrder(snapshot, 'expense', [side.id, utilities.id, home.id]),
+			'income',
+			[business.id, work.id]
+		);
+		const reset = resetBothKindsInOrder(draft, groups);
 		expect(reset.expense[0]).toBe(home.id);
 		expect(reset.expense[1]).toBe(utilities.id);
 		expect(reset.expense.at(-1)).toBe(side.id);
-		expect(reset.income).toEqual(snapshot.income);
+		expect(reset.income[0]).toBe(work.id);
+		expect(reset.income[1]).toBe(business.id);
 	});
 
 	it('maps ids back to groups and drops unknown ids', () => {
