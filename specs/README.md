@@ -143,7 +143,7 @@ Living behavior contracts for Pocket Ledger.
 | [124](124-categories-kind-tabs-search/spec.md)         | Categories kind tabs, search, hover chips                    | Accepted                                                                     |
 | [125](125-categories-reorder-session-chrome/spec.md)   | Categories reorder session and chrome                        | Accepted                                                                     |
 | [126](126-categories-mobile-chrome-tap-hide/spec.md)   | Categories mobile chrome, tap-to-hide, long-press edit       | Accepted                                                                     |
-| [127](127-categories-reorder-drop-between/spec.md)     | Categories reorder drop-between                              | Accepted                                                                     |
+| [127](127-categories-reorder-drop-between/spec.md)     | Categories reorder drop-between                              | Accepted — handle-only superseded by [147](147-categories-reorder-whole-row-drag/spec.md) |
 | [128](128-categories-stage-grid/spec.md)               | Categories stage-width grid                                  | Accepted                                                                     |
 | [129](129-categories-toolbar-full-width/spec.md)        | Categories toolbar full width on small screens               | Accepted                                                                     |
 | [130](130-picker-search-group-label/spec.md)            | CategoryPicker search matches group labels                   | Accepted                                                                     |
@@ -161,4 +161,6 @@ Living behavior contracts for Pocket Ledger.
 | [142](142-transactions-range-picker/spec.md)             | Transactions range picker + sticky chrome band               | Accepted — live-apply superseded by [143](143-range-picker-apply/spec.md) |
 | [143](143-range-picker-apply/spec.md)                    | Range picker Apply / Close draft; To-hover preview           | Accepted                                                                        |
 | [144](144-filter-check-menus/spec.md)                    | Type / Pocket filter checkboxes like Category                | Accepted                                                                        |
-| [145](145-remove-amount-filter/spec.md)                  | Remove Filters Amount compare                                | Draft                                                                           |
+| [145](145-remove-amount-filter/spec.md)                  | Remove Filters Amount compare                                | Accepted                                                                        |
+| [146](146-reorder-reset-both-discard-confirm/spec.md)    | Reorder Reset both kinds + Discard confirm                   | Accepted                                                                        |
+| [147](147-categories-reorder-whole-row-drag/spec.md)     | Categories reorder whole-row drag                            | Draft                                                                           |
