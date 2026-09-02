@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parsePath, routeToPath } from './router';
+import { isLegacyActivityPath, parsePath, routeToPath } from './router';
 
 describe('path router', () => {
 	it('maps empty, slash, and home paths to home', () => {
@@ -9,7 +9,8 @@ describe('path router', () => {
 	});
 
 	it('parses known panels', () => {
-		expect(parsePath('/activity')).toBe('activity');
+		expect(parsePath('/transactions')).toBe('transactions');
+		expect(parsePath('/activity')).toBe('transactions');
 		expect(parsePath('/pockets')).toBe('pockets');
 		expect(parsePath('/categories')).toBe('categories');
 		expect(parsePath('/more')).toBe('more');
@@ -18,13 +19,20 @@ describe('path router', () => {
 	it('falls back for unknown paths', () => {
 		expect(parsePath('/not-a-route')).toBe('home');
 		expect(parsePath('/activity/extra')).toBe('home');
+		expect(parsePath('/transactions/extra')).toBe('home');
 	});
 
 	it('builds paths for navigation', () => {
 		expect(routeToPath('home')).toBe('/');
-		expect(routeToPath('activity')).toBe('/activity');
+		expect(routeToPath('transactions')).toBe('/transactions');
 		expect(routeToPath('pockets')).toBe('/pockets');
 		expect(routeToPath('categories')).toBe('/categories');
 		expect(routeToPath('more')).toBe('/more');
+	});
+
+	it('detects the legacy Activity path for replace-navigation', () => {
+		expect(isLegacyActivityPath('/activity')).toBe(true);
+		expect(isLegacyActivityPath('/activity/')).toBe(true);
+		expect(isLegacyActivityPath('/transactions')).toBe(false);
 	});
 });

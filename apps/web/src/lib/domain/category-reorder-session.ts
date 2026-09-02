@@ -46,6 +46,14 @@ export function resetKindInOrder(
 	return setKindOrder(draft, kind, factoryGroupIds(kind, customs));
 }
 
+/** Factory order for income and expense (Spec 146). */
+export function resetBothKindsInOrder(
+	draft: KindGroupOrder,
+	groups: OverlayGroup[]
+): KindGroupOrder {
+	return resetKindInOrder(resetKindInOrder(draft, groups, 'income'), groups, 'expense');
+}
+
 export function groupsInOrder(groups: OverlayGroup[], ids: string[]): OverlayGroup[] {
 	const byId = new Map(groups.map((g) => [g.id, g]));
 	return ids.flatMap((id) => {

@@ -9,7 +9,7 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import SearchXIcon from '@lucide/svelte/icons/search-x';
-	import { dragHandle, dragHandleZone, type DndEvent } from 'svelte-dnd-action';
+	import { dndzone, type DndEvent } from 'svelte-dnd-action';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -22,7 +22,7 @@
 		cloneKindGroupOrder,
 		groupsInOrder,
 		isReorderDirty,
-		resetKindInOrder,
+		resetBothKindsInOrder,
 		setKindOrder,
 		snapshotGroupOrders,
 		type KindGroupOrder
@@ -109,6 +109,7 @@
 	let renameGroupId = $state('');
 	let renameGroupName = $state('');
 	let discardConfirmOpen = $state(false);
+	let reorderDiscardOpen = $state(false);
 	let busy = $state(false);
 	let error = $state('');
 	let nameFieldError = $state('');
@@ -254,11 +255,20 @@
 	}
 
 	function discardReorder() {
+		if (!isReorderDirty(reorderDraft, reorderSnapshot)) {
+			exitReorder();
+			return;
+		}
+		reorderDiscardOpen = true;
+	}
+
+	function confirmDiscardReorder() {
+		reorderDiscardOpen = false;
 		exitReorder();
 	}
 
 	function resetReorder() {
-		reorderDraft = resetKindInOrder(reorderDraft, groups, selectedKind);
+		reorderDraft = resetBothKindsInOrder(reorderDraft, groups);
 		showReorderList(selectedKind);
 		setDirty(isReorderDirty(reorderDraft, reorderSnapshot));
 	}
@@ -524,12 +534,12 @@
 	}
 </script>
 
-<div class="flex min-h-0 flex-1 flex-col gap-3" data-testid="categories-panel">
-	<div class="flex shrink-0 flex-col gap-3 px-7 md:px-9">
+<div class="flex min-h-0 flex-1 flex-col" data-testid="categories-panel">
+	<div class="bg-background flex shrink-0 flex-col gap-3 border-b px-7 py-3 md:px-9">
 	<Tabs.Root
 		value={selectedKind}
 		onValueChange={requestKindChange}
-		class="mx-auto w-full max-w-md shrink-0"
+		class="mx-auto w-full max-w-md shrink-0 md:max-w-sm"
 		data-testid="category-kind-tabs"
 	>
 		<Tabs.List variant="default" class="mx-auto grid w-full grid-cols-2">
@@ -609,7 +619,6 @@
 		{:else}
 			<Button
 				type="button"
-				variant="outline"
 				size="sm"
 				class="gap-1.5 max-md:w-full [&_svg]:size-3.5"
 				disabled={busy}
@@ -651,7 +660,7 @@
 		>
 			<div
 				class={cn(
-					'grid content-start gap-4 px-7 pt-1 pb-12 md:px-9',
+					'grid content-start gap-4 px-7 pt-3 pb-12 md:px-9',
 					mode === 'reorder'
 						? 'grid-cols-1'
 						: '[grid-template-columns:repeat(auto-fill,minmax(min(100%,22rem),1fr))]'
@@ -663,7 +672,7 @@
 				<Card.Root class={cn('col-span-full min-h-0 overflow-visible py-0', meta.cardClass)}>
 					<ul
 						class="m-0 flex list-none flex-col gap-3 p-2"
-						use:dragHandleZone={{
+						use:dndzone={{
 							items: reorderItems,
 							flipDurationMs,
 							type: selectedKind,
@@ -677,17 +686,15 @@
 					>
 						{#each reorderItems as group (group.id)}
 							<li
-								class="flex items-center gap-2 rounded-md px-4 py-2.5"
+								class="relative flex cursor-grab items-center gap-2 rounded-md px-4 py-2.5 before:pointer-events-none before:absolute before:inset-x-4 before:-top-1.5 before:h-px before:bg-border after:pointer-events-none after:absolute after:inset-x-4 after:-bottom-1.5 after:h-px after:bg-border first:before:hidden last:after:hidden active:cursor-grabbing"
 								data-testid={`category-group-row-${group.id}`}
 							>
-								<button
-									type="button"
-									use:dragHandle
-									class="dnd-handle text-muted-foreground hover:text-foreground shrink-0 cursor-grab rounded-sm p-1 active:cursor-grabbing"
-									aria-label={`Drag to reorder ${group.name}`}
+								<span
+									class="dnd-handle text-muted-foreground shrink-0 p-1"
+									aria-hidden="true"
 								>
-									<GripVerticalIcon class="size-4" aria-hidden="true" />
-								</button>
+									<GripVerticalIcon class="size-4" />
+								</span>
 								<span class="text-sm font-medium">{group.name}</span>
 							</li>
 						{/each}
@@ -957,7 +964,7 @@
 		else requestAddDiscard();
 	}}
 >
-	<Dialog.Content class="sm:max-w-md" showCloseButton={false} data-testid="category-add-dialog">
+	<Dialog.Content class="max-w-sm sm:max-w-sm" showCloseButton={false} data-testid="category-add-dialog">
 		<Dialog.Header>
 			<Dialog.Title>Add category</Dialog.Title>
 			<Dialog.Description>Custom labels use the tag icon.</Dialog.Description>
@@ -999,7 +1006,7 @@
 </Dialog.Root>
 
 <Dialog.Root bind:open={addGroupDialogOpen}>
-	<Dialog.Content class="sm:max-w-md" data-testid="category-add-group-dialog">
+	<Dialog.Content class="max-w-sm sm:max-w-sm" data-testid="category-add-group-dialog">
 		<Dialog.Header>
 			<Dialog.Title>Add group</Dialog.Title>
 			<Dialog.Description>Placed last among {meta.title.toLowerCase()}.</Dialog.Description>
@@ -1043,7 +1050,7 @@
 </Dialog.Root>
 
 <Dialog.Root bind:open={renameGroupDialogOpen}>
-	<Dialog.Content class="sm:max-w-md" data-testid="category-rename-group-dialog">
+	<Dialog.Content class="max-w-sm sm:max-w-sm" data-testid="category-rename-group-dialog">
 		<Dialog.Header>
 			<Dialog.Title>Rename group</Dialog.Title>
 			<Dialog.Description>Must be unique among {meta.title.toLowerCase()}.</Dialog.Description>
@@ -1092,6 +1099,17 @@
 </Dialog.Root>
 
 <ConfirmDialog
+	open={reorderDiscardOpen}
+	title="Discard group order?"
+	description="Discard this reorder without saving? Your last saved order stays."
+	confirmLabel="Discard"
+	destructive
+	confirmTestId="category-reorder-discard-confirm"
+	onOpenChange={(next) => (reorderDiscardOpen = next)}
+	onConfirm={confirmDiscardReorder}
+/>
+
+<ConfirmDialog
 	open={discardConfirmOpen}
 	title="Discard unsaved changes?"
 	description="Discard permanently, or save a draft to continue later."
@@ -1113,3 +1131,11 @@
 		addDialogOpen = false;
 	}}
 />
+
+<style>
+	/* Clone is attached to body, so first/last-child on the list must not hide its hairlines. */
+	:global(#dnd-action-dragged-el)::before,
+	:global(#dnd-action-dragged-el)::after {
+		display: block;
+	}
+</style>

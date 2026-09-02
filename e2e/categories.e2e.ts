@@ -328,7 +328,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		expect(utilitiesBox).toBeTruthy();
 		expect(utilitiesBox!.y - (homeBox!.y + homeBox!.height)).toBeGreaterThanOrEqual(8);
 
-		const handle = food.getByRole('button', { name: /Drag to reorder/ });
+		const handle = food.locator('.dnd-handle');
 		const handleBox = await handle.boundingBox();
 		expect(handleBox).toBeTruthy();
 		const dropX = utilitiesBox!.x + Math.min(48, utilitiesBox!.width / 2);
@@ -356,6 +356,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		);
 
 		await page.getByTestId('category-reorder-discard').click();
+		await page.getByTestId('category-reorder-discard-confirm').click();
 		await page.getByTestId('category-reorder').click();
 		const rowsAgain = page.locator('[data-testid^="category-group-row-"]');
 		await expect(rowsAgain.nth(0)).toHaveAttribute(
@@ -370,6 +371,123 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 			'data-testid',
 			'category-group-row-stock-group:food-drink'
 		);
+	});
+
+	test('reorder drags a group by its label, not only the grip', async ({ page }) => {
+		await page.goto('/categories');
+		await selectCategoriesKind(page, 'income');
+		await page.getByTestId('category-reorder').click();
+		const work = page.getByTestId('category-group-row-stock-group:work');
+		const business = page.getByTestId('category-group-row-stock-group:business-creating');
+		await work.scrollIntoViewIfNeeded();
+		const workBox = await work.boundingBox();
+		expect(workBox).toBeTruthy();
+
+		const label = business.getByText('Business & creating', { exact: true });
+		const labelBox = await label.boundingBox();
+		expect(labelBox).toBeTruthy();
+		await page.mouse.move(labelBox!.x + labelBox!.width / 2, labelBox!.y + labelBox!.height / 2);
+		await page.mouse.down();
+		await page.mouse.move(workBox!.x + Math.min(48, workBox!.width / 2), workBox!.y + 6, {
+			steps: 24
+		});
+		const rows = page.locator('[data-testid^="category-group-row-"]');
+		await expect(rows.nth(0)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:business-creating'
+		);
+		await page.mouse.up();
+		await expect(page.locator('[data-is-dnd-shadow-item-internal]')).toHaveCount(0);
+
+		await expect(page.getByTestId('category-reorder-save')).toBeEnabled();
+		await expect(rows.nth(0)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:business-creating'
+		);
+		await expect(rows.nth(1)).toHaveAttribute('data-testid', 'category-group-row-stock-group:work');
+		await expect(rows.nth(2)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:investing-cashback'
+		);
+	});
+
+	test('Reset restores both kinds from the other tab', async ({ page }) => {
+		await page.goto('/categories');
+		await selectCategoriesKind(page, 'expense');
+		await page.getByTestId('category-reorder').click();
+		const utilities = page.getByTestId('category-group-row-stock-group:utilities');
+		const food = page.getByTestId('category-group-row-stock-group:food-drink');
+		const handle = food.locator('.dnd-handle');
+		const handleBox = await handle.boundingBox();
+		const utilitiesBox = await utilities.boundingBox();
+		expect(handleBox && utilitiesBox).toBeTruthy();
+		await page.mouse.move(handleBox!.x + handleBox!.width / 2, handleBox!.y + handleBox!.height / 2);
+		await page.mouse.down();
+		await page.mouse.move(
+			utilitiesBox!.x + Math.min(48, utilitiesBox!.width / 2),
+			utilitiesBox!.y + 6,
+			{ steps: 24 }
+		);
+		await page.mouse.up();
+		await expect(page.getByTestId('category-reorder-save')).toBeEnabled();
+
+		await selectCategoriesKind(page, 'income');
+		await page.getByTestId('category-reorder-reset').click();
+		await expect(page.getByTestId('category-search')).toHaveCount(0);
+		await selectCategoriesKind(page, 'expense');
+		const afterReset = page.locator('[data-testid^="category-group-row-"]');
+		await expect(afterReset.nth(0)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:home'
+		);
+		await expect(afterReset.nth(1)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:utilities'
+		);
+		await expect(afterReset.nth(2)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:food-drink'
+		);
+
+		await page.getByTestId('category-reorder-discard').click();
+		await expect(page.getByRole('heading', { name: 'Discard group order?' })).toHaveCount(0);
+		await expect(page.getByTestId('category-search')).toBeVisible();
+	});
+
+	test('dirty Discard confirms before leaving reorder', async ({ page }) => {
+		await page.goto('/categories');
+		await selectCategoriesKind(page, 'expense');
+		await page.getByTestId('category-reorder').click();
+		const utilities = page.getByTestId('category-group-row-stock-group:utilities');
+		const food = page.getByTestId('category-group-row-stock-group:food-drink');
+		const handle = food.locator('.dnd-handle');
+		const handleBox = await handle.boundingBox();
+		const utilitiesBox = await utilities.boundingBox();
+		expect(handleBox && utilitiesBox).toBeTruthy();
+		await page.mouse.move(handleBox!.x + handleBox!.width / 2, handleBox!.y + handleBox!.height / 2);
+		await page.mouse.down();
+		await page.mouse.move(
+			utilitiesBox!.x + Math.min(48, utilitiesBox!.width / 2),
+			utilitiesBox!.y + 6,
+			{ steps: 24 }
+		);
+		await page.mouse.up();
+		await expect(page.getByTestId('category-reorder-save')).toBeEnabled();
+
+		await page.getByTestId('category-reorder-discard').click();
+		await expect(page.getByRole('heading', { name: 'Discard group order?' })).toBeVisible();
+		await expect(page.getByTestId('confirm-dialog-danger-header')).toHaveCount(0);
+		await page.getByTestId('confirm-dialog-cancel').click();
+		await expect(page.getByTestId('category-reorder-save')).toBeVisible();
+		await expect(page.locator('[data-testid^="category-group-row-"]').nth(1)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:food-drink'
+		);
+
+		await page.getByTestId('category-reorder-discard').click();
+		await page.getByTestId('category-reorder-discard-confirm').click();
+		await expect(page.getByTestId('category-search')).toBeVisible();
+		await expect(page.getByTestId('category-chip').first()).toBeVisible();
 	});
 
 	test('form picker groups expense categories and filters by search', async ({ page }) => {

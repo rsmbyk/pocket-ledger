@@ -64,7 +64,7 @@ test.describe('106 transfer admin fee', () => {
 		await createFeeTransfer(page, '8000', '100');
 
 		await page.setViewportSize({ width: 390, height: 844 });
-		await page.goto('/activity');
+		await page.goto('/transactions');
 		await expect(
 			page.getByTestId('activity-list').or(page.getByTestId('activity-empty'))
 		).toBeVisible();

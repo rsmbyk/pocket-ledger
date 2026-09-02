@@ -30,11 +30,12 @@
 	} = $props();
 
 	function handleOpenAutoFocus(event: Event) {
+		onOpenAutoFocus?.(event as Parameters<NonNullable<typeof onOpenAutoFocus>>[0]);
+		if (event.defaultPrevented) return;
 		const root = (ref ?? event.currentTarget) as HTMLElement | null;
 		if (root && applyModalOpenFocus(root)) {
 			event.preventDefault();
 		}
-		onOpenAutoFocus?.(event as Parameters<NonNullable<typeof onOpenAutoFocus>>[0]);
 	}
 </script>
 

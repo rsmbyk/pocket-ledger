@@ -22,7 +22,7 @@ test.describe('012 polish / 014 void / 030', () => {
 		await selectTxCategory(page, 'Food', sheet);
 		await sheet.getByTestId('tx-save').click();
 
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 		await expect(page.getByTestId('balance-compact')).toHaveCount(0);
 		await page
 			.getByTestId('activity-list')
@@ -37,7 +37,7 @@ test.describe('012 polish / 014 void / 030', () => {
 		await goToNav(page, 'home');
 		await expect(page.getByTestId('account-balance')).toContainText('10');
 
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 		await expect(page.getByTestId('activity-list')).toContainText('10');
 		await page
 			.getByTestId('activity-list')
@@ -46,11 +46,8 @@ test.describe('012 polish / 014 void / 030', () => {
 			.click();
 		await page.getByTestId('tx-void').click();
 		await confirmVoid(page);
-		await expect(page.getByTestId('activity-list')).not.toContainText(/^Void$/);
-		await expect(page.getByTestId('activity-empty')).toHaveCount(0);
-		await expect(
-			page.getByTestId('activity-list').locator('[data-testid^="activity-row-"]').first()
-		).toHaveClass(/opacity-70/);
+		await expect(page.getByTestId('activity-list')).toHaveCount(0);
+		await expect(page.getByTestId('activity-empty-filtered')).toBeVisible();
 
 		await goToNav(page, 'home');
 		await expect(page.getByTestId('account-balance')).toContainText('0');

@@ -44,10 +44,10 @@ test.describe('013 desktop layout', () => {
 		await expect(
 			page.getByTestId('app-drawer-sheet').getByRole('heading', { name: 'Main' })
 		).toBeVisible();
-		await page.getByTestId('nav-activity').click();
-		await expect(page).toHaveURL(/\/activity\/?$/);
+		await page.getByTestId('nav-transactions').click();
+		await expect(page).toHaveURL(/\/transactions\/?$/);
 		await expect(page.getByTestId('app-drawer-sheet')).toBeHidden();
-		await expect(page.getByTestId('page-title')).toHaveText('Activity');
+		await expect(page.getByTestId('page-title')).toHaveText('Transactions');
 	});
 
 	test('drawer shows app icon and flat nav without add', async ({ page }) => {
@@ -180,9 +180,9 @@ test.describe('013 desktop layout', () => {
 
 		await page.keyboard.press('Control+K');
 		await expect(page.getByTestId('command-palette')).toBeVisible();
-		await page.getByTestId('cmd-activity').click();
-		await expect(page).toHaveURL(/\/activity\/?$/);
-		await expect(page.getByTestId('page-title')).toHaveText('Activity');
+		await page.getByTestId('cmd-transactions').click();
+		await expect(page).toHaveURL(/\/transactions\/?$/);
+		await expect(page.getByTestId('page-title')).toHaveText('Transactions');
 
 		await page.keyboard.press('Control+K');
 		await expect(page.getByTestId('command-palette')).toBeVisible();
@@ -201,10 +201,10 @@ test.describe('013 desktop layout', () => {
 		await selectTxCategory(page, 'Food', dialog);
 		await dialog.getByTestId('tx-save').click();
 
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 		await expect(page.getByTestId('activity-list').getByRole('columnheader')).toHaveCount(0);
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
-		await expect(page.getByTestId('activity-sort-open')).toBeVisible();
+		await expect(page.getByTestId('activity-sort-open')).toHaveCount(0);
 		await expect(page.getByTestId('activity-filters-open')).toHaveCount(0);
 	});
 });

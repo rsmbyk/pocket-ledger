@@ -60,12 +60,24 @@
 		type="date"
 		class={cn(
 			'absolute inset-y-0 left-0 z-[1] cursor-pointer opacity-0',
+			'[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0',
+			'[&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full',
+			'[&::-webkit-calendar-picker-indicator]:cursor-pointer',
 			trailing ? 'right-10' : 'right-0',
 			disabled && 'cursor-not-allowed'
 		)}
 		{disabled}
 		{value}
 		aria-label={ariaLabel}
+		onclick={(e) => {
+			const el = e.currentTarget as HTMLInputElement;
+			if (el.disabled) return;
+			try {
+				el.showPicker();
+			} catch {
+				// NotAllowedError / unsupported (iOS no-op is fine — overlay tap still works).
+			}
+		}}
 		onchange={(e) => {
 			onValueChange((e.currentTarget as HTMLInputElement).value);
 		}}

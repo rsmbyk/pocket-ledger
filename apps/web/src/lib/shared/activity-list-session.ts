@@ -1,52 +1,63 @@
 import {
 	DEFAULT_ACTIVITY_FILTERS,
-	DEFAULT_ACTIVITY_SORT,
 	type ActivityFilterCriteria,
-	type ActivitySortMode,
-	type ActivityTypeFilter,
-	type AmountCompareOp
+	type ActivityTxType,
+	normalizeActivityFilters
 } from '$lib/domain/activity-filters';
+import {
+	defaultTransactionDateRange,
+	type TransactionDateRange
+} from '$lib/domain/transaction-date-range';
 
 export const ACTIVITY_LIST_SESSION_KEY = 'pocket-ledger-activity-list';
 
 export type ActivityListSessionState = {
-	sort: ActivitySortMode;
 	filters: ActivityFilterCriteria;
+	range: TransactionDateRange;
 };
 
-const SORT_MODES: ReadonlySet<string> = new Set([
-	'createdAt-desc',
-	'occurredOn-desc',
-	'occurredOn-asc'
-]);
+const TX_TYPES: ReadonlySet<string> = new Set(['income', 'expense', 'transfer']);
 
-const TYPE_FILTERS: ReadonlySet<string> = new Set(['all', 'income', 'expense', 'transfer']);
-const AMOUNT_OPS: ReadonlySet<string> = new Set(['none', 'lt', 'gt']);
-
-function asString(value: unknown, fallback: string | null | undefined = ''): string {
+function asString(value: unknown, fallback = ''): string {
 	if (typeof value === 'string') return value;
-	return fallback ?? '';
+	return fallback;
 }
 
-function parseSort(value: unknown): ActivitySortMode {
-	if (typeof value === 'string' && SORT_MODES.has(value)) {
-		return value as ActivitySortMode;
+function asStringArray(value: unknown): string[] {
+	if (Array.isArray(value)) {
+		return value.filter((v): v is string => typeof v === 'string' && v.trim() !== '');
 	}
-	return DEFAULT_ACTIVITY_SORT;
+	return [];
 }
 
-function parseType(value: unknown): ActivityTypeFilter {
-	if (typeof value === 'string' && TYPE_FILTERS.has(value)) {
-		return value as ActivityTypeFilter;
-	}
-	return DEFAULT_ACTIVITY_FILTERS.type;
+function parseTypes(raw: Record<string, unknown>): ActivityTxType[] {
+	const fromArray = asStringArray(raw.types).filter((t): t is ActivityTxType => TX_TYPES.has(t));
+	if (raw.types !== undefined) return fromArray;
+	const legacy = asString(raw.type);
+	if (legacy && TX_TYPES.has(legacy)) return [legacy as ActivityTxType];
+	return [];
 }
 
-function parseAmountOp(value: unknown): AmountCompareOp {
-	if (typeof value === 'string' && AMOUNT_OPS.has(value)) {
-		return value as AmountCompareOp;
+function parseCategoryIds(raw: Record<string, unknown>): string[] {
+	if (raw.categoryIds !== undefined) return asStringArray(raw.categoryIds);
+	const legacy = asString(raw.categoryId).trim();
+	return legacy ? [legacy] : [];
+}
+
+function parsePocketIds(raw: Record<string, unknown>): string[] {
+	if (raw.pocketIds !== undefined) {
+		return asStringArray(raw.pocketIds).filter((id) => id !== 'all');
 	}
-	return DEFAULT_ACTIVITY_FILTERS.amountOp;
+	const legacy = asString(raw.pocketId).trim();
+	if (!legacy || legacy === 'all') return [];
+	return [legacy];
+}
+
+function parseShowVoided(raw: Record<string, unknown>): boolean {
+	if (typeof raw.showVoided === 'boolean') return raw.showVoided;
+	if (raw.hideVoided === true) return false;
+	if (raw.hideVoided === false) return true;
+	return false;
 }
 
 function parseFilters(value: unknown): ActivityFilterCriteria {
@@ -54,17 +65,43 @@ function parseFilters(value: unknown): ActivityFilterCriteria {
 		return { ...DEFAULT_ACTIVITY_FILTERS };
 	}
 	const raw = value as Record<string, unknown>;
-	const pocketRaw = asString(raw.pocketId, DEFAULT_ACTIVITY_FILTERS.pocketId).trim();
-	return {
-		type: parseType(raw.type),
-		categoryId: asString(raw.categoryId, DEFAULT_ACTIVITY_FILTERS.categoryId),
-		startDate: asString(raw.startDate, DEFAULT_ACTIVITY_FILTERS.startDate),
-		endDate: asString(raw.endDate, DEFAULT_ACTIVITY_FILTERS.endDate),
+	return normalizeActivityFilters({
 		search: asString(raw.search, DEFAULT_ACTIVITY_FILTERS.search),
-		hideVoided: raw.hideVoided === true,
-		amountOp: parseAmountOp(raw.amountOp),
-		amountRaw: asString(raw.amountRaw, DEFAULT_ACTIVITY_FILTERS.amountRaw),
-		pocketId: pocketRaw || 'all'
+		types: parseTypes(raw),
+		categoryIds: parseCategoryIds(raw),
+		pocketIds: parsePocketIds(raw),
+		startDate: '',
+		endDate: '',
+		showVoided: parseShowVoided(raw)
+	});
+}
+
+function parseRange(obj: Record<string, unknown>, filtersRaw: unknown): TransactionDateRange {
+	const fallback = defaultTransactionDateRange();
+	const rangeRaw =
+		obj.range && typeof obj.range === 'object' ? (obj.range as Record<string, unknown>) : null;
+	const filterObj =
+		filtersRaw && typeof filtersRaw === 'object' ? (filtersRaw as Record<string, unknown>) : {};
+
+	if (rangeRaw) {
+		const mode = rangeRaw.mode === 'custom' ? 'custom' : 'month';
+		const startDate = asString(rangeRaw.startDate) || fallback.startDate;
+		const endDate = asString(rangeRaw.endDate) || fallback.endDate;
+		const monthKey = asString(rangeRaw.monthKey) || fallback.monthKey;
+		if (mode === 'custom') return { mode, startDate, endDate };
+		return { mode: 'month', monthKey, startDate, endDate };
+	}
+
+	const oldStart = asString(filterObj.startDate).trim();
+	const oldEnd = asString(filterObj.endDate).trim();
+	if (!oldStart && !oldEnd) return fallback;
+	return { mode: 'custom', startDate: oldStart || fallback.startDate, endDate: oldEnd || fallback.endDate };
+}
+
+function emptySession(): ActivityListSessionState {
+	return {
+		filters: { ...DEFAULT_ACTIVITY_FILTERS },
+		range: defaultTransactionDateRange()
 	};
 }
 
@@ -72,30 +109,17 @@ function parseFilters(value: unknown): ActivityFilterCriteria {
 export function parseActivityListSession(
 	value: string | null | undefined
 ): ActivityListSessionState {
-	if (!value) {
-		return {
-			sort: DEFAULT_ACTIVITY_SORT,
-			filters: { ...DEFAULT_ACTIVITY_FILTERS }
-		};
-	}
+	if (!value) return emptySession();
 	try {
 		const parsed: unknown = JSON.parse(value);
-		if (!parsed || typeof parsed !== 'object') {
-			return {
-				sort: DEFAULT_ACTIVITY_SORT,
-				filters: { ...DEFAULT_ACTIVITY_FILTERS }
-			};
-		}
+		if (!parsed || typeof parsed !== 'object') return emptySession();
 		const obj = parsed as Record<string, unknown>;
 		return {
-			sort: parseSort(obj.sort),
-			filters: parseFilters(obj.filters)
+			filters: parseFilters(obj.filters),
+			range: parseRange(obj, obj.filters)
 		};
 	} catch {
-		return {
-			sort: DEFAULT_ACTIVITY_SORT,
-			filters: { ...DEFAULT_ACTIVITY_FILTERS }
-		};
+		return emptySession();
 	}
 }
 
@@ -105,10 +129,7 @@ export function readActivityListSession(
 	try {
 		return parseActivityListSession(storage?.getItem(ACTIVITY_LIST_SESSION_KEY) ?? null);
 	} catch {
-		return {
-			sort: DEFAULT_ACTIVITY_SORT,
-			filters: { ...DEFAULT_ACTIVITY_FILTERS }
-		};
+		return emptySession();
 	}
 }
 
@@ -118,8 +139,8 @@ export function writeActivityListSession(
 ): void {
 	try {
 		const payload: ActivityListSessionState = {
-			sort: parseSort(state.sort),
-			filters: parseFilters(state.filters)
+			filters: parseFilters(state.filters),
+			range: state.range
 		};
 		storage?.setItem(ACTIVITY_LIST_SESSION_KEY, JSON.stringify(payload));
 	} catch {

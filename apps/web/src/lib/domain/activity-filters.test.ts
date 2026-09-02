@@ -4,20 +4,29 @@ import {
 	activityListSections,
 	ADMIN_FEE_CATEGORY_ID,
 	amountDigitsMatch,
+	countAdvancedFilters,
 	filterTransactions,
+	filterTriggerSummary,
 	groupActivityByOccurredOn,
 	initialRevealEndIndex,
 	isCategoryFilterCompatible,
 	isCategoryFilterDisabled,
 	isDefaultActivityFilters,
 	nextRevealEndIndex,
-	resolveCategoryIdForType,
+	resolveCategoryIdsForTypes,
 	shouldShowActivityCategoryFilter,
 	sortTransactions,
-	sortTransactionsByDate,
 	UNCATEGORIZED_FILTER,
 	usedCategoryIds
 } from './activity-filters';
+import {
+	customRangeToMonth,
+	defaultTransactionDateRange,
+	lastCalendarDayOfMonth,
+	monthRangeForKey,
+	monthRangeToCustom,
+	snapDateRange
+} from './transaction-date-range';
 
 function tx(
 	partial: Partial<LedgerTransaction> &
@@ -70,8 +79,8 @@ describe('activity-filters', () => {
 	});
 
 	it('filters by type, category, dates, and search', () => {
-		expect(filterTransactions(rows, { type: 'expense' })).toHaveLength(2);
-		expect(filterTransactions(rows, { categoryId: 'sal' })).toHaveLength(1);
+		expect(filterTransactions(rows, { types: ['expense'] })).toHaveLength(2);
+		expect(filterTransactions(rows, { categoryIds: ['sal'] })).toHaveLength(1);
 		expect(
 			filterTransactions(rows, { startDate: '2026-07-10', endDate: '2026-07-31' })
 		).toHaveLength(1);
@@ -79,7 +88,7 @@ describe('activity-filters', () => {
 		expect(filterTransactions(rows, { search: '100,000' })).toHaveLength(1);
 	});
 
-	it('filters by transfer type', () => {
+	it('ORs types and ANDs across fields', () => {
 		const mixed = [
 			...rows,
 			{
@@ -87,22 +96,26 @@ describe('activity-filters', () => {
 				counterAccountId: 'vac'
 			}
 		];
-		expect(filterTransactions(mixed, { type: 'transfer' }).map((t) => t.note)).toEqual(['xfer']);
+		expect(
+			filterTransactions(mixed, { types: ['income', 'expense'] }).map((t) => t.note)
+		).toEqual(['secret lunch', 'pay', 'old']);
+		expect(filterTransactions(mixed, { types: ['transfer'] }).map((t) => t.note)).toEqual(['xfer']);
 	});
 
-	it('resolves incompatible category selections for type (Spec 107)', () => {
+	it('resolves incompatible category selections for type (Spec 107 / 139)', () => {
 		const kinds = { food: 'expense' as const, sal: 'income' as const };
-		expect(isCategoryFilterDisabled('transfer')).toBe(true);
-		expect(isCategoryFilterDisabled('all')).toBe(false);
-		expect(isCategoryFilterCompatible('food', 'expense', kinds)).toBe(true);
-		expect(isCategoryFilterCompatible('food', 'income', kinds)).toBe(false);
-		expect(isCategoryFilterCompatible(ADMIN_FEE_CATEGORY_ID, 'all', kinds)).toBe(true);
-		expect(isCategoryFilterCompatible(ADMIN_FEE_CATEGORY_ID, 'expense', kinds)).toBe(false);
-		expect(isCategoryFilterCompatible(UNCATEGORIZED_FILTER, 'income', kinds)).toBe(true);
-		expect(resolveCategoryIdForType('food', 'income', kinds)).toBe('');
-		expect(resolveCategoryIdForType('food', 'expense', kinds)).toBe('food');
-		expect(resolveCategoryIdForType(ADMIN_FEE_CATEGORY_ID, 'transfer', kinds)).toBe('');
-		expect(resolveCategoryIdForType('', 'transfer', kinds)).toBe('');
+		expect(isCategoryFilterDisabled(['transfer'])).toBe(true);
+		expect(isCategoryFilterDisabled([])).toBe(false);
+		expect(isCategoryFilterDisabled(['income', 'expense'])).toBe(false);
+		expect(isCategoryFilterCompatible('food', ['expense'], kinds)).toBe(true);
+		expect(isCategoryFilterCompatible('food', ['income'], kinds)).toBe(false);
+		expect(isCategoryFilterCompatible(ADMIN_FEE_CATEGORY_ID, [], kinds)).toBe(true);
+		expect(isCategoryFilterCompatible(ADMIN_FEE_CATEGORY_ID, ['expense'], kinds)).toBe(false);
+		expect(isCategoryFilterCompatible(UNCATEGORIZED_FILTER, ['income'], kinds)).toBe(true);
+		expect(resolveCategoryIdsForTypes(['food'], ['income'], kinds)).toEqual([]);
+		expect(resolveCategoryIdsForTypes(['food'], ['expense'], kinds)).toEqual(['food']);
+		expect(resolveCategoryIdsForTypes([ADMIN_FEE_CATEGORY_ID], ['transfer'], kinds)).toEqual([]);
+		expect(resolveCategoryIdsForTypes([], ['transfer'], kinds)).toEqual([]);
 	});
 
 	it('filters uncategorized via sentinel', () => {
@@ -116,8 +129,10 @@ describe('activity-filters', () => {
 				note: 'bare'
 			})
 		];
-		expect(filterTransactions(mixed, { categoryId: UNCATEGORIZED_FILTER })).toHaveLength(1);
-		expect(filterTransactions(mixed, { categoryId: UNCATEGORIZED_FILTER })[0]?.note).toBe('bare');
+		expect(filterTransactions(mixed, { categoryIds: [UNCATEGORIZED_FILTER] })).toHaveLength(1);
+		expect(filterTransactions(mixed, { categoryIds: [UNCATEGORIZED_FILTER] })[0]?.note).toBe(
+			'bare'
+		);
 	});
 
 	it('filters Admin Fee via sentinel to transfers with fee', () => {
@@ -146,16 +161,17 @@ describe('activity-filters', () => {
 			}
 		];
 		expect(
-			filterTransactions(mixed, { categoryId: ADMIN_FEE_CATEGORY_ID }).map((t) => t.note)
+			filterTransactions(mixed, {
+				categoryIds: [ADMIN_FEE_CATEGORY_ID],
+				showVoided: true
+			}).map((t) => t.note)
 		).toEqual(['paid', 'void-fee']);
 		expect(
-			filterTransactions(mixed, { categoryId: ADMIN_FEE_CATEGORY_ID, hideVoided: true }).map(
-				(t) => t.note
-			)
+			filterTransactions(mixed, { categoryIds: [ADMIN_FEE_CATEGORY_ID] }).map((t) => t.note)
 		).toEqual(['paid']);
 	});
 
-	it('hides voided and compares amount lt/gt', () => {
+	it('hides voided by default', () => {
 		const mixed = [
 			tx({ type: 'expense', amountMinor: 10_000, occurredOn: '2026-07-15', note: 'a' }),
 			tx({
@@ -167,16 +183,16 @@ describe('activity-filters', () => {
 			}),
 			tx({ type: 'expense', amountMinor: 30_000, occurredOn: '2026-07-15', note: 'c' })
 		];
-		expect(filterTransactions(mixed, { hideVoided: true })).toHaveLength(2);
-		expect(
-			filterTransactions(mixed, { amountOp: 'lt', amountRaw: '25000' }).map((t) => t.note)
-		).toEqual(['a', 'b']);
-		expect(
-			filterTransactions(mixed, { amountOp: 'gt', amountRaw: '15,000' }).map((t) => t.note)
-		).toEqual(['b', 'c']);
+		expect(filterTransactions(mixed, {})).toHaveLength(2);
+		expect(filterTransactions(mixed, { showVoided: true })).toHaveLength(3);
+		expect(filterTransactions(mixed, { showVoided: true }).map((t) => t.note)).toEqual([
+			'a',
+			'b',
+			'c'
+		]);
 	});
 
-	it('filters by pocket including transfer either side', () => {
+	it('filters by pocket including transfer either side; multi OR', () => {
 		const mixed = [
 			tx({ type: 'expense', amountMinor: 10, occurredOn: '2026-07-15', note: 'main-exp' }),
 			{
@@ -189,23 +205,37 @@ describe('activity-filters', () => {
 				counterAccountId: 'vac'
 			}
 		];
-		expect(filterTransactions(mixed, { pocketId: 'acc' }).map((t) => t.note)).toEqual([
+		expect(filterTransactions(mixed, { pocketIds: ['acc'] }).map((t) => t.note)).toEqual([
 			'main-exp',
 			'xfer'
 		]);
-		expect(filterTransactions(mixed, { pocketId: 'vac' }).map((t) => t.note)).toEqual([
+		expect(filterTransactions(mixed, { pocketIds: ['vac'] }).map((t) => t.note)).toEqual([
 			'vac-exp',
 			'xfer'
 		]);
-		expect(filterTransactions(mixed, { pocketId: 'all' })).toHaveLength(3);
+		expect(filterTransactions(mixed, { pocketIds: ['acc', 'vac'] })).toHaveLength(3);
+		expect(filterTransactions(mixed, { pocketIds: [] })).toHaveLength(3);
 	});
 
-	it('detects default filters', () => {
+	it('detects default filters (dates ignored; voided hidden)', () => {
 		expect(isDefaultActivityFilters({})).toBe(true);
-		expect(isDefaultActivityFilters({ type: 'expense' })).toBe(false);
+		expect(isDefaultActivityFilters({ startDate: '2026-09-01', endDate: '2026-09-02' })).toBe(
+			true
+		);
+		expect(isDefaultActivityFilters({ types: ['expense'] })).toBe(false);
+		expect(isDefaultActivityFilters({ showVoided: true })).toBe(false);
+		expect(countAdvancedFilters({ showVoided: true })).toBe(1);
+		expect(countAdvancedFilters({ startDate: '2026-09-01' })).toBe(0);
+		expect(countAdvancedFilters({})).toBe(0);
 	});
 
-	it('sorts by createdAt then occurredOn', () => {
+	it('summarizes multi-select triggers', () => {
+		expect(filterTriggerSummary([], () => 'x')).toBe('All');
+		expect(filterTriggerSummary(['food'], (id) => (id === 'food' ? 'Food' : id))).toBe('Food');
+		expect(filterTriggerSummary(['a', 'b'], (id) => id)).toBe('2 selected');
+	});
+
+	it('always sorts occurredOn desc then createdAt desc then id', () => {
 		const mixed = [
 			tx({
 				id: '1',
@@ -224,12 +254,10 @@ describe('activity-filters', () => {
 				note: 'newer-occurred'
 			})
 		];
-		expect(sortTransactionsByDate(mixed, 'createdAt-desc')[0]?.id).toBe('1');
-		expect(sortTransactionsByDate(mixed, 'occurredOn-desc')[0]?.id).toBe('2');
-		expect(sortTransactionsByDate(mixed, 'occurredOn-asc')[0]?.id).toBe('1');
+		expect(sortTransactions(mixed).map((t) => t.id)).toEqual(['2', '1']);
 	});
 
-	it('orders same-day rows by createdAt matching date sort direction (Spec 101)', () => {
+	it('orders same-day rows by createdAt desc (Spec 101 / 134)', () => {
 		const sameDay = [
 			tx({
 				id: 'old-created',
@@ -253,44 +281,41 @@ describe('activity-filters', () => {
 				createdAt: '2026-06-01T10:00:00.000Z'
 			})
 		];
-		expect(sortTransactions(sameDay, 'occurredOn-desc').map((t) => t.id)).toEqual([
+		expect(sortTransactions(sameDay).map((t) => t.id)).toEqual([
 			'other-day',
 			'new-created',
 			'old-created'
 		]);
-		expect(sortTransactions(sameDay, 'occurredOn-asc').map((t) => t.id)).toEqual([
-			'old-created',
-			'new-created',
-			'other-day'
-		]);
 	});
 
-	it('groups by occurredOn only for date sorts', () => {
-		const sortedDesc = sortTransactions(
-			[
-				tx({ id: 'a', type: 'expense', amountMinor: 1, occurredOn: '2026-07-16' }),
-				tx({ id: 'b', type: 'expense', amountMinor: 1, occurredOn: '2026-07-16' }),
-				tx({ id: 'c', type: 'expense', amountMinor: 1, occurredOn: '2026-07-15' })
-			],
-			'occurredOn-desc'
-		);
-		const groups = groupActivityByOccurredOn(sortedDesc, 'occurredOn-desc');
+	it('always groups by occurredOn with date headers', () => {
+		const sortedDesc = sortTransactions([
+			tx({
+				id: 'a',
+				type: 'expense',
+				amountMinor: 1,
+				occurredOn: '2026-07-16',
+				createdAt: '2026-07-16T10:00:00.000Z'
+			}),
+			tx({
+				id: 'b',
+				type: 'expense',
+				amountMinor: 1,
+				occurredOn: '2026-07-16',
+				createdAt: '2026-07-16T09:00:00.000Z'
+			}),
+			tx({ id: 'c', type: 'expense', amountMinor: 1, occurredOn: '2026-07-15' })
+		]);
+		const groups = groupActivityByOccurredOn(sortedDesc);
 		expect(groups.map((g) => g.occurredOn)).toEqual(['2026-07-16', '2026-07-15']);
 		expect(groups[0]?.transactions.map((t) => t.id)).toEqual(['a', 'b']);
 
-		const flat = groupActivityByOccurredOn(sortedDesc, 'createdAt-desc');
-		expect(flat).toHaveLength(1);
-		expect(flat[0]?.occurredOn).toBe('');
-		expect(flat[0]?.transactions).toHaveLength(3);
-
-		const sections = activityListSections(sortedDesc, 'occurredOn-desc');
+		const sections = activityListSections(sortedDesc);
 		expect(sections.filter((s) => s.kind === 'header')).toHaveLength(2);
-		expect(activityListSections(sortedDesc, 'createdAt-desc').every((s) => s.kind === 'row')).toBe(
-			true
-		);
+		expect(sections[0]).toEqual({ kind: 'header', occurredOn: '2026-07-16' });
 	});
 
-	it('reveals by rows for Default and whole days for date sorts', () => {
+	it('reveals whole days and never splits a day', () => {
 		const many = Array.from({ length: 100 }, (_, i) =>
 			tx({
 				id: `r${i}`,
@@ -300,10 +325,8 @@ describe('activity-filters', () => {
 				createdAt: `2026-07-01T00:${String(i).padStart(2, '0')}:00.000Z`
 			})
 		);
-		expect(initialRevealEndIndex(many, 'createdAt-desc', 40)).toBe(40);
-		expect(nextRevealEndIndex(many, 40, 'createdAt-desc', 40)).toBe(80);
-		expect(nextRevealEndIndex(many, 80, 'createdAt-desc', 40)).toBe(100);
-		expect(nextRevealEndIndex(many, 100, 'createdAt-desc', 40)).toBe(100);
+		expect(initialRevealEndIndex(many, 40)).toBe(100);
+		expect(nextRevealEndIndex(many, 100, 40)).toBe(100);
 
 		const dayA = Array.from({ length: 10 }, (_, i) =>
 			tx({ id: `a${i}`, type: 'expense', amountMinor: 1, occurredOn: '2026-07-20' })
@@ -312,16 +335,12 @@ describe('activity-filters', () => {
 			tx({ id: `b${i}`, type: 'expense', amountMinor: 1, occurredOn: '2026-07-19' })
 		);
 		const dateSorted = [...dayA, ...dayB];
-		const first = initialRevealEndIndex(dateSorted, 'occurredOn-desc', 40);
+		const first = initialRevealEndIndex(dateSorted, 40);
 		expect(first).toBe(60);
-		expect(
-			dateSorted.slice(0, first).every((t, _, arr) => {
-				const days = new Set(arr.map((x) => x.occurredOn));
-				return days.size === 2;
-			})
-		).toBe(true);
 		const lastDay = dateSorted[first - 1]!.occurredOn;
-		expect(dateSorted[first] === undefined || dateSorted[first]!.occurredOn !== lastDay).toBe(true);
+		expect(dateSorted[first] === undefined || dateSorted[first]!.occurredOn !== lastDay).toBe(
+			true
+		);
 	});
 });
 
@@ -366,5 +385,59 @@ describe('usedCategoryIds / shouldShowActivityCategoryFilter (Spec 132)', () => 
 		];
 		expect(usedCategoryIds(rows).size).toBe(0);
 		expect(shouldShowActivityCategoryFilter(rows)).toBe(false);
+	});
+});
+
+describe('transaction date range (Spec 141)', () => {
+	it('uses today as end for the current month and last day otherwise', () => {
+		const now = new Date(2026, 8, 2);
+		expect(monthRangeForKey('2026-09', now)).toEqual({
+			startDate: '2026-09-01',
+			endDate: '2026-09-02'
+		});
+		expect(monthRangeForKey('2026-08', now)).toEqual({
+			startDate: '2026-08-01',
+			endDate: '2026-08-31'
+		});
+		expect(lastCalendarDayOfMonth('2026-02')).toBe('2026-02-28');
+		expect(defaultTransactionDateRange(now)).toEqual({
+			mode: 'month',
+			monthKey: '2026-09',
+			startDate: '2026-09-01',
+			endDate: '2026-09-02'
+		});
+	});
+
+	it('snaps start after end', () => {
+		expect(snapDateRange('2026-09-10', '2026-09-01')).toEqual({
+			startDate: '2026-09-01',
+			endDate: '2026-09-10'
+		});
+	});
+
+	it('maps month ↔ custom', () => {
+		const now = new Date(2026, 8, 2);
+		const august = {
+			mode: 'month' as const,
+			monthKey: '2026-08',
+			startDate: '2026-08-01',
+			endDate: '2026-08-31'
+		};
+		expect(monthRangeToCustom(august)).toEqual({
+			mode: 'custom',
+			startDate: '2026-08-01',
+			endDate: '2026-08-31'
+		});
+		expect(
+			customRangeToMonth(
+				{ mode: 'custom', startDate: '2026-07-04', endDate: '2026-07-20' },
+				now
+			)
+		).toEqual({
+			mode: 'month',
+			monthKey: '2026-07',
+			startDate: '2026-07-01',
+			endDate: '2026-07-31'
+		});
 	});
 });

@@ -47,6 +47,7 @@
 	import CategoryPicker from '$lib/ui/CategoryPicker.svelte';
 	import PocketLabel from '$lib/ui/PocketLabel.svelte';
 	import { cn } from '$lib/utils.js';
+	import { shouldIgnoreDismissForNativePicker } from '$lib/ui/native-picker-dismiss';
 	import { SyncConflictError } from '$lib/application/sync';
 
 	type AddMode = 'normal' | 'transfer';
@@ -239,6 +240,10 @@
 
 	/** Keep host open when dirty / discard open; bits-ui `ignore` skips these callbacks. */
 	function onInteractOutside(e: PointerEvent) {
+		if (shouldIgnoreDismissForNativePicker(e)) {
+			e.preventDefault();
+			return;
+		}
 		if (!isDirty && !discardConfirmOpen) return;
 		e.preventDefault();
 		if (isDirty) discardConfirmOpen = true;
@@ -595,7 +600,7 @@
 				aria-invalid={errorKey && fieldAlert(errorKey) ? true : undefined}
 			>
 				{#if selected}
-					<PocketLabel name={selected.name} isMain={selected.isMain} />
+					<PocketLabel name={selected.name} isMain={selected.isMain} optical />
 				{:else}
 					<span class="text-muted-foreground">Choose a pocket</span>
 				{/if}
@@ -610,7 +615,7 @@
 							if (errorKey && fieldError?.key === errorKey) clearFieldError();
 						}}
 					>
-						<PocketLabel name={pocket.name} isMain={pocket.isMain} />
+						<PocketLabel name={pocket.name} isMain={pocket.isMain} optical />
 					</DropdownMenu.Item>
 				{/each}
 			</DropdownMenu.Content>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import CheckIcon from '@lucide/svelte/icons/check';
 	import { Popover } from 'bits-ui';
 	import * as Command from '$lib/components/ui/command/index.js';
 	import type { CategoryRow } from '$lib/data/db';
@@ -7,6 +8,7 @@
 	import {
 		ADMIN_FEE_CATEGORY_ID,
 		ADMIN_FEE_LABEL,
+		filterTriggerSummary,
 		UNCATEGORIZED_FILTER
 	} from '$lib/domain/activity-filters';
 	import { STOCK_ADMIN_FEE_ICON, STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
@@ -16,8 +18,12 @@
 	import { cn } from '$lib/utils.js';
 
 	type Props = {
-		value: string;
-		onValueChange: (next: string) => void;
+		value?: string;
+		onValueChange?: (next: string) => void;
+		/** Multi-select for Filters (139). Tx sheet stays single. */
+		multiple?: boolean;
+		values?: string[];
+		onValuesChange?: (next: string[]) => void;
 		categories?: CategoryRow[];
 		incomeCategories?: CategoryRow[];
 		expenseCategories?: CategoryRow[];
@@ -36,8 +42,11 @@
 	};
 
 	let {
-		value,
+		value = '',
 		onValueChange,
+		multiple = false,
+		values = [],
+		onValuesChange,
 		categories = [],
 		incomeCategories = [],
 		expenseCategories = [],
@@ -75,7 +84,10 @@
 				: [...incomeCategories, ...expenseCategories]
 	);
 
-	const selected = $derived(allNamed.find((c) => c.id === value) ?? null);
+	const selectedIds = $derived(multiple ? values : value ? [value] : []);
+	const selectedId = $derived(selectedIds[0] ?? '');
+	const selected = $derived(allNamed.find((c) => c.id === selectedId) ?? null);
+	const selectedSet = $derived(new Set(selectedIds));
 
 	type PickerSection = {
 		kindLabel?: string;
@@ -143,16 +155,46 @@
 			.filter((s) => s.groups.length > 0);
 	});
 
-	const showAllRow = $derived(showAllOption && matchesSearch('All'));
+	const showAllRow = $derived(!multiple && showAllOption && matchesSearch('All'));
 	const showAdminRow = $derived(showAdminFee && matchesSearch(ADMIN_FEE_LABEL));
 	const showUncategorizedRow = $derived(showUncategorized && matchesSearch('Uncategorized'));
 	const showSpecials = $derived(showAdminRow || showUncategorizedRow);
 
+	function labelFor(id: string): string {
+		if (id === ADMIN_FEE_CATEGORY_ID) return ADMIN_FEE_LABEL;
+		if (id === UNCATEGORIZED_FILTER) return 'Uncategorized';
+		return allNamed.find((c) => c.id === id)?.name ?? id;
+	}
+
 	function select(next: string) {
-		onValueChange(next);
+		if (multiple) {
+			const set = new Set(values);
+			if (next === '') {
+				onValuesChange?.([]);
+				return;
+			}
+			if (set.has(next)) set.delete(next);
+			else set.add(next);
+			onValuesChange?.([...set]);
+			return;
+		}
+		onValueChange?.(next);
 		open = false;
 	}
 </script>
+
+{#snippet check(id: string)}
+	{#if multiple}
+		<span
+			class="border-input flex size-4 shrink-0 items-center justify-center rounded-sm border"
+			aria-hidden="true"
+		>
+			{#if selectedSet.has(id)}
+				<CheckIcon class="size-3" />
+			{/if}
+		</span>
+	{/if}
+{/snippet}
 
 <Popover.Root bind:open>
 	<Popover.Trigger
@@ -168,7 +210,9 @@
 		type="button"
 	>
 		<span class="flex min-w-0 items-center gap-2">
-			{#if !value}
+			{#if multiple}
+				<span class="truncate">{filterTriggerSummary(values, labelFor)}</span>
+			{:else if !value}
 				{#if emptyMeans === 'all'}
 					<span>All</span>
 				{:else}
@@ -230,7 +274,9 @@
 										value={`${category.name} ${category.id}`}
 										onSelect={() => select(category.id)}
 										data-testid={`category-option-${category.id}`}
+										class={multiple ? '[&_.cn-command-item-indicator]:hidden' : undefined}
 									>
+										{@render check(category.id)}
 										<CategoryIcon slug={category.icon} />
 										{category.name}
 									</Command.Item>
@@ -245,7 +291,9 @@
 								<Command.Item
 									value={ADMIN_FEE_LABEL}
 									onSelect={() => select(ADMIN_FEE_CATEGORY_ID)}
+									class={multiple ? '[&_.cn-command-item-indicator]:hidden' : undefined}
 								>
+									{@render check(ADMIN_FEE_CATEGORY_ID)}
 									<CategoryIcon slug={STOCK_ADMIN_FEE_ICON} />
 									<UncategorizedLabel system label={ADMIN_FEE_LABEL} showIcon={false} />
 								</Command.Item>
@@ -253,8 +301,11 @@
 							{#if showUncategorizedRow}
 								<Command.Item
 									value="Uncategorized"
-									onSelect={() => select(showAllOption ? UNCATEGORIZED_FILTER : '')}
+									onSelect={() =>
+										select(multiple || showAllOption ? UNCATEGORIZED_FILTER : '')}
+									class={multiple ? '[&_.cn-command-item-indicator]:hidden' : undefined}
 								>
+									{@render check(UNCATEGORIZED_FILTER)}
 									<CategoryIcon slug={STOCK_UNCATEGORIZED_ICON} />
 									<UncategorizedLabel system showIcon={false} />
 								</Command.Item>

@@ -104,7 +104,7 @@
 
 <Dialog.Root {open} {onOpenChange}>
 	<Dialog.Content
-		class={cn('sm:max-w-md z-[60]', dangerChrome && 'gap-0 overflow-hidden p-0')}
+		class={cn('max-w-sm sm:max-w-sm z-[60]', dangerChrome && 'gap-0 overflow-hidden p-0')}
 		overlayClass="z-[60]"
 		data-testid={contentTestId}
 		showCloseButton={false}

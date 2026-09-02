@@ -4,9 +4,11 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import PocketLabel from '$lib/ui/PocketLabel.svelte';
 	import UncategorizedLabel from '$lib/ui/UncategorizedLabel.svelte';
+	import CategoryIcon from '$lib/ui/CategoryIcon.svelte';
 	import { isVoided, type LedgerTransaction } from '$lib/domain/transaction';
 	import { formatMinor } from '$lib/domain/money';
 	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
+	import { STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
 
 	type PocketInfo = { name: string; isMain: boolean };
 
@@ -14,15 +16,17 @@
 		tx: LedgerTransaction;
 		currencyLabel: string;
 		categoryLabel: string;
+		/** Catalog icon slug for the category secondary/primary line (136). */
+		categoryIconSlug?: string;
 		/** When true, show UncategorizedLabel instead of categoryLabel text. */
 		uncategorized?: boolean;
 		hideAmount?: boolean;
 		/**
-		 * `date` — Home Recent / Activity Default (076): note then date, or date only.
-		 * `note` — Activity date sorts (076): note only; omitted entirely when empty (no spacer).
+		 * `date` — Home Recent (076): category primary, note then date.
+		 * `category` — Transactions (136): note primary, category+icon secondary.
 		 * `none` — no secondary line at all (tighter single-line row).
 		 */
-		secondary?: 'date' | 'note' | 'none';
+		secondary?: 'date' | 'category' | 'none';
 		/** Pocket id → display info; required with `showPocket` to resolve names. */
 		pocketsById?: Record<string, PocketInfo>;
 		/** Show the pocket (or transfer source → dest) under the amount (096 / 099). */
@@ -35,6 +39,7 @@
 		tx,
 		currencyLabel,
 		categoryLabel,
+		categoryIconSlug = STOCK_UNCATEGORIZED_ICON,
 		uncategorized = false,
 		hideAmount = false,
 		secondary = 'date',
@@ -51,16 +56,17 @@
 	const dateLabel = $derived(formatOccurredOnDisplay(tx.occurredOn));
 	const isTransfer = $derived(tx.type === 'transfer');
 
+	const hasCategorySecondary = $derived(secondary === 'category' && Boolean(note));
 	const hasSecondaryLine = $derived(
 		(secondary === 'date' && true) ||
-			(secondary === 'note' && (!!note || showPocket)) ||
+			(secondary === 'category' && (hasCategorySecondary || showPocket)) ||
 			(secondary === 'none' && showPocket)
 	);
 
 	const amountText = $derived(
 		isTransfer
 			? formatMinor(tx.amountMinor, currencyLabel)
-			: `${tx.type === 'expense' ? '−' : '+'}${formatMinor(tx.amountMinor, currencyLabel)}`
+			: formatMinor(tx.type === 'expense' ? -tx.amountMinor : tx.amountMinor, currencyLabel)
 	);
 	const feeMinor = $derived(tx.feeMinor ?? 0);
 	const showFee = $derived(isTransfer && feeMinor > 0);
@@ -82,18 +88,44 @@
 			class="text-muted-foreground flex min-w-0 items-center gap-1 text-xs"
 			data-testid={`${testid}-pocket`}
 		>
-			<PocketLabel name={sourcePocket.name} isMain={sourcePocket.isMain} />
-			<ArrowRightIcon class="size-3 shrink-0" aria-hidden="true" />
-			<PocketLabel name={destPocket.name} isMain={destPocket.isMain} />
+			<PocketLabel name={sourcePocket.name} isMain={sourcePocket.isMain} optical />
+			<ArrowRightIcon class="block size-3 shrink-0" aria-hidden="true" />
+			<PocketLabel name={destPocket.name} isMain={destPocket.isMain} optical />
 		</div>
 	{:else}
 		<div class="min-w-0" data-testid={`${testid}-pocket`}>
 			<PocketLabel
 				name={ownPocket.name}
 				isMain={ownPocket.isMain}
+				optical
 				class="text-muted-foreground text-xs"
 			/>
 		</div>
+	{/if}
+{/snippet}
+
+{#snippet transferTitle()}
+	<span class="inline-flex items-center gap-1.5">
+		<ArrowLeftRightIcon
+			class="text-muted-foreground block size-3 shrink-0"
+			aria-hidden="true"
+			data-testid={`${testid}-transfer-icon`}
+		/>
+		Transfer
+	</span>
+{/snippet}
+
+{#snippet categoryTitle()}
+	{#if uncategorized}
+		<span class="inline-flex min-w-0 items-center gap-1.5">
+			<CategoryIcon slug={STOCK_UNCATEGORIZED_ICON} class="text-muted-foreground block size-3" />
+			<UncategorizedLabel showIcon={false} />
+		</span>
+	{:else}
+		<span class="inline-flex min-w-0 items-center gap-1.5">
+			<CategoryIcon slug={categoryIconSlug} class="block size-3" />
+			<span class="truncate">{categoryLabel}</span>
+		</span>
 	{/if}
 {/snippet}
 
@@ -108,37 +140,48 @@
 	onclick={onOpen}
 >
 	<div class="min-w-0 flex-1">
-		<p class="font-medium">
-			{#if isTransfer}
-				<span class="inline-flex items-center gap-1.5">
-					<ArrowLeftRightIcon
-						class="text-muted-foreground size-3.5 shrink-0"
-						aria-hidden="true"
-						data-testid={`${testid}-transfer-icon`}
-					/>
-					Transfer
-				</span>
-			{:else if uncategorized}
-				<UncategorizedLabel />
-			{:else}
-				{categoryLabel}
-			{/if}
-		</p>
-		{#if secondary === 'note'}
-			{#if note}
-				<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-note`}>
+		{#if secondary === 'category'}
+			<p class="truncate font-medium" data-testid={note ? `${testid}-note` : undefined}>
+				{#if note}
 					{note}
-				</p>
-			{/if}
-		{:else if secondary === 'date'}
-			{#if note}
-				<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-note`}>
-					{note}
-				</p>
-			{/if}
-			<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-date`}>
-				{dateLabel}
+				{:else if isTransfer}
+					{@render transferTitle()}
+				{:else}
+					{@render categoryTitle()}
+				{/if}
 			</p>
+			{#if note}
+				<p
+					class="text-muted-foreground flex min-w-0 items-center gap-1.5 truncate text-xs"
+					data-testid={`${testid}-category`}
+				>
+					{#if isTransfer}
+						{@render transferTitle()}
+					{:else}
+						{@render categoryTitle()}
+					{/if}
+				</p>
+			{/if}
+		{:else}
+			<p class="font-medium">
+				{#if isTransfer}
+					{@render transferTitle()}
+				{:else if uncategorized}
+					<UncategorizedLabel />
+				{:else}
+					{categoryLabel}
+				{/if}
+			</p>
+			{#if secondary === 'date'}
+				{#if note}
+					<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-note`}>
+						{note}
+					</p>
+				{/if}
+				<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-date`}>
+					{dateLabel}
+				</p>
+			{/if}
 		{/if}
 	</div>
 	<div class="flex shrink-0 flex-col items-end gap-0">

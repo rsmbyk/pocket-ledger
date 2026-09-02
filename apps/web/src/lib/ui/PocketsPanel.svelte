@@ -38,6 +38,7 @@
 		type PocketCreateDraft
 	} from '$lib/shared/create-form-drafts';
 	import { cn } from '$lib/utils.js';
+	import { shouldIgnoreDismissForNativePicker } from '$lib/ui/native-picker-dismiss';
 
 	type Props = {
 		pockets: Account[];
@@ -257,6 +258,10 @@
 	}
 
 	function onFormInteractOutside(e: PointerEvent) {
+		if (shouldIgnoreDismissForNativePicker(e)) {
+			e.preventDefault();
+			return;
+		}
 		if (formMode !== 'create' || (!formDirty && !discardConfirmOpen)) return;
 		e.preventDefault();
 		if (formDirty) discardConfirmOpen = true;
@@ -411,7 +416,7 @@
 				{#if hasGoal}
 					<Button
 						size="icon-sm"
-						variant="ghost"
+						variant="destructive"
 						aria-label={`Clear goal for ${p.name}`}
 						data-testid="pocket-clear-goal"
 						disabled={busy}
@@ -460,7 +465,6 @@
 		<Button
 			type="button"
 			size="sm"
-			variant="outline"
 			disabled={busy}
 			data-testid="pocket-add"
 			onclick={openCreate}

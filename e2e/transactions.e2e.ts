@@ -20,7 +20,7 @@ test.describe('001 transactions', () => {
 		await expect(page.getByTestId('account-balance')).toContainText('15');
 		await expect(page.getByTestId('account-balance')).toContainText('-');
 
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
 		await expect(page.getByTestId('activity-list')).toContainText('15');
 	});

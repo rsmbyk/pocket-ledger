@@ -7,9 +7,9 @@ test.describe('066 recent see more', () => {
 		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
 	});
 
-	test('shows control when empty and navigates to Activity', async ({ page }) => {
+	test('shows control when empty and navigates to Transactions', async ({ page }) => {
 		await expect(page.getByTestId('recent-empty')).toBeVisible();
-		await expect(page.getByTestId('recent-see-more')).toHaveText('See more in Activity');
+		await expect(page.getByTestId('recent-see-more')).toHaveText('See more in Transactions');
 		await page.getByTestId('recent-see-more').click();
 		await expect(page.getByTestId('activity-panel')).toBeVisible();
 	});

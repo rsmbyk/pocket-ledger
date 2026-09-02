@@ -31,7 +31,7 @@ export async function longPress(locator: Locator, holdMs = 600): Promise<void> {
 /** Navigate via the app drawer (desktop rail) or overlay sheet (mobile). */
 export async function goToNav(
 	page: Page,
-	dest: 'home' | 'activity' | 'pockets' | 'categories' | 'more'
+	dest: 'home' | 'transactions' | 'pockets' | 'categories' | 'more'
 ): Promise<void> {
 	const rail = page.getByTestId('app-drawer-rail');
 	const sheet = page.getByTestId('app-drawer-sheet');
