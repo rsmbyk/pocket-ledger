@@ -686,7 +686,7 @@
 					>
 						{#each reorderItems as group (group.id)}
 							<li
-								class="relative flex cursor-grab items-center gap-2 rounded-md px-4 py-2.5 before:pointer-events-none before:absolute before:inset-x-4 before:-top-1.5 before:hidden before:h-px before:bg-border after:pointer-events-none after:absolute after:inset-x-4 after:-bottom-1.5 after:h-px after:bg-border last:after:hidden data-[is-dnd-shadow-item-internal]:before:block data-[is-dnd-shadow-item-internal]:after:block active:cursor-grabbing"
+								class="relative flex cursor-grab items-center gap-2 rounded-md px-4 py-2.5 before:pointer-events-none before:absolute before:inset-x-4 before:-top-1.5 before:h-px before:bg-border after:pointer-events-none after:absolute after:inset-x-4 after:-bottom-1.5 after:h-px after:bg-border first:before:hidden last:after:hidden active:cursor-grabbing"
 								data-testid={`category-group-row-${group.id}`}
 							>
 								<span
@@ -1131,3 +1131,11 @@
 		addDialogOpen = false;
 	}}
 />
+
+<style>
+	/* Clone is attached to body, so first/last-child on the list must not hide its hairlines. */
+	:global(#dnd-action-dragged-el)::before,
+	:global(#dnd-action-dragged-el)::after {
+		display: block;
+	}
+</style>
