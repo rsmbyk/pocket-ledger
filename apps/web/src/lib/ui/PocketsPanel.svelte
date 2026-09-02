@@ -465,7 +465,6 @@
 		<Button
 			type="button"
 			size="sm"
-			variant="outline"
 			disabled={busy}
 			data-testid="pocket-add"
 			onclick={openCreate}

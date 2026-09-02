@@ -609,7 +609,6 @@
 		{:else}
 			<Button
 				type="button"
-				variant="outline"
 				size="sm"
 				class="gap-1.5 max-md:w-full [&_svg]:size-3.5"
 				disabled={busy}
