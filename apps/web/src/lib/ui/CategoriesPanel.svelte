@@ -9,7 +9,7 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import SearchXIcon from '@lucide/svelte/icons/search-x';
-	import { dragHandle, dragHandleZone, type DndEvent } from 'svelte-dnd-action';
+	import { dndzone, type DndEvent } from 'svelte-dnd-action';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -672,7 +672,7 @@
 				<Card.Root class={cn('col-span-full min-h-0 overflow-visible py-0', meta.cardClass)}>
 					<ul
 						class="m-0 flex list-none flex-col gap-3 p-2"
-						use:dragHandleZone={{
+						use:dndzone={{
 							items: reorderItems,
 							flipDurationMs,
 							type: selectedKind,
@@ -686,17 +686,15 @@
 					>
 						{#each reorderItems as group (group.id)}
 							<li
-								class="relative flex items-center gap-2 rounded-md px-4 py-2.5 after:pointer-events-none after:absolute after:inset-x-4 after:bottom-0 after:h-px after:bg-border last:after:hidden"
+								class="relative flex cursor-grab items-center gap-2 rounded-md px-4 py-2.5 after:pointer-events-none after:absolute after:inset-x-4 after:bottom-0 after:h-px after:bg-border last:after:hidden active:cursor-grabbing"
 								data-testid={`category-group-row-${group.id}`}
 							>
-								<button
-									type="button"
-									use:dragHandle
-									class="dnd-handle text-muted-foreground hover:text-foreground shrink-0 cursor-grab rounded-sm p-1 active:cursor-grabbing"
-									aria-label={`Drag to reorder ${group.name}`}
+								<span
+									class="dnd-handle text-muted-foreground shrink-0 p-1"
+									aria-hidden="true"
 								>
-									<GripVerticalIcon class="size-4" aria-hidden="true" />
-								</button>
+									<GripVerticalIcon class="size-4" />
+								</span>
 								<span class="text-sm font-medium">{group.name}</span>
 							</li>
 						{/each}

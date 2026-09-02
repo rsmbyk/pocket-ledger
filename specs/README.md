@@ -163,4 +163,4 @@ Living behavior contracts for Pocket Ledger.
 | [144](144-filter-check-menus/spec.md)                    | Type / Pocket filter checkboxes like Category                | Accepted                                                                        |
 | [145](145-remove-amount-filter/spec.md)                  | Remove Filters Amount compare                                | Accepted                                                                        |
 | [146](146-reorder-reset-both-discard-confirm/spec.md)    | Reorder Reset both kinds + Discard confirm                   | Accepted                                                                        |
-| [147](147-categories-reorder-whole-row-drag/spec.md)     | Categories reorder whole-row drag                            | Draft                                                                           |
+| [147](147-categories-reorder-whole-row-drag/spec.md)     | Categories reorder whole-row drag                            | Accepted                                                                        |

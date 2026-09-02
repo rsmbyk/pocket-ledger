@@ -1,6 +1,6 @@
 # Plan 147: Categories reorder whole-row drag
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 

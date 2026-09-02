@@ -328,7 +328,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		expect(utilitiesBox).toBeTruthy();
 		expect(utilitiesBox!.y - (homeBox!.y + homeBox!.height)).toBeGreaterThanOrEqual(8);
 
-		const handle = food.getByRole('button', { name: /Drag to reorder/ });
+		const handle = food.locator('.dnd-handle');
 		const handleBox = await handle.boundingBox();
 		expect(handleBox).toBeTruthy();
 		const dropX = utilitiesBox!.x + Math.min(48, utilitiesBox!.width / 2);
@@ -373,13 +373,51 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		);
 	});
 
+	test('reorder drags a group by its label, not only the grip', async ({ page }) => {
+		await page.goto('/categories');
+		await selectCategoriesKind(page, 'income');
+		await page.getByTestId('category-reorder').click();
+		const work = page.getByTestId('category-group-row-stock-group:work');
+		const business = page.getByTestId('category-group-row-stock-group:business-creating');
+		await work.scrollIntoViewIfNeeded();
+		const workBox = await work.boundingBox();
+		expect(workBox).toBeTruthy();
+
+		const label = business.getByText('Business & creating', { exact: true });
+		const labelBox = await label.boundingBox();
+		expect(labelBox).toBeTruthy();
+		await page.mouse.move(labelBox!.x + labelBox!.width / 2, labelBox!.y + labelBox!.height / 2);
+		await page.mouse.down();
+		await page.mouse.move(workBox!.x + Math.min(48, workBox!.width / 2), workBox!.y + 6, {
+			steps: 24
+		});
+		const rows = page.locator('[data-testid^="category-group-row-"]');
+		await expect(rows.nth(0)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:business-creating'
+		);
+		await page.mouse.up();
+		await expect(page.locator('[data-is-dnd-shadow-item-internal]')).toHaveCount(0);
+
+		await expect(page.getByTestId('category-reorder-save')).toBeEnabled();
+		await expect(rows.nth(0)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:business-creating'
+		);
+		await expect(rows.nth(1)).toHaveAttribute('data-testid', 'category-group-row-stock-group:work');
+		await expect(rows.nth(2)).toHaveAttribute(
+			'data-testid',
+			'category-group-row-stock-group:investing-cashback'
+		);
+	});
+
 	test('Reset restores both kinds from the other tab', async ({ page }) => {
 		await page.goto('/categories');
 		await selectCategoriesKind(page, 'expense');
 		await page.getByTestId('category-reorder').click();
 		const utilities = page.getByTestId('category-group-row-stock-group:utilities');
 		const food = page.getByTestId('category-group-row-stock-group:food-drink');
-		const handle = food.getByRole('button', { name: /Drag to reorder/ });
+		const handle = food.locator('.dnd-handle');
 		const handleBox = await handle.boundingBox();
 		const utilitiesBox = await utilities.boundingBox();
 		expect(handleBox && utilitiesBox).toBeTruthy();
@@ -422,7 +460,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await page.getByTestId('category-reorder').click();
 		const utilities = page.getByTestId('category-group-row-stock-group:utilities');
 		const food = page.getByTestId('category-group-row-stock-group:food-drink');
-		const handle = food.getByRole('button', { name: /Drag to reorder/ });
+		const handle = food.locator('.dnd-handle');
 		const handleBox = await handle.boundingBox();
 		const utilitiesBox = await utilities.boundingBox();
 		expect(handleBox && utilitiesBox).toBeTruthy();
