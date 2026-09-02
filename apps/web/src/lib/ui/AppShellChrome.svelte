@@ -822,30 +822,6 @@
 						/>
 						Show voided
 					</label>
-					<div class="space-y-1">
-						<Label for="activity-filter-amount-op">Amount</Label>
-						<div class="flex gap-2">
-							<select
-								id="activity-filter-amount-op"
-								class="border-input bg-background flex h-11 min-w-0 flex-1 rounded-md border px-3 text-sm md:h-9"
-								bind:value={draft.amountOp}
-								data-testid="activity-filter-amount-op"
-							>
-								<option value="none">Any</option>
-								<option value="lt">Less than</option>
-								<option value="gt">Greater than</option>
-							</select>
-							<Input
-								type="text"
-								inputmode="numeric"
-								placeholder="Amount"
-								class="min-w-0 flex-1"
-								disabled={(draft.amountOp ?? 'none') === 'none'}
-								bind:value={draft.amountRaw}
-								data-testid="activity-filter-amount"
-							/>
-						</div>
-					</div>
 				{/snippet}
 
 				{#snippet filterPanel()}

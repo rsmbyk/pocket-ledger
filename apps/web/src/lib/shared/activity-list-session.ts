@@ -2,7 +2,6 @@ import {
 	DEFAULT_ACTIVITY_FILTERS,
 	type ActivityFilterCriteria,
 	type ActivityTxType,
-	type AmountCompareOp,
 	normalizeActivityFilters
 } from '$lib/domain/activity-filters';
 import {
@@ -18,7 +17,6 @@ export type ActivityListSessionState = {
 };
 
 const TX_TYPES: ReadonlySet<string> = new Set(['income', 'expense', 'transfer']);
-const AMOUNT_OPS: ReadonlySet<string> = new Set(['none', 'lt', 'gt']);
 
 function asString(value: unknown, fallback = ''): string {
 	if (typeof value === 'string') return value;
@@ -55,13 +53,6 @@ function parsePocketIds(raw: Record<string, unknown>): string[] {
 	return [legacy];
 }
 
-function parseAmountOp(value: unknown): AmountCompareOp {
-	if (typeof value === 'string' && AMOUNT_OPS.has(value)) {
-		return value as AmountCompareOp;
-	}
-	return DEFAULT_ACTIVITY_FILTERS.amountOp;
-}
-
 function parseShowVoided(raw: Record<string, unknown>): boolean {
 	if (typeof raw.showVoided === 'boolean') return raw.showVoided;
 	if (raw.hideVoided === true) return false;
@@ -81,9 +72,7 @@ function parseFilters(value: unknown): ActivityFilterCriteria {
 		pocketIds: parsePocketIds(raw),
 		startDate: '',
 		endDate: '',
-		showVoided: parseShowVoided(raw),
-		amountOp: parseAmountOp(raw.amountOp),
-		amountRaw: asString(raw.amountRaw, DEFAULT_ACTIVITY_FILTERS.amountRaw)
+		showVoided: parseShowVoided(raw)
 	});
 }
 

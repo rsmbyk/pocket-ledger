@@ -1,7 +1,7 @@
 # Spec 145: Remove Filters Amount compare
 
 - **ID:** 145
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

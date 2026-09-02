@@ -1,7 +1,6 @@
 import type { CategoryKind } from './default-category-catalog';
 import type { LedgerTransaction, TransactionType } from './transaction';
 import { isVoided } from './transaction';
-import { amountDigitsOnly } from './transaction-rules';
 
 /** Sentinel for Activity filter: only transactions with null categoryId. */
 export const UNCATEGORIZED_FILTER = '__uncategorized__';
@@ -20,8 +19,6 @@ export type ActivityTypeFilter = 'all' | ActivityTxType;
 /** Map of user category id → kind for filter option compatibility (Spec 107). */
 export type CategoryKindLookup = Record<string, CategoryKind>;
 
-export type AmountCompareOp = 'none' | 'lt' | 'gt';
-
 export type ActivityFilterCriteria = {
 	search: string;
 	/** Empty = all types. */
@@ -34,8 +31,6 @@ export type ActivityFilterCriteria = {
 	endDate: string;
 	/** When false (default), voided rows are hidden. */
 	showVoided: boolean;
-	amountOp: AmountCompareOp;
-	amountRaw: string;
 };
 
 export const DEFAULT_ACTIVITY_FILTERS: ActivityFilterCriteria = {
@@ -45,9 +40,7 @@ export const DEFAULT_ACTIVITY_FILTERS: ActivityFilterCriteria = {
 	pocketIds: [],
 	startDate: '',
 	endDate: '',
-	showVoided: false,
-	amountOp: 'none',
-	amountRaw: ''
+	showVoided: false
 };
 
 /** Target rows per chunked reveal bundle (Spec 069); always whole-day chunks (134). */
@@ -164,14 +157,6 @@ export function amountDigitsMatch(amountMinor: number, query: string): boolean {
 	return String(amountMinor).includes(q) || q === String(amountMinor);
 }
 
-function parseCompareAmount(raw: string | null | undefined): number | null {
-	const digits = amountDigitsOnly(raw ?? '');
-	if (!digits) return null;
-	const value = Number(digits);
-	if (!Number.isInteger(value) || value <= 0) return null;
-	return value;
-}
-
 function sameIds(a: readonly string[], b: readonly string[]): boolean {
 	if (a.length !== b.length) return false;
 	return a.every((id, i) => id === b[i]);
@@ -187,9 +172,7 @@ export function normalizeActivityFilters(
 		pocketIds: [...(criteria.pocketIds ?? [])],
 		startDate: criteria.startDate ?? '',
 		endDate: criteria.endDate ?? '',
-		showVoided: criteria.showVoided ?? false,
-		amountOp: criteria.amountOp ?? 'none',
-		amountRaw: criteria.amountRaw ?? ''
+		showVoided: criteria.showVoided ?? false
 	};
 }
 
@@ -200,9 +183,7 @@ export function isDefaultActivityFilters(criteria: Partial<ActivityFilterCriteri
 		n.categoryIds.length === 0 &&
 		n.pocketIds.length === 0 &&
 		n.search.trim() === '' &&
-		n.showVoided === false &&
-		n.amountOp === 'none' &&
-		n.amountRaw.trim() === ''
+		n.showVoided === false
 	);
 }
 
@@ -222,9 +203,7 @@ export function activityFiltersEqual(
 		(ignoreDates || left.startDate === right.startDate) &&
 		(ignoreDates || left.endDate === right.endDate) &&
 		(ignoreSearch || left.search.trim() === right.search.trim()) &&
-		left.showVoided === right.showVoided &&
-		left.amountOp === right.amountOp &&
-		left.amountRaw.trim() === right.amountRaw.trim()
+		left.showVoided === right.showVoided
 	);
 }
 
@@ -265,7 +244,6 @@ export function filterTransactions(
 	const search = n.search.trim() || null;
 	const start = n.startDate.trim() || null;
 	const end = n.endDate.trim() || null;
-	const compareAmount = parseCompareAmount(n.amountRaw);
 
 	return transactions.filter((tx) => {
 		if (!n.showVoided && isVoided(tx)) return false;
@@ -274,10 +252,6 @@ export function filterTransactions(
 		if (!matchesPockets(tx, n.pocketIds)) return false;
 		if (start && tx.occurredOn < start) return false;
 		if (end && tx.occurredOn > end) return false;
-		if (n.amountOp !== 'none' && compareAmount != null) {
-			if (n.amountOp === 'lt' && !(tx.amountMinor < compareAmount)) return false;
-			if (n.amountOp === 'gt' && !(tx.amountMinor > compareAmount)) return false;
-		}
 		if (search) {
 			const noteHit = tx.note.toLowerCase().includes(search.toLowerCase());
 			const amountHit = amountDigitsMatch(tx.amountMinor, search);
@@ -375,7 +349,6 @@ export function countAdvancedFilters(criteria: Partial<ActivityFilterCriteria>):
 	if (n.categoryIds.length > 0) count++;
 	if (n.pocketIds.length > 0) count++;
 	if (n.showVoided) count++;
-	if (n.amountOp !== 'none') count++;
 	return count;
 }
 

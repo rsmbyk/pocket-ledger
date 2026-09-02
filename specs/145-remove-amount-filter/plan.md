@@ -1,6 +1,6 @@
 # Plan 145: Remove Filters Amount compare
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 

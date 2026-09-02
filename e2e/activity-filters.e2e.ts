@@ -140,6 +140,8 @@ test.describe('017 / 045 activity filters', () => {
 		await goToNav(page, 'transactions');
 		await page.getByTestId('activity-filters-open').click();
 		await expect(filtersSurface(page)).toBeVisible();
+		await expect(page.getByTestId('activity-filter-amount-op')).toHaveCount(0);
+		await expect(page.getByTestId('activity-filter-amount')).toHaveCount(0);
 		await page.locator('[data-slot="sheet-overlay"]').click({ position: { x: 8, y: 8 } });
 		await expect(filtersSurface(page)).toBeHidden();
 
@@ -285,6 +287,8 @@ test.describe('049 / 058 activity filters xl drawer', () => {
 		await expect(page.getByTestId('activity-filters-clear')).toBeVisible();
 		await expect(page.getByTestId('activity-filters-clear')).toHaveClass(/border/);
 		await expect(page.getByTestId('activity-filters-apply')).toBeVisible();
+		await expect(page.getByTestId('activity-filter-amount-op')).toHaveCount(0);
+		await expect(page.getByTestId('activity-filter-amount')).toHaveCount(0);
 		await expect(page.getByTestId('activity-sort-open')).toHaveCount(0);
 		await expect(page.getByTestId('activity-filter-start')).toHaveCount(0);
 		await setFilterTypes(page, ['expense']);

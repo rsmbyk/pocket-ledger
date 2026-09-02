@@ -171,7 +171,7 @@ describe('activity-filters', () => {
 		).toEqual(['paid']);
 	});
 
-	it('hides voided by default and compares amount lt/gt', () => {
+	it('hides voided by default', () => {
 		const mixed = [
 			tx({ type: 'expense', amountMinor: 10_000, occurredOn: '2026-07-15', note: 'a' }),
 			tx({
@@ -185,16 +185,11 @@ describe('activity-filters', () => {
 		];
 		expect(filterTransactions(mixed, {})).toHaveLength(2);
 		expect(filterTransactions(mixed, { showVoided: true })).toHaveLength(3);
-		expect(
-			filterTransactions(mixed, {
-				showVoided: true,
-				amountOp: 'lt',
-				amountRaw: '25000'
-			}).map((t) => t.note)
-		).toEqual(['a', 'b']);
-		expect(
-			filterTransactions(mixed, { amountOp: 'gt', amountRaw: '15,000' }).map((t) => t.note)
-		).toEqual(['c']);
+		expect(filterTransactions(mixed, { showVoided: true }).map((t) => t.note)).toEqual([
+			'a',
+			'b',
+			'c'
+		]);
 	});
 
 	it('filters by pocket including transfer either side; multi OR', () => {
@@ -231,6 +226,7 @@ describe('activity-filters', () => {
 		expect(isDefaultActivityFilters({ showVoided: true })).toBe(false);
 		expect(countAdvancedFilters({ showVoided: true })).toBe(1);
 		expect(countAdvancedFilters({ startDate: '2026-09-01' })).toBe(0);
+		expect(countAdvancedFilters({})).toBe(0);
 	});
 
 	it('summarizes multi-select triggers', () => {

@@ -98,6 +98,17 @@ describe('activity-list-session', () => {
 		expect(restored.range).toEqual(range);
 	});
 
+	it('loads leftover amountOp/amountRaw without keeping them', () => {
+		const parsed = parseActivityListSession(
+			JSON.stringify({
+				filters: { types: ['expense'], amountOp: 'lt', amountRaw: '25000' }
+			})
+		);
+		expect(parsed.filters.types).toEqual(['expense']);
+		expect(parsed.filters).not.toHaveProperty('amountOp');
+		expect(parsed.filters).not.toHaveProperty('amountRaw');
+	});
+
 	it('ignores unknown filter keys and coerces bad fields', () => {
 		const parsed = parseActivityListSession(
 			JSON.stringify({
@@ -111,7 +122,8 @@ describe('activity-list-session', () => {
 			})
 		);
 		expect(parsed.filters.types).toEqual([]);
-		expect(parsed.filters.amountOp).toBe('none');
+		expect(parsed.filters).not.toHaveProperty('amountOp');
+		expect(parsed.filters).not.toHaveProperty('amountRaw');
 		expect(parsed.filters.showVoided).toBe(false);
 		expect(parsed.filters.categoryIds).toEqual([]);
 	});
