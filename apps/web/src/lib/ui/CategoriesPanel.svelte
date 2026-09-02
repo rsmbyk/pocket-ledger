@@ -676,7 +676,7 @@
 					>
 						{#each reorderItems as group (group.id)}
 							<li
-								class="flex items-center gap-2 rounded-md px-4 py-2.5"
+								class="relative flex items-center gap-2 rounded-md px-4 py-2.5 after:pointer-events-none after:absolute after:inset-x-4 after:bottom-0 after:h-px after:bg-border last:after:hidden"
 								data-testid={`category-group-row-${group.id}`}
 							>
 								<button
