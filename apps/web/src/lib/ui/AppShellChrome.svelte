@@ -812,10 +812,10 @@
 							{/snippet}
 						</FilterCheckSelect>
 					</div>
-					<label class="flex items-center gap-2 text-sm">
+					<label class="flex cursor-pointer items-center gap-2 text-sm">
 						<input
 							type="checkbox"
-							class="size-5 accent-primary md:size-4"
+							class="size-5 cursor-pointer accent-primary md:size-4"
 							checked={draft.showVoided}
 							onchange={(e) => (draft = { ...draft, showVoided: e.currentTarget.checked })}
 							data-testid="activity-filter-show-voided"
