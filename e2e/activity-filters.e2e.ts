@@ -43,11 +43,31 @@ async function setFilterTypes(
 	page: Page,
 	types: Array<'income' | 'expense' | 'transfer'>
 ): Promise<void> {
+	const trigger = page.getByTestId('activity-filter-type');
+	await trigger.click();
+	const incomeItem = page.getByTestId('activity-filter-type-income');
+	await expect(incomeItem).toBeVisible();
 	for (const t of ['income', 'expense', 'transfer'] as const) {
-		const box = page.getByTestId(`activity-filter-type-${t}`);
-		if (types.includes(t)) await box.check();
-		else await box.uncheck();
+		const item = page.getByTestId(`activity-filter-type-${t}`);
+		await expect(item).toBeVisible();
+		const checked = (await item.getAttribute('aria-checked')) === 'true';
+		const want = types.includes(t);
+		if (checked !== want) {
+			await item.click({ force: true });
+			await expect(item).toHaveAttribute('aria-checked', want ? 'true' : 'false');
+		}
 	}
+	// Close without Escape — Escape on a dirty sheet opens discard.
+	const sheetTitle = filtersSurface(page).locator('p').filter({ hasText: /^Filters$/ });
+	if (await sheetTitle.isVisible()) {
+		await sheetTitle.click({ force: true });
+	} else {
+		await filtersSurface(page)
+			.locator('div.border-b')
+			.first()
+			.click({ force: true, position: { x: 8, y: 8 } });
+	}
+	await expect(incomeItem).toBeHidden();
 }
 
 async function openAndApplyType(
@@ -110,6 +130,34 @@ test.describe('017 / 045 activity filters', () => {
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
 	});
 
+	test('overlay and Escape close a clean Filters sheet', async ({ page }) => {
+		await goToNav(page, 'transactions');
+		await page.getByTestId('activity-filters-open').click();
+		await expect(filtersSurface(page)).toBeVisible();
+		await page.locator('[data-slot="sheet-overlay"]').click({ position: { x: 8, y: 8 } });
+		await expect(filtersSurface(page)).toBeHidden();
+
+		await page.getByTestId('activity-filters-open').click();
+		await expect(filtersSurface(page)).toBeVisible();
+		await page.keyboard.press('Escape');
+		await expect(filtersSurface(page)).toBeHidden();
+	});
+
+	test('dirty overlay and Escape open discard confirm', async ({ page }) => {
+		await seedIncomeAndExpense(page);
+		await goToNav(page, 'transactions');
+		await page.getByTestId('activity-filters-open').click();
+		await setFilterTypes(page, ['expense']);
+		await page.locator('[data-slot="sheet-overlay"]').click({ position: { x: 8, y: 8 } });
+		await expect(page.getByRole('heading', { name: 'Discard filter changes?' })).toBeVisible();
+		await expect(filtersSurface(page)).toBeVisible();
+		await page.getByTestId('confirm-dialog-cancel').click();
+		await expect(page.getByRole('heading', { name: 'Discard filter changes?' })).toBeHidden();
+		await page.keyboard.press('Escape');
+		await expect(page.getByRole('heading', { name: 'Discard filter changes?' })).toBeVisible();
+		await expect(filtersSurface(page)).toBeVisible();
+	});
+
 	test('049 toolbar: Filters beside search; Add right-aligned; no Sort', async ({ page }) => {
 		await seedIncomeAndExpense(page);
 		await goToNav(page, 'transactions');
@@ -156,7 +204,36 @@ test.describe('017 / 045 activity filters', () => {
 		await expect(foodRow.getByTestId(/-note$/)).toContainText('secret lunch');
 		await expect(foodRow.getByTestId(/-date$/)).toHaveCount(0);
 		await expect(page.locator('[data-testid^="activity-date-group-"]')).toHaveCount(1);
+		await expect(page.getByTestId('activity-range-trigger')).toBeVisible();
+		await expect(page.locator('header').getByTestId('activity-range')).toHaveCount(0);
+	});
+
+	test('142 range picker lives in chrome band; Month and Manual interiors', async ({ page }) => {
+		await seedIncomeAndExpense(page);
+		await goToNav(page, 'transactions');
+		const trigger = page.getByTestId('activity-range-trigger');
+		await expect(trigger).toBeVisible();
+		await expect(page.locator('header').getByTestId('activity-range')).toHaveCount(0);
+		await expect(page.getByTestId('activity-chrome').getByTestId('activity-range')).toBeVisible();
+		await trigger.click();
 		await expect(page.getByTestId('activity-range-mode-month')).toBeVisible();
+		await page.getByTestId('activity-range-month-2026-08').click();
+		await expect(trigger).toContainText('August 2026');
+
+		await trigger.click();
+		await page.getByTestId('activity-range-mode-manual').click();
+		await expect(page.getByTestId('activity-range-start')).toBeVisible();
+		await expect(page.getByTestId('activity-range-end')).toBeVisible();
+		await expect(page.locator('[data-testid^="activity-range-day-"]').first()).toBeVisible();
+		await page.keyboard.press('Escape');
+
+		await page.setViewportSize({ width: 1024, height: 480 });
+		await page.evaluate(() => window.scrollTo(0, 800));
+		await expect(page.getByTestId('activity-chrome')).toBeInViewport();
+		await expect(trigger).toBeInViewport();
+		await expect(page.getByTestId('activity-filter-search')).toBeInViewport();
+		await expect(page.getByTestId('activity-filters-open')).toBeInViewport();
+		await expect(page.getByTestId('activity-add')).toBeInViewport();
 	});
 });
 

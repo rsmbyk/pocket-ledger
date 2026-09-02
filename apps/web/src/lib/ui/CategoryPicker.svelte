@@ -184,8 +184,15 @@
 </script>
 
 {#snippet check(id: string)}
-	{#if multiple && selectedSet.has(id)}
-		<CheckIcon class="text-foreground ml-auto size-4 shrink-0" aria-hidden="true" />
+	{#if multiple}
+		<span
+			class="border-input flex size-4 shrink-0 items-center justify-center rounded-sm border"
+			aria-hidden="true"
+		>
+			{#if selectedSet.has(id)}
+				<CheckIcon class="size-3" />
+			{/if}
+		</span>
 	{/if}
 {/snippet}
 
@@ -267,10 +274,11 @@
 										value={`${category.name} ${category.id}`}
 										onSelect={() => select(category.id)}
 										data-testid={`category-option-${category.id}`}
+										class={multiple ? '[&_.cn-command-item-indicator]:hidden' : undefined}
 									>
+										{@render check(category.id)}
 										<CategoryIcon slug={category.icon} />
 										{category.name}
-										{@render check(category.id)}
 									</Command.Item>
 								{/each}
 							</Command.Group>
@@ -283,10 +291,11 @@
 								<Command.Item
 									value={ADMIN_FEE_LABEL}
 									onSelect={() => select(ADMIN_FEE_CATEGORY_ID)}
+									class={multiple ? '[&_.cn-command-item-indicator]:hidden' : undefined}
 								>
+									{@render check(ADMIN_FEE_CATEGORY_ID)}
 									<CategoryIcon slug={STOCK_ADMIN_FEE_ICON} />
 									<UncategorizedLabel system label={ADMIN_FEE_LABEL} showIcon={false} />
-									{@render check(ADMIN_FEE_CATEGORY_ID)}
 								</Command.Item>
 							{/if}
 							{#if showUncategorizedRow}
@@ -294,10 +303,11 @@
 									value="Uncategorized"
 									onSelect={() =>
 										select(multiple || showAllOption ? UNCATEGORIZED_FILTER : '')}
+									class={multiple ? '[&_.cn-command-item-indicator]:hidden' : undefined}
 								>
+									{@render check(UNCATEGORIZED_FILTER)}
 									<CategoryIcon slug={STOCK_UNCATEGORIZED_ICON} />
 									<UncategorizedLabel system showIcon={false} />
-									{@render check(UNCATEGORIZED_FILTER)}
 								</Command.Item>
 							{/if}
 						</Command.Group>

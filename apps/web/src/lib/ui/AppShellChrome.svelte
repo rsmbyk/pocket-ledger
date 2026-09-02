@@ -30,9 +30,8 @@
 	import PocketLabel from '$lib/ui/PocketLabel.svelte';
 	import ActivityTable from '$lib/ui/ActivityTable.svelte';
 	import TransactionListRow from '$lib/ui/TransactionListRow.svelte';
+	import TransactionRangePicker from '$lib/ui/TransactionRangePicker.svelte';
 	import EmptyState from '$lib/ui/EmptyState.svelte';
-	import DateField from '$lib/ui/DateField.svelte';
-	import MonthField from '$lib/ui/MonthField.svelte';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import type { Account } from '$lib/domain/account';
@@ -66,10 +65,6 @@
 		type ActivityTxType
 	} from '$lib/domain/activity-filters';
 	import {
-		customRangeToMonth,
-		monthRangeToCustom,
-		rangeFromCustom,
-		rangeFromMonthKey,
 		type TransactionDateRange
 	} from '$lib/domain/transaction-date-range';
 	import { STOCK_CUSTOM_ICON, STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
@@ -217,6 +212,7 @@
 	);
 	let dateRange = $state<TransactionDateRange>(initialActivitySession.range);
 	let filtersOpen = $state(false);
+	let filtersSheetRef = $state<HTMLElement | null>(null);
 	let discardWarnOpen = $state(false);
 	let categoriesReorderDirty = $state(false);
 	let pendingNav = $state<AppRoute | null>(null);
@@ -407,12 +403,6 @@
 		writeActivityListSession({ filters: applied, range: next });
 	}
 
-	function onRangeMode(mode: 'month' | 'custom') {
-		if (mode === dateRange.mode) return;
-		if (mode === 'custom') setDateRange(monthRangeToCustom(dateRange));
-		else setDateRange(customRangeToMonth(dateRange));
-	}
-
 	$effect(() => {
 		if (showActivityCategoryFilter) return;
 		if (draft.categoryIds.length === 0 && applied.categoryIds.length === 0) return;
@@ -479,13 +469,27 @@
 			e.preventDefault();
 			return;
 		}
-		if (!draftDirty) return;
-		e.preventDefault();
-		discardWarnOpen = true;
+		if (draftDirty || discardWarnOpen) {
+			e.preventDefault();
+			if (draftDirty) discardWarnOpen = true;
+		}
 	}
 
-	const filtersDismissOutside = $derived(draftDirty || discardWarnOpen ? 'ignore' : 'close');
-	const filtersDismissEscape = $derived(draftDirty || discardWarnOpen ? 'ignore' : 'close');
+	function onFiltersSheetAutoFocus(e: Event) {
+		e.preventDefault();
+		const fromEvent =
+			e.currentTarget instanceof HTMLElement
+				? e.currentTarget
+				: e.target instanceof HTMLElement
+					? e.target.closest('[data-testid="activity-filters-sheet"]')
+					: null;
+		const panel = filtersSheetRef ?? fromEvent;
+		if (!(panel instanceof HTMLElement)) return;
+		panel.tabIndex = -1;
+		const focusPanel = () => panel.focus({ preventScroll: true });
+		requestAnimationFrame(focusPanel);
+		setTimeout(focusPanel, 0);
+	}
 
 	function confirmDiscardFilters() {
 		draft = cloneFilters(applied);
@@ -560,69 +564,6 @@
 				{pageTitle}
 			</p>
 		</div>
-		{#if route === 'transactions'}
-			<div
-				class="order-last flex basis-full justify-center pt-1"
-				data-testid="activity-range"
-			>
-				<div class="flex max-w-full flex-wrap items-center justify-center gap-1.5">
-						<div class="bg-muted flex shrink-0 rounded-md p-0.5">
-							<button
-								type="button"
-								class={[
-									'rounded px-2 py-1 text-xs font-medium',
-									dateRange.mode === 'month'
-										? 'bg-background text-foreground shadow-xs'
-										: 'text-muted-foreground'
-								]}
-								data-testid="activity-range-mode-month"
-								onclick={() => onRangeMode('month')}
-							>
-								Month
-							</button>
-							<button
-								type="button"
-								class={[
-									'rounded px-2 py-1 text-xs font-medium',
-									dateRange.mode === 'custom'
-										? 'bg-background text-foreground shadow-xs'
-										: 'text-muted-foreground'
-								]}
-								data-testid="activity-range-mode-custom"
-								onclick={() => onRangeMode('custom')}
-							>
-								Custom
-							</button>
-						</div>
-						{#if dateRange.mode === 'month'}
-							<MonthField
-								class="w-[10.5rem]"
-								value={dateRange.monthKey ?? ''}
-								aria-label="Month"
-								testid="activity-range-month"
-								onValueChange={(next) => setDateRange(rangeFromMonthKey(next))}
-							/>
-						{:else}
-							<DateField
-								class="w-[8.5rem]"
-								value={dateRange.startDate}
-								aria-label="From date"
-								testid="activity-range-start"
-								onValueChange={(next) =>
-									setDateRange(rangeFromCustom(next, dateRange.endDate))}
-							/>
-							<DateField
-								class="w-[8.5rem]"
-								value={dateRange.endDate}
-								aria-label="To date"
-								testid="activity-range-end"
-								onValueChange={(next) =>
-									setDateRange(rangeFromCustom(dateRange.startDate, next))}
-							/>
-						{/if}
-					</div>
-				</div>
-			{/if}
 		{#if route === 'home'}
 			<Button
 				type="button"
@@ -654,11 +595,77 @@
 		<ThemeMenu preference={themePreference} onPreferenceChange={onThemePreferenceChange} />
 	</header>
 
+	{#if route === 'transactions'}
+		<div
+			class="bg-background sticky top-14 z-10 border-b px-4 py-3 md:px-6"
+			data-testid="activity-chrome"
+		>
+			<div class="flex flex-col gap-3">
+				<div class="flex justify-center" data-testid="activity-range">
+					<TransactionRangePicker range={dateRange} onRangeChange={setDateRange} />
+				</div>
+				<div class="flex items-center gap-2">
+					<div class="relative min-w-0 flex-1" data-testid="activity-filters">
+						<SearchIcon
+							class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+							aria-hidden="true"
+						/>
+						<Input
+							id="activity-filter-search"
+							type="search"
+							placeholder="Note or amount"
+							class="h-9 pl-9"
+							value={applied.search ?? ''}
+							data-testid="activity-filter-search"
+							oninput={(e) => updateAppliedSearch(e.currentTarget.value)}
+						/>
+					</div>
+					{#if !xlWide.current}
+						<Button
+							type="button"
+							variant="outline"
+							size="icon"
+							class={['relative shrink-0', hasAdvancedFilters && toolbarActiveChrome]}
+							aria-label="Filters"
+							aria-pressed={hasAdvancedFilters}
+							data-testid="activity-filters-open"
+							data-active={hasAdvancedFilters ? 'true' : undefined}
+							onclick={openFilters}
+						>
+							<SlidersHorizontalIcon class="size-4" />
+							{#if hasAdvancedFilters}
+								<span
+									class="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-medium tabular-nums"
+									data-testid="activity-filters-badge"
+								>
+									{advancedFilterCount}
+								</span>
+							{/if}
+						</Button>
+					{/if}
+				</div>
+				<div class="flex justify-end">
+					<Button
+						type="button"
+						size="sm"
+						disabled={!account}
+						onclick={openAdd}
+						data-testid="activity-add"
+					>
+						<PlusIcon class="size-4" />
+						Add Transaction
+					</Button>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<div
 		class={[
 			'mx-auto flex w-full flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8 max-w-3xl',
 			'data-[stage=wide]:max-w-none!',
-			route === 'categories' && 'min-h-0 flex-1 overflow-hidden px-0! pb-0! md:px-0! md:pb-0!'
+			route === 'categories' &&
+				'min-h-0 flex-1 overflow-hidden px-0! pt-0! pb-0! md:px-0! md:pt-0! md:pb-0!'
 		]}
 		data-stage={route === 'categories' || activityStageWide ? 'wide' : 'narrow'}
 		data-testid="app-stage"
@@ -758,44 +765,41 @@
 			<div data-testid="activity-panel" class={xlWide.current ? 'flex gap-4' : 'space-y-3'}>
 				{#snippet filterFormFields()}
 					<div class="space-y-1">
-						<div class="flex items-center justify-between gap-2">
-							<Label>Type</Label>
-							<span class="text-muted-foreground text-xs" data-testid="activity-filter-type"
-								>{filterTriggerSummary(draft.types, typeLabel)}</span
+						<Label for="activity-filter-type">Type</Label>
+						<DropdownMenu.Root>
+							<DropdownMenu.Trigger
+								id="activity-filter-type"
+								class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-11 w-full items-center justify-between rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none md:h-9"
+								data-testid="activity-filter-type"
+								aria-label="Type"
 							>
-						</div>
-						<div class="flex flex-col gap-2">
-							<label class="flex items-center gap-2 text-sm">
-								<input
-									type="checkbox"
-									class="size-5 accent-primary md:size-4"
+								<span class="truncate">{filterTriggerSummary(draft.types, typeLabel)}</span>
+								<ChevronDownIcon class="text-muted-foreground size-4 shrink-0" />
+							</DropdownMenu.Trigger>
+							<DropdownMenu.Content class="max-h-60 w-(--bits-dropdown-menu-anchor-width)">
+								<DropdownMenu.CheckboxItem
 									checked={draft.types.includes('income')}
-									onchange={(e) => toggleDraftType('income', e.currentTarget.checked)}
+									onCheckedChange={(on) => toggleDraftType('income', on === true)}
 									data-testid="activity-filter-type-income"
-								/>
-								Income
-							</label>
-							<label class="flex items-center gap-2 text-sm">
-								<input
-									type="checkbox"
-									class="size-5 accent-primary md:size-4"
+								>
+									Income
+								</DropdownMenu.CheckboxItem>
+								<DropdownMenu.CheckboxItem
 									checked={draft.types.includes('expense')}
-									onchange={(e) => toggleDraftType('expense', e.currentTarget.checked)}
+									onCheckedChange={(on) => toggleDraftType('expense', on === true)}
 									data-testid="activity-filter-type-expense"
-								/>
-								Expense
-							</label>
-							<label class="flex items-center gap-2 text-sm">
-								<input
-									type="checkbox"
-									class="size-5 accent-primary md:size-4"
+								>
+									Expense
+								</DropdownMenu.CheckboxItem>
+								<DropdownMenu.CheckboxItem
 									checked={draft.types.includes('transfer')}
-									onchange={(e) => toggleDraftType('transfer', e.currentTarget.checked)}
+									onCheckedChange={(on) => toggleDraftType('transfer', on === true)}
 									data-testid="activity-filter-type-transfer"
-								/>
-								Transfer
-							</label>
-						</div>
+								>
+									Transfer
+								</DropdownMenu.CheckboxItem>
+							</DropdownMenu.Content>
+						</DropdownMenu.Root>
 					</div>
 					{#if showActivityCategoryFilter}
 						<div class="space-y-1">
@@ -934,73 +938,19 @@
 				{/snippet}
 
 				<div class="min-w-0 flex-1 space-y-3">
-					<div class="flex items-center gap-2">
-						<div class="relative flex-1" data-testid="activity-filters">
-							<SearchIcon
-								class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-								aria-hidden="true"
-							/>
-							<Input
-								id="activity-filter-search"
-								type="search"
-								placeholder="Note or amount"
-								class="pl-9"
-								value={applied.search ?? ''}
-								data-testid="activity-filter-search"
-								oninput={(e) => updateAppliedSearch(e.currentTarget.value)}
-							/>
-						</div>
-						<div class="flex shrink-0 items-center gap-2">
-							{#if !xlWide.current}
-								<Button
-									type="button"
-									variant="outline"
-									size="icon"
-									class={['relative shrink-0', hasAdvancedFilters && toolbarActiveChrome]}
-									aria-label="Filters"
-									aria-pressed={hasAdvancedFilters}
-									data-testid="activity-filters-open"
-									data-active={hasAdvancedFilters ? 'true' : undefined}
-									onclick={openFilters}
-								>
-									<SlidersHorizontalIcon class="size-4" />
-									{#if hasAdvancedFilters}
-										<span
-											class="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-medium tabular-nums"
-											data-testid="activity-filters-badge"
-										>
-											{advancedFilterCount}
-										</span>
-									{/if}
-								</Button>
-							{/if}
-						</div>
-					</div>
-
-					<div class="flex justify-end">
-						<Button
-							type="button"
-							size="sm"
-							disabled={!account}
-							onclick={openAdd}
-							data-testid="activity-add"
-						>
-							<PlusIcon class="size-4" />
-							Add Transaction
-						</Button>
-					</div>
-
 					{#if !xlWide.current}
 						<Sheet.Root open={filtersOpen} onOpenChange={onFiltersOpenChange}>
 							<Sheet.Content
+								bind:ref={filtersSheetRef}
 								side={filtersSheetSide}
 								class={filtersSheetClass}
 								data-testid="activity-filters-sheet"
 								showCloseButton={false}
-								interactOutsideBehavior={filtersDismissOutside}
-								escapeKeydownBehavior={filtersDismissEscape}
+								interactOutsideBehavior="close"
+								escapeKeydownBehavior="close"
 								onInteractOutside={onFiltersDismissAttempt}
 								onEscapeKeydown={onFiltersDismissAttempt}
+								onOpenAutoFocus={onFiltersSheetAutoFocus}
 							>
 								<Sheet.Title class="sr-only">Filters</Sheet.Title>
 								{@render filterPanel()}
@@ -1094,7 +1044,7 @@
 		}
 	}}
 >
-	<Dialog.Content class="sm:max-w-sm" data-testid="show-money-dialog">
+	<Dialog.Content class="max-w-sm sm:max-w-sm" data-testid="show-money-dialog">
 		<Dialog.Header>
 			<Dialog.Title>Show money?</Dialog.Title>
 			<Dialog.Description>Enter your passphrase to reveal amounts.</Dialog.Description>

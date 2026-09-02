@@ -18,7 +18,7 @@
 		if (!next) onCancel();
 	}}
 >
-	<Dialog.Content class="sm:max-w-md" data-testid="local-conflict-dialog">
+	<Dialog.Content class="max-w-sm sm:max-w-sm" data-testid="local-conflict-dialog">
 		<Dialog.Header>
 			<Dialog.Title>This Google account already has a ledger</Dialog.Title>
 			<Dialog.Description>

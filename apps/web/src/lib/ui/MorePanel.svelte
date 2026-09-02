@@ -363,7 +363,7 @@
 </div>
 
 <Dialog.Root bind:open={resetOpen}>
-	<Dialog.Content class="sm:max-w-md" data-testid="reset-dialog">
+	<Dialog.Content class="max-w-sm sm:max-w-sm" data-testid="reset-dialog">
 		<Dialog.Header>
 			<Dialog.Title>Reset everything?</Dialog.Title>
 			<Dialog.Description>
@@ -420,7 +420,7 @@
 		}
 	}}
 >
-	<Dialog.Content class="sm:max-w-md" data-testid="export-backup-dialog">
+	<Dialog.Content class="max-w-sm sm:max-w-sm" data-testid="export-backup-dialog">
 		<Dialog.Header>
 			<Dialog.Title>Export encrypted backup</Dialog.Title>
 			<Dialog.Description>
@@ -489,7 +489,7 @@
 		}
 	}}
 >
-	<Dialog.Content class="sm:max-w-md" data-testid="import-backup-dialog">
+	<Dialog.Content class="max-w-sm sm:max-w-sm" data-testid="import-backup-dialog">
 		<Dialog.Header>
 			<Dialog.Title>Import backup?</Dialog.Title>
 			<Dialog.Description>

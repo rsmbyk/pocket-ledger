@@ -524,12 +524,12 @@
 	}
 </script>
 
-<div class="flex min-h-0 flex-1 flex-col gap-3" data-testid="categories-panel">
-	<div class="flex shrink-0 flex-col gap-3 px-7 md:px-9">
+<div class="flex min-h-0 flex-1 flex-col" data-testid="categories-panel">
+	<div class="bg-background flex shrink-0 flex-col gap-3 border-b px-7 py-3 md:px-9">
 	<Tabs.Root
 		value={selectedKind}
 		onValueChange={requestKindChange}
-		class="mx-auto w-full max-w-md shrink-0"
+		class="mx-auto w-full max-w-md shrink-0 md:max-w-sm"
 		data-testid="category-kind-tabs"
 	>
 		<Tabs.List variant="default" class="mx-auto grid w-full grid-cols-2">
@@ -957,7 +957,7 @@
 		else requestAddDiscard();
 	}}
 >
-	<Dialog.Content class="sm:max-w-md" showCloseButton={false} data-testid="category-add-dialog">
+	<Dialog.Content class="max-w-sm sm:max-w-sm" showCloseButton={false} data-testid="category-add-dialog">
 		<Dialog.Header>
 			<Dialog.Title>Add category</Dialog.Title>
 			<Dialog.Description>Custom labels use the tag icon.</Dialog.Description>
@@ -999,7 +999,7 @@
 </Dialog.Root>
 
 <Dialog.Root bind:open={addGroupDialogOpen}>
-	<Dialog.Content class="sm:max-w-md" data-testid="category-add-group-dialog">
+	<Dialog.Content class="max-w-sm sm:max-w-sm" data-testid="category-add-group-dialog">
 		<Dialog.Header>
 			<Dialog.Title>Add group</Dialog.Title>
 			<Dialog.Description>Placed last among {meta.title.toLowerCase()}.</Dialog.Description>
@@ -1043,7 +1043,7 @@
 </Dialog.Root>
 
 <Dialog.Root bind:open={renameGroupDialogOpen}>
-	<Dialog.Content class="sm:max-w-md" data-testid="category-rename-group-dialog">
+	<Dialog.Content class="max-w-sm sm:max-w-sm" data-testid="category-rename-group-dialog">
 		<Dialog.Header>
 			<Dialog.Title>Rename group</Dialog.Title>
 			<Dialog.Description>Must be unique among {meta.title.toLowerCase()}.</Dialog.Description>

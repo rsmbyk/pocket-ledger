@@ -93,3 +93,4 @@ On Transactions, the date range lives at the **center of the sticky header**. De
 ## Related
 
 - 042 DateField; 045 From/To in sheet (supersede placement); 102 session; 110 month keys
+- **142** supersedes header placement (single-button picker in a sticky chrome band). Domain rules here remain.
