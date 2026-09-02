@@ -416,7 +416,7 @@
 				{#if hasGoal}
 					<Button
 						size="icon-sm"
-						variant="ghost"
+						variant="destructive"
 						aria-label={`Clear goal for ${p.name}`}
 						data-testid="pocket-clear-goal"
 						disabled={busy}

@@ -184,7 +184,7 @@
 									{#if !session.current && onRevokeSession}
 										<Button
 											type="button"
-											variant="outline"
+											variant="destructive"
 											size="sm"
 											onclick={() => void wrap(() => onRevokeSession(session.id))}
 											data-testid="session-revoke"
