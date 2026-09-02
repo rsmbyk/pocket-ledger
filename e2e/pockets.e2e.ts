@@ -134,7 +134,7 @@ test.describe('070–077 pockets pack', () => {
 		await page.getByTestId('pocket-save').click();
 		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
 
-		await page.goto('/activity');
+		await page.goto('/transactions');
 		await expect(
 			page.getByTestId('activity-list').or(page.getByTestId('activity-empty'))
 		).toBeVisible();

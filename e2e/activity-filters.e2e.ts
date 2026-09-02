@@ -39,13 +39,24 @@ function filtersSurface(page: Page) {
 	);
 }
 
+async function setFilterTypes(
+	page: Page,
+	types: Array<'income' | 'expense' | 'transfer'>
+): Promise<void> {
+	for (const t of ['income', 'expense', 'transfer'] as const) {
+		const box = page.getByTestId(`activity-filter-type-${t}`);
+		if (types.includes(t)) await box.check();
+		else await box.uncheck();
+	}
+}
+
 async function openAndApplyType(
 	page: Page,
 	type: 'all' | 'income' | 'expense' | 'transfer'
 ): Promise<void> {
 	await page.getByTestId('activity-filters-open').click();
 	await expect(filtersSurface(page)).toBeVisible();
-	await page.getByTestId('activity-filter-type').selectOption(type);
+	await setFilterTypes(page, type === 'all' ? [] : [type]);
 	await page.getByTestId('activity-filters-apply').click();
 	await expect(filtersSurface(page)).toBeHidden();
 }
@@ -61,7 +72,7 @@ test.describe('017 / 045 activity filters', () => {
 	test('filters by type via Apply and searches amount with separators', async ({ page }) => {
 		await seedIncomeAndExpense(page);
 
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 		await expect(page.getByTestId('activity-filters')).toBeVisible();
 		await expect(page.getByTestId('activity-filters-open')).toBeVisible();
 		await expect(page.getByTestId('activity-filter-type')).toHaveCount(0);
@@ -83,10 +94,10 @@ test.describe('017 / 045 activity filters', () => {
 
 	test('dirty close warns and keeps applied filters', async ({ page }) => {
 		await seedIncomeAndExpense(page);
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 
 		await page.getByTestId('activity-filters-open').click();
-		await page.getByTestId('activity-filter-type').selectOption('expense');
+		await setFilterTypes(page, ['expense']);
 		await page.getByTestId('activity-filters-close').click();
 		await expect(page.getByRole('heading', { name: 'Discard filter changes?' })).toBeVisible();
 		await expect(page.getByTestId('confirm-dialog-danger-header')).toHaveCount(0);
@@ -99,43 +110,31 @@ test.describe('017 / 045 activity filters', () => {
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
 	});
 
-	test('049 toolbar: Sort then Filters beside search; Add right-aligned', async ({ page }) => {
+	test('049 toolbar: Filters beside search; Add right-aligned; no Sort', async ({ page }) => {
 		await seedIncomeAndExpense(page);
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 
 		const searchBox = await page.getByTestId('activity-filters').boundingBox();
-		const sortBtn = await page.getByTestId('activity-sort-open').boundingBox();
 		const filtersBtn = await page.getByTestId('activity-filters-open').boundingBox();
 		const addBtn = await page.getByTestId('activity-add').boundingBox();
-		expect(searchBox && sortBtn && filtersBtn && addBtn).toBeTruthy();
-		expect(sortBtn!.x).toBeGreaterThan(searchBox!.x);
-		expect(filtersBtn!.x).toBeGreaterThan(sortBtn!.x);
+		expect(searchBox && filtersBtn && addBtn).toBeTruthy();
+		expect(filtersBtn!.x).toBeGreaterThan(searchBox!.x);
 		expect(Math.abs(filtersBtn!.y - searchBox!.y)).toBeLessThan(24);
 		expect(addBtn!.y).toBeGreaterThan(searchBox!.y + searchBox!.height - 4);
 
 		await expect(page.getByTestId('activity-filters-open')).toHaveText('');
-		await expect(page.getByTestId('activity-sort-open')).toHaveText('');
-
-		await page.getByTestId('activity-sort-open').click();
-		await expect(page.getByTestId('activity-sort-sheet')).toBeVisible();
-		await page.getByTestId('activity-sort-occurredOn-asc').click();
-		await expect(page.getByTestId('activity-sort-sheet')).toBeHidden();
+		await expect(page.getByTestId('activity-sort-open')).toHaveCount(0);
+		await expect(page.getByTestId('activity-range')).toBeVisible();
+		await expect(page.getByTestId('activity-filter-start')).toHaveCount(0);
+		await expect(page.getByTestId('activity-filter-end')).toHaveCount(0);
 	});
 
-	test('065 primary-outline when sort or filters active', async ({ page }) => {
+	test('065 primary-outline when filters active', async ({ page }) => {
 		await seedIncomeAndExpense(page);
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 
-		const sortBtn = page.getByTestId('activity-sort-open');
 		const filtersBtn = page.getByTestId('activity-filters-open');
-		await expect(sortBtn).not.toHaveAttribute('data-active', 'true');
 		await expect(filtersBtn).not.toHaveAttribute('data-active', 'true');
-
-		await sortBtn.click();
-		await page.getByTestId('activity-sort-occurredOn-desc').click();
-		await expect(sortBtn).toHaveAttribute('data-active', 'true');
-		await expect(sortBtn).toHaveAttribute('aria-pressed', 'true');
-		await expect(sortBtn).toHaveClass(/border-primary/);
 
 		await openAndApplyType(page, 'expense');
 		await expect(filtersBtn).toHaveAttribute('data-active', 'true');
@@ -145,32 +144,19 @@ test.describe('017 / 045 activity filters', () => {
 
 		await openAndApplyType(page, 'all');
 		await expect(filtersBtn).not.toHaveAttribute('data-active', 'true');
-		await expect(sortBtn).toHaveAttribute('data-active', 'true');
 	});
 
-	test('067–068 date groups on Date sort; no Categories; note without row date', async ({
-		page
-	}) => {
+	test('134 date groups always; note primary; no per-row date', async ({ page }) => {
 		await seedIncomeAndExpense(page);
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 
 		const foodRow = page
 			.locator('button[data-testid^="activity-row-"]')
 			.filter({ hasText: 'Food' });
 		await expect(foodRow.getByTestId(/-note$/)).toContainText('secret lunch');
-		// Spec 076: default (createdAt) sort shows date on the row secondary line.
-		await expect(foodRow.getByTestId(/-date$/)).toBeVisible();
-
-		await page.getByTestId('activity-sort-open').click();
-		await expect(page.getByTestId('activity-sort-category')).toHaveCount(0);
-		await page.getByTestId('activity-sort-occurredOn-desc').click();
-
-		await expect(page.locator('[data-testid^="activity-date-group-"]')).toHaveCount(1);
 		await expect(foodRow.getByTestId(/-date$/)).toHaveCount(0);
-
-		await page.getByTestId('activity-sort-open').click();
-		await page.getByTestId('activity-sort-createdAt-desc').click();
-		await expect(page.locator('[data-testid^="activity-date-group-"]')).toHaveCount(0);
+		await expect(page.locator('[data-testid^="activity-date-group-"]')).toHaveCount(1);
+		await expect(page.getByTestId('activity-range-mode-month')).toBeVisible();
 	});
 });
 
@@ -184,7 +170,7 @@ test.describe('049 / 058 activity filters xl drawer', () => {
 
 	test('always shows in-layout drawer without open button or Close', async ({ page }) => {
 		await seedIncomeAndExpense(page);
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 		await expect(page.getByTestId('activity-filters-drawer')).toBeVisible();
 		await expect(page.getByTestId('activity-filters-open')).toHaveCount(0);
 		await expect(page.getByTestId('activity-filters-sheet')).toHaveCount(0);
@@ -192,11 +178,9 @@ test.describe('049 / 058 activity filters xl drawer', () => {
 		await expect(page.getByTestId('activity-filters-clear')).toBeVisible();
 		await expect(page.getByTestId('activity-filters-clear')).toHaveClass(/border/);
 		await expect(page.getByTestId('activity-filters-apply')).toBeVisible();
-		await expect(page.getByTestId('activity-sort-open')).toBeVisible();
-		await page.getByTestId('activity-sort-open').click();
-		await expect(page.getByTestId('activity-sort-sheet')).toBeVisible();
-		await page.getByTestId('activity-sort-close').click();
-		await page.getByTestId('activity-filter-type').selectOption('expense');
+		await expect(page.getByTestId('activity-sort-open')).toHaveCount(0);
+		await expect(page.getByTestId('activity-filter-start')).toHaveCount(0);
+		await setFilterTypes(page, ['expense']);
 		await page.getByTestId('activity-filters-apply').click();
 		await expect(page.getByTestId('activity-filters-drawer')).toBeVisible();
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
@@ -220,7 +204,7 @@ test.describe('020 / 045 activity filters mobile', () => {
 		await expect(page.getByTestId('recent-list')).toContainText('Salary');
 
 		// Hash nav avoids flaky mobile drawer open after seeding (see desktop-layout for menu path).
-		await page.goto('/activity');
+		await page.goto('/transactions');
 		await expect(page.getByTestId('activity-panel')).toBeVisible();
 		await expect(page.getByTestId('activity-filters')).toBeVisible();
 		await expect(page.getByTestId('activity-filters-open')).toBeVisible();
@@ -229,7 +213,7 @@ test.describe('020 / 045 activity filters mobile', () => {
 
 		await page.getByTestId('activity-filters-open').click();
 		await expect(page.getByTestId('activity-filters-sheet')).toBeVisible();
-		await page.getByTestId('activity-filter-type').selectOption('expense');
+		await setFilterTypes(page, ['expense']);
 		await page.getByTestId('activity-filters-apply').click();
 		await expect(page.getByTestId('activity-filters-sheet')).toBeHidden();
 		await expect(page.getByTestId('activity-filters-badge')).toHaveText('1');
@@ -287,21 +271,12 @@ test.describe('101 activity date sort secondary createdAt', () => {
 		await form.getByRole('textbox', { name: 'Note' }).fill('later-created');
 		await form.getByRole('button', { name: 'Save' }).click();
 
-		await goToNav(page, 'activity');
-		await page.getByTestId('activity-sort-open').click();
-		await page.getByTestId('activity-sort-occurredOn-desc').click();
+		await goToNav(page, 'transactions');
 
 		const notesDesc = page.locator('[data-testid="activity-list"] [data-testid$="-note"]');
 		await expect(notesDesc).toHaveCount(2);
 		await expect(notesDesc.nth(0)).toContainText('later-created');
 		await expect(notesDesc.nth(1)).toContainText('earlier-created');
-
-		await page.getByTestId('activity-sort-open').click();
-		await page.getByTestId('activity-sort-occurredOn-asc').click();
-
-		const notesAsc = page.locator('[data-testid="activity-list"] [data-testid$="-note"]');
-		await expect(notesAsc.nth(0)).toContainText('earlier-created');
-		await expect(notesAsc.nth(1)).toContainText('later-created');
 	});
 });
 
@@ -313,13 +288,9 @@ test.describe('102 activity session sort + filters', () => {
 		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
 	});
 
-	test('persists sort and applied filters across reload', async ({ page }) => {
+	test('persists applied filters across reload', async ({ page }) => {
 		await seedIncomeAndExpense(page);
-		await goToNav(page, 'activity');
-
-		await page.getByTestId('activity-sort-open').click();
-		await page.getByTestId('activity-sort-occurredOn-asc').click();
-		await expect(page.getByTestId('activity-sort-open')).toHaveAttribute('data-active', 'true');
+		await goToNav(page, 'transactions');
 
 		await openAndApplyType(page, 'expense');
 		await page.getByTestId('activity-filter-search').fill('lunch');
@@ -328,23 +299,16 @@ test.describe('102 activity session sort + filters', () => {
 
 		await page.reload();
 		await expect(page.getByTestId('app-shell')).toBeVisible();
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 
-		await expect(page.getByTestId('activity-sort-open')).toHaveAttribute('data-active', 'true');
+		await expect(page.getByTestId('activity-sort-open')).toHaveCount(0);
 		await expect(page.getByTestId('activity-filters-badge')).toHaveText('1');
 		await expect(page.getByTestId('activity-filter-search')).toHaveValue('lunch');
 		await expect(page.getByTestId('activity-list')).toContainText('Food');
 		await expect(page.getByTestId('activity-list')).not.toContainText('Salary');
 
-		await page.getByTestId('activity-sort-open').click();
-		await expect(page.getByTestId('activity-sort-occurredOn-asc')).toHaveAttribute(
-			'aria-selected',
-			'true'
-		);
-		await page.getByTestId('activity-sort-close').click();
-
 		await page.getByTestId('activity-filters-open').click();
-		await expect(page.getByTestId('activity-filter-type')).toHaveValue('expense');
+		await expect(page.getByTestId('activity-filter-type')).toContainText('Expense');
 	});
 });
 
@@ -360,7 +324,7 @@ test.describe('107 filter category picker + type coupling', () => {
 		page
 	}) => {
 		await seedIncomeAndExpense(page);
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 
 		await page.getByTestId('activity-filters-open').click();
 		await expect(filtersSurface(page)).toBeVisible();
@@ -373,14 +337,14 @@ test.describe('107 filter category picker + type coupling', () => {
 		await expect(page.getByRole('option', { name: 'Bonus', exact: true })).toHaveCount(0);
 		await page.keyboard.press('Escape');
 
-		await page.getByTestId('activity-filter-type').selectOption('income');
+		await setFilterTypes(page, ['income']);
 		await page.getByTestId('activity-filter-category').click();
 		await expect(page.getByRole('option', { name: 'Salary', exact: true })).toBeVisible();
 		await expect(page.getByRole('option', { name: 'Food', exact: true })).toHaveCount(0);
 		await expect(page.getByRole('option', { name: 'Admin Fee' })).toHaveCount(0);
 		await page.keyboard.press('Escape');
 
-		await page.getByTestId('activity-filter-type').selectOption('transfer');
+		await setFilterTypes(page, ['transfer']);
 		await expect(page.getByTestId('activity-filter-category')).toBeDisabled();
 		await expect(page.getByTestId('activity-filter-category')).toContainText('All');
 		await page.getByTestId('activity-filters-apply').click();
@@ -392,12 +356,13 @@ test.describe('107 filter category picker + type coupling', () => {
 
 	test('clears incompatible category when type changes', async ({ page }) => {
 		await seedIncomeAndExpense(page);
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 
 		await page.getByTestId('activity-filters-open').click();
 		await selectActivityFilterCategory(page, 'Food');
 		await expect(page.getByTestId('activity-filter-category')).toContainText('Food');
-		await page.getByTestId('activity-filter-type').selectOption('income');
+		await page.keyboard.press('Escape');
+		await setFilterTypes(page, ['income']);
 		await expect(page.getByTestId('activity-filter-category')).toContainText('All');
 	});
 });
@@ -411,7 +376,7 @@ test.describe('132 activity category filter used-only', () => {
 	});
 
 	test('hides Category when the ledger is empty', async ({ page }) => {
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 		await page.getByTestId('activity-filters-open').click();
 		await expect(filtersSurface(page)).toBeVisible();
 		await expect(page.getByTestId('activity-filter-category')).toHaveCount(0);
@@ -421,7 +386,7 @@ test.describe('132 activity category filter used-only', () => {
 		page
 	}) => {
 		await seedIncomeAndExpense(page);
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 		await page.getByTestId('activity-filters-open').click();
 		await page.getByTestId('activity-filter-category').click();
 		await expect(page.getByRole('option', { name: 'Salary', exact: true })).toBeVisible();
@@ -448,7 +413,7 @@ test.describe('132 activity category filter used-only', () => {
 		await form.getByRole('button', { name: 'Save' }).click();
 		await expect(form).toBeHidden({ timeout: 10_000 });
 
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 		await page
 			.getByTestId('activity-list')
 			.locator('[data-testid^="activity-row-"]')

@@ -20,7 +20,7 @@ test.describe('011 field encryption', () => {
 		await page.getByTestId('enable-lock').click();
 		await expect(page.getByTestId('lock-status')).toContainText(/on/i);
 
-		await goToNav(page, 'activity');
+		await goToNav(page, 'transactions');
 		await expect(page.getByTestId('activity-list').getByRole('columnheader')).toHaveCount(0);
 		await page
 			.getByTestId('activity-list')

@@ -42,7 +42,7 @@ Code still matches the pre-cloud client until Specs 116–121 land; this file is
 | Budgets                              | None for now                                                                                                                                                                                                                                                                        |
 | Multi-currency / FX                  | None                                                                                                                                                                                                                                                                                |
 | UX                                   | **Desktop-first dashboard chrome**, responsive down to mobile (inset sidebar → sheet + stacked layouts below `md`)                                                                                                                                                                  |
-| Features (shipped)                   | Charts, export — specs 001–008; net worth UI removed (059); recurring removed (087); Pockets nav + CRUD, per-pocket opening balance, per-pocket goals, transfers, Activity pocket filter, Activity row pocket labels — specs 070–077; month Opening from pocket openings — spec 110 |
+| Features (shipped)                   | Charts, export — specs 001–008; net worth UI removed (059); recurring removed (087); Pockets nav + CRUD, per-pocket opening balance, per-pocket goals, transfers, Transactions pocket filter, row pocket labels — specs 070–077 / 134; month Opening from pocket openings — spec 110 |
 | Categories                           | Stock catalog in the app bundle (overlay in Dexie: custom groups/categories, hidden stock ids, group order). List per group; hide instead of delete; searchable grouped form picker (spec 123). Custom icon always `tag`. Uncategorized `circle-dashed`; Admin Fee `percent`. |
 | Tests                                | Vitest + Playwright from the start                                                                                                                                                                                                                                                  |
 | Process                              | Spec-Driven Development + TDD + GitHub Flow                                                                                                                                                                                                                                         |
@@ -86,7 +86,7 @@ Optional **WebAuthn** (needs a passphrase): this-device third box, not synced. C
 
 Pipeline: device unlock (if any) → Google → local-discard warning (if needed) → **set** passphrase (new) or **enter** / hex (returning) → hex kit (new accounts) → ledger.
 
-No money UI (Activity / Pockets / More) until complete. Close tab / refresh / navigate away → **resume the incomplete step**.
+No money UI (Transactions / Pockets / More) until complete. Close tab / refresh / navigate away → **resume the incomplete step**.
 
 - Google, no passphrase wrap yet → set-passphrase.
 - Passphrase wrap on server, kit not confirmed → hex screen. If the shown hex is gone, **mint a new** hex (unconfirmed never lived on the server).

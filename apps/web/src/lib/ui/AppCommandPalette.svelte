@@ -50,9 +50,9 @@
 				<HomeIcon />
 				Home
 			</Command.Item>
-			<Command.Item onSelect={() => run(() => onNavigate('activity'))} data-testid="cmd-activity">
+			<Command.Item onSelect={() => run(() => onNavigate('transactions'))} data-testid="cmd-transactions">
 				<ListIcon />
-				Activity
+				Transactions
 			</Command.Item>
 			<Command.Item onSelect={() => run(() => onNavigate('pockets'))} data-testid="cmd-pockets">
 				<LandmarkIcon />

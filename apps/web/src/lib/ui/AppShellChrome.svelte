@@ -7,7 +7,6 @@
 	import TagsIcon from '@lucide/svelte/icons/tags';
 	import MoreHorizontalIcon from '@lucide/svelte/icons/ellipsis';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import ArrowUpDownIcon from '@lucide/svelte/icons/arrow-up-down';
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import InboxIcon from '@lucide/svelte/icons/inbox';
 	import SearchIcon from '@lucide/svelte/icons/search';
@@ -17,7 +16,6 @@
 	import WalletIcon from '@lucide/svelte/icons/wallet';
 	import HistoryIcon from '@lucide/svelte/icons/history';
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
-	import CheckIcon from '@lucide/svelte/icons/check';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -34,6 +32,7 @@
 	import TransactionListRow from '$lib/ui/TransactionListRow.svelte';
 	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import DateField from '$lib/ui/DateField.svelte';
+	import MonthField from '$lib/ui/MonthField.svelte';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import type { Account } from '$lib/domain/account';
@@ -49,19 +48,32 @@
 	import { isAppRoute, type AppRoute } from '$lib/shared/router';
 	import {
 		DEFAULT_ACTIVITY_FILTERS,
-		DEFAULT_ACTIVITY_SORT,
+		activityFiltersEqual,
+		categoryKindsForTypes,
+		countAdvancedFilters,
 		filterTransactions,
+		filterTriggerSummary,
 		hasAdminFeeLedgerRow,
 		hasUncategorizedLedgerRow,
 		isCategoryFilterDisabled,
 		isDefaultActivityFilters,
-		resolveCategoryIdForType,
+		normalizeActivityFilters,
+		resolveCategoryIdsForTypes,
 		shouldShowActivityCategoryFilter,
+		typeLabel,
 		usedCategoryIds,
 		type ActivityFilterCriteria,
-		type ActivitySortMode,
-		type ActivityTypeFilter
+		type ActivityTxType
 	} from '$lib/domain/activity-filters';
+	import {
+		customRangeToMonth,
+		monthRangeToCustom,
+		rangeFromCustom,
+		rangeFromMonthKey,
+		type TransactionDateRange
+	} from '$lib/domain/transaction-date-range';
+	import { STOCK_CUSTOM_ICON, STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
+	import { shouldIgnoreDismissForNativePicker } from '$lib/ui/native-picker-dismiss';
 	import { readHideAmounts, writeHideAmounts } from '$lib/shared/hide-amounts';
 	import {
 		readActivityListSession,
@@ -126,8 +138,8 @@
 		onNavigate: (route: AppRoute) => void;
 		onOpenAdd: () => void;
 		onOpenEdit: (tx: LedgerTransaction) => void;
-		/** Applied Activity pocket filter (`all` or pocket id) for Add default. */
-		onActivityPocketFilterChange?: (pocketId: string) => void;
+		/** Applied Transactions pocket ids for Add default (exactly one → that pocket). */
+		onActivityPocketFilterChange?: (pocketIds: string[]) => void;
 	};
 
 	let {
@@ -197,12 +209,15 @@
 	let showMoneyBusy = $state(false);
 
 	const initialActivitySession = readActivityListSession();
-	let applied = $state<ActivityFilterCriteria>({ ...initialActivitySession.filters });
-	let draft = $state<ActivityFilterCriteria>({ ...initialActivitySession.filters });
+	let applied = $state<ActivityFilterCriteria>(
+		normalizeActivityFilters(initialActivitySession.filters)
+	);
+	let draft = $state<ActivityFilterCriteria>(
+		normalizeActivityFilters(initialActivitySession.filters)
+	);
+	let dateRange = $state<TransactionDateRange>(initialActivitySession.range);
 	let filtersOpen = $state(false);
-	let sortOpen = $state(false);
 	let discardWarnOpen = $state(false);
-	let activitySort = $state<ActivitySortMode>(initialActivitySession.sort);
 	let categoriesReorderDirty = $state(false);
 	let pendingNav = $state<AppRoute | null>(null);
 	let leaveCategoriesOpen = $state(false);
@@ -218,27 +233,40 @@
 	const usedExpenseCategories = $derived(
 		Object.values(categoriesById).filter((c) => c.kind === 'expense' && usedIds.has(c.id))
 	);
-	const draftFilterType = $derived((draft.type ?? 'all') as ActivityTypeFilter);
-	const categoryFilterDisabled = $derived(isCategoryFilterDisabled(draftFilterType));
-	const categoryGroupByKind = $derived(draftFilterType === 'all');
+	const categoryFilterDisabled = $derived(isCategoryFilterDisabled(draft.types));
+	const categoryKindsAllowed = $derived(categoryKindsForTypes(draft.types));
+	const categoryGroupByKind = $derived(
+		categoryKindsAllowed === 'all' ||
+			(Array.isArray(categoryKindsAllowed) &&
+				categoryKindsAllowed.includes('income') &&
+				categoryKindsAllowed.includes('expense'))
+	);
 	const categoryShowAdminFee = $derived(
-		showActivityCategoryFilter && draftFilterType === 'all' && hasAdminFeeLedgerRow(transactions)
+		showActivityCategoryFilter &&
+			categoryKindsAllowed === 'all' &&
+			hasAdminFeeLedgerRow(transactions)
 	);
 	const categoryShowUncategorized = $derived(
 		showActivityCategoryFilter && hasUncategorizedLedgerRow(transactions)
 	);
 	const categoryPickerIncome = $derived(
-		draftFilterType === 'expense' || draftFilterType === 'transfer' ? [] : usedIncomeCategories
+		categoryKindsAllowed === 'all' ||
+			(Array.isArray(categoryKindsAllowed) && categoryKindsAllowed.includes('income'))
+			? usedIncomeCategories
+			: []
 	);
 	const categoryPickerExpense = $derived(
-		draftFilterType === 'income' || draftFilterType === 'transfer' ? [] : usedExpenseCategories
+		categoryKindsAllowed === 'all' ||
+			(Array.isArray(categoryKindsAllowed) && categoryKindsAllowed.includes('expense'))
+			? usedExpenseCategories
+			: []
 	);
 	const categoryPickerFlat = $derived(
-		draftFilterType === 'income'
-			? usedIncomeCategories
-			: draftFilterType === 'expense'
-				? usedExpenseCategories
-				: []
+		categoryGroupByKind
+			? []
+			: Array.isArray(categoryKindsAllowed) && categoryKindsAllowed.includes('income')
+				? usedIncomeCategories
+				: usedExpenseCategories
 	);
 
 	const filtersSheetSide = $derived<'bottom' | 'right'>(desktop.current ? 'right' : 'bottom');
@@ -247,20 +275,25 @@
 			? 'mx-auto flex max-h-[100svh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
 			: 'w-full gap-0 p-0 sm:max-w-sm'
 	);
-	const sortSheetSide = $derived(filtersSheetSide);
-	const sortSheetClass = $derived(filtersSheetClass);
-	const activityStageWide = $derived(route === 'activity' && xlWide.current);
+	const activityStageWide = $derived(route === 'transactions' && xlWide.current);
 
 	const advancedFilterCount = $derived(countAdvancedFilters(applied));
 	const hasAdvancedFilters = $derived(advancedFilterCount > 0);
-	const sortActive = $derived(activitySort !== DEFAULT_ACTIVITY_SORT);
 	const toolbarActiveChrome =
 		'border-primary text-primary bg-primary/10 hover:bg-primary/15 hover:text-primary dark:bg-primary/15 dark:hover:bg-primary/20 shadow-xs';
-	const draftDirty = $derived(!activityFiltersEqual(draft, applied, { ignoreSearch: true }));
+	const draftDirty = $derived(
+		!activityFiltersEqual(draft, applied, { ignoreSearch: true, ignoreDates: true })
+	);
 	const canApplyDraft = $derived(draftDirty);
 	const canClearDraft = $derived(!isDefaultActivityFilters({ ...draft, search: '' }));
 
-	const filteredTransactions = $derived(filterTransactions(transactions, applied));
+	const filteredTransactions = $derived(
+		filterTransactions(transactions, {
+			...applied,
+			startDate: dateRange.startDate,
+			endDate: dateRange.endDate
+		})
+	);
 
 	const pocketsById = $derived(
 		Object.fromEntries(accounts.map((a) => [a.id, { name: a.name, isMain: a.isMain }]))
@@ -275,62 +308,28 @@
 		icon: typeof HomeIcon;
 	}[] = [
 		{ id: 'home', label: 'Home', icon: HomeIcon },
-		{ id: 'activity', label: 'Activity', icon: ListIcon },
+		{ id: 'transactions', label: 'Transactions', icon: ListIcon },
 		{ id: 'pockets', label: 'Pockets', icon: LandmarkIcon },
 		{ id: 'categories', label: 'Categories', icon: TagsIcon },
 		{ id: 'more', label: 'More', icon: MoreHorizontalIcon }
 	];
 
-	function countAdvancedFilters(criteria: ActivityFilterCriteria): number {
-		let count = 0;
-		if ((criteria.type ?? 'all') !== 'all') count++;
-		const categoryId = criteria.categoryId ?? '';
-		if (categoryId !== '' && categoryId != null) count++;
-		if (criteria.startDate?.trim()) count++;
-		if (criteria.endDate?.trim()) count++;
-		if (criteria.hideVoided) count++;
-		if ((criteria.amountOp ?? 'none') !== 'none') count++;
-		if ((criteria.pocketId?.trim() || 'all') !== 'all') count++;
-		return count;
-	}
-
-	function activityFiltersEqual(
-		a: ActivityFilterCriteria,
-		b: ActivityFilterCriteria,
-		options?: { ignoreSearch?: boolean }
-	): boolean {
-		const ignoreSearch = options?.ignoreSearch ?? false;
-		return (
-			(a.type ?? 'all') === (b.type ?? 'all') &&
-			(a.categoryId ?? '') === (b.categoryId ?? '') &&
-			(a.startDate?.trim() ?? '') === (b.startDate?.trim() ?? '') &&
-			(a.endDate?.trim() ?? '') === (b.endDate?.trim() ?? '') &&
-			(ignoreSearch || (a.search?.trim() ?? '') === (b.search?.trim() ?? '')) &&
-			(a.hideVoided ?? false) === (b.hideVoided ?? false) &&
-			(a.amountOp ?? 'none') === (b.amountOp ?? 'none') &&
-			(a.amountRaw?.trim() ?? '') === (b.amountRaw?.trim() ?? '') &&
-			(a.pocketId?.trim() || 'all') === (b.pocketId?.trim() || 'all')
-		);
-	}
-
 	function cloneFilters(criteria: ActivityFilterCriteria): ActivityFilterCriteria {
-		// Shallow copy — $state proxies are not structuredClone-safe.
-		return {
-			type: criteria.type ?? 'all',
-			categoryId: criteria.categoryId ?? '',
-			startDate: criteria.startDate ?? '',
-			endDate: criteria.endDate ?? '',
-			search: criteria.search ?? '',
-			hideVoided: criteria.hideVoided ?? false,
-			amountOp: criteria.amountOp ?? 'none',
-			amountRaw: criteria.amountRaw ?? '',
-			pocketId: criteria.pocketId?.trim() || 'all'
-		};
+		return normalizeActivityFilters(criteria);
 	}
 
 	function categoryName(categoryId: string | null): string {
 		if (!categoryId) return 'Uncategorized';
 		return categoriesById[categoryId]?.name ?? 'Category';
+	}
+
+	function categoryIconSlug(tx: LedgerTransaction): string {
+		if (tx.categoryId == null) return STOCK_UNCATEGORIZED_ICON;
+		return categoriesById[tx.categoryId]?.icon || STOCK_CUSTOM_ICON;
+	}
+
+	function pocketLabel(id: string): string {
+		return accounts.find((a) => a.id === id)?.name ?? id;
 	}
 
 	function homeMoney(amount: number): string {
@@ -393,64 +392,63 @@
 	}
 
 	function syncDraftCategory(next: ActivityFilterCriteria): ActivityFilterCriteria {
-		const type = (next.type ?? 'all') as ActivityTypeFilter;
 		return {
 			...next,
-			categoryId: resolveCategoryIdForType(next.categoryId, type, categoryKinds)
+			categoryIds: resolveCategoryIdsForTypes(next.categoryIds, next.types, categoryKinds)
 		};
 	}
 
-	function openSort() {
-		sortOpen = true;
-	}
-
-	function selectActivitySort(mode: ActivitySortMode) {
-		activitySort = mode;
-		sortOpen = false;
-		persistActivityListSession();
-	}
-
 	function persistActivityListSession() {
-		writeActivityListSession({ sort: activitySort, filters: applied });
+		writeActivityListSession({ filters: applied, range: dateRange });
+	}
+
+	function setDateRange(next: TransactionDateRange) {
+		dateRange = next;
+		writeActivityListSession({ filters: applied, range: next });
+	}
+
+	function onRangeMode(mode: 'month' | 'custom') {
+		if (mode === dateRange.mode) return;
+		if (mode === 'custom') setDateRange(monthRangeToCustom(dateRange));
+		else setDateRange(customRangeToMonth(dateRange));
 	}
 
 	$effect(() => {
 		if (showActivityCategoryFilter) return;
-		const snapDraft = (draft.categoryId ?? '') !== '';
-		const snapApplied = (applied.categoryId ?? '') !== '';
-		if (!snapDraft && !snapApplied) return;
-		if (snapDraft) draft = { ...draft, categoryId: '' };
-		if (snapApplied) {
-			applied = { ...applied, categoryId: '' };
+		if (draft.categoryIds.length === 0 && applied.categoryIds.length === 0) return;
+		if (draft.categoryIds.length > 0) draft = { ...draft, categoryIds: [] };
+		if (applied.categoryIds.length > 0) {
+			applied = { ...applied, categoryIds: [] };
 			persistActivityListSession();
 		}
 	});
 
-	const sortOptions: { mode: ActivitySortMode; label: string; testid: string }[] = [
-		{ mode: 'createdAt-desc', label: 'Default', testid: 'activity-sort-createdAt-desc' },
-		{
-			mode: 'occurredOn-desc',
-			label: 'Date (descending)',
-			testid: 'activity-sort-occurredOn-desc'
-		},
-		{ mode: 'occurredOn-asc', label: 'Date (ascending)', testid: 'activity-sort-occurredOn-asc' }
-	];
-
-	function onFilterTypeChange(next: ActivityTypeFilter) {
-		draft = {
+	function onFilterTypesChange(next: string[]) {
+		draft = syncDraftCategory({
 			...draft,
-			type: next,
-			categoryId: resolveCategoryIdForType(draft.categoryId, next, categoryKinds)
-		};
+			types: next.filter((t): t is ActivityTxType =>
+				t === 'income' || t === 'expense' || t === 'transfer'
+			)
+		});
 	}
 
-	function onFilterCategoryChange(next: string) {
-		draft = { ...draft, categoryId: next };
+	function toggleDraftType(type: ActivityTxType, on: boolean) {
+		const set = new Set(draft.types);
+		if (on) set.add(type);
+		else set.delete(type);
+		onFilterTypesChange([...set]);
+	}
+
+	function toggleDraftPocket(id: string, on: boolean) {
+		const set = new Set(draft.pocketIds);
+		if (on) set.add(id);
+		else set.delete(id);
+		draft = { ...draft, pocketIds: [...set] };
 	}
 
 	function applyFilters() {
-		applied = { ...cloneFilters(draft), search: applied.search ?? '' };
-		onActivityPocketFilterChange?.(applied.pocketId?.trim() || 'all');
+		applied = { ...cloneFilters(draft), search: applied.search };
+		onActivityPocketFilterChange?.([...applied.pocketIds]);
 		persistActivityListSession();
 		if (!xlWide.current) filtersOpen = false;
 	}
@@ -476,8 +474,13 @@
 		filtersOpen = false;
 	}
 
-	function onFiltersDismissAttempt() {
+	function onFiltersDismissAttempt(e: Event) {
+		if (shouldIgnoreDismissForNativePicker(e)) {
+			e.preventDefault();
+			return;
+		}
 		if (!draftDirty) return;
+		e.preventDefault();
 		discardWarnOpen = true;
 	}
 
@@ -490,7 +493,7 @@
 	}
 
 	function clearDraftFilters() {
-		draft = { ...DEFAULT_ACTIVITY_FILTERS, search: applied.search ?? '' };
+		draft = { ...DEFAULT_ACTIVITY_FILTERS, search: applied.search };
 	}
 
 	function updateAppliedSearch(next: string) {
@@ -499,12 +502,12 @@
 	}
 
 	$effect(() => {
-		if (route !== 'activity' || !xlWide.current) return;
+		if (route !== 'transactions' || !xlWide.current) return;
 		draft = cloneFilters(applied);
 	});
 
 	onMount(() => {
-		onActivityPocketFilterChange?.(applied.pocketId?.trim() || 'all');
+		onActivityPocketFilterChange?.([...applied.pocketIds]);
 	});
 </script>
 
@@ -549,7 +552,7 @@
 
 <Sidebar.Inset class={route === 'categories' ? 'h-svh min-h-0 overflow-hidden' : undefined}>
 	<header
-		class="bg-background sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4 md:px-6"
+		class="bg-background sticky top-0 z-10 flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b px-4 py-2 md:px-6"
 	>
 		<Sidebar.Trigger data-testid="open-menu" />
 		<div class="min-w-0 flex-1">
@@ -557,6 +560,69 @@
 				{pageTitle}
 			</p>
 		</div>
+		{#if route === 'transactions'}
+			<div
+				class="order-last flex basis-full justify-center pt-1"
+				data-testid="activity-range"
+			>
+				<div class="flex max-w-full flex-wrap items-center justify-center gap-1.5">
+						<div class="bg-muted flex shrink-0 rounded-md p-0.5">
+							<button
+								type="button"
+								class={[
+									'rounded px-2 py-1 text-xs font-medium',
+									dateRange.mode === 'month'
+										? 'bg-background text-foreground shadow-xs'
+										: 'text-muted-foreground'
+								]}
+								data-testid="activity-range-mode-month"
+								onclick={() => onRangeMode('month')}
+							>
+								Month
+							</button>
+							<button
+								type="button"
+								class={[
+									'rounded px-2 py-1 text-xs font-medium',
+									dateRange.mode === 'custom'
+										? 'bg-background text-foreground shadow-xs'
+										: 'text-muted-foreground'
+								]}
+								data-testid="activity-range-mode-custom"
+								onclick={() => onRangeMode('custom')}
+							>
+								Custom
+							</button>
+						</div>
+						{#if dateRange.mode === 'month'}
+							<MonthField
+								class="w-[10.5rem]"
+								value={dateRange.monthKey ?? ''}
+								aria-label="Month"
+								testid="activity-range-month"
+								onValueChange={(next) => setDateRange(rangeFromMonthKey(next))}
+							/>
+						{:else}
+							<DateField
+								class="w-[8.5rem]"
+								value={dateRange.startDate}
+								aria-label="From date"
+								testid="activity-range-start"
+								onValueChange={(next) =>
+									setDateRange(rangeFromCustom(next, dateRange.endDate))}
+							/>
+							<DateField
+								class="w-[8.5rem]"
+								value={dateRange.endDate}
+								aria-label="To date"
+								testid="activity-range-end"
+								onValueChange={(next) =>
+									setDateRange(rangeFromCustom(dateRange.startDate, next))}
+							/>
+						{/if}
+					</div>
+				</div>
+			{/if}
 		{#if route === 'home'}
 			<Button
 				type="button"
@@ -681,30 +747,55 @@
 							variant="ghost"
 							class="text-muted-foreground hover:text-foreground mt-1 w-full justify-center text-sm"
 							data-testid="recent-see-more"
-							onclick={() => navigate('activity')}
+							onclick={() => navigate('transactions')}
 						>
-							See more in Activity
+							See more in Transactions
 						</Button>
 					</Card.Content>
 				</Card.Root>
 			</div>
-		{:else if route === 'activity'}
+		{:else if route === 'transactions'}
 			<div data-testid="activity-panel" class={xlWide.current ? 'flex gap-4' : 'space-y-3'}>
 				{#snippet filterFormFields()}
 					<div class="space-y-1">
-						<Label for="activity-filter-type">Type</Label>
-						<select
-							id="activity-filter-type"
-							class="border-input bg-background flex h-11 w-full rounded-md border px-3 text-sm md:h-9"
-							value={draft.type ?? 'all'}
-							onchange={(e) => onFilterTypeChange(e.currentTarget.value as ActivityTypeFilter)}
-							data-testid="activity-filter-type"
-						>
-							<option value="all">All</option>
-							<option value="income">Income</option>
-							<option value="expense">Expense</option>
-							<option value="transfer">Transfer</option>
-						</select>
+						<div class="flex items-center justify-between gap-2">
+							<Label>Type</Label>
+							<span class="text-muted-foreground text-xs" data-testid="activity-filter-type"
+								>{filterTriggerSummary(draft.types, typeLabel)}</span
+							>
+						</div>
+						<div class="flex flex-col gap-2">
+							<label class="flex items-center gap-2 text-sm">
+								<input
+									type="checkbox"
+									class="size-5 accent-primary md:size-4"
+									checked={draft.types.includes('income')}
+									onchange={(e) => toggleDraftType('income', e.currentTarget.checked)}
+									data-testid="activity-filter-type-income"
+								/>
+								Income
+							</label>
+							<label class="flex items-center gap-2 text-sm">
+								<input
+									type="checkbox"
+									class="size-5 accent-primary md:size-4"
+									checked={draft.types.includes('expense')}
+									onchange={(e) => toggleDraftType('expense', e.currentTarget.checked)}
+									data-testid="activity-filter-type-expense"
+								/>
+								Expense
+							</label>
+							<label class="flex items-center gap-2 text-sm">
+								<input
+									type="checkbox"
+									class="size-5 accent-primary md:size-4"
+									checked={draft.types.includes('transfer')}
+									onchange={(e) => toggleDraftType('transfer', e.currentTarget.checked)}
+									data-testid="activity-filter-type-transfer"
+								/>
+								Transfer
+							</label>
+						</div>
 					</div>
 					{#if showActivityCategoryFilter}
 						<div class="space-y-1">
@@ -712,14 +803,14 @@
 							<CategoryPicker
 								id="activity-filter-category"
 								testid="activity-filter-category"
-								value={draft.categoryId ?? ''}
-								onValueChange={onFilterCategoryChange}
+								multiple
+								values={[...draft.categoryIds]}
+								onValuesChange={(next) => (draft = { ...draft, categoryIds: next })}
 								categories={categoryPickerFlat}
 								incomeCategories={categoryPickerIncome}
 								expenseCategories={categoryPickerExpense}
 								groups={categoryGroups}
 								groupByKind={categoryGroupByKind}
-								showAllOption
 								showAdminFee={categoryShowAdminFee}
 								showUncategorized={categoryShowUncategorized}
 								emptyMeans="all"
@@ -737,64 +828,31 @@
 								data-testid="activity-filter-pocket"
 								aria-label="Pocket"
 							>
-								{#if (draft.pocketId ?? 'all') === 'all'}
-									<span>All</span>
-								{:else}
-									{@const selected = accounts.find((a) => a.id === draft.pocketId)}
-									<PocketLabel
-										name={selected?.name ?? 'Unknown'}
-										isMain={selected?.isMain ?? false}
-									/>
-								{/if}
+								<span class="truncate">{filterTriggerSummary(draft.pocketIds, pocketLabel)}</span>
 								<ChevronDownIcon class="text-muted-foreground size-4 shrink-0" />
 							</DropdownMenu.Trigger>
 							<DropdownMenu.Content class="max-h-60 w-(--bits-dropdown-menu-anchor-width)">
-								<DropdownMenu.Item
-									data-testid="activity-filter-pocket-option-all"
-									onclick={() => (draft.pocketId = 'all')}
-								>
-									All
-								</DropdownMenu.Item>
-								<DropdownMenu.Separator />
 								{#each accounts as pocket (pocket.id)}
-									<DropdownMenu.Item
+									<DropdownMenu.CheckboxItem
+										checked={draft.pocketIds.includes(pocket.id)}
+										onCheckedChange={(on) => toggleDraftPocket(pocket.id, on === true)}
 										data-testid={`activity-filter-pocket-option-${pocket.id}`}
-										onclick={() => (draft.pocketId = pocket.id)}
 									>
-										<PocketLabel name={pocket.name} isMain={pocket.isMain} />
-									</DropdownMenu.Item>
+										<PocketLabel name={pocket.name} isMain={pocket.isMain} optical />
+									</DropdownMenu.CheckboxItem>
 								{/each}
 							</DropdownMenu.Content>
 						</DropdownMenu.Root>
-					</div>
-					<div class="space-y-1">
-						<Label for="activity-filter-start">From</Label>
-						<DateField
-							id="activity-filter-start"
-							value={draft.startDate ?? ''}
-							aria-label="From date"
-							testid="activity-filter-start"
-							onValueChange={(next) => (draft.startDate = next)}
-						/>
-					</div>
-					<div class="space-y-1">
-						<Label for="activity-filter-end">To</Label>
-						<DateField
-							id="activity-filter-end"
-							value={draft.endDate ?? ''}
-							aria-label="To date"
-							testid="activity-filter-end"
-							onValueChange={(next) => (draft.endDate = next)}
-						/>
 					</div>
 					<label class="flex items-center gap-2 text-sm">
 						<input
 							type="checkbox"
 							class="size-5 accent-primary md:size-4"
-							bind:checked={draft.hideVoided}
-							data-testid="activity-filter-hide-voided"
+							checked={draft.showVoided}
+							onchange={(e) => (draft = { ...draft, showVoided: e.currentTarget.checked })}
+							data-testid="activity-filter-show-voided"
 						/>
-						Hide voided
+						Show voided
 					</label>
 					<div class="space-y-1">
 						<Label for="activity-filter-amount-op">Amount</Label>
@@ -893,19 +951,6 @@
 							/>
 						</div>
 						<div class="flex shrink-0 items-center gap-2">
-							<Button
-								type="button"
-								variant="outline"
-								size="icon"
-								class={['shrink-0', sortActive && toolbarActiveChrome]}
-								aria-label="Sort"
-								aria-pressed={sortActive}
-								data-testid="activity-sort-open"
-								data-active={sortActive ? 'true' : undefined}
-								onclick={openSort}
-							>
-								<ArrowUpDownIcon class="size-4" />
-							</Button>
 							{#if !xlWide.current}
 								<Button
 									type="button"
@@ -945,54 +990,6 @@
 						</Button>
 					</div>
 
-					<Sheet.Root open={sortOpen} onOpenChange={(open) => (sortOpen = open)}>
-						<Sheet.Content
-							side={sortSheetSide}
-							class={sortSheetClass}
-							data-testid="activity-sort-sheet"
-							showCloseButton={false}
-						>
-							<Sheet.Title class="sr-only">Sort</Sheet.Title>
-							<div class="border-border flex items-center justify-between border-b px-4 py-3">
-								<p class="inline-flex items-center gap-2 text-base font-semibold">
-									<ArrowUpDownIcon class="size-4" aria-hidden="true" />
-									Sort
-								</p>
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									data-testid="activity-sort-close"
-									onclick={() => (sortOpen = false)}
-								>
-									Close
-								</Button>
-							</div>
-							<ul class="grid gap-1 px-2 py-3" role="listbox" aria-label="Sort options">
-								{#each sortOptions as option (option.mode)}
-									<li>
-										<button
-											type="button"
-											role="option"
-											aria-selected={activitySort === option.mode}
-											class={[
-												'hover:bg-muted/60 flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left text-sm',
-												activitySort === option.mode && 'bg-muted'
-											]}
-											data-testid={option.testid}
-											onclick={() => selectActivitySort(option.mode)}
-										>
-											<span>{option.label}</span>
-											{#if activitySort === option.mode}
-												<CheckIcon class="size-4 shrink-0" aria-hidden="true" />
-											{/if}
-										</button>
-									</li>
-								{/each}
-							</ul>
-						</Sheet.Content>
-					</Sheet.Root>
-
 					{#if !xlWide.current}
 						<Sheet.Root open={filtersOpen} onOpenChange={onFiltersOpenChange}>
 							<Sheet.Content
@@ -1028,7 +1025,7 @@
 						totalCount={transactions.length}
 						{currencyLabel}
 						{categoryName}
-						sortMode={activitySort}
+						{categoryIconSlug}
 						{pocketsById}
 						onEdit={onOpenEdit}
 					/>

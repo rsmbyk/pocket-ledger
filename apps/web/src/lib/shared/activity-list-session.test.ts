@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_ACTIVITY_FILTERS, DEFAULT_ACTIVITY_SORT } from '$lib/domain/activity-filters';
+import { DEFAULT_ACTIVITY_FILTERS } from '$lib/domain/activity-filters';
+import { defaultTransactionDateRange } from '$lib/domain/transaction-date-range';
 import {
 	ACTIVITY_LIST_SESSION_KEY,
 	parseActivityListSession,
@@ -9,33 +10,58 @@ import {
 
 describe('activity-list-session', () => {
 	it('defaults for missing or garbage', () => {
-		expect(parseActivityListSession(null)).toEqual({
-			sort: DEFAULT_ACTIVITY_SORT,
-			filters: { ...DEFAULT_ACTIVITY_FILTERS }
-		});
-		expect(parseActivityListSession('')).toEqual({
-			sort: DEFAULT_ACTIVITY_SORT,
-			filters: { ...DEFAULT_ACTIVITY_FILTERS }
-		});
-		expect(parseActivityListSession('not-json')).toEqual({
-			sort: DEFAULT_ACTIVITY_SORT,
-			filters: { ...DEFAULT_ACTIVITY_FILTERS }
-		});
-		expect(parseActivityListSession('[]')).toEqual({
-			sort: DEFAULT_ACTIVITY_SORT,
-			filters: { ...DEFAULT_ACTIVITY_FILTERS }
-		});
+		const empty = {
+			filters: { ...DEFAULT_ACTIVITY_FILTERS },
+			range: defaultTransactionDateRange()
+		};
+		expect(parseActivityListSession(null)).toEqual(empty);
+		expect(parseActivityListSession('')).toEqual(empty);
+		expect(parseActivityListSession('not-json')).toEqual(empty);
+		expect(parseActivityListSession('[]')).toEqual(empty);
 	});
 
-	it('falls back unknown sort to default', () => {
+	it('ignores leftover sort', () => {
 		const parsed = parseActivityListSession(
-			JSON.stringify({ sort: 'category', filters: { type: 'expense' } })
+			JSON.stringify({ sort: 'occurredOn-asc', filters: { types: ['expense'] } })
 		);
-		expect(parsed.sort).toBe(DEFAULT_ACTIVITY_SORT);
-		expect(parsed.filters.type).toBe('expense');
+		expect(parsed).not.toHaveProperty('sort');
+		expect(parsed.filters.types).toEqual(['expense']);
 	});
 
-	it('round-trips sort and applied filters', () => {
+	it('coerces old single type / category / pocket and hideVoided', () => {
+		const parsed = parseActivityListSession(
+			JSON.stringify({
+				sort: 'occurredOn-desc',
+				filters: {
+					type: 'expense',
+					categoryId: 'food',
+					pocketId: 'vac',
+					hideVoided: true,
+					search: 'coffee'
+				}
+			})
+		);
+		expect(parsed.filters.types).toEqual(['expense']);
+		expect(parsed.filters.categoryIds).toEqual(['food']);
+		expect(parsed.filters.pocketIds).toEqual(['vac']);
+		expect(parsed.filters.showVoided).toBe(false);
+		expect(parsed.filters.search).toBe('coffee');
+	});
+
+	it('coerces hideVoided false to show voided', () => {
+		const parsed = parseActivityListSession(
+			JSON.stringify({ filters: { hideVoided: false } })
+		);
+		expect(parsed.filters.showVoided).toBe(true);
+	});
+
+	it('missing From/To becomes current month range', () => {
+		const parsed = parseActivityListSession(JSON.stringify({ filters: { type: 'all' } }));
+		expect(parsed.range.mode).toBe('month');
+		expect(parsed.range).toEqual(defaultTransactionDateRange());
+	});
+
+	it('round-trips filters and range', () => {
 		const map = new Map<string, string>();
 		const storage = {
 			getItem: (k: string) => map.get(k) ?? null,
@@ -44,33 +70,37 @@ describe('activity-list-session', () => {
 			}
 		};
 
+		const range = {
+			mode: 'custom' as const,
+			startDate: '2026-08-01',
+			endDate: '2026-08-15'
+		};
 		writeActivityListSession(
 			{
-				sort: 'occurredOn-asc',
 				filters: {
 					...DEFAULT_ACTIVITY_FILTERS,
-					type: 'expense',
+					types: ['expense'],
 					search: 'coffee',
-					hideVoided: true,
-					pocketId: 'vac'
-				}
+					showVoided: true,
+					pocketIds: ['vac']
+				},
+				range
 			},
 			storage
 		);
 
 		expect(map.has(ACTIVITY_LIST_SESSION_KEY)).toBe(true);
 		const restored = readActivityListSession(storage);
-		expect(restored.sort).toBe('occurredOn-asc');
-		expect(restored.filters.type).toBe('expense');
+		expect(restored.filters.types).toEqual(['expense']);
 		expect(restored.filters.search).toBe('coffee');
-		expect(restored.filters.hideVoided).toBe(true);
-		expect(restored.filters.pocketId).toBe('vac');
+		expect(restored.filters.showVoided).toBe(true);
+		expect(restored.filters.pocketIds).toEqual(['vac']);
+		expect(restored.range).toEqual(range);
 	});
 
 	it('ignores unknown filter keys and coerces bad fields', () => {
 		const parsed = parseActivityListSession(
 			JSON.stringify({
-				sort: 'occurredOn-desc',
 				filters: {
 					type: 'nope',
 					amountOp: 'eq',
@@ -80,10 +110,9 @@ describe('activity-list-session', () => {
 				}
 			})
 		);
-		expect(parsed.sort).toBe('occurredOn-desc');
-		expect(parsed.filters.type).toBe('all');
+		expect(parsed.filters.types).toEqual([]);
 		expect(parsed.filters.amountOp).toBe('none');
-		expect(parsed.filters.hideVoided).toBe(false);
-		expect(parsed.filters.categoryId).toBe('');
+		expect(parsed.filters.showVoided).toBe(false);
+		expect(parsed.filters.categoryIds).toEqual([]);
 	});
 });

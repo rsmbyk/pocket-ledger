@@ -38,6 +38,7 @@
 		type PocketCreateDraft
 	} from '$lib/shared/create-form-drafts';
 	import { cn } from '$lib/utils.js';
+	import { shouldIgnoreDismissForNativePicker } from '$lib/ui/native-picker-dismiss';
 
 	type Props = {
 		pockets: Account[];
@@ -257,6 +258,10 @@
 	}
 
 	function onFormInteractOutside(e: PointerEvent) {
+		if (shouldIgnoreDismissForNativePicker(e)) {
+			e.preventDefault();
+			return;
+		}
 		if (formMode !== 'create' || (!formDirty && !discardConfirmOpen)) return;
 		e.preventDefault();
 		if (formDirty) discardConfirmOpen = true;

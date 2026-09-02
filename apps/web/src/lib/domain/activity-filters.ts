@@ -1,6 +1,7 @@
-import type { LedgerTransaction } from '$lib/domain/transaction';
-import { isVoided } from '$lib/domain/transaction';
-import { amountDigitsOnly } from '$lib/domain/transaction-rules';
+import type { CategoryKind } from './default-category-catalog';
+import type { LedgerTransaction, TransactionType } from './transaction';
+import { isVoided } from './transaction';
+import { amountDigitsOnly } from './transaction-rules';
 
 /** Sentinel for Activity filter: only transactions with null categoryId. */
 export const UNCATEGORIZED_FILTER = '__uncategorized__';
@@ -10,15 +11,79 @@ export const ADMIN_FEE_CATEGORY_ID = '__admin_fee__';
 
 export const ADMIN_FEE_LABEL = 'Admin Fee';
 
-/** Activity type filter including Transfer (Spec 107). */
-export type ActivityTypeFilter = 'all' | 'income' | 'expense' | 'transfer';
+/** A checked transaction type in the Filters sheet. Empty list = all types. */
+export type ActivityTxType = 'income' | 'expense' | 'transfer';
+
+/** @deprecated Session v1 single type; prefer `types`. */
+export type ActivityTypeFilter = 'all' | ActivityTxType;
 
 /** Map of user category id → kind for filter option compatibility (Spec 107). */
-export type CategoryKindLookup = Record<string, 'income' | 'expense'>;
+export type CategoryKindLookup = Record<string, CategoryKind>;
 
-/** True when the category filter control should be disabled (Transfer). */
-export function isCategoryFilterDisabled(type: ActivityTypeFilter): boolean {
-	return type === 'transfer';
+export type AmountCompareOp = 'none' | 'lt' | 'gt';
+
+export type ActivityFilterCriteria = {
+	search: string;
+	/** Empty = all types. */
+	types: readonly ActivityTxType[];
+	/** Empty = all categories. Sentinels: `UNCATEGORIZED_FILTER`, `ADMIN_FEE_CATEGORY_ID`. */
+	categoryIds: readonly string[];
+	/** Empty = all pockets. Transfer matches if source or dest is selected. */
+	pocketIds: readonly string[];
+	startDate: string;
+	endDate: string;
+	/** When false (default), voided rows are hidden. */
+	showVoided: boolean;
+	amountOp: AmountCompareOp;
+	amountRaw: string;
+};
+
+export const DEFAULT_ACTIVITY_FILTERS: ActivityFilterCriteria = {
+	search: '',
+	types: [],
+	categoryIds: [],
+	pocketIds: [],
+	startDate: '',
+	endDate: '',
+	showVoided: false,
+	amountOp: 'none',
+	amountRaw: ''
+};
+
+/** Target rows per chunked reveal bundle (Spec 069); always whole-day chunks (134). */
+export const ACTIVITY_REVEAL_TARGET = 40;
+
+export type ActivityDateGroup = {
+	occurredOn: string;
+	transactions: LedgerTransaction[];
+};
+
+export type ActivityListSection =
+	| { kind: 'header'; occurredOn: string }
+	| { kind: 'row'; tx: LedgerTransaction };
+
+export function isCategoryFilterDisabled(
+	types: readonly ActivityTxType[] | ActivityTypeFilter
+): boolean {
+	if (typeof types === 'string') return types === 'transfer';
+	return types.length === 1 && types[0] === 'transfer';
+}
+
+export function categoryKindsForTypes(
+	types: readonly ActivityTxType[] | ActivityTypeFilter
+): CategoryKind[] | 'all' {
+	if (typeof types === 'string') {
+		if (types === 'income') return ['income'];
+		if (types === 'expense') return ['expense'];
+		return 'all';
+	}
+	const kinds = new Set<CategoryKind>();
+	for (const t of types) {
+		if (t === 'income') kinds.add('income');
+		if (t === 'expense') kinds.add('expense');
+	}
+	if (kinds.size === 0) return 'all';
+	return [...kinds];
 }
 
 /**
@@ -27,29 +92,39 @@ export function isCategoryFilterDisabled(type: ActivityTypeFilter): boolean {
  */
 export function isCategoryFilterCompatible(
 	categoryId: string | null | undefined,
-	type: ActivityTypeFilter,
+	types: readonly ActivityTxType[] | ActivityTypeFilter,
 	categoryKinds: CategoryKindLookup
 ): boolean {
 	const id = (categoryId ?? '').trim();
 	if (!id) return true;
-	if (type === 'transfer') return false;
-	if (id === ADMIN_FEE_CATEGORY_ID) return type === 'all';
+	if (isCategoryFilterDisabled(types)) return false;
+	const allowed = categoryKindsForTypes(types);
+	if (id === ADMIN_FEE_CATEGORY_ID) return allowed === 'all';
 	if (id === UNCATEGORIZED_FILTER) return true;
 	const kind = categoryKinds[id];
-	if (!kind) return type === 'all';
-	if (type === 'all') return true;
-	return kind === type;
+	if (!kind) return allowed === 'all';
+	if (allowed === 'all') return true;
+	return allowed.includes(kind);
 }
 
 /** Returns categoryId if compatible with type; otherwise All (`''`). */
 export function resolveCategoryIdForType(
 	categoryId: string | null | undefined,
-	type: ActivityTypeFilter,
+	types: readonly ActivityTxType[] | ActivityTypeFilter,
 	categoryKinds: CategoryKindLookup
 ): string {
 	const id = (categoryId ?? '').trim();
-	if (isCategoryFilterCompatible(id, type, categoryKinds)) return id;
+	if (isCategoryFilterCompatible(id, types, categoryKinds)) return id;
 	return '';
+}
+
+export function resolveCategoryIdsForTypes(
+	selected: readonly string[],
+	types: readonly ActivityTxType[] | ActivityTypeFilter,
+	kindsById: CategoryKindLookup
+): string[] {
+	if (isCategoryFilterDisabled(types)) return [];
+	return selected.filter((id) => isCategoryFilterCompatible(id, types, kindsById));
 }
 
 /** Non-empty user category ids on the ledger, including voided rows (Spec 132). */
@@ -77,68 +152,6 @@ export function hasAdminFeeLedgerRow(transactions: LedgerTransaction[]): boolean
 	return transactions.some((tx) => tx.type === 'transfer' && (tx.feeMinor ?? 0) > 0);
 }
 
-export type AmountCompareOp = 'none' | 'lt' | 'gt';
-
-export type ActivityFilterCriteria = {
-	type?: ActivityTypeFilter;
-	/** Empty/omitted = All; `UNCATEGORIZED_FILTER` = null categoryId; else category id. */
-	categoryId?: string | null;
-	startDate?: string | null;
-	endDate?: string | null;
-	search?: string | null;
-	/** When true, exclude voided rows. */
-	hideVoided?: boolean;
-	amountOp?: AmountCompareOp;
-	/** Digits / grouped amount string for lt/gt compare (minor units). */
-	amountRaw?: string | null;
-	/** Empty / `all` / omitted = all pockets; else pocket (account) id. */
-	pocketId?: string | null;
-};
-
-/** Activity list sort modes (Specs 064 / 067). */
-export type ActivitySortMode = 'createdAt-desc' | 'occurredOn-desc' | 'occurredOn-asc';
-
-/** @deprecated Prefer ActivitySortMode */
-export type ActivityDateSort = ActivitySortMode;
-
-export const DEFAULT_ACTIVITY_SORT: ActivitySortMode = 'createdAt-desc';
-
-/** Target rows per chunked reveal bundle (Spec 069). */
-export const ACTIVITY_REVEAL_TARGET = 40;
-
-export type ActivityDateGroup = {
-	occurredOn: string;
-	transactions: LedgerTransaction[];
-};
-
-export type ActivityListSection =
-	{ kind: 'header'; occurredOn: string } | { kind: 'row'; tx: LedgerTransaction };
-
-export const DEFAULT_ACTIVITY_FILTERS: Required<
-	Pick<
-		ActivityFilterCriteria,
-		| 'type'
-		| 'categoryId'
-		| 'startDate'
-		| 'endDate'
-		| 'search'
-		| 'hideVoided'
-		| 'amountOp'
-		| 'amountRaw'
-		| 'pocketId'
-	>
-> = {
-	type: 'all',
-	categoryId: '',
-	startDate: '',
-	endDate: '',
-	search: '',
-	hideVoided: false,
-	amountOp: 'none',
-	amountRaw: '',
-	pocketId: 'all'
-};
-
 /** Digits-only form of a search query for loose amount matching. */
 export function digitsOnly(value: string): string {
 	return value.replace(/\D/g, '');
@@ -159,69 +172,111 @@ function parseCompareAmount(raw: string | null | undefined): number | null {
 	return value;
 }
 
-export function isDefaultActivityFilters(criteria: ActivityFilterCriteria): boolean {
-	const type = criteria.type ?? 'all';
-	const categoryId = criteria.categoryId ?? '';
-	const start = criteria.startDate?.trim() || '';
-	const end = criteria.endDate?.trim() || '';
-	const search = criteria.search?.trim() || '';
-	const hideVoided = criteria.hideVoided ?? false;
-	const amountOp = criteria.amountOp ?? 'none';
-	const amountRaw = criteria.amountRaw?.trim() || '';
-	const pocketId = criteria.pocketId?.trim() || 'all';
+function sameIds(a: readonly string[], b: readonly string[]): boolean {
+	if (a.length !== b.length) return false;
+	return a.every((id, i) => id === b[i]);
+}
+
+export function normalizeActivityFilters(
+	criteria: Partial<ActivityFilterCriteria>
+): ActivityFilterCriteria {
+	return {
+		search: criteria.search ?? '',
+		types: [...(criteria.types ?? [])],
+		categoryIds: [...(criteria.categoryIds ?? [])],
+		pocketIds: [...(criteria.pocketIds ?? [])],
+		startDate: criteria.startDate ?? '',
+		endDate: criteria.endDate ?? '',
+		showVoided: criteria.showVoided ?? false,
+		amountOp: criteria.amountOp ?? 'none',
+		amountRaw: criteria.amountRaw ?? ''
+	};
+}
+
+export function isDefaultActivityFilters(criteria: Partial<ActivityFilterCriteria>): boolean {
+	const n = normalizeActivityFilters(criteria);
 	return (
-		type === DEFAULT_ACTIVITY_FILTERS.type &&
-		(categoryId === '' || categoryId == null) &&
-		start === '' &&
-		end === '' &&
-		search === '' &&
-		hideVoided === false &&
-		amountOp === 'none' &&
-		amountRaw === '' &&
-		(pocketId === 'all' || pocketId === '')
+		n.types.length === 0 &&
+		n.categoryIds.length === 0 &&
+		n.pocketIds.length === 0 &&
+		n.search.trim() === '' &&
+		n.showVoided === false &&
+		n.amountOp === 'none' &&
+		n.amountRaw.trim() === ''
 	);
 }
 
+export function activityFiltersEqual(
+	a: Partial<ActivityFilterCriteria>,
+	b: Partial<ActivityFilterCriteria>,
+	options?: { ignoreSearch?: boolean; ignoreDates?: boolean }
+): boolean {
+	const left = normalizeActivityFilters(a);
+	const right = normalizeActivityFilters(b);
+	const ignoreSearch = options?.ignoreSearch ?? false;
+	const ignoreDates = options?.ignoreDates ?? false;
+	return (
+		sameIds(left.types, right.types) &&
+		sameIds(left.categoryIds, right.categoryIds) &&
+		sameIds(left.pocketIds, right.pocketIds) &&
+		(ignoreDates || left.startDate === right.startDate) &&
+		(ignoreDates || left.endDate === right.endDate) &&
+		(ignoreSearch || left.search.trim() === right.search.trim()) &&
+		left.showVoided === right.showVoided &&
+		left.amountOp === right.amountOp &&
+		left.amountRaw.trim() === right.amountRaw.trim()
+	);
+}
+
+function matchesType(tx: LedgerTransaction, types: readonly ActivityTxType[]): boolean {
+	if (types.length === 0) return true;
+	return types.includes(tx.type as ActivityTxType);
+}
+
+function matchesCategories(tx: LedgerTransaction, categoryIds: readonly string[]): boolean {
+	if (categoryIds.length === 0) return true;
+	return categoryIds.some((id) => {
+		if (id === ADMIN_FEE_CATEGORY_ID) {
+			return tx.type === 'transfer' && (tx.feeMinor ?? 0) > 0;
+		}
+		if (id === UNCATEGORIZED_FILTER) return tx.categoryId == null;
+		return tx.categoryId === id;
+	});
+}
+
+function matchesPockets(tx: LedgerTransaction, pocketIds: readonly string[]): boolean {
+	if (pocketIds.length === 0) return true;
+	const set = new Set(pocketIds);
+	if (tx.type === 'transfer') {
+		return set.has(tx.accountId) || (tx.counterAccountId != null && set.has(tx.counterAccountId));
+	}
+	return set.has(tx.accountId);
+}
+
 /**
- * Filter transactions for Activity (AND across criteria).
- * Empty/All criteria are ignored.
+ * Filter transactions for Activity (AND across criteria; OR within multi-select fields).
+ * Empty/All criteria are ignored. Dates empty = no date constraint (header range always sets them in UI).
  */
 export function filterTransactions(
 	transactions: LedgerTransaction[],
-	criteria: ActivityFilterCriteria
+	criteria: Partial<ActivityFilterCriteria>
 ): LedgerTransaction[] {
-	const type = criteria.type ?? 'all';
-	const categoryId = criteria.categoryId ?? null;
-	const start = criteria.startDate?.trim() || null;
-	const end = criteria.endDate?.trim() || null;
-	const search = criteria.search?.trim() || null;
-	const hideVoided = criteria.hideVoided ?? false;
-	const amountOp = criteria.amountOp ?? 'none';
-	const compareAmount = parseCompareAmount(criteria.amountRaw);
-	const pocketId = criteria.pocketId?.trim() || 'all';
+	const n = normalizeActivityFilters(criteria);
+	const search = n.search.trim() || null;
+	const start = n.startDate.trim() || null;
+	const end = n.endDate.trim() || null;
+	const compareAmount = parseCompareAmount(n.amountRaw);
 
 	return transactions.filter((tx) => {
-		if (hideVoided && isVoided(tx)) return false;
-		if (pocketId && pocketId !== 'all') {
-			const onPocket =
-				tx.accountId === pocketId ||
-				(tx.counterAccountId != null && tx.counterAccountId === pocketId);
-			if (!onPocket) return false;
-		}
-		if (type !== 'all' && tx.type !== type) return false;
-		if (categoryId === ADMIN_FEE_CATEGORY_ID) {
-			const fee = tx.feeMinor ?? 0;
-			if (tx.type !== 'transfer' || fee <= 0) return false;
-		} else if (categoryId === UNCATEGORIZED_FILTER) {
-			if (tx.categoryId != null) return false;
-		} else if (categoryId && tx.categoryId !== categoryId) {
-			return false;
-		}
+		if (!n.showVoided && isVoided(tx)) return false;
+		if (!matchesType(tx, n.types)) return false;
+		if (!matchesCategories(tx, n.categoryIds)) return false;
+		if (!matchesPockets(tx, n.pocketIds)) return false;
 		if (start && tx.occurredOn < start) return false;
 		if (end && tx.occurredOn > end) return false;
-		if (amountOp !== 'none' && compareAmount != null) {
-			if (amountOp === 'lt' && !(tx.amountMinor < compareAmount)) return false;
-			if (amountOp === 'gt' && !(tx.amountMinor > compareAmount)) return false;
+		if (n.amountOp !== 'none' && compareAmount != null) {
+			if (n.amountOp === 'lt' && !(tx.amountMinor < compareAmount)) return false;
+			if (n.amountOp === 'gt' && !(tx.amountMinor > compareAmount)) return false;
 		}
 		if (search) {
 			const noteHit = tx.note.toLowerCase().includes(search.toLowerCase());
@@ -232,120 +287,100 @@ export function filterTransactions(
 	});
 }
 
-export function isDateActivitySort(mode: ActivitySortMode): boolean {
-	return mode === 'occurredOn-desc' || mode === 'occurredOn-asc';
-}
-
-/** Sort Activity rows for the selected mode. */
-export function sortTransactions(
-	transactions: LedgerTransaction[],
-	mode: ActivitySortMode
-): LedgerTransaction[] {
-	const rows = [...transactions];
-	rows.sort((a, b) => {
-		if (mode === 'createdAt-desc') {
-			const byCreated = b.createdAt.localeCompare(a.createdAt);
-			if (byCreated !== 0) return byCreated;
-		} else if (mode === 'occurredOn-desc') {
-			const byDate = b.occurredOn.localeCompare(a.occurredOn);
-			if (byDate !== 0) return byDate;
-			const byCreated = b.createdAt.localeCompare(a.createdAt);
-			if (byCreated !== 0) return byCreated;
-		} else {
-			const byDate = a.occurredOn.localeCompare(b.occurredOn);
-			if (byDate !== 0) return byDate;
-			const byCreated = a.createdAt.localeCompare(b.createdAt);
-			if (byCreated !== 0) return byCreated;
-		}
-		return a.id.localeCompare(b.id);
+/** Newest calendar day first; within a day newest `createdAt`, then `id`. */
+export function sortTransactions(txs: LedgerTransaction[]): LedgerTransaction[] {
+	return [...txs].sort((a, b) => {
+		if (a.occurredOn !== b.occurredOn) return a.occurredOn < b.occurredOn ? 1 : -1;
+		if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? 1 : -1;
+		return a.id < b.id ? 1 : a.id > b.id ? -1 : 0;
 	});
-	return rows;
 }
 
-/** @deprecated Use sortTransactions */
-export function sortTransactionsByDate(
-	transactions: LedgerTransaction[],
-	mode: ActivityDateSort
-): LedgerTransaction[] {
-	return sortTransactions(transactions, mode);
-}
-
-/**
- * Build date groups from a sorted list (Spec 068).
- * Only for date sort modes; Default returns a single flat section of rows.
- */
-export function groupActivityByOccurredOn(
-	sorted: LedgerTransaction[],
-	mode: ActivitySortMode
-): ActivityDateGroup[] {
-	if (!isDateActivitySort(mode) || sorted.length === 0) {
-		return sorted.length === 0 ? [] : [{ occurredOn: '', transactions: sorted }];
-	}
-	const groups: ActivityDateGroup[] = [];
-	for (const tx of sorted) {
-		const last = groups[groups.length - 1];
-		if (last && last.occurredOn === tx.occurredOn) {
-			last.transactions.push(tx);
+export function groupActivityByOccurredOn(txs: LedgerTransaction[]): ActivityDateGroup[] {
+	const order: string[] = [];
+	const map = new Map<string, LedgerTransaction[]>();
+	for (const tx of txs) {
+		const list = map.get(tx.occurredOn);
+		if (list) {
+			list.push(tx);
 		} else {
-			groups.push({ occurredOn: tx.occurredOn, transactions: [tx] });
+			order.push(tx.occurredOn);
+			map.set(tx.occurredOn, [tx]);
 		}
 	}
-	return groups;
+	return order.map((occurredOn) => ({
+		occurredOn,
+		transactions: map.get(occurredOn) ?? []
+	}));
 }
 
-/** Flatten groups into header+row sections for date sort; flat rows for Default. */
-export function activityListSections(
-	sorted: LedgerTransaction[],
-	mode: ActivitySortMode
-): ActivityListSection[] {
-	if (!isDateActivitySort(mode)) {
-		return sorted.map((tx) => ({ kind: 'row' as const, tx }));
-	}
-	const sections: ActivityListSection[] = [];
-	for (const group of groupActivityByOccurredOn(sorted, mode)) {
-		sections.push({ kind: 'header', occurredOn: group.occurredOn });
+export function activityListSections(txs: LedgerTransaction[]): ActivityListSection[] {
+	const out: ActivityListSection[] = [];
+	for (const group of groupActivityByOccurredOn(txs)) {
+		out.push({ kind: 'header', occurredOn: group.occurredOn });
 		for (const tx of group.transactions) {
-			sections.push({ kind: 'row', tx });
+			out.push({ kind: 'row', tx });
 		}
 	}
-	return sections;
+	return out;
 }
 
-/**
- * Next exclusive end index for chunked reveal (Spec 069).
- * Date sorts never split an `occurredOn` day.
- */
+export function initialRevealEndIndex(
+	sorted: LedgerTransaction[],
+	target = ACTIVITY_REVEAL_TARGET
+): number {
+	return nextRevealEndIndex(sorted, 0, target);
+}
+
 export function nextRevealEndIndex(
 	sorted: LedgerTransaction[],
 	currentEnd: number,
-	mode: ActivitySortMode,
-	targetSize: number = ACTIVITY_REVEAL_TARGET
+	target = ACTIVITY_REVEAL_TARGET
 ): number {
-	const n = sorted.length;
-	if (n === 0) return 0;
-	if (currentEnd >= n) return n;
-
-	if (!isDateActivitySort(mode)) {
-		return Math.min(n, currentEnd + Math.max(1, targetSize));
-	}
-
-	let end = currentEnd;
-	let added = 0;
-	while (end < n && added < targetSize) {
-		const day = sorted[end]!.occurredOn;
-		while (end < n && sorted[end]!.occurredOn === day) {
-			end++;
-			added++;
+	if (currentEnd >= sorted.length) return sorted.length;
+	if (currentEnd === 0) {
+		let i = 0;
+		while (i < sorted.length && i < target) {
+			const day = sorted[i]!.occurredOn;
+			while (i < sorted.length && sorted[i]!.occurredOn === day) i++;
 		}
+		return i;
 	}
-	return end;
+	const day = sorted[currentEnd]!.occurredOn;
+	let i = currentEnd;
+	while (i < sorted.length && sorted[i]!.occurredOn === day) i++;
+	return i;
 }
 
-/** Initial reveal end index for a freshly sorted list. */
-export function initialRevealEndIndex(
-	sorted: LedgerTransaction[],
-	mode: ActivitySortMode,
-	targetSize: number = ACTIVITY_REVEAL_TARGET
-): number {
-	return nextRevealEndIndex(sorted, 0, mode, targetSize);
+export function typeLabel(t: string): string {
+	if (t === 'income') return 'Income';
+	if (t === 'expense') return 'Expense';
+	if (t === 'transfer') return 'Transfer';
+	return t;
+}
+
+export function filterTriggerSummary(
+	selected: readonly string[],
+	labels: (id: string) => string
+): string {
+	if (selected.length === 0) return 'All';
+	if (selected.length === 1) return labels(selected[0]!);
+	return `${selected.length} selected`;
+}
+
+export function countAdvancedFilters(criteria: Partial<ActivityFilterCriteria>): number {
+	const n = normalizeActivityFilters(criteria);
+	let count = 0;
+	if (n.types.length > 0) count++;
+	if (n.categoryIds.length > 0) count++;
+	if (n.pocketIds.length > 0) count++;
+	if (n.showVoided) count++;
+	if (n.amountOp !== 'none') count++;
+	return count;
+}
+
+/** @deprecated Use `types` array. */
+export function matchesTypeFilter(txType: TransactionType, filter: ActivityTypeFilter): boolean {
+	if (filter === 'all') return true;
+	return txType === filter;
 }

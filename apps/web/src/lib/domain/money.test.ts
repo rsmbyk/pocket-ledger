@@ -18,4 +18,11 @@ describe('money', () => {
 		expect(formatMinor(12500, 'IDR')).toContain('12');
 		expect(formatMinor(12500, 'IDR')).toContain('IDR');
 	});
+
+	it('puts a negative sign on the number after the currency label', () => {
+		const out = formatMinor(-189398, 'IDR');
+		expect(out.startsWith('IDR ')).toBe(true);
+		expect(out.startsWith('−IDR') || out.startsWith('-IDR') || out.startsWith('+IDR')).toBe(false);
+		expect(out).toBe(`IDR ${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(-189398)}`);
+	});
 });

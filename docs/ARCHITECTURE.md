@@ -98,7 +98,7 @@ No Cloud KMS envelope. Operator never has the DEK.
 
 ## Routing
 
-SvelteKit **path** URLs (Spec 117): `/`, `/activity`, `/pockets`, `/categories`, `/more`. The service worker stays so signed-out still works offline after first load. Unknown paths fall back to the home shell (SPA). Hash bookmarks (`#/activity`) are not preserved.
+SvelteKit **path** URLs (Spec 117 / 134): `/`, `/transactions` (`/activity` replace-navigates here), `/pockets`, `/categories`, `/more`. The service worker stays so signed-out still works offline after first load. Unknown paths fall back to the home shell (SPA). Hash bookmarks (`#/activity`) are not preserved.
 
 Panel chrome still lives in `AppShell`; `src/lib/shared/router.ts` maps pathnames to panel ids. Navigation uses SvelteKit `goto`.
 

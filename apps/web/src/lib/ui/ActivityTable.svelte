@@ -10,9 +10,9 @@
 		activityListSections,
 		initialRevealEndIndex,
 		nextRevealEndIndex,
-		sortTransactions,
-		type ActivitySortMode
+		sortTransactions
 	} from '$lib/domain/activity-filters';
+	import { STOCK_CUSTOM_ICON, STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
 
 	type PocketInfo = { name: string; isMain: boolean };
 
@@ -21,7 +21,7 @@
 		totalCount: number;
 		currencyLabel: string;
 		categoryName: (categoryId: string | null) => string;
-		sortMode: ActivitySortMode;
+		categoryIconSlug?: (tx: LedgerTransaction) => string;
 		pocketsById?: Record<string, PocketInfo>;
 		onEdit: (tx: LedgerTransaction) => void;
 	};
@@ -31,18 +31,18 @@
 		totalCount,
 		currencyLabel,
 		categoryName,
-		sortMode,
+		categoryIconSlug,
 		pocketsById,
 		onEdit
 	}: Props = $props();
 
-	/** Default sort shows date; date sorts show note only (empty note → no secondary, 076). */
-	function secondaryFor(tx: LedgerTransaction, mode: ActivitySortMode): 'date' | 'note' | 'none' {
-		if (mode === 'createdAt-desc') return 'date';
-		return tx.note?.trim() ? 'note' : 'none';
+	function iconFor(tx: LedgerTransaction): string {
+		if (categoryIconSlug) return categoryIconSlug(tx);
+		if (tx.categoryId == null) return STOCK_UNCATEGORIZED_ICON;
+		return STOCK_CUSTOM_ICON;
 	}
 
-	const sorted = $derived(sortTransactions(transactions, sortMode));
+	const sorted = $derived(sortTransactions(transactions));
 
 	let revealEnd = $state(0);
 	let sentinelEl = $state<HTMLElement | null>(null);
@@ -50,19 +50,17 @@
 
 	$effect(() => {
 		const list = sorted;
-		const mode = sortMode;
-		revealEnd = initialRevealEndIndex(list, mode);
+		revealEnd = initialRevealEndIndex(list);
 	});
 
 	const visible = $derived(sorted.slice(0, revealEnd));
-	const sections = $derived(activityListSections(visible, sortMode));
+	const sections = $derived(activityListSections(visible));
 	const hasMore = $derived(revealEnd < sorted.length);
 
 	$effect(() => {
 		const el = sentinelEl;
 		const end = revealEnd;
 		const list = sorted;
-		const mode = sortMode;
 		const more = end < list.length;
 		observer?.disconnect();
 		observer = null;
@@ -70,7 +68,7 @@
 		observer = new IntersectionObserver(
 			(entries) => {
 				if (!entries.some((e) => e.isIntersecting)) return;
-				revealEnd = nextRevealEndIndex(list, end, mode);
+				revealEnd = nextRevealEndIndex(list, end);
 			},
 			{ root: null, rootMargin: '120px', threshold: 0 }
 		);
@@ -125,8 +123,9 @@
 						tx={section.tx}
 						{currencyLabel}
 						categoryLabel={categoryName(section.tx.categoryId)}
+						categoryIconSlug={iconFor(section.tx)}
 						uncategorized={section.tx.categoryId == null}
-						secondary={secondaryFor(section.tx, sortMode)}
+						secondary="category"
 						{pocketsById}
 						showPocket
 						testid={`activity-row-${section.tx.id}`}

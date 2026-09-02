@@ -13,7 +13,7 @@
 	import type { CreatePocketInput, UpdatePocketInput } from '$lib/application/accounts';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { isAppRoute, parsePath, routeToPath, type AppRoute } from '$lib/shared/router';
+	import { isAppRoute, isLegacyActivityPath, parsePath, routeToPath, type AppRoute } from '$lib/shared/router';
 
 	type Props = {
 		account: Account | null;
@@ -125,20 +125,21 @@
 	let commandOpen = $state(false);
 	let editing = $state<LedgerTransaction | null>(null);
 	let route = $derived(parsePath(page.url.pathname));
-	/** Activity applied pocket filter for Normal Add default (`all` = use Main). */
-	let activityPocketFilterId = $state('all');
+	/** Applied Transactions pocket ids; exactly one → Add default, else Main. */
+	let activityPocketFilterIds = $state<string[]>([]);
 	/** Clears `editing` after close animation; must cancel if reopened quickly. */
 	let clearEditingTimer: number | ReturnType<typeof setTimeout> | null = null;
 
 	const preferredAccountId = $derived(
-		activityPocketFilterId !== 'all' && accounts.some((a) => a.id === activityPocketFilterId)
-			? activityPocketFilterId
+		activityPocketFilterIds.length === 1 &&
+			accounts.some((a) => a.id === activityPocketFilterIds[0])
+			? activityPocketFilterIds[0]!
 			: (account?.id ?? '')
 	);
 
 	const navItems: { id: AppRoute; label: string }[] = [
 		{ id: 'home', label: 'Home' },
-		{ id: 'activity', label: 'Activity' },
+		{ id: 'transactions', label: 'Transactions' },
 		{ id: 'pockets', label: 'Pockets' },
 		{ id: 'categories', label: 'Categories' },
 		{ id: 'more', label: 'More' }
@@ -176,6 +177,12 @@
 		if (!isAppRoute(next)) return;
 		setRoute(next);
 	}
+
+	$effect(() => {
+		if (isLegacyActivityPath(page.url.pathname)) {
+			void goto('/transactions', { replaceState: true });
+		}
+	});
 </script>
 
 <div
@@ -252,7 +259,7 @@
 				onNavigate={navigate}
 				onOpenAdd={openAdd}
 				onOpenEdit={openEdit}
-				onActivityPocketFilterChange={(pocketId) => (activityPocketFilterId = pocketId)}
+				onActivityPocketFilterChange={(pocketIds) => (activityPocketFilterIds = pocketIds)}
 			/>
 		</Sidebar.Provider>
 	{/if}
