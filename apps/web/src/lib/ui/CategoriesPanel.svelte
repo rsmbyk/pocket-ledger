@@ -651,7 +651,7 @@
 		>
 			<div
 				class={cn(
-					'grid content-start gap-4 px-7 pt-1 pb-12 md:px-9',
+					'grid content-start gap-4 px-7 pt-3 pb-12 md:px-9',
 					mode === 'reorder'
 						? 'grid-cols-1'
 						: '[grid-template-columns:repeat(auto-fill,minmax(min(100%,22rem),1fr))]'
