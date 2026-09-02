@@ -1,6 +1,6 @@
 # Plan 138: PocketLabel Main text optical alignment
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 

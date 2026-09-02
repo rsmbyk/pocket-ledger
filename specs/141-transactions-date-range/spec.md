@@ -1,7 +1,7 @@
 # Spec 141: Transactions header date range (month or custom)
 
 - **ID:** 141
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

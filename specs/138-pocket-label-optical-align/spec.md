@@ -1,7 +1,7 @@
 # Spec 138: PocketLabel Main text optical alignment
 
 - **ID:** 138
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

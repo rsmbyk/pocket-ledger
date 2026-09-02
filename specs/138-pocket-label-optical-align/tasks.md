@@ -1,6 +1,6 @@
 # Tasks 138: PocketLabel Main text optical alignment
 
-Draft — do not implement until Ronald Accepts.
+Accepted.
 
 - [ ] Branch: `feat/138-pocket-label-optical-align` after Accept
 - [ ] Compact/optical name align on list-row + pocket pickers only

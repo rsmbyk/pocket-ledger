@@ -1,6 +1,6 @@
 # Plan 134: Transactions panel (rename + mutations list)
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 

@@ -1,7 +1,7 @@
 # Spec 134: Transactions panel (rename + mutations list)
 
 - **ID:** 134
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

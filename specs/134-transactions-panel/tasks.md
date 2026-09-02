@@ -1,6 +1,6 @@
 # Tasks 134: Transactions panel (rename + mutations list)
 
-Draft — do not implement until Ronald Accepts.
+Accepted.
 
 - [ ] Branch: `feat/134-transactions-panel` after Accept
 - [ ] **Red Vitest** `apps/web/src/lib/shared/router.test.ts` — `/transactions`; `/activity` → `transactions`; `routeToPath` is `/transactions`

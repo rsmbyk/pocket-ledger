@@ -1,6 +1,6 @@
 # Tasks 137: Signed amounts after currency
 
-Draft — do not implement until Ronald Accepts.
+Accepted.
 
 - [ ] Branch: `feat/137-signed-amount-format` after Accept
 - [ ] **Red/Green Vitest** `apps/web/src/lib/domain/money.test.ts` — negative `formatMinor`

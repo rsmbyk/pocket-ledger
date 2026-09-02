@@ -1,6 +1,6 @@
 # Plan 141: Transactions header date range (month or custom)
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 

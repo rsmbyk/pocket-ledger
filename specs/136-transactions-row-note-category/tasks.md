@@ -1,6 +1,6 @@
 # Tasks 136: Transactions row note primary + category icon
 
-Draft — do not implement until Ronald Accepts.
+Accepted.
 
 - [ ] Branch: `feat/136-transactions-row-note-category` after Accept
 - [ ] Pass category icon slug into `TransactionListRow` from `ActivityTable`

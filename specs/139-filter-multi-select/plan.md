@@ -1,6 +1,6 @@
 # Plan 139: Filters Type / Category / Pocket multi-select
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 

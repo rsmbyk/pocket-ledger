@@ -1,6 +1,6 @@
 # Tasks 140: Voided hidden by default; Show voided
 
-Draft — do not implement until Ronald Accepts.
+Accepted.
 
 - [ ] Branch: `feat/140-show-voided-filter` after Accept
 - [ ] **Red/Green Vitest** default excludes voided; show includes; session coerce

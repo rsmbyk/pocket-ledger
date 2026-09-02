@@ -1,6 +1,6 @@
 # Tasks 139: Filters Type / Category / Pocket multi-select
 
-Draft — do not implement until Ronald Accepts.
+Accepted.
 
 - [ ] Branch: `feat/139-filter-multi-select` after Accept
 - [ ] **Red Vitest** `activity-filters.test.ts` — multi type/category/pocket OR; Transfer-only category disable; incompatible category drop

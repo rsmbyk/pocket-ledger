@@ -1,6 +1,6 @@
 # Plan 137: Signed amounts after currency
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 

@@ -1,6 +1,6 @@
 # Tasks 135: DateField picker restore
 
-Draft — do not implement until Ronald Accepts.
+Accepted.
 
 - [ ] Branch: `feat/135-datefield-picker` after Accept (or stack after 134 if needed)
 - [ ] DateField: `showPicker()` on click/pointerup; indicator covers the input; keep opacity-0 overlay

@@ -1,7 +1,7 @@
 # Spec 137: Signed amounts after currency
 
 - **ID:** 137
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

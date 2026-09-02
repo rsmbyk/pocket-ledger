@@ -1,6 +1,6 @@
 # Plan 140: Voided hidden by default; Show voided
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 

@@ -1,6 +1,6 @@
 # Tasks 141: Transactions header date range (month or custom)
 
-Draft — do not implement until Ronald Accepts.
+Accepted.
 
 - [ ] Branch: `feat/141-transactions-date-range` after Accept
 - [ ] **Red Vitest** default current month → today; past month last day; start≤end snap; Month↔Custom mapping
