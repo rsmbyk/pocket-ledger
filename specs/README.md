@@ -161,3 +161,4 @@ Living behavior contracts for Pocket Ledger.
 | [142](142-transactions-range-picker/spec.md)             | Transactions range picker + sticky chrome band               | Accepted — live-apply superseded by [143](143-range-picker-apply/spec.md) |
 | [143](143-range-picker-apply/spec.md)                    | Range picker Apply / Close draft; To-hover preview           | Accepted                                                                        |
 | [144](144-filter-check-menus/spec.md)                    | Type / Pocket filter checkboxes like Category                | Accepted                                                                        |
+| [145](145-remove-amount-filter/spec.md)                  | Remove Filters Amount compare                                | Draft                                                                           |
