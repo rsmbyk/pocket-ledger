@@ -150,3 +150,11 @@ Living behavior contracts for Pocket Ledger.
 | [131](131-group-header-actions/spec.md)                 | Categories group header actions                              | Accepted                                                                     |
 | [132](132-activity-filter-used-categories/spec.md)      | Activity category filter used-only                           | Accepted                                                                     |
 | [133](133-visual-system/spec.md)                         | Visual system (Mist / Ink / Figtree)                         | Accepted                                                                     |
+| [134](134-transactions-panel/spec.md)                    | Transactions panel rename + mutations list                   | Draft                                                                        |
+| [135](135-datefield-picker/spec.md)                      | DateField picker restore                                     | Draft                                                                        |
+| [136](136-transactions-row-note-category/spec.md)        | Transactions row note primary + category icon                | Draft                                                                        |
+| [137](137-signed-amount-format/spec.md)                  | Signed amounts after currency                                | Draft                                                                        |
+| [138](138-pocket-label-optical-align/spec.md)            | PocketLabel Main text optical alignment                      | Draft                                                                        |
+| [139](139-filter-multi-select/spec.md)                   | Filters Type / Category / Pocket multi-select                | Draft                                                                        |
+| [140](140-show-voided-filter/spec.md)                    | Voided hidden by default; Show voided                        | Draft                                                                        |
+| [141](141-transactions-date-range/spec.md)               | Transactions header date range (month or custom)             | Draft                                                                        |
