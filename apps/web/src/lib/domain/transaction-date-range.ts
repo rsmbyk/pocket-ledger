@@ -113,6 +113,22 @@ export function applyManualDayPick(
 	return { range: rangeFromCustom(range.startDate, iso), nextPicking: 'start' };
 }
 
+/**
+ * Calendar highlight while picking To: hover day vs From, snapped.
+ * When not hovering To, returns the draft ends unchanged.
+ */
+export function highlightRangeForHover(
+	startDate: string,
+	endDate: string,
+	picking: ManualPicking,
+	hoverIso: string | null
+): { startDate: string; endDate: string } {
+	if (picking === 'end' && hoverIso) {
+		return snapDateRange(startDate, hoverIso);
+	}
+	return { startDate, endDate };
+}
+
 /** Closed trigger copy: month name, or from–to (single day omits the dash). */
 export function formatRangeTriggerLabel(
 	range: TransactionDateRange,

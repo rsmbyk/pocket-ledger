@@ -3,6 +3,7 @@
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import { Popover } from 'bits-ui';
+	import { Button } from '$lib/components/ui/button/index.js';
 	import { cn } from '$lib/utils.js';
 	import { currentMonthKey, monthKeyFromDay, shiftMonth } from '$lib/domain/month-summary';
 	import { todayOccurredOn } from '$lib/domain/transaction-rules';
@@ -11,7 +12,9 @@
 		applyManualDayPick,
 		calendarCellsForMonth,
 		customRangeToMonth,
+		defaultTransactionDateRange,
 		formatRangeTriggerLabel,
+		highlightRangeForHover,
 		monthRangeToCustom,
 		rangeFromMonthKey,
 		type ManualPicking,
@@ -42,15 +45,26 @@
 	let { range, onRangeChange }: Props = $props();
 
 	let open = $state(false);
+	let draft = $state<TransactionDateRange>(defaultTransactionDateRange());
 	let viewYear = $state(new Date().getFullYear());
 	let viewMonthKey = $state(currentMonthKey());
 	let picking = $state<ManualPicking>('start');
+	let hoverIso = $state<string | null>(null);
 
 	const triggerLabel = $derived(formatRangeTriggerLabel(range));
 	const cells = $derived(calendarCellsForMonth(viewMonthKey));
 	const today = $derived(todayOccurredOn());
+	const highlight = $derived(
+		highlightRangeForHover(draft.startDate, draft.endDate, picking, hoverIso)
+	);
+
+	function copyRange(next: TransactionDateRange): TransactionDateRange {
+		return { ...next };
+	}
 
 	function syncViewFromRange() {
+		draft = copyRange(range);
+		hoverIso = null;
 		const key = range.monthKey ?? monthKeyFromDay(range.startDate) ?? currentMonthKey();
 		viewYear = Number(key.slice(0, 4));
 		viewMonthKey = monthKeyFromDay(range.startDate) ?? key;
@@ -58,30 +72,40 @@
 	}
 
 	function setMode(mode: 'month' | 'custom') {
-		if (mode === range.mode) return;
-		if (mode === 'custom') onRangeChange(monthRangeToCustom(range));
-		else onRangeChange(customRangeToMonth(range));
+		if (mode === draft.mode) return;
+		hoverIso = null;
+		if (mode === 'custom') draft = monthRangeToCustom(draft);
+		else draft = customRangeToMonth(draft);
 	}
 
 	function pickMonth(monthKey: string) {
-		onRangeChange(rangeFromMonthKey(monthKey));
-		open = false;
+		draft = rangeFromMonthKey(monthKey);
 	}
 
 	function pickDay(iso: string) {
-		const next = applyManualDayPick(range, iso, picking);
+		const next = applyManualDayPick(draft, iso, picking);
 		picking = next.nextPicking;
-		onRangeChange(next.range);
+		draft = next.range;
+		hoverIso = null;
 		const key = monthKeyFromDay(iso);
 		if (key) viewMonthKey = key;
 	}
 
 	function inSelectedRange(iso: string): boolean {
-		return iso >= range.startDate && iso <= range.endDate;
+		return iso >= highlight.startDate && iso <= highlight.endDate;
 	}
 
 	function isEnd(iso: string): boolean {
-		return iso === range.startDate || iso === range.endDate;
+		return iso === highlight.startDate || iso === highlight.endDate;
+	}
+
+	function applyDraft() {
+		onRangeChange(copyRange(draft));
+		open = false;
+	}
+
+	function closeDiscard() {
+		open = false;
 	}
 </script>
 
@@ -112,7 +136,7 @@
 					type="button"
 					class={cn(
 						'flex-1 rounded px-2 py-1 text-xs font-medium',
-						range.mode === 'month'
+						draft.mode === 'month'
 							? 'bg-background text-foreground shadow-xs'
 							: 'text-muted-foreground'
 					)}
@@ -125,7 +149,7 @@
 					type="button"
 					class={cn(
 						'flex-1 rounded px-2 py-1 text-xs font-medium',
-						range.mode === 'custom'
+						draft.mode === 'custom'
 							? 'bg-background text-foreground shadow-xs'
 							: 'text-muted-foreground'
 					)}
@@ -136,7 +160,7 @@
 				</button>
 			</div>
 
-			{#if range.mode === 'month'}
+			{#if draft.mode === 'month'}
 				<div class="mb-2 flex items-center justify-between">
 					<button
 						type="button"
@@ -165,7 +189,7 @@
 							type="button"
 							class={cn(
 								'rounded-md px-2 py-2 text-sm',
-								range.monthKey === monthKey
+								draft.monthKey === monthKey
 									? 'bg-primary text-primary-foreground'
 									: 'hover:bg-muted text-foreground'
 							)}
@@ -185,10 +209,13 @@
 							picking === 'start' && 'ring-ring ring-2'
 						)}
 						data-testid="activity-range-start"
-						onclick={() => (picking = 'start')}
+						onclick={() => {
+							picking = 'start';
+							hoverIso = null;
+						}}
 					>
 						<span class="text-muted-foreground block">From</span>
-						<span class="tabular-nums">{formatOccurredOnDisplay(range.startDate)}</span>
+						<span class="tabular-nums">{formatOccurredOnDisplay(draft.startDate)}</span>
 					</button>
 					<button
 						type="button"
@@ -200,7 +227,7 @@
 						onclick={() => (picking = 'end')}
 					>
 						<span class="text-muted-foreground block">To</span>
-						<span class="tabular-nums">{formatOccurredOnDisplay(range.endDate)}</span>
+						<span class="tabular-nums">{formatOccurredOnDisplay(draft.endDate)}</span>
 					</button>
 				</div>
 				<div class="mb-2 flex items-center justify-between">
@@ -231,7 +258,13 @@
 						<ChevronRightIcon class="size-4" />
 					</button>
 				</div>
-				<div class="grid grid-cols-7 gap-px text-center">
+				<div
+					class="grid grid-cols-7 gap-px text-center"
+					role="group"
+					aria-label="Calendar days"
+					data-testid="activity-range-day-grid"
+					onpointerleave={() => (hoverIso = null)}
+				>
 					{#each WEEKDAYS as d (d)}
 						<span class="text-muted-foreground py-1 text-[0.65rem] font-medium">{d}</span>
 					{/each}
@@ -246,6 +279,9 @@
 								cell.iso === today && !isEnd(cell.iso) && 'ring-border ring-1'
 							)}
 							data-testid={`activity-range-day-${cell.iso}`}
+							onpointerenter={() => {
+								if (picking === 'end') hoverIso = cell.iso;
+							}}
 							onclick={() => pickDay(cell.iso)}
 						>
 							{Number(cell.iso.slice(8))}
@@ -253,6 +289,28 @@
 					{/each}
 				</div>
 			{/if}
+
+			<div class="mt-3 flex gap-2">
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					class="flex-1"
+					data-testid="activity-range-close"
+					onclick={closeDiscard}
+				>
+					Close
+				</Button>
+				<Button
+					type="button"
+					size="sm"
+					class="flex-1"
+					data-testid="activity-range-apply"
+					onclick={applyDraft}
+				>
+					Apply
+				</Button>
+			</div>
 		</Popover.Content>
 	</Popover.Portal>
 </Popover.Root>

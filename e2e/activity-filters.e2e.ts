@@ -208,16 +208,22 @@ test.describe('017 / 045 activity filters', () => {
 		await expect(page.locator('header').getByTestId('activity-range')).toHaveCount(0);
 	});
 
-	test('142 range picker lives in chrome band; Month and Manual interiors', async ({ page }) => {
+	test('142 range picker lives in chrome band; 143 Apply commits, Close discards', async ({
+		page
+	}) => {
 		await seedIncomeAndExpense(page);
 		await goToNav(page, 'transactions');
 		const trigger = page.getByTestId('activity-range-trigger');
 		await expect(trigger).toBeVisible();
 		await expect(page.locator('header').getByTestId('activity-range')).toHaveCount(0);
 		await expect(page.getByTestId('activity-chrome').getByTestId('activity-range')).toBeVisible();
+		await expect(trigger).toContainText('September 2026');
+
 		await trigger.click();
 		await expect(page.getByTestId('activity-range-mode-month')).toBeVisible();
 		await page.getByTestId('activity-range-month-2026-08').click();
+		await expect(trigger).toContainText('September 2026');
+		await page.getByTestId('activity-range-apply').click();
 		await expect(trigger).toContainText('August 2026');
 
 		await trigger.click();
@@ -225,7 +231,22 @@ test.describe('017 / 045 activity filters', () => {
 		await expect(page.getByTestId('activity-range-start')).toBeVisible();
 		await expect(page.getByTestId('activity-range-end')).toBeVisible();
 		await expect(page.locator('[data-testid^="activity-range-day-"]').first()).toBeVisible();
+		await page.getByTestId('activity-range-close').click();
+		await expect(trigger).toContainText('August 2026');
+
+		await trigger.click();
+		await page.getByTestId('activity-range-mode-manual').click();
 		await page.keyboard.press('Escape');
+		await expect(trigger).toContainText('August 2026');
+
+		await trigger.click();
+		await page.getByTestId('activity-range-mode-manual').click();
+		await page.getByTestId('activity-range-day-2026-08-10').click();
+		await page.getByTestId('activity-range-day-2026-08-20').click();
+		await expect(trigger).toContainText('August 2026');
+		await page.getByTestId('activity-range-apply').click();
+		await expect(trigger).toContainText('10 Aug 2026');
+		await expect(trigger).toContainText('20 Aug 2026');
 
 		await page.setViewportSize({ width: 1024, height: 480 });
 		await page.evaluate(() => window.scrollTo(0, 800));

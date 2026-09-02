@@ -18,10 +18,12 @@ On Transactions, the date range is a **single button** in a **second sticky band
 2. **Sticky chrome band** — flush under the header with a divider (`border-b`), `sticky top-14`, `bg-background`, header-matching horizontal padding. Sibling of `app-stage` (not inside stage `p-4` / `gap-4`). Contains, in order: date trigger; search + Filters icon; Add Transaction (right-aligned). Wide layout: band spans the inset above the list + drawer.
 3. **Trigger** — one `h-9` control with calendar icon. Closed label: Month mode → `formatMonthLabel` (e.g. `September 2026`); Manual → from–to via `formatOccurredOnDisplay` (e.g. `01 Sep 2026 – 02 Sep 2026`). Testid `activity-range-trigger` inside `activity-range`.
 4. **Popover** — bits-ui Popover only. Segmented **Month | Manual** inside (`activity-range-mode-month`, `activity-range-mode-manual`). Session `mode` remains `'month' | 'custom'` (Manual is UI copy for `custom`).
-5. **Month interior** — year chevrons + 3×4 month names. Selecting a month applies `rangeFromMonthKey` (current month through today; other months full) and may close the popover.
-6. **Manual interior** — From and To chips **and** one Sunday-start day calendar in the same popover. First click sets start (and end to that day); second click sets end (snap if reversed). Prev/next month on the day grid does not change mode. Range highlight between start and end. Live apply (no Apply in the picker).
+5. **Month interior** — year chevrons + 3×4 month names. Selecting a month updates the draft via `rangeFromMonthKey` (current month through today; other months full). Commit is **143** (Apply).
+6. **Manual interior** — From and To chips **and** one Sunday-start day calendar in the same popover. First click sets start (and end to that day); second click sets end (snap if reversed). Prev/next month on the day grid does not change mode. Range highlight between start and end.
 7. **Mode switch** — Month → Manual keeps bounds; Manual → Month snaps to the month of start (141).
 8. **Domain** — unchanged from 141. Filters still have no From/To. Clear does not reset this control.
+
+**143** supersedes live-apply (no Apply in the picker; month click commits and may close). Draft until Apply; Close/Escape/outside discard.
 
 ### Out of scope
 
@@ -84,3 +86,4 @@ On Transactions, the date range is a **single button** in a **second sticky band
 ## Related
 
 - 141 date-range domain (placement superseded); 134 Transactions; 049 xl drawer
+- **143** supersedes live-apply (draft until Apply; Close discards)

@@ -5,6 +5,7 @@ import {
 	applyManualDayPick,
 	calendarCellsForMonth,
 	formatRangeTriggerLabel,
+	highlightRangeForHover,
 	rangeFromCustom,
 	rangeFromMonthKey,
 	shiftCalendarYear
@@ -59,5 +60,24 @@ describe('transaction date range picker (Spec 142)', () => {
 	it('shifts the year of a month key', () => {
 		expect(shiftCalendarYear('2026-09', -1)).toBe('2025-09');
 		expect(shiftCalendarYear('2026-09', 1)).toBe('2027-09');
+	});
+
+	it('To hover snaps highlight when the pointer is before From', () => {
+		expect(highlightRangeForHover('2026-08-10', '2026-08-10', 'end', '2026-08-01')).toEqual({
+			startDate: '2026-08-01',
+			endDate: '2026-08-10'
+		});
+		expect(highlightRangeForHover('2026-08-10', '2026-08-10', 'end', '2026-08-20')).toEqual({
+			startDate: '2026-08-10',
+			endDate: '2026-08-20'
+		});
+		expect(highlightRangeForHover('2026-08-10', '2026-08-20', 'start', '2026-08-01')).toEqual({
+			startDate: '2026-08-10',
+			endDate: '2026-08-20'
+		});
+		expect(highlightRangeForHover('2026-08-10', '2026-08-20', 'end', null)).toEqual({
+			startDate: '2026-08-10',
+			endDate: '2026-08-20'
+		});
 	});
 });
