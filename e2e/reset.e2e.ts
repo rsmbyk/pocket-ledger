@@ -17,6 +17,15 @@ test.describe('024 reset everything', () => {
 		await goToNav(page, 'more');
 		await page.getByTestId('reset-all').click();
 		await expect(page.getByTestId('reset-dialog')).toBeVisible();
+		await expect(
+			page.getByTestId('reset-dialog').getByTestId('confirm-dialog-danger-header')
+		).toBeVisible();
+		await expect(page.getByTestId('reset-dialog').getByRole('button', { name: 'Close' })).toHaveCount(
+			0
+		);
+		await expect(page.getByTestId('reset-preserve-settings-hint')).toHaveText(
+			'Display currency, idle minutes, and lock when you leave this tab.'
+		);
 		await page.getByTestId('reset-preserve-settings').check();
 		await page.getByTestId('reset-all-confirm').click();
 		await expect(page.getByTestId('reset-dialog')).toBeHidden();

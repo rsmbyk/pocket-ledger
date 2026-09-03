@@ -17,7 +17,6 @@
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import { IDLE_MINUTES, DEFAULT_IDLE_MINUTES, DEFAULT_LEAVE_TAB } from '$lib/application/idle';
 	import {
-		currencyRowLabel,
 		DEFAULT_DISPLAY_CURRENCY,
 		listCurrencyOptions,
 		searchCurrencies,
@@ -108,6 +107,7 @@
 	let currencyDraft = $state(DEFAULT_DISPLAY_CURRENCY);
 	let currencySearch = $state('');
 	let currencyOpen = $state(false);
+	let idleMinutesOpen = $state(false);
 
 	let idleDraftMinutes = $state(String(DEFAULT_IDLE_MINUTES));
 	let idleDraftLeave = $state(DEFAULT_LEAVE_TAB);
@@ -158,6 +158,11 @@
 		currencySearch = '';
 	}
 
+	function pickIdleMinutes(mins: number) {
+		idleDraftMinutes = String(mins);
+		idleMinutesOpen = false;
+	}
+
 	async function onImportPicked(file: File) {
 		const raw = await file.text();
 		const inspected = inspectEncryptedBackup(raw);
@@ -175,6 +180,13 @@
 
 {#snippet sectionHeading(title: string)}
 	<p class="text-muted-foreground text-xs font-medium tracking-wide uppercase">{title}</p>
+{/snippet}
+
+{#snippet currencyOptionLabel(option: CurrencyOption)}
+	<span class="flex min-w-0 items-baseline gap-2">
+		<span class="font-mono shrink-0">{option.code}</span>
+		<span class="truncate">{option.name}</span>
+	</span>
 {/snippet}
 
 <div class="space-y-4" data-testid="settings-panel">
@@ -273,7 +285,7 @@
 							class="border-input bg-background flex h-11 w-full items-center justify-between rounded-md border px-3 text-sm md:h-9"
 							data-testid="currency-picker"
 						>
-							<span class="truncate">{currencyRowLabel(selectedCurrency)}</span>
+							{@render currencyOptionLabel(selectedCurrency)}
 							<ChevronDownIcon class="text-muted-foreground size-4 shrink-0" />
 						</Popover.Trigger>
 						<Popover.Portal>
@@ -295,7 +307,7 @@
 											class="hover:bg-accent flex w-full px-2 py-1.5 text-left text-sm"
 											onclick={() => pickCurrency(option)}
 										>
-											{currencyRowLabel(option)}
+											{@render currencyOptionLabel(option)}
 										</button>
 									{/each}
 								</div>
@@ -345,16 +357,39 @@
 				<div class="flex flex-col gap-2">
 					{@render sectionHeading('Timeout')}
 					<Label for="idle-minutes">Minutes</Label>
-					<select
-						id="idle-minutes"
-						class="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
-						bind:value={idleDraftMinutes}
-						data-testid="idle-minutes"
-					>
-						{#each IDLE_MINUTES as mins}
-							<option value={String(mins)}>{mins} minutes</option>
-						{/each}
-					</select>
+					<Popover.Root bind:open={idleMinutesOpen}>
+						<Popover.Trigger
+							id="idle-minutes"
+							type="button"
+							class="border-input bg-background flex h-11 w-full items-center justify-between rounded-md border px-3 text-sm md:h-9"
+							data-testid="idle-minutes"
+						>
+							<span class="truncate">{idleDraftMinutes} minutes</span>
+							<ChevronDownIcon class="text-muted-foreground size-4 shrink-0" />
+						</Popover.Trigger>
+						<Popover.Portal>
+							<Popover.Content
+								class="bg-popover text-popover-foreground z-50 w-(--bits-popover-anchor-width) overflow-hidden rounded-md border p-1 shadow-md"
+								align="start"
+								sideOffset={4}
+							>
+								<div class="max-h-60 overflow-y-auto">
+									{#each IDLE_MINUTES as mins}
+										<button
+											type="button"
+											role="option"
+											class="hover:bg-accent flex w-full px-2 py-1.5 text-left text-sm"
+											aria-selected={idleDraftMinutes === String(mins)}
+											data-testid="idle-minutes-{mins}"
+											onclick={() => pickIdleMinutes(mins)}
+										>
+											{mins} minutes
+										</button>
+									{/each}
+								</div>
+							</Popover.Content>
+						</Popover.Portal>
+					</Popover.Root>
 					<label class="flex items-center gap-2 text-sm">
 						<input
 							type="checkbox"
@@ -456,17 +491,21 @@
 								data-testid="enable-lock-pass"
 								oninput={() => (lockPassError = null)}
 							/>
-							{#if passLongEnough}
-								<CheckIcon class="text-income pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
-							{:else}
-								<XIcon class="text-destructive pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+							{#if lockPass.length > 0}
+								{#if passLongEnough}
+									<CheckIcon class="text-income pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+								{:else}
+									<XIcon class="text-destructive pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+								{/if}
 							{/if}
 						</div>
-						<ul class="space-y-1 text-sm" data-testid="enable-lock-requirements">
-							<li class={passLongEnough ? 'text-income' : 'text-destructive'}>
-								At least 8 characters
-							</li>
-						</ul>
+						{#if lockPass.length > 0}
+							<ul class="space-y-1 text-sm" data-testid="enable-lock-requirements">
+								<li class={passLongEnough ? 'text-income' : 'text-destructive'}>
+									At least 8 characters
+								</li>
+							</ul>
+						{/if}
 						<div class="relative">
 							<Input
 								type="password"
@@ -477,15 +516,19 @@
 								data-testid="enable-lock-pass-confirm"
 								oninput={() => (lockPassError = null)}
 							/>
-							{#if passMatch}
-								<CheckIcon class="text-income pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
-							{:else}
-								<XIcon class="text-destructive pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+							{#if lockPassConfirm.length > 0}
+								{#if passMatch}
+									<CheckIcon class="text-income pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+								{:else}
+									<XIcon class="text-destructive pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
+								{/if}
 							{/if}
 						</div>
-						<ul class="space-y-1 text-sm">
-							<li class={passMatch ? 'text-income' : 'text-destructive'}>Passphrases match</li>
-						</ul>
+						{#if lockPassConfirm.length > 0}
+							<ul class="space-y-1 text-sm">
+								<li class={passMatch ? 'text-income' : 'text-destructive'}>Passphrases match</li>
+							</ul>
+						{/if}
 						{#if lockPassError}
 							<p class="text-destructive text-sm" role="alert">{lockPassError}</p>
 						{/if}
@@ -620,7 +663,11 @@
 </div>
 
 <Dialog.Root bind:open={resetOpen}>
-	<Dialog.Content class="max-w-sm sm:max-w-sm" data-testid="reset-dialog">
+	<Dialog.Content
+		class="max-w-sm gap-0 overflow-hidden p-0 sm:max-w-sm"
+		data-testid="reset-dialog"
+		showCloseButton={false}
+	>
 		<Dialog.Header
 			class="gap-1 space-y-0 border-b border-destructive/20 bg-destructive/5 px-6 py-3"
 			data-testid="confirm-dialog-danger-header"
@@ -630,30 +677,43 @@
 				<Dialog.Title>Reset everything?</Dialog.Title>
 			</div>
 		</Dialog.Header>
-		<div class="space-y-3 px-6 py-4">
+		<div class="space-y-4 px-6 py-4">
 			<Dialog.Description>
 				This permanently deletes transactions, pockets, goals, and categories. Cannot be undone.
 				Export a backup first if you might need the data.
 			</Dialog.Description>
-			<label class="flex items-center gap-2 text-sm">
-				<input
-					type="checkbox"
-					class="size-5 accent-primary md:size-4"
-					bind:checked={preserveSettings}
-					data-testid="reset-preserve-settings"
-				/>
-				Keep settings
-			</label>
-			{#if lockEnabled}
+			<div class="flex flex-col gap-1">
 				<label class="flex items-center gap-2 text-sm">
 					<input
 						type="checkbox"
 						class="size-5 accent-primary md:size-4"
-						bind:checked={preservePassphrase}
-						data-testid="reset-preserve-passphrase"
+						bind:checked={preserveSettings}
+						data-testid="reset-preserve-settings"
 					/>
-					Keep passphrase
+					Keep settings
 				</label>
+				<p class="text-muted-foreground pl-7 text-sm" data-testid="reset-preserve-settings-hint">
+					Display currency, idle minutes, and lock when you leave this tab.
+				</p>
+			</div>
+			{#if lockEnabled}
+				<div class="flex flex-col gap-1">
+					<label class="flex items-center gap-2 text-sm">
+						<input
+							type="checkbox"
+							class="size-5 accent-primary md:size-4"
+							bind:checked={preservePassphrase}
+							data-testid="reset-preserve-passphrase"
+						/>
+						Keep passphrase
+					</label>
+					<p
+						class="text-muted-foreground pl-7 text-sm"
+						data-testid="reset-preserve-passphrase-hint"
+					>
+						Device lock on this browser.
+					</p>
+				</div>
 				<Input
 					type="password"
 					placeholder="Current passphrase"
@@ -788,16 +848,21 @@
 		if (!open) importPass = '';
 	}}
 >
-	<Dialog.Content class="max-w-sm sm:max-w-sm" data-testid="import-backup-dialog">
+	<Dialog.Content
+		class="max-w-sm gap-0 overflow-hidden p-0 sm:max-w-sm"
+		data-testid="import-backup-dialog"
+		showCloseButton={false}
+	>
 		<Dialog.Header
 			class="gap-1 space-y-0 border-b border-destructive/20 bg-destructive/5 px-6 py-3"
+			data-testid="confirm-dialog-danger-header"
 		>
 			<div class="flex items-center gap-2">
 				<TriangleAlertIcon class="text-destructive size-5 shrink-0" aria-hidden="true" />
 				<Dialog.Title>Replace local data?</Dialog.Title>
 			</div>
 		</Dialog.Header>
-		<div class="space-y-3 px-6 py-4">
+		<div class="space-y-4 px-6 py-4">
 			<Dialog.Description>
 				Import replaces all local data with this backup. This cannot be undone.
 			</Dialog.Description>

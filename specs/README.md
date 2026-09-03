@@ -177,3 +177,8 @@ Living behavior contracts for Pocket Ledger.
 | [158](158-settings-backup/spec.md)                       | Settings backup export/import                                | Accepted                                                                        |
 | [159](159-settings-reset/spec.md)                        | Settings reset keep-options                                  | Accepted                                                                        |
 | [160](160-sidebar-account-footer/spec.md)                | Sidebar centered brand + signed-in footer stub               | Accepted                                                                        |
+| [161](161-currency-picker-labels/spec.md)                | Currency picker ISO + name, no symbol                        | Accepted                                                                        |
+| [162](162-idle-minutes-popover/spec.md)                  | Idle minutes popover dropdown                                | Accepted                                                                        |
+| [163](163-enable-lock-check-when-typed/spec.md)          | Enable-lock live check only after typing                     | Accepted                                                                        |
+| [164](164-settings-danger-dialog-chrome/spec.md)         | Flush danger chrome on import / reset dialogs                | Accepted                                                                        |
+| [165](165-reset-keep-settings-copy/spec.md)              | Reset keep-option helper copy                                | Accepted                                                                        |

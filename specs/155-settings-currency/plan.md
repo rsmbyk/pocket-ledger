@@ -7,7 +7,7 @@
 
 ## What
 
-App-wide display currency on Settings: searchable ISO dropdown (`CODE` + gap + `Name - Symbol`), Save / Cancel / Default (IDR). Persist a settings key and write every pocket’s `currencyLabel` on Save.
+App-wide display currency on Settings: searchable ISO dropdown (`CODE` + name; spec 161), Save / Cancel / Default (IDR). Persist a settings key and write every pocket’s `currencyLabel` on Save.
 
 ## Why
 

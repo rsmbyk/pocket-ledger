@@ -33,8 +33,12 @@ test.describe('154–159 Settings hub', () => {
 		await expect(page.getByTestId('currency-default')).toBeDisabled();
 		await page.getByTestId('currency-picker').click();
 		await page.getByTestId('currency-picker-search').fill('USD');
-		await page.getByRole('button', { name: /USD\s+US Dollar/ }).click();
+		const usdRow = page.getByRole('button', { name: /USD\s+US Dollar/ });
+		await expect(usdRow).toBeVisible();
+		await expect(usdRow).not.toHaveText(/ - /);
+		await usdRow.click();
 		await expect(page.getByTestId('currency-save')).toBeEnabled();
+		await expect(page.getByTestId('currency-picker')).not.toHaveText(/ - /);
 		await page.getByTestId('currency-cancel').click();
 		await expect(page.getByTestId('currency-picker')).toContainText('IDR');
 		await page.getByTestId('currency-picker').click();
@@ -48,26 +52,33 @@ test.describe('154–159 Settings hub', () => {
 	test('156 idle Save persists; Cancel restores draft', async ({ page }) => {
 		await goToNav(page, 'settings');
 		await expect(page.getByTestId('idle-save')).toBeDisabled();
-		await page.getByTestId('idle-minutes').selectOption('10');
+		await page.getByTestId('idle-minutes').click();
+		await page.getByTestId('idle-minutes-10').click();
 		await expect(page.getByTestId('idle-save')).toBeEnabled();
 		await page.getByTestId('idle-cancel').click();
-		await expect(page.getByTestId('idle-minutes')).toHaveValue('30');
-		await page.getByTestId('idle-minutes').selectOption('10');
+		await expect(page.getByTestId('idle-minutes')).toHaveText('30 minutes');
+		await page.getByTestId('idle-minutes').click();
+		await page.getByTestId('idle-minutes-10').click();
 		await page.getByTestId('idle-save').click();
 		await page.reload();
 		await goToNav(page, 'settings');
-		await expect(page.getByTestId('idle-minutes')).toHaveValue('10');
+		await expect(page.getByTestId('idle-minutes')).toHaveText('10 minutes');
 	});
 
 	test('157 enable lock stays disabled until passphrase matches', async ({ page }) => {
 		await goToNav(page, 'settings');
 		await expect(page.getByTestId('enable-lock')).toBeDisabled();
 		await expect(page.getByTestId('device-skip-warning')).toHaveCount(0);
+		await expect(page.getByTestId('enable-lock-requirements')).toHaveCount(0);
+		await expect(page.getByText('Passphrases match')).toHaveCount(0);
 		await page.getByTestId('enable-lock-pass').fill('secret-pass');
 		await expect(page.getByTestId('enable-lock')).toBeDisabled();
+		await expect(page.getByTestId('enable-lock-requirements')).toBeVisible();
+		await expect(page.getByText('Passphrases match')).toHaveCount(0);
 		await page.getByTestId('enable-lock-pass-confirm').fill('secret-pass');
 		await expect(page.getByTestId('enable-lock')).toBeEnabled();
 		await expect(page.getByTestId('enable-lock-requirements')).toBeVisible();
+		await expect(page.getByText('Passphrases match')).toBeVisible();
 	});
 
 	test('158 invalid backup file opens the not-a-backup dialog', async ({ page }) => {
