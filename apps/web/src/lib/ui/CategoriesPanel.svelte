@@ -1,5 +1,4 @@
 <script lang="ts">
-	import CheckIcon from '@lucide/svelte/icons/check';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import FolderPlusIcon from '@lucide/svelte/icons/folder-plus';
@@ -98,7 +97,6 @@
 	let mode = $state<Mode>('view');
 	let selectedKind = $state<CategoryKind>(readCategoriesKind());
 	let searchQuery = $state('');
-	let editingId = $state<string | null>(null);
 
 	let addDialogOpen = $state(false);
 	let addGroupId = $state('');
@@ -108,13 +106,17 @@
 	let renameGroupDialogOpen = $state(false);
 	let renameGroupId = $state('');
 	let renameGroupName = $state('');
+	let renameGroupOriginal = $state('');
+	let renameCategoryDialogOpen = $state(false);
+	let renameCategoryId = $state('');
+	let renameCategoryName = $state('');
+	let renameCategoryOriginal = $state('');
 	let discardConfirmOpen = $state(false);
 	let reorderDiscardOpen = $state(false);
 	let busy = $state(false);
 	let error = $state('');
 	let nameFieldError = $state('');
 	let renameErrorId = $state<string | null>(null);
-	let renameDrafts = $state<Record<string, string>>({});
 
 	const emptyOrder = (): KindGroupOrder => ({ income: [], expense: [] });
 	let reorderItems = $state<OverlayGroup[]>([]);
@@ -127,7 +129,13 @@
 
 	const addDirty = $derived(addName.trim() !== '');
 	const addGroupDirty = $derived(addGroupName.trim() !== '');
-	const renameGroupDirty = $derived(renameGroupName.trim() !== '');
+	const addTargetGroupName = $derived(groups.find((g) => g.id === addGroupId)?.name ?? '');
+	const renameGroupDirty = $derived(
+		renameGroupName.trim() !== '' && renameGroupName.trim() !== renameGroupOriginal
+	);
+	const renameCategoryDirty = $derived(
+		renameCategoryName.trim() !== '' && renameCategoryName.trim() !== renameCategoryOriginal
+	);
 	const headerActionReveal =
 		'md:pointer-events-none md:opacity-0 md:group-hover/card-header:pointer-events-auto md:group-hover/card-header:opacity-100 md:group-focus-within/card-header:pointer-events-auto md:group-focus-within/card-header:opacity-100';
 
@@ -147,14 +155,17 @@
 	} as const;
 
 	const meta = $derived(kindMeta[selectedKind]);
+	const kindDialogHeaderClass = $derived(
+		cn(
+			'gap-1 border-b px-6 pt-4 pb-2.5 [&_[data-slot=dialog-description]]:leading-snug',
+			meta.headerClass
+		)
+	);
+	const kindDialogContentClass = 'max-w-sm overflow-hidden p-0 gap-0 sm:max-w-sm';
 
 	function setDirty(next: boolean) {
 		reorderDirty = next;
 		onReorderDirtyChange?.(next);
-	}
-
-	function draftFor(cat: CategoryRow): string {
-		return renameDrafts[cat.id] ?? cat.name;
 	}
 
 	async function runAction(action: () => unknown | Promise<unknown>, opts?: { renameId?: string }) {
@@ -170,7 +181,12 @@
 			if (opts?.renameId) {
 				renameErrorId = opts.renameId;
 				nameFieldError = message;
-			} else if (addDialogOpen || addGroupDialogOpen || renameGroupDialogOpen) {
+			} else if (
+				addDialogOpen ||
+				addGroupDialogOpen ||
+				renameGroupDialogOpen ||
+				renameCategoryDialogOpen
+			) {
 				nameFieldError = message;
 			} else {
 				error = message;
@@ -185,7 +201,7 @@
 		selectedKind = next;
 		writeCategoriesKind(next);
 		if (mode !== 'reorder') searchQuery = '';
-		editingId = null;
+		closeRenameCategory();
 		if (mode === 'reorder') {
 			reorderItems = groupsInOrder(groups, reorderDraft[next]);
 		}
@@ -274,18 +290,21 @@
 	}
 
 	function startRename(cat: CategoryRow) {
-		editingId = cat.id;
-		renameDrafts = { ...renameDrafts, [cat.id]: cat.name };
+		if (cat.source !== 'custom') return;
+		renameCategoryId = cat.id;
+		renameCategoryOriginal = cat.name;
+		renameCategoryName = cat.name;
 		nameFieldError = '';
 		renameErrorId = null;
+		renameCategoryDialogOpen = true;
 	}
 
-	function cancelRename(id: string) {
-		if (editingId === id) editingId = null;
-		const next = { ...renameDrafts };
-		delete next[id];
-		renameDrafts = next;
-		if (renameErrorId === id) {
+	function closeRenameCategory() {
+		renameCategoryDialogOpen = false;
+		renameCategoryId = '';
+		renameCategoryName = '';
+		renameCategoryOriginal = '';
+		if (renameErrorId) {
 			renameErrorId = null;
 			nameFieldError = '';
 		}
@@ -299,7 +318,7 @@
 	}
 
 	function chipAriaLabel(cat: CategoryRow): string {
-		if (!belowMd.current || editingId === cat.id) return cat.name;
+		if (!belowMd.current) return cat.name;
 		return cat.hidden ? `Show ${cat.name}` : `Hide ${cat.name}`;
 	}
 
@@ -315,7 +334,7 @@
 
 	function onChipPointerDown(cat: CategoryRow, e: PointerEvent) {
 		if (!belowMd.current) return;
-		if (editingId === cat.id) return;
+		if (renameCategoryDialogOpen && renameCategoryId === cat.id) return;
 		if (e.button > 0) return;
 		clearChipPress();
 		try {
@@ -331,7 +350,7 @@
 					durationMs: CATEGORY_CHIP_LONG_PRESS_MS,
 					movedBeyondSlop: false,
 					isCustom: cat.source === 'custom',
-					renameOpen: editingId === cat.id
+					renameOpen: renameCategoryDialogOpen && renameCategoryId === cat.id
 				})
 			);
 			clearChipPress();
@@ -373,7 +392,7 @@
 				durationMs,
 				movedBeyondSlop: slop,
 				isCustom: cat.source === 'custom',
-				renameOpen: editingId === cat.id
+				renameOpen: renameCategoryDialogOpen && renameCategoryId === cat.id
 			})
 		);
 	}
@@ -383,7 +402,7 @@
 	}
 
 	function onChipKeydown(cat: CategoryRow, e: KeyboardEvent) {
-		if (!belowMd.current || editingId === cat.id) return;
+		if (!belowMd.current || (renameCategoryDialogOpen && renameCategoryId === cat.id)) return;
 		if (e.key !== 'Enter' && e.key !== ' ') return;
 		e.preventDefault();
 		applyChipOutcome(
@@ -421,6 +440,7 @@
 	function openRenameGroup(group: OverlayGroup) {
 		if (group.source !== 'custom') return;
 		renameGroupId = group.id;
+		renameGroupOriginal = group.name;
 		renameGroupName = group.name;
 		nameFieldError = '';
 		renameGroupDialogOpen = true;
@@ -831,57 +851,7 @@
 										data-name={cat.name}
 										data-hidden={cat.hidden ? 'true' : undefined}
 									>
-										{#if editingId === cat.id}
-											<CategoryIcon slug={cat.icon} />
-											<div class="min-w-0 flex-1 space-y-1">
-												<Input
-													class="h-8 min-w-0 w-full"
-													aria-label={`Name for ${cat.name}`}
-													aria-invalid={renameErrorId === cat.id ? true : undefined}
-													value={draftFor(cat)}
-													oninput={(e) => {
-														renameDrafts = {
-															...renameDrafts,
-															[cat.id]: (e.currentTarget as HTMLInputElement).value
-														};
-													}}
-													onkeydown={(e) => {
-														if (e.key === 'Escape') {
-															e.preventDefault();
-															cancelRename(cat.id);
-														}
-													}}
-												/>
-												{#if renameErrorId === cat.id && nameFieldError}
-													<p
-														class="text-destructive text-sm"
-														role="alert"
-														data-testid="category-field-error-name"
-													>
-														{nameFieldError}
-													</p>
-												{/if}
-											</div>
-											<Button
-												size="icon-xs"
-												variant="outline"
-												class="shrink-0"
-												aria-label={`Save name for ${cat.name}`}
-												data-testid="category-save-name"
-												disabled={busy ||
-													draftFor(cat).trim() === cat.name ||
-													draftFor(cat).trim() === ''}
-												onclick={() =>
-													void runAction(async () => {
-														await renameCategory(cat.id, draftFor(cat));
-														editingId = null;
-													}, {
-														renameId: cat.id
-													})}
-											>
-												<CheckIcon class="size-3.5" />
-											</Button>
-										{:else if belowMd.current}
+										{#if belowMd.current}
 											<button
 												type="button"
 												class="flex min-w-0 flex-1 items-center gap-1.5 text-left"
@@ -964,13 +934,17 @@
 		else requestAddDiscard();
 	}}
 >
-	<Dialog.Content class="max-w-sm sm:max-w-sm" showCloseButton={false} data-testid="category-add-dialog">
-		<Dialog.Header>
-			<Dialog.Title>Add category</Dialog.Title>
+	<Dialog.Content
+		class={kindDialogContentClass}
+		showCloseButton={false}
+		data-testid="category-add-dialog"
+	>
+		<Dialog.Header class={kindDialogHeaderClass}>
+			<Dialog.Title>Add {meta.title} category</Dialog.Title>
 			<Dialog.Description>Custom labels use the tag icon.</Dialog.Description>
 		</Dialog.Header>
 		<form
-			class="space-y-4"
+			class="space-y-4 px-6 pt-4 pb-6"
 			onsubmit={(e) => {
 				e.preventDefault();
 				void runAction(async () => {
@@ -981,13 +955,18 @@
 				});
 			}}
 		>
-			<Input
-				placeholder="Name"
-				bind:value={addName}
-				required
-				data-testid="category-name-input"
-				aria-invalid={nameFieldError && addDialogOpen ? true : undefined}
-			/>
+			<div class="space-y-1">
+				<Input
+					placeholder="Name"
+					bind:value={addName}
+					required
+					data-testid="category-name-input"
+					aria-invalid={nameFieldError && addDialogOpen ? true : undefined}
+				/>
+				<p class="text-muted-foreground text-xs" data-testid="category-add-helper">
+					In {addTargetGroupName}
+				</p>
+			</div>
 			{#if nameFieldError && addDialogOpen && !renameErrorId}
 				<p class="text-destructive text-sm" role="alert" data-testid="category-field-error-name">
 					{nameFieldError}
@@ -1006,13 +985,13 @@
 </Dialog.Root>
 
 <Dialog.Root bind:open={addGroupDialogOpen}>
-	<Dialog.Content class="max-w-sm sm:max-w-sm" data-testid="category-add-group-dialog">
-		<Dialog.Header>
-			<Dialog.Title>Add group</Dialog.Title>
+	<Dialog.Content class={kindDialogContentClass} data-testid="category-add-group-dialog">
+		<Dialog.Header class={kindDialogHeaderClass}>
+			<Dialog.Title>Add {meta.title} group</Dialog.Title>
 			<Dialog.Description>Placed last among {meta.title.toLowerCase()}.</Dialog.Description>
 		</Dialog.Header>
 		<form
-			class="space-y-4"
+			class="space-y-4 px-6 pt-4 pb-6"
 			onsubmit={(e) => {
 				e.preventDefault();
 				void runAction(async () => {
@@ -1050,29 +1029,35 @@
 </Dialog.Root>
 
 <Dialog.Root bind:open={renameGroupDialogOpen}>
-	<Dialog.Content class="max-w-sm sm:max-w-sm" data-testid="category-rename-group-dialog">
-		<Dialog.Header>
-			<Dialog.Title>Rename group</Dialog.Title>
+	<Dialog.Content class={kindDialogContentClass} data-testid="category-rename-group-dialog">
+		<Dialog.Header class={kindDialogHeaderClass}>
+			<Dialog.Title>Rename {meta.title} group</Dialog.Title>
 			<Dialog.Description>Must be unique among {meta.title.toLowerCase()}.</Dialog.Description>
 		</Dialog.Header>
 		<form
-			class="space-y-4"
+			class="space-y-4 px-6 pt-4 pb-6"
 			onsubmit={(e) => {
 				e.preventDefault();
 				void runAction(async () => {
 					await renameCategoryGroup(renameGroupId, renameGroupName);
 					renameGroupName = '';
+					renameGroupOriginal = '';
 					renameGroupId = '';
 					renameGroupDialogOpen = false;
 				});
 			}}
 		>
-			<Input
-				placeholder="Name"
-				bind:value={renameGroupName}
-				required
-				data-testid="category-rename-group-name-input"
-			/>
+			<div class="space-y-1">
+				<Input
+					placeholder="Name"
+					bind:value={renameGroupName}
+					required
+					data-testid="category-rename-group-name-input"
+				/>
+				<p class="text-muted-foreground text-xs" data-testid="category-rename-group-helper">
+					Current: {renameGroupOriginal}
+				</p>
+			</div>
 			{#if nameFieldError && renameGroupDialogOpen}
 				<p class="text-destructive text-sm" role="alert">{nameFieldError}</p>
 			{/if}
@@ -1090,6 +1075,61 @@
 					type="submit"
 					disabled={busy || !renameGroupDirty}
 					data-testid="category-rename-group-save"
+				>
+					Save
+				</Button>
+			</div>
+		</form>
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root
+	open={renameCategoryDialogOpen}
+	onOpenChange={(next) => {
+		if (next) renameCategoryDialogOpen = true;
+		else closeRenameCategory();
+	}}
+>
+	<Dialog.Content class={kindDialogContentClass} data-testid="category-rename-dialog">
+		<Dialog.Header class={kindDialogHeaderClass}>
+			<Dialog.Title>Rename {meta.title} category</Dialog.Title>
+			<Dialog.Description>Must be unique among {meta.title.toLowerCase()}.</Dialog.Description>
+		</Dialog.Header>
+		<form
+			class="space-y-4 px-6 pt-4 pb-6"
+			onsubmit={(e) => {
+				e.preventDefault();
+				void runAction(async () => {
+					await renameCategory(renameCategoryId, renameCategoryName);
+					closeRenameCategory();
+				}, { renameId: renameCategoryId });
+			}}
+		>
+			<div class="space-y-1">
+				<Input
+					placeholder="Name"
+					bind:value={renameCategoryName}
+					required
+					data-testid="category-rename-name-input"
+					aria-invalid={renameErrorId === renameCategoryId ? true : undefined}
+				/>
+				<p class="text-muted-foreground text-xs" data-testid="category-rename-helper">
+					Current: {renameCategoryOriginal}
+				</p>
+			</div>
+			{#if renameErrorId === renameCategoryId && nameFieldError}
+				<p class="text-destructive text-sm" role="alert" data-testid="category-field-error-name">
+					{nameFieldError}
+				</p>
+			{/if}
+			<div class="flex justify-end gap-2">
+				<Button type="button" variant="outline" disabled={busy} onclick={() => closeRenameCategory()}>
+					Cancel
+				</Button>
+				<Button
+					type="submit"
+					disabled={busy || !renameCategoryDirty}
+					data-testid="category-rename-save"
 				>
 					Save
 				</Button>
