@@ -15,7 +15,7 @@ Attach **at most one optional goal** to each pocket. Achieved amount is the pock
 ### In scope
 
 1. Per-pocket optional goal: **target amount** (required if goal set); **target date optional**
-2. UI on Pockets list/detail: achieved / target · percent on **one line**; when a target date is set, **time remaining on the next line**; then progress bar
+2. UI on Pockets list/detail: achieved / target · percent on **one line**; when a target date is set, **time remaining on the next line**; then progress bar. Layout superseded by [170](../170-goal-row-percent-end/spec.md); fill color by [171](../171-goal-bar-color-steps/spec.md).
 3. Time remaining in the **largest calendar unit**: years, else months, else weeks, else days (define unit boundaries in domain tests)
 4. Remove `home-goal-strip` and More section `more-section-goals` (create/list/delete)
 5. Migration on upgrade: if legacy `goals` rows exist, set Main’s pocket goal from the **nearest deadline** goal (then clear or stop reading `goals` for UI); if Main already has a pocket goal, skip attach; extra legacy goals are not kept in the live goals UI
@@ -83,4 +83,4 @@ Attach **at most one optional goal** to each pocket. Achieved amount is the pock
 
 ## Related
 
-- 060 (superseded for UI); 070; 071
+- 060 (superseded for UI); 070; 071; [170](../170-goal-row-percent-end/spec.md) row stack; [171](../171-goal-bar-color-steps/spec.md) bar color

@@ -57,6 +57,35 @@ export function goalProgressPercent(targetMinor: number, balanceMinor: number): 
 	return Math.round(goalProgressRatio(targetMinor, balanceMinor) * 100);
 }
 
+/** Quantize 0–100 to 10% buckets; 100 is its own stop (spec 171). */
+export function goalBarColorStop(percent: number): number {
+	const clamped = Math.min(100, Math.max(0, percent));
+	if (clamped >= 100) return 100;
+	return Math.floor(clamped / 10) * 10;
+}
+
+/**
+ * Solid fill color for the goal bar. Width still uses the true percent.
+ * 0% `--destructive`, 70% `--goal-mid`, 100% `--income`.
+ */
+export function goalBarFillCss(percent: number): string {
+	const stop = goalBarColorStop(percent);
+	if (stop <= 70) {
+		const t = stop / 70;
+		const yellow = Math.round(t * 100);
+		const red = 100 - yellow;
+		if (yellow === 0) return 'var(--destructive)';
+		if (red === 0) return 'var(--goal-mid)';
+		return `color-mix(in srgb, var(--destructive) ${red}%, var(--goal-mid) ${yellow}%)`;
+	}
+	const t = (stop - 70) / 30;
+	const green = Math.round(t * 100);
+	const yellow = 100 - green;
+	if (green === 0) return 'var(--goal-mid)';
+	if (yellow === 0) return 'var(--income)';
+	return `color-mix(in srgb, var(--goal-mid) ${yellow}%, var(--income) ${green}%)`;
+}
+
 /** Money still needed; ≤ 0 when balance meets or exceeds target. */
 export function goalRemainingMinor(targetMinor: number, balanceMinor: number): number {
 	return targetMinor - balanceMinor;

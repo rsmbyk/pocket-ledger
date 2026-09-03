@@ -3,6 +3,8 @@ import {
 	assertGoalDateNotPast,
 	assertGoalDeadline,
 	assertGoalTarget,
+	goalBarColorStop,
+	goalBarFillCss,
 	goalProgressPercent,
 	goalProgressRatio,
 	isActive,
@@ -36,6 +38,32 @@ describe('goals domain', () => {
 		expect(goalProgressRatio(1_000_000, 250_000)).toBe(0.25);
 		expect(goalProgressPercent(1_000_000, 250_000)).toBe(25);
 		expect(goalProgressPercent(100, 150)).toBe(100);
+	});
+
+	it('snaps bar color to 10% stops with 100 alone', () => {
+		expect(goalBarColorStop(0)).toBe(0);
+		expect(goalBarColorStop(9)).toBe(0);
+		expect(goalBarColorStop(10)).toBe(10);
+		expect(goalBarColorStop(65)).toBe(60);
+		expect(goalBarColorStop(69)).toBe(60);
+		expect(goalBarColorStop(70)).toBe(70);
+		expect(goalBarColorStop(79)).toBe(70);
+		expect(goalBarColorStop(97)).toBe(90);
+		expect(goalBarColorStop(99)).toBe(90);
+		expect(goalBarColorStop(100)).toBe(100);
+	});
+
+	it('blends bar fill expense red → yellow at 70 → income green', () => {
+		expect(goalBarFillCss(0)).toBe('var(--destructive)');
+		expect(goalBarFillCss(9)).toBe('var(--destructive)');
+		expect(goalBarFillCss(70)).toBe('var(--goal-mid)');
+		expect(goalBarFillCss(75)).toBe('var(--goal-mid)');
+		expect(goalBarFillCss(79)).toBe('var(--goal-mid)');
+		expect(goalBarFillCss(65)).not.toBe('var(--goal-mid)');
+		expect(goalBarFillCss(100)).toBe('var(--income)');
+		expect(goalBarFillCss(97)).toBe(goalBarFillCss(90));
+		expect(goalBarFillCss(90)).not.toBe('var(--income)');
+		expect(goalBarFillCss(90)).toMatch(/color-mix/);
 	});
 
 	it('classifies active, past, and hidden', () => {

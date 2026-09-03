@@ -29,7 +29,7 @@ Privacy explains device encryption in the card itself (no nested warning card). 
 ## Domain / UI rules
 
 - Min length remains 8 (`assert` / wrap). Application may still throw if Enable is forced; UI should not offer Enable until valid.
-- Confirm mismatch is shown only via the confirm icon + (optional) a requirements-style “Passphrases match” line using the same colors — not a `role="alert"` placeholder. Prefer a second list item **Passphrases match** under confirm, same coloring.
+- Confirm mismatch is shown only via the confirm icon ([169](../169-confirm-pass-icon-only/spec.md)) — not a `role="alert"` placeholder and not a **Passphrases match** helper line.
 - Signed-in: cannot remove account passphrase; existing copy stays; no disable form.
 
 ## Acceptance scenarios

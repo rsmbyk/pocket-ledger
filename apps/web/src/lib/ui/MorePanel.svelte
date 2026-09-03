@@ -96,6 +96,8 @@
 	let importSummary = $state<BackupInspectSummary | null>(null);
 	let pendingImportFile = $state<File | null>(null);
 	let importPass = $state('');
+	let importPassError = $state<string | null>(null);
+	let importFileInput = $state<HTMLInputElement | null>(null);
 	let exportOpen = $state(false);
 	let exportPass = $state('');
 	let exportPassConfirm = $state('');
@@ -524,11 +526,6 @@
 								{/if}
 							{/if}
 						</div>
-						{#if lockPassConfirm.length > 0}
-							<ul class="space-y-1 text-sm">
-								<li class={passMatch ? 'text-income' : 'text-destructive'}>Passphrases match</li>
-							</ul>
-						{/if}
 						{#if lockPassError}
 							<p class="text-destructive text-sm" role="alert">{lockPassError}</p>
 						{/if}
@@ -577,7 +574,7 @@
 						Backup
 					</Card.Title>
 				</Card.Header>
-				<Card.Content class="flex flex-col gap-4 px-0">
+				<Card.Content class="flex flex-col gap-(--card-spacing) px-0">
 					<div class="flex flex-col gap-2">
 						{@render sectionHeading('Export')}
 						<p class="text-muted-foreground text-sm">
@@ -598,11 +595,13 @@
 					</div>
 					<div class="flex flex-col gap-2">
 						{@render sectionHeading('Import')}
-						<Label for="import-file">Choose a Pocket Ledger backup</Label>
-						<Input
+						<p class="text-muted-foreground text-sm">Choose a Pocket Ledger backup</p>
+						<input
+							bind:this={importFileInput}
 							id="import-file"
 							type="file"
 							accept="application/json,.json"
+							class="sr-only"
 							data-testid="import-backup"
 							onchange={(e) => {
 								const file = (e.currentTarget as HTMLInputElement).files?.[0];
@@ -611,6 +610,14 @@
 								void onImportPicked(file);
 							}}
 						/>
+						<Button type="button" onclick={() => importFileInput?.click()} data-testid="import-backup-choose">
+							Choose file
+						</Button>
+						{#if pendingImportFile}
+							<p class="text-muted-foreground truncate text-sm" data-testid="import-backup-filename">
+								{pendingImportFile.name}
+							</p>
+						{/if}
 						{#if importSummary}
 							<div class="text-muted-foreground space-y-1 text-sm" data-testid="backup-import-summary">
 								<p>{importSummary.pockets} pockets</p>
@@ -622,7 +629,13 @@
 									<p>Exported {importSummary.exportedAt}</p>
 								{/if}
 							</div>
-							<Button type="button" onclick={() => (importConfirmOpen = true)}>Import</Button>
+							<Button
+								type="button"
+								onclick={() => (importConfirmOpen = true)}
+								data-testid="import-backup-open"
+							>
+								Import
+							</Button>
 						{/if}
 					</div>
 				</Card.Content>
@@ -845,7 +858,10 @@
 	bind:open={importConfirmOpen}
 	onOpenChange={(open) => {
 		importConfirmOpen = open;
-		if (!open) importPass = '';
+		if (!open) {
+			importPass = '';
+			importPassError = null;
+		}
 	}}
 >
 	<Dialog.Content
@@ -872,7 +888,13 @@
 				bind:value={importPass}
 				autocomplete="off"
 				data-testid="import-backup-pass"
+				oninput={() => (importPassError = null)}
 			/>
+			{#if importPassError}
+				<p class="text-destructive text-sm" role="alert" data-testid="import-backup-pass-error">
+					{importPassError}
+				</p>
+			{/if}
 			<div class="flex justify-end gap-2">
 				<Button type="button" variant="outline" onclick={() => (importConfirmOpen = false)}>
 					Cancel
@@ -882,15 +904,21 @@
 					variant="destructive"
 					data-testid="import-backup-confirm"
 					onclick={() =>
-						void wrap(async () => {
+						void (async () => {
 							if (!pendingImportFile) return;
-							const file = pendingImportFile;
-							pendingImportFile = null;
-							importSummary = null;
-							await onImportFile(file, importPass);
-							importPass = '';
-							importConfirmOpen = false;
-						})}
+							importPassError = null;
+							try {
+								await onImportFile(pendingImportFile, importPass);
+								pendingImportFile = null;
+								importSummary = null;
+								importPass = '';
+								importPassError = null;
+								importConfirmOpen = false;
+							} catch (err) {
+								importPassError =
+									err instanceof Error ? err.message : 'Something went wrong';
+							}
+						})()}
 				>
 					Import
 				</Button>

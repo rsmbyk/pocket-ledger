@@ -34,9 +34,12 @@ test.describe('152 pocket goals', () => {
 		await goToNav(page, 'pockets');
 		await mainRow.click();
 		await addPocketGoal(page, { target: '100000' });
-		await expect(page.getByTestId('pocket-details-goals-list')).toContainText(/25%/);
+		const list = page.getByTestId('pocket-details-goals-list');
+		await expect(list.getByTestId('goal-progress-percent')).toHaveText('25%');
+		await expect(list.getByTestId('goal-progress-amounts')).not.toHaveText(/·/);
 		await page.getByTestId('pocket-details-back').click();
-		await expect(mainRow).toContainText(/25%/);
+		await expect(mainRow.getByTestId('goal-progress-percent')).toHaveText('25%');
+		await expect(mainRow.getByTestId('goal-progress-amounts')).not.toHaveText(/·/);
 	});
 
 	test('drop dated goal into past', async ({ page }) => {

@@ -12,6 +12,7 @@
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import DateField from '$lib/ui/DateField.svelte';
 	import PocketLabel from '$lib/ui/PocketLabel.svelte';
+	import GoalProgressChrome from '$lib/ui/GoalProgressChrome.svelte';
 	import type { Account } from '$lib/domain/account';
 	import {
 		pocketDeleteBlockers,
@@ -21,7 +22,6 @@
 	import { pocketDetailsPath } from '$lib/shared/router';
 	import { classifyFormFieldError, type FormFieldKey } from '$lib/domain/form-field-error';
 	import { goalProgressPercent, previewGoal, type PocketGoal } from '$lib/domain/goals';
-	import { formatRemainingUnit, largestRemainingUnit } from '$lib/domain/goal-time';
 	import { formatMinor } from '$lib/domain/money';
 	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
 	import {
@@ -338,9 +338,6 @@
 		goals.filter((g) => g.accountId === p.id),
 		todayOccurredOn()
 	)}
-	{@const percent = preview ? goalProgressPercent(preview.targetMinor, balance) : 0}
-	{@const remaining =
-		preview?.targetOn ? largestRemainingUnit(todayOccurredOn(), preview.targetOn) : null}
 	{@const href = pocketDetailsPath(p.id)}
 	{@const description = p.notes.trim()}
 	<a
@@ -373,22 +370,14 @@
 				</p>
 			{/if}
 			{#if preview}
-				<div class="mt-1.5 max-w-xs space-y-1">
-					<p class="text-muted-foreground text-xs">
-						{formatMinor(Math.max(0, balance), currencyLabel)} / {formatMinor(
-							preview.targetMinor,
-							currencyLabel
-						)} · {percent}%
-					</p>
-					{#if remaining}
-						<p class="text-muted-foreground text-xs" data-testid="pocket-goal-remaining">
-							{formatRemainingUnit(remaining)}
-						</p>
-					{/if}
-					<div class="bg-muted h-1.5 overflow-hidden rounded-full">
-						<div class="bg-primary h-full rounded-full" style={`width: ${percent}%`}></div>
-					</div>
-				</div>
+				<GoalProgressChrome
+					class="mt-1.5 max-w-xs"
+					currentMinor={balance}
+					targetMinor={preview.targetMinor}
+					percent={goalProgressPercent(preview.targetMinor, balance)}
+					targetOn={preview.targetOn}
+					{currencyLabel}
+				/>
 			{/if}
 		</div>
 		<p class="shrink-0 self-start font-medium tabular-nums">
