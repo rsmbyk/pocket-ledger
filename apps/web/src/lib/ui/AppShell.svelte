@@ -13,7 +13,7 @@
 	import type { CreatePocketInput, UpdatePocketInput } from '$lib/application/accounts';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { isAppRoute, isLegacyActivityPath, parsePath, routeToPath, type AppRoute } from '$lib/shared/router';
+	import { isAppRoute, isLegacyActivityPath, parsePath, parsePocketId, routeToPath, type AppRoute } from '$lib/shared/router';
 
 	type Props = {
 		account: Account | null;
@@ -125,16 +125,20 @@
 	let commandOpen = $state(false);
 	let editing = $state<LedgerTransaction | null>(null);
 	let route = $derived(parsePath(page.url.pathname));
+	let pocketId = $derived(parsePocketId(page.url.pathname));
+	const detailsPocket = $derived(accounts.find((a) => a.id === pocketId) ?? null);
 	/** Applied Transactions pocket ids; exactly one → Add default, else Main. */
 	let activityPocketFilterIds = $state<string[]>([]);
 	/** Clears `editing` after close animation; must cancel if reopened quickly. */
 	let clearEditingTimer: number | ReturnType<typeof setTimeout> | null = null;
 
 	const preferredAccountId = $derived(
-		activityPocketFilterIds.length === 1 &&
-			accounts.some((a) => a.id === activityPocketFilterIds[0])
-			? activityPocketFilterIds[0]!
-			: (account?.id ?? '')
+		detailsPocket
+			? detailsPocket.id
+			: activityPocketFilterIds.length === 1 &&
+				  accounts.some((a) => a.id === activityPocketFilterIds[0])
+				? activityPocketFilterIds[0]!
+				: (account?.id ?? '')
 	);
 
 	const navItems: { id: AppRoute; label: string }[] = [
@@ -145,7 +149,9 @@
 		{ id: 'more', label: 'More' }
 	];
 
-	const pageTitle = $derived(navItems.find((item) => item.id === route)?.label ?? 'Home');
+	const pageTitle = $derived(
+		detailsPocket?.name ?? navItems.find((item) => item.id === route)?.label ?? 'Home'
+	);
 
 	function cancelClearEditing() {
 		if (clearEditingTimer != null) {
@@ -181,6 +187,13 @@
 	$effect(() => {
 		if (isLegacyActivityPath(page.url.pathname)) {
 			void goto('/transactions', { replaceState: true });
+		}
+	});
+
+	$effect(() => {
+		if (!ready) return;
+		if (pocketId && !detailsPocket) {
+			void goto('/pockets', { replaceState: true });
 		}
 	});
 
@@ -232,6 +245,7 @@
 				{themePreference}
 				{route}
 				{pageTitle}
+				{detailsPocket}
 				{onThemePreferenceChange}
 				{onPrevMonth}
 				{onNextMonth}

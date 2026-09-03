@@ -17,6 +17,7 @@
 	import PocketLabel from '$lib/ui/PocketLabel.svelte';
 	import type { Account } from '$lib/domain/account';
 	import type { CreatePocketInput, UpdatePocketInput } from '$lib/application/accounts';
+	import { pocketDetailsPath } from '$lib/shared/router';
 	import { classifyFormFieldError, type FormFieldKey } from '$lib/domain/form-field-error';
 	import { assertGoalTarget, goalProgressPercent } from '$lib/domain/goals';
 	import { formatRemainingUnit, largestRemainingUnit } from '$lib/domain/goal-time';
@@ -49,6 +50,11 @@
 		onDeletePocket: (id: string) => void | Promise<void>;
 		onReorderPockets: (orderedNonMainIds: string[]) => void | Promise<void>;
 		onClearGoal: (id: string) => void | Promise<void>;
+		/** When set, open the existing edit dialog for this pocket (spec 148). */
+		requestEdit?: Account | null;
+		onRequestEditConsumed?: () => void;
+		/** Hide the list; keep dialogs mounted (details page). */
+		hideList?: boolean;
 	};
 
 	type FormBaseline = {
@@ -71,7 +77,10 @@
 		onUpdatePocket,
 		onDeletePocket,
 		onReorderPockets,
-		onClearGoal
+		onClearGoal,
+		requestEdit = null,
+		onRequestEditConsumed,
+		hideList = false
 	}: Props = $props();
 
 	const flipDurationMs = 180;
@@ -361,6 +370,13 @@
 			items = pockets.filter((p) => !p.isMain);
 		}
 	}
+
+	$effect(() => {
+		const target = requestEdit;
+		if (!target) return;
+		openEdit(target);
+		onRequestEditConsumed?.();
+	});
 </script>
 
 {#snippet pocketRow(p: Account, draggable: boolean)}
@@ -369,12 +385,23 @@
 	{@const percent = hasGoal ? goalProgressPercent(p.goalTargetMinor!, balance) : 0}
 	{@const remaining =
 		hasGoal && p.goalTargetOn ? largestRemainingUnit(todayOccurredOn(), p.goalTargetOn) : null}
-	<div class={['flex gap-2 px-4 py-3', hasGoal ? 'items-stretch' : 'items-center']}>
+	{@const href = pocketDetailsPath(p.id)}
+	<a
+		href={href}
+		class="absolute inset-0 z-0"
+		aria-label={`Open ${p.name}`}
+	></a>
+	<div
+		class={[
+			'pointer-events-none relative z-10 flex gap-2 px-4 py-3',
+			hasGoal ? 'items-stretch' : 'items-center'
+		]}
+	>
 		{#if draggable}
 			<button
 				type="button"
 				use:dragHandle
-				class="dnd-handle text-muted-foreground hover:text-foreground shrink-0 cursor-grab rounded-sm p-1 active:cursor-grabbing"
+				class="dnd-handle text-muted-foreground hover:text-foreground pointer-events-auto shrink-0 cursor-grab rounded-sm p-1 active:cursor-grabbing"
 				aria-label={`Drag to reorder ${p.name}`}
 			>
 				<GripVerticalIcon class="size-4" aria-hidden="true" />
@@ -382,77 +409,79 @@
 		{:else}
 			<span class="size-4 shrink-0" aria-hidden="true"></span>
 		{/if}
-		<div class="min-w-0 flex-1">
-			<PocketLabel
-				name={p.name}
-				isMain={p.isMain}
-				class="font-medium"
-				iconTestid={p.isMain ? 'pocket-main-icon' : undefined}
-			/>
-			{#if hasGoal}
-				<div class="mt-1.5 max-w-xs space-y-1">
-					<p class="text-muted-foreground text-xs">
-						{formatMinor(Math.max(0, balance), currencyLabel)} / {formatMinor(
-							p.goalTargetMinor!,
-							currencyLabel
-						)} · {percent}%
-					</p>
-					{#if remaining}
-						<p class="text-muted-foreground text-xs" data-testid="pocket-goal-remaining">
-							{formatRemainingUnit(remaining)}
-						</p>
-					{/if}
-					<div class="bg-muted h-1.5 overflow-hidden rounded-full">
-						<div class="bg-primary h-full rounded-full" style={`width: ${percent}%`}></div>
-					</div>
-				</div>
-			{/if}
-		</div>
-		<div
-			class={['flex shrink-0 flex-col items-end gap-1', hasGoal && 'justify-between self-stretch']}
-		>
-			<p class="font-medium tabular-nums">{formatMinor(balance, currencyLabel)}</p>
-			<div class={['flex gap-1', hasGoal && 'mt-auto']}>
+		<div class={['flex min-w-0 flex-1 gap-2', hasGoal ? 'items-stretch' : 'items-center']}>
+			<div class="min-w-0 flex-1">
+				<PocketLabel
+					name={p.name}
+					isMain={p.isMain}
+					class="font-medium"
+					iconTestid={p.isMain ? 'pocket-main-icon' : undefined}
+				/>
 				{#if hasGoal}
-					<Button
-						size="icon-sm"
-						variant="destructive"
-						aria-label={`Clear goal for ${p.name}`}
-						data-testid="pocket-clear-goal"
-						disabled={busy}
-						onclick={() => void runAction(() => onClearGoal(p.id))}
-					>
-						<XIcon class="size-4" />
-					</Button>
-				{/if}
-				<Button
-					size="icon-sm"
-					variant="outline"
-					aria-label={`Edit ${p.name}`}
-					data-testid="pocket-edit"
-					disabled={busy}
-					onclick={() => openEdit(p)}
-				>
-					<PencilIcon class="size-4" />
-				</Button>
-				{#if !p.isMain}
-					<Button
-						size="icon-sm"
-						variant="destructive"
-						aria-label={`Delete ${p.name}`}
-						data-testid="pocket-delete"
-						disabled={busy}
-						onclick={() => requestDelete(p)}
-					>
-						<Trash2Icon class="size-4" />
-					</Button>
+					<div class="mt-1.5 max-w-xs space-y-1">
+						<p class="text-muted-foreground text-xs">
+							{formatMinor(Math.max(0, balance), currencyLabel)} / {formatMinor(
+								p.goalTargetMinor!,
+								currencyLabel
+							)} · {percent}%
+						</p>
+						{#if remaining}
+							<p class="text-muted-foreground text-xs" data-testid="pocket-goal-remaining">
+								{formatRemainingUnit(remaining)}
+							</p>
+						{/if}
+						<div class="bg-muted h-1.5 overflow-hidden rounded-full">
+							<div class="bg-primary h-full rounded-full" style={`width: ${percent}%`}></div>
+						</div>
+					</div>
 				{/if}
 			</div>
+			<p
+				class={['shrink-0 font-medium tabular-nums', hasGoal && 'self-start']}
+			>
+				{formatMinor(balance, currencyLabel)}
+			</p>
+		</div>
+		<div class={['pointer-events-auto flex shrink-0 gap-1', hasGoal && 'mt-auto self-end']}>
+			{#if hasGoal}
+				<Button
+					size="icon-sm"
+					variant="destructive"
+					aria-label={`Clear goal for ${p.name}`}
+					data-testid="pocket-clear-goal"
+					disabled={busy}
+					onclick={() => void runAction(() => onClearGoal(p.id))}
+				>
+					<XIcon class="size-4" />
+				</Button>
+			{/if}
+			<Button
+				size="icon-sm"
+				variant="outline"
+				aria-label={`Edit ${p.name}`}
+				data-testid="pocket-edit"
+				disabled={busy}
+				onclick={() => openEdit(p)}
+			>
+				<PencilIcon class="size-4" />
+			</Button>
+			{#if !p.isMain}
+				<Button
+					size="icon-sm"
+					variant="destructive"
+					aria-label={`Delete ${p.name}`}
+					data-testid="pocket-delete"
+					disabled={busy}
+					onclick={() => requestDelete(p)}
+				>
+					<Trash2Icon class="size-4" />
+				</Button>
+			{/if}
 		</div>
 	</div>
 	{#if p.notes.trim()}
 		<div
-			class="border-border text-muted-foreground border-t px-4 py-2 text-xs"
+			class="border-border text-muted-foreground pointer-events-none relative z-10 border-t px-4 py-2 text-xs"
 			data-testid="pocket-description"
 		>
 			{p.notes.trim()}
@@ -460,7 +489,7 @@
 	{/if}
 {/snippet}
 
-<div class="space-y-3" data-testid="pockets-panel">
+<div class={['space-y-3', hideList && 'hidden']} data-testid="pockets-panel">
 	<div class="flex items-center justify-end">
 		<Button
 			type="button"
@@ -477,7 +506,7 @@
 		<p class="text-destructive text-sm" role="alert">{error}</p>
 	{/if}
 	{#if mainPocket}
-		<Card.Root class="gap-0 overflow-hidden py-0" data-testid={`pocket-row-${mainPocket.id}`}>
+		<Card.Root class="relative gap-0 overflow-hidden py-0" data-testid={`pocket-row-${mainPocket.id}`}>
 			{@render pocketRow(mainPocket, false)}
 		</Card.Root>
 	{/if}
@@ -490,7 +519,7 @@
 	>
 		{#each items as p (p.id)}
 			<div animate:flip={{ duration: flipDurationMs }}>
-				<Card.Root class="gap-0 overflow-hidden py-0" data-testid={`pocket-row-${p.id}`}>
+				<Card.Root class="relative gap-0 overflow-hidden py-0" data-testid={`pocket-row-${p.id}`}>
 					{@render pocketRow(p, true)}
 				</Card.Root>
 			</div>

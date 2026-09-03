@@ -198,6 +198,73 @@ describe('month-summary', () => {
 		expect(summary.endingMinor).toBe(-350);
 	});
 
+	it('scopes opening, income, and expense to one pocket (148)', () => {
+		const pockets = [
+			{ id: 'main', openingBalanceMinor: 100_000, openingAsOf: '2026-01-01' },
+			{ id: 'vac', openingBalanceMinor: 20_000, openingAsOf: '2026-01-01' }
+		];
+		const rows = [
+			tx({
+				type: 'income',
+				amountMinor: 100_000,
+				accountId: 'main',
+				occurredOn: '2026-07-02',
+				categoryId: 'sal'
+			}),
+			tx({
+				type: 'expense',
+				amountMinor: 15_000,
+				accountId: 'vac',
+				occurredOn: '2026-07-03',
+				categoryId: 'food'
+			})
+		];
+		const all = buildMonthSummary(rows, '2026-07', { food: { name: 'Food', sortOrder: 0 } }, pockets);
+		expect(all.incomeMinor).toBe(100_000);
+		expect(all.expenseMinor).toBe(15_000);
+		expect(all.openingMinor).toBe(120_000);
+
+		const vac = buildMonthSummary(
+			rows,
+			'2026-07',
+			{ food: { name: 'Food', sortOrder: 0 } },
+			pockets,
+			{ pocketId: 'vac' }
+		);
+		expect(vac.incomeMinor).toBe(0);
+		expect(vac.expenseMinor).toBe(15_000);
+		expect(vac.openingMinor).toBe(20_000);
+		expect(vac.endingMinor).toBe(5_000);
+	});
+
+	it('counts transfer admin fee only on the source pocket (148)', () => {
+		const pockets = [
+			{ id: 'main', openingBalanceMinor: 0, openingAsOf: '2026-01-01' },
+			{ id: 'vac', openingBalanceMinor: 0, openingAsOf: '2026-01-01' }
+		];
+		const rows = [
+			tx({
+				type: 'transfer',
+				amountMinor: 10_000,
+				feeMinor: 250,
+				occurredOn: '2026-07-02',
+				accountId: 'main',
+				counterAccountId: 'vac'
+			})
+		];
+		const main = buildMonthSummary(rows, '2026-07', {}, pockets, { pocketId: 'main' });
+		expect(main.expenseMinor).toBe(250);
+		expect(main.incomeMinor).toBe(0);
+		expect(main.expenseByCategory).toEqual([
+			{ categoryId: '__admin_fee__', label: 'Admin Fee', amountMinor: 250 }
+		]);
+
+		const vac = buildMonthSummary(rows, '2026-07', {}, pockets, { pocketId: 'vac' });
+		expect(vac.expenseMinor).toBe(0);
+		expect(vac.incomeMinor).toBe(0);
+		expect(vac.expenseByCategory).toEqual([]);
+	});
+
 	it('ignores voided transfer fees', () => {
 		const rows = [
 			tx({

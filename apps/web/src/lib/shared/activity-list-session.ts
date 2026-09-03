@@ -147,3 +147,14 @@ export function writeActivityListSession(
 		// Ignore quota / private-mode failures; in-memory state still applies.
 	}
 }
+
+/** Defaults plus one pocket and the current-month range (spec 148 See more). */
+export function activitySessionForPocket(
+	pocketId: string,
+	now = new Date()
+): ActivityListSessionState {
+	return {
+		filters: { ...DEFAULT_ACTIVITY_FILTERS, pocketIds: [pocketId] },
+		range: defaultTransactionDateRange(now)
+	};
+}

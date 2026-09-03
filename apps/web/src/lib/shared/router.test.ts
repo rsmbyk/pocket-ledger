@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isLegacyActivityPath, parsePath, routeToPath } from './router';
+import { isLegacyActivityPath, parsePath, parsePocketId, pocketDetailsPath, routeToPath } from './router';
 
 describe('path router', () => {
 	it('maps empty, slash, and home paths to home', () => {
@@ -20,6 +20,19 @@ describe('path router', () => {
 		expect(parsePath('/not-a-route')).toBe('home');
 		expect(parsePath('/activity/extra')).toBe('home');
 		expect(parsePath('/transactions/extra')).toBe('home');
+		expect(parsePath('/pockets/a/b')).toBe('home');
+	});
+
+	it('treats /pockets/:id as the Pockets panel (148)', () => {
+		expect(parsePath('/pockets/vac-1')).toBe('pockets');
+		expect(parsePath('/pockets/vac-1/')).toBe('pockets');
+		expect(parsePocketId('/pockets')).toBeNull();
+		expect(parsePocketId('/pockets/')).toBeNull();
+		expect(parsePocketId('/pockets/vac-1')).toBe('vac-1');
+		expect(parsePocketId('/pockets/vac-1/')).toBe('vac-1');
+		expect(parsePocketId('/pockets/a/b')).toBeNull();
+		expect(parsePocketId('/transactions')).toBeNull();
+		expect(pocketDetailsPath('vac-1')).toBe('/pockets/vac-1');
 	});
 
 	it('builds paths for navigation', () => {

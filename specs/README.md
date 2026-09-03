@@ -164,3 +164,4 @@ Living behavior contracts for Pocket Ledger.
 | [145](145-remove-amount-filter/spec.md)                  | Remove Filters Amount compare                                | Accepted                                                                        |
 | [146](146-reorder-reset-both-discard-confirm/spec.md)    | Reorder Reset both kinds + Discard confirm                   | Accepted                                                                        |
 | [147](147-categories-reorder-whole-row-drag/spec.md)     | Categories reorder whole-row drag                            | Accepted                                                                        |
+| [148](148-pocket-details-page/spec.md)                   | Pocket details page                                          | Accepted                                                                        |
