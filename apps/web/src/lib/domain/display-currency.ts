@@ -1,11 +1,10 @@
-/** Display currency catalog (Spec 155). No FX — one ISO code for the whole app. */
+/** Display currency catalog (Specs 155, 161). No FX — one ISO code for the whole app. */
 
 export const DEFAULT_DISPLAY_CURRENCY = 'IDR';
 
 export type CurrencyOption = {
 	code: string;
 	name: string;
-	symbol: string;
 };
 
 function currencyCodes(): string[] {
@@ -27,28 +26,16 @@ function currencyName(code: string): string {
 	}
 }
 
-function currencySymbol(code: string): string {
-	try {
-		const part = new Intl.NumberFormat('en', { style: 'currency', currency: code })
-			.formatToParts(0)
-			.find((p) => p.type === 'currency');
-		return part?.value ?? code;
-	} catch {
-		return code;
-	}
-}
-
 export function listCurrencyOptions(): CurrencyOption[] {
 	return currencyCodes().map((code) => ({
 		code,
-		name: currencyName(code),
-		symbol: currencySymbol(code)
+		name: currencyName(code)
 	}));
 }
 
-/** ISO, then a gap, then `Name - Symbol`. */
+/** ISO, then a gap, then the English name. */
 export function currencyRowLabel(option: CurrencyOption): string {
-	return `${option.code}  ${option.name} - ${option.symbol}`;
+	return `${option.code}  ${option.name}`;
 }
 
 export function parseDisplayCurrency(raw: string | undefined | null): string {

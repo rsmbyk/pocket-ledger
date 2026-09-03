@@ -15,8 +15,8 @@ Let the user pick the **display** currency for the whole app from Settings. One 
 ### In scope
 
 1. **Card** — `settings-section-currency`, title **Currency**, inner section + footer **Save** / **Cancel** / **Default** (`currency-save`, `currency-cancel`, `currency-default`).
-2. **Dropdown** — Searchable (`currency-picker`, `currency-picker-search`). Each row: ISO code, then a gap, then `Name - Symbol` (e.g. `IDR` then `Indonesian Rupiah - Rp`). Search matches **ISO or name**, case-insensitive, not the symbol.
-3. **Catalog** — `Intl.supportedValuesOf('currency')` + `Intl.DisplayNames` (`currency`) + `NumberFormat` for the symbol. No extra ISO package. Sort by ISO. If `IDR` is missing from the runtime list, still include it.
+2. **Dropdown** — Searchable (`currency-picker`, `currency-picker-search`). Each row: ISO code (monospace) then English name (spec 161). Search matches **ISO or name**, case-insensitive, not a currency symbol.
+3. **Catalog** — `Intl.supportedValuesOf('currency')` + `Intl.DisplayNames` (`currency`). No extra ISO package. Sort by ISO. If `IDR` is missing from the runtime list, still include it.
 4. **Storage** — Settings key `displayCurrency` (ISO 4217). Default `IDR`. [`formatMinor`](../../apps/web/src/lib/domain/money.ts) and shell money read this (fallback IDR). On **Save**, write `currencyLabel` on **every** pocket to that ISO so backups stay consistent. Signed-in: sync as settings (121).
 5. **Draft footer** (shared 154 wave rules):
    - Draft vs stored. **Save** applies (disabled when draft equals stored).
@@ -51,7 +51,7 @@ Let the user pick the **display** currency for the whole app from Settings. One 
 - **Then** IDR (Indonesian Rupiah) is among the matches
 - **When** they type `USD`
 - **Then** USD matches by ISO
-- **And** each visible row has ISO, then name, then symbol after a hyphen
+- **And** each visible row has ISO then name (no hyphen-symbol suffix; spec 161)
 
 ### Scenario: Save Cancel Default
 
