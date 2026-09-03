@@ -1,13 +1,19 @@
-export type Goal = {
+export type PocketGoal = {
 	id: string;
-	name: string;
+	accountId: string;
+	description: string;
 	targetMinor: number;
-	/** Deadline YYYY-MM-DD — have target by this date. */
-	targetOn: string;
-	/** Legacy field retained for backup compat; unused for progress. */
-	savedMinor: number;
+	/** Deadline YYYY-MM-DD; null = open-ended. */
+	targetOn: string | null;
 	createdAt: string;
+	cancelledAt: string | null;
+	deletedAt: string | null;
 };
+
+/** @deprecated Use PocketGoal — kept as an alias for backup/import typing. */
+export type Goal = PocketGoal;
+
+export type PastGoalBadge = 'Achieved' | 'Missed' | 'Dropped';
 
 const YMD = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -34,11 +40,10 @@ export function assertGoalDeadline(targetOn: string): void {
 	parseGoalDate(targetOn);
 }
 
-/** @deprecated Use assertGoalTarget; savedMinor is unused for progress. */
-export function assertGoalAmounts(targetMinor: number, savedMinor: number): void {
-	assertGoalTarget(targetMinor);
-	if (!Number.isInteger(savedMinor) || savedMinor < 0) {
-		throw new Error('Saved amount must be a non-negative whole number');
+export function assertGoalDateNotPast(targetOn: string, today: string): void {
+	assertGoalDeadline(targetOn);
+	if (targetOn < today) {
+		throw new Error('Goal date cannot be earlier than today');
 	}
 }
 
@@ -57,40 +62,134 @@ export function goalRemainingMinor(targetMinor: number, balanceMinor: number): n
 	return targetMinor - balanceMinor;
 }
 
-/** Calendar days from today to deadline; negative = overdue. */
-export function daysRemaining(targetOn: string, today: string): number {
-	const t = parseGoalDate(targetOn).getTime();
-	const d = parseGoalDate(today).getTime();
-	return Math.round((t - d) / 86_400_000);
+export function isHidden(goal: Pick<PocketGoal, 'deletedAt'>): boolean {
+	return goal.deletedAt != null;
 }
 
-/** Rough daily need; null when not applicable. */
-export function dailyPaceNeeded(remainingMinor: number, days: number): number | null {
-	if (remainingMinor <= 0 || days <= 0) return null;
-	return Math.ceil(remainingMinor / days);
+export function isDropped(goal: Pick<PocketGoal, 'cancelledAt'>): boolean {
+	return goal.cancelledAt != null;
 }
 
-export function sortGoalsByNearestDeadline<T extends Pick<Goal, 'targetOn' | 'targetMinor'>>(
-	goals: T[],
-	balanceMinor: number
-): T[] {
-	return [...goals].sort((a, b) => {
-		const byDate = a.targetOn.localeCompare(b.targetOn);
+export function isActive(
+	goal: Pick<PocketGoal, 'deletedAt' | 'cancelledAt' | 'targetOn'>,
+	today: string
+): boolean {
+	if (isHidden(goal) || isDropped(goal)) return false;
+	return goal.targetOn == null || goal.targetOn >= today;
+}
+
+export function isPast(
+	goal: Pick<PocketGoal, 'deletedAt' | 'cancelledAt' | 'targetOn'>,
+	today: string
+): boolean {
+	if (isHidden(goal) || goal.targetOn == null) return false;
+	return goal.targetOn < today || isDropped(goal);
+}
+
+export function sortActiveGoals<T extends PocketGoal>(goals: T[], today: string): T[] {
+	const active = goals.filter((g) => isActive(g, today));
+	const dated = active.filter((g) => g.targetOn != null);
+	const open = active.filter((g) => g.targetOn == null);
+	dated.sort((a, b) => {
+		const byDate = a.targetOn!.localeCompare(b.targetOn!);
 		if (byDate !== 0) return byDate;
-		const remA = goalRemainingMinor(a.targetMinor, balanceMinor);
-		const remB = goalRemainingMinor(b.targetMinor, balanceMinor);
-		return remB - remA;
+		const byCreated = a.createdAt.localeCompare(b.createdAt);
+		if (byCreated !== 0) return byCreated;
+		return a.id.localeCompare(b.id);
+	});
+	open.sort((a, b) => {
+		const byCreated = a.createdAt.localeCompare(b.createdAt);
+		if (byCreated !== 0) return byCreated;
+		return a.id.localeCompare(b.id);
+	});
+	return [...dated, ...open];
+}
+
+export function previewGoal<T extends PocketGoal>(goals: T[], today: string): T | null {
+	return sortActiveGoals(goals, today)[0] ?? null;
+}
+
+export function sortPastGoals<T extends PocketGoal>(goals: T[], today: string): T[] {
+	return goals.filter((g) => isPast(g, today)).sort((a, b) => {
+		const byDate = (b.targetOn ?? '').localeCompare(a.targetOn ?? '');
+		if (byDate !== 0) return byDate;
+		const byCreated = b.createdAt.localeCompare(a.createdAt);
+		if (byCreated !== 0) return byCreated;
+		return b.id.localeCompare(a.id);
 	});
 }
 
-/** @deprecated Prefer balance-based helpers. */
-export function goalProgressRatioFromSaved(goal: Pick<Goal, 'targetMinor' | 'savedMinor'>): number {
-	return goalProgressRatio(goal.targetMinor, goal.savedMinor);
+export function pastGoalBadge(
+	goal: PocketGoal,
+	endOfDayBalanceMinor: number
+): PastGoalBadge {
+	if (isDropped(goal)) return 'Dropped';
+	return endOfDayBalanceMinor >= goal.targetMinor ? 'Achieved' : 'Missed';
 }
 
-/** @deprecated Prefer balance-based helpers. */
-export function goalProgressPercentFromSaved(
-	goal: Pick<Goal, 'targetMinor' | 'savedMinor'>
-): number {
-	return goalProgressPercent(goal.targetMinor, goal.savedMinor);
+export type AccountGoalFields = {
+	id: string;
+	goalEnabled?: boolean;
+	goalTargetMinor?: number | null;
+	goalTargetOn?: string | null;
+};
+
+/** One-time: pocket goal fields → rows. Skip accounts that already have a row. */
+export function migrateAccountGoalsToRows(
+	accounts: AccountGoalFields[],
+	existing: PocketGoal[],
+	nowIso: string
+): PocketGoal[] {
+	const already = new Set(existing.filter((g) => g.accountId).map((g) => g.accountId));
+	const extra: PocketGoal[] = [];
+	for (const account of accounts) {
+		if (already.has(account.id)) continue;
+		const enabled = account.goalEnabled === true || typeof account.goalTargetMinor === 'number';
+		if (!enabled || account.goalTargetMinor == null) continue;
+		extra.push({
+			id: `migrated-goal:${account.id}`,
+			accountId: account.id,
+			description: '',
+			targetMinor: account.goalTargetMinor,
+			targetOn: account.goalTargetOn?.trim() ? account.goalTargetOn : null,
+			createdAt: nowIso,
+			cancelledAt: null,
+			deletedAt: null
+		});
+	}
+	return [...existing.filter((g) => g.accountId), ...extra];
+}
+
+export function stripAccountGoalFields<T extends AccountGoalFields>(account: T): T {
+	return {
+		...account,
+		goalEnabled: false,
+		goalTargetMinor: null,
+		goalTargetOn: null
+	};
+}
+
+/** Restore/import: only rows with accountId become live 152 goals. */
+export function normalizeStoredGoal(raw: unknown): PocketGoal | null {
+	if (!raw || typeof raw !== 'object') return null;
+	const row = raw as Record<string, unknown>;
+	if (typeof row.id !== 'string' || !row.id) return null;
+	if (typeof row.accountId !== 'string' || !row.accountId) return null;
+	if (typeof row.targetMinor !== 'number' || !Number.isInteger(row.targetMinor)) return null;
+	const description =
+		typeof row.description === 'string'
+			? row.description
+			: typeof row.name === 'string'
+				? row.name
+				: '';
+	return {
+		id: row.id,
+		accountId: row.accountId,
+		description,
+		targetMinor: row.targetMinor,
+		targetOn: typeof row.targetOn === 'string' && row.targetOn.trim() ? row.targetOn : null,
+		createdAt: typeof row.createdAt === 'string' ? row.createdAt : new Date().toISOString(),
+		cancelledAt: typeof row.cancelledAt === 'string' ? row.cancelledAt : null,
+		deletedAt: typeof row.deletedAt === 'string' ? row.deletedAt : null
+	};
 }

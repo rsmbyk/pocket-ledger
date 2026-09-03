@@ -150,7 +150,13 @@ export class PocketLedgerDb extends Dexie {
 				if (goals.length > 0 && mainId) {
 					const main = (await accounts.get(mainId)) as Account | undefined;
 					if (main && main.goalTargetMinor == null) {
-						const pick = pickNearestGoalForMigration(goals);
+						const pick = pickNearestGoalForMigration(
+							goals.filter((g) => typeof g.targetOn === 'string') as Array<{
+								id: string;
+								targetOn: string;
+								targetMinor: number;
+							}>
+						);
 						if (pick) {
 							await accounts.put({
 								...main,
@@ -259,6 +265,81 @@ export class PocketLedgerDb extends Dexie {
 					});
 				}
 			});
+		this.version(9)
+			.stores({
+				accounts: 'id, name, sortOrder, isMain',
+				categories: 'id, kind, name, sortOrder, deletedAt, groupId, hidden',
+				categoryGroups: 'id, kind',
+				transactions: 'id, accountId, type, occurredOn, categoryId',
+				settings: 'key',
+				goals: 'id, accountId',
+				netWorthSnapshots: 'id, capturedOn',
+				syncRevs: 'id'
+			})
+			.upgrade(async (tx) => {
+				const accounts = tx.table('accounts');
+				const goalsTable = tx.table('goals');
+				const accountRows = (await accounts.toArray()) as Array<Record<string, unknown>>;
+				const existingGoals = (await goalsTable.toArray()) as Array<Record<string, unknown>>;
+				const now = new Date().toISOString();
+				const already = new Set<string>();
+				for (const raw of existingGoals) {
+					const accountId = typeof raw.accountId === 'string' ? raw.accountId : '';
+					if (!accountId) continue;
+					already.add(accountId);
+					const description =
+						typeof raw.description === 'string'
+							? raw.description
+							: typeof raw.name === 'string'
+								? raw.name
+								: '';
+					await goalsTable.put({
+						id: String(raw.id),
+						accountId,
+						description,
+						targetMinor: typeof raw.targetMinor === 'number' ? raw.targetMinor : 0,
+						targetOn:
+							typeof raw.targetOn === 'string' && raw.targetOn.trim() ? raw.targetOn : null,
+						createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : now,
+						cancelledAt: typeof raw.cancelledAt === 'string' ? raw.cancelledAt : null,
+						deletedAt: typeof raw.deletedAt === 'string' ? raw.deletedAt : null
+					});
+				}
+				for (const row of accountRows) {
+					const id = String(row.id);
+					const enabled = row.goalEnabled === true || typeof row.goalTargetMinor === 'number';
+					if (!enabled || typeof row.goalTargetMinor !== 'number') continue;
+					if (already.has(id)) {
+						await accounts.put({
+							...row,
+							goalEnabled: false,
+							goalTargetMinor: null,
+							goalTargetOn: null
+						});
+						continue;
+					}
+					await goalsTable.put({
+						id: `migrated-goal:${id}`,
+						accountId: id,
+						description: '',
+						targetMinor: row.goalTargetMinor,
+						targetOn:
+							typeof row.goalTargetOn === 'string' && row.goalTargetOn.trim()
+								? row.goalTargetOn
+								: null,
+						createdAt: now,
+						cancelledAt: null,
+						deletedAt: null
+					});
+					already.add(id);
+					await accounts.put({
+						...row,
+						goalEnabled: false,
+						goalTargetMinor: null,
+						goalTargetOn: null
+					});
+				}
+			});
 	}
 }
 
@@ -276,3 +357,4 @@ export const SETTINGS_WRAP_REV = 'cloud.wrapRev';
 export const SETTINGS_WEBAUTHN = 'lock.webauthn';
 export const SETTINGS_CATEGORY_OVERLAY = 'category.overlayPrefs';
 export const SETTINGS_CATEGORY_MIGRATED = 'category.catalogMigrated';
+export const SETTINGS_DISPLAY_CURRENCY = 'displayCurrency';

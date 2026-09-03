@@ -13,7 +13,9 @@ test.describe('121 sync conflict', () => {
 		await expect(page.getByTestId('hex-kit-screen')).toBeVisible();
 		await page.getByTestId('hex-kit-stored').check();
 		await page.getByTestId('hex-kit-confirm').click();
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('app-shell')).toBeVisible();
+		await goToNav(page, 'home');
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 
 		await page.route('**/v1/sync/**', async (route) => {
 			if (route.request().method() === 'PUT') {

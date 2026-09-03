@@ -4,7 +4,7 @@ import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
 test.describe('066 recent see more', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 	});
 
 	test('shows control when empty and navigates to Transactions', async ({ page }) => {

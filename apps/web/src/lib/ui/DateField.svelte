@@ -12,6 +12,8 @@
 		'aria-label'?: string;
 		testid?: string;
 		onValueChange: (next: string) => void;
+		/** Native `min` on the date input (YYYY-MM-DD). */
+		min?: string;
 		/** Optional trailing control inside the field chrome (right side). */
 		trailing?: Snippet;
 	};
@@ -24,6 +26,7 @@
 		'aria-label': ariaLabel = 'Date',
 		testid = 'date-field',
 		onValueChange,
+		min,
 		trailing
 	}: Props = $props();
 
@@ -68,6 +71,7 @@
 		)}
 		{disabled}
 		{value}
+		min={min}
 		aria-label={ariaLabel}
 		onclick={(e) => {
 			const el = e.currentTarget as HTMLInputElement;

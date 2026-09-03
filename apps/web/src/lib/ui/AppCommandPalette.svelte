@@ -4,7 +4,7 @@
 	import ListIcon from '@lucide/svelte/icons/list';
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
 	import TagsIcon from '@lucide/svelte/icons/tags';
-	import MoreHorizontalIcon from '@lucide/svelte/icons/ellipsis';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import * as Command from '$lib/components/ui/command/index.js';
 	import type { AppRoute } from '$lib/shared/router';
@@ -65,9 +65,9 @@
 				<TagsIcon />
 				Categories
 			</Command.Item>
-			<Command.Item onSelect={() => run(() => onNavigate('more'))} data-testid="cmd-more">
-				<MoreHorizontalIcon />
-				More
+			<Command.Item onSelect={() => run(() => onNavigate('settings'))} data-testid="cmd-settings">
+				<SettingsIcon />
+				Settings
 			</Command.Item>
 		</Command.Group>
 		<Command.Separator />

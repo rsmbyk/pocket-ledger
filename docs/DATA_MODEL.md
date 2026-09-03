@@ -74,10 +74,10 @@ Simple ledger row, double-entry-ready:
 | createdAt        |                                                                                                                   |
 | voidedAt         | ISO timestamp or null                                                                                             |
 
-## goals (legacy)
+## goals
 
-Table retained for migrations/backups. Live UI goals live on `accounts` goal fields (spec 072). Upgrade/restore migrates at most one nearest-deadline goal onto Main, then clears live `goals` usage.
+Live Dexie rows (spec 152): `id`, `accountId`, optional `description`, `targetMinor`, optional `targetOn`, `createdAt`, `cancelledAt` (Dropped), `deletedAt` (hidden). Never hard-deleted. Account `goalEnabled` / `goalTargetMinor` / `goalTargetOn` migrate once into a row.
 
 ## settings
 
-Key/value. Reserved: `encryption.enabled` = `false` by default (not written until feature lands).
+Key/value. Display currency is `displayCurrency` (ISO 4217, default IDR). Idle: `idle.minutes`, `idle.leaveTab`. Reserved lock wrap keys stay as today.

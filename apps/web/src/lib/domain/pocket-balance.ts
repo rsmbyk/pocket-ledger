@@ -74,6 +74,28 @@ export function balanceAtDayStart(
 	return total;
 }
 
+/** Calendar YYYY-MM-DD plus one UTC day. */
+export function dayAfter(day: string): string {
+	const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day.trim());
+	if (!m) throw new Error('Date must be YYYY-MM-DD');
+	const dt = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + 1));
+	const y = dt.getUTCFullYear();
+	const mo = String(dt.getUTCMonth() + 1).padStart(2, '0');
+	const d = String(dt.getUTCDate()).padStart(2, '0');
+	return `${y}-${mo}-${d}`;
+}
+
+/**
+ * Pocket balance at the end of calendar day `day` (txs with occurredOn <= day count).
+ */
+export function goalEndOfDayBalance(
+	pocket: Pick<Account, 'id' | 'openingBalanceMinor' | 'openingAsOf'>,
+	day: string,
+	transactions: PocketBalanceTx[]
+): MinorUnits {
+	return balanceAtDayStart(pocket, dayAfter(day), transactions);
+}
+
 /**
  * Current pocket balance = opening + deltas for non-voided txs with occurredOn >= openingAsOf.
  */

@@ -31,7 +31,7 @@ export async function longPress(locator: Locator, holdMs = 600): Promise<void> {
 /** Navigate via the app drawer (desktop rail) or overlay sheet (mobile). */
 export async function goToNav(
 	page: Page,
-	dest: 'home' | 'transactions' | 'pockets' | 'categories' | 'more'
+	dest: 'home' | 'transactions' | 'pockets' | 'categories' | 'more' | 'settings'
 ): Promise<void> {
 	const rail = page.getByTestId('app-drawer-rail');
 	const sheet = page.getByTestId('app-drawer-sheet');
@@ -44,21 +44,22 @@ export async function goToNav(
 
 	const railBox = await rail.boundingBox().catch(() => null);
 	const railOnScreen = Boolean(railBox && railBox.x >= 0 && railBox.width > 40);
+	const navDest = dest === 'more' ? 'settings' : dest;
 
 	if (railOnScreen) {
-		await rail.getByTestId(`nav-${dest}`).click();
+		await rail.getByTestId(`nav-${navDest}`).click();
 		return;
 	}
 
 	await menu.click();
 
 	if (await sheet.isVisible().catch(() => false)) {
-		await sheet.getByTestId(`nav-${dest}`).click();
+		await sheet.getByTestId(`nav-${navDest}`).click();
 		return;
 	}
 
 	await rail.waitFor({ state: 'visible', timeout: 10_000 });
-	await rail.getByTestId(`nav-${dest}`).click();
+	await rail.getByTestId(`nav-${navDest}`).click();
 }
 
 /** Open add via Recent header or command palette (no empty-state CTAs). */
@@ -154,6 +155,26 @@ export async function openPocketEditFromList(page: Page, row: Locator): Promise<
 	await expect(page.getByTestId('pocket-details-panel')).toBeVisible();
 	await page.getByTestId('pocket-details-edit').click();
 	await expect(page.getByTestId('pocket-form-dialog')).toBeVisible();
+}
+
+/** Add a goal from pocket details (152). Details must already be visible. */
+export async function addPocketGoal(
+	page: Page,
+	opts: { target: string; description?: string; dated?: boolean }
+): Promise<void> {
+	await expect(page.getByTestId('pocket-details-panel')).toBeVisible();
+	await page.getByTestId('pocket-details-add-goal').click();
+	const dialog = page.getByTestId('pocket-goal-form-dialog');
+	await expect(dialog).toBeVisible();
+	if (opts.description) {
+		await page.getByTestId('pocket-goal-description-input').fill(opts.description);
+	}
+	await page.getByTestId('pocket-goal-target-input').fill(opts.target);
+	if (opts.dated) {
+		await page.getByTestId('pocket-goal-date-enabled').check();
+	}
+	await page.getByTestId('pocket-goal-save').click();
+	await expect(dialog).toBeHidden();
 }
 
 /** Open the add-category dialog from the selected kind's first group plus. */

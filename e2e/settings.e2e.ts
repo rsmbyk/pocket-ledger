@@ -1,0 +1,83 @@
+import { expect, test } from '@playwright/test';
+import { goToNav } from './nav';
+
+test.describe('154–159 Settings hub', () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/');
+		await expect(page.getByTestId('home-panel')).toBeVisible();
+	});
+
+	test('Settings nav, card order, and /more alias', async ({ page }) => {
+		await goToNav(page, 'settings');
+		await expect(page).toHaveURL(/\/settings\/?$/);
+		await expect(page.getByTestId('page-title')).toHaveText('Settings');
+		await expect(page.getByTestId('settings-panel')).toBeVisible();
+		const sections = page.locator('[data-testid^="settings-section-"]');
+		await expect(sections).toHaveCount(6);
+		await expect(sections.nth(0)).toHaveAttribute('data-testid', 'settings-section-cloud');
+		await expect(sections.nth(1)).toHaveAttribute('data-testid', 'settings-section-currency');
+		await expect(sections.nth(2)).toHaveAttribute('data-testid', 'settings-section-idle');
+		await expect(sections.nth(3)).toHaveAttribute('data-testid', 'settings-section-privacy');
+		await expect(sections.nth(4)).toHaveAttribute('data-testid', 'settings-section-backup');
+		await expect(sections.nth(5)).toHaveAttribute('data-testid', 'settings-section-reset');
+
+		await page.goto('/more');
+		await expect(page).toHaveURL(/\/settings\/?$/);
+		await expect(page.getByTestId('settings-panel')).toBeVisible();
+	});
+
+	test('155 currency picker drafts until Save', async ({ page }) => {
+		await goToNav(page, 'settings');
+		await expect(page.getByTestId('currency-save')).toBeDisabled();
+		await expect(page.getByTestId('currency-cancel')).toBeDisabled();
+		await expect(page.getByTestId('currency-default')).toBeDisabled();
+		await page.getByTestId('currency-picker').click();
+		await page.getByTestId('currency-picker-search').fill('USD');
+		await page.getByRole('button', { name: /USD\s+US Dollar/ }).click();
+		await expect(page.getByTestId('currency-save')).toBeEnabled();
+		await page.getByTestId('currency-cancel').click();
+		await expect(page.getByTestId('currency-picker')).toContainText('IDR');
+		await page.getByTestId('currency-picker').click();
+		await page.getByTestId('currency-picker-search').fill('USD');
+		await page.getByRole('button', { name: /USD\s+US Dollar/ }).click();
+		await page.getByTestId('currency-save').click();
+		await goToNav(page, 'home');
+		await expect(page.getByTestId('account-balance')).toContainText('USD');
+	});
+
+	test('156 idle Save persists; Cancel restores draft', async ({ page }) => {
+		await goToNav(page, 'settings');
+		await expect(page.getByTestId('idle-save')).toBeDisabled();
+		await page.getByTestId('idle-minutes').selectOption('10');
+		await expect(page.getByTestId('idle-save')).toBeEnabled();
+		await page.getByTestId('idle-cancel').click();
+		await expect(page.getByTestId('idle-minutes')).toHaveValue('30');
+		await page.getByTestId('idle-minutes').selectOption('10');
+		await page.getByTestId('idle-save').click();
+		await page.reload();
+		await goToNav(page, 'settings');
+		await expect(page.getByTestId('idle-minutes')).toHaveValue('10');
+	});
+
+	test('157 enable lock stays disabled until passphrase matches', async ({ page }) => {
+		await goToNav(page, 'settings');
+		await expect(page.getByTestId('enable-lock')).toBeDisabled();
+		await expect(page.getByTestId('device-skip-warning')).toHaveCount(0);
+		await page.getByTestId('enable-lock-pass').fill('secret-pass');
+		await expect(page.getByTestId('enable-lock')).toBeDisabled();
+		await page.getByTestId('enable-lock-pass-confirm').fill('secret-pass');
+		await expect(page.getByTestId('enable-lock')).toBeEnabled();
+		await expect(page.getByTestId('enable-lock-requirements')).toBeVisible();
+	});
+
+	test('158 invalid backup file opens the not-a-backup dialog', async ({ page }) => {
+		await goToNav(page, 'settings');
+		await page.getByTestId('import-backup').setInputFiles({
+			name: 'not-a-backup.json',
+			mimeType: 'application/json',
+			buffer: Buffer.from('{')
+		});
+		await expect(page.getByTestId('backup-import-invalid-dialog')).toBeVisible();
+		await expect(page.getByTestId('backup-import-summary')).toHaveCount(0);
+	});
+});

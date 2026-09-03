@@ -79,6 +79,22 @@ describe('backup', () => {
 		expect(backupFilename(new Date('2026-07-14T12:00:00'))).toBe('pocket-ledger-2026-07-14.json');
 	});
 
+	it('inspects v2 envelopes and rejects v1 or garbage', async () => {
+		await ensureDefaultAccount();
+		const { inspectEncryptedBackup } = await import('./backup');
+		expect(inspectEncryptedBackup('{')).toEqual({ ok: false, reason: 'invalid' });
+		expect(
+			inspectEncryptedBackup(JSON.stringify({ formatVersion: 1, accounts: [], transactions: [] }))
+		).toEqual({ ok: false, reason: 'v1' });
+		const file = await buildEncryptedBackup('export-pass');
+		const inspected = inspectEncryptedBackup(JSON.stringify(file));
+		expect(inspected.ok).toBe(true);
+		if (inspected.ok) {
+			expect(inspected.summary.pockets).toBe(file.accounts.length);
+			expect(inspected.summary.transactions).toBe(file.transactions.length);
+		}
+	});
+
 	it('ignores legacy recurringRules key on import', async () => {
 		const account = await ensureDefaultAccount();
 		const food = (await listCategories()).find((c) => c.id === 'stock:expense:food')!;

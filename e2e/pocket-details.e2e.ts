@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
+import { addPocketGoal, ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
 
 async function createVacation(page: import('@playwright/test').Page) {
 	await goToNav(page, 'pockets');
@@ -72,7 +72,8 @@ test.describe('148 pocket details', () => {
 		await expect(page.getByTestId('pocket-details-description')).toHaveText('Trip fund');
 		await expect(page.getByTestId('pocket-details-balance')).toBeVisible();
 		await expect(page.getByTestId('pocket-details-opening')).toHaveCount(0);
-		await expect(page.getByTestId('pocket-details-goal')).toHaveCount(0);
+		await expect(page.getByTestId('pocket-details-goals-card')).toBeVisible();
+		await expect(page.getByTestId('pocket-details-goals-empty')).toBeVisible();
 		await expect(page.getByTestId('month-summary')).toBeVisible();
 		await expect(page.getByTestId('pocket-details-see-more')).toBeVisible();
 
@@ -80,12 +81,12 @@ test.describe('148 pocket details', () => {
 		await expect(page.getByTestId('pocket-form-dialog')).toBeVisible();
 		await page.getByTestId('pocket-opening-enabled').check();
 		await page.getByTestId('pocket-opening-input').fill('50000');
-		await page.getByTestId('pocket-goal-enabled').check();
-		await page.getByTestId('pocket-goal-target-input').fill('200000');
 		await page.getByTestId('pocket-save').click();
 		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+		await expect(page.getByTestId('pocket-goal-enabled')).toHaveCount(0);
+		await addPocketGoal(page, { target: '200000' });
 		await expect(page.getByTestId('pocket-details-opening')).toBeVisible();
-		await expect(page.getByTestId('pocket-details-goal')).toBeVisible();
+		await expect(page.getByTestId('pocket-details-goals-list')).toBeVisible();
 	});
 
 	test('month summary is this pocket only; latest See more and Add prefill', async ({

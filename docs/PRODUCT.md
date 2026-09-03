@@ -36,9 +36,9 @@ Code still matches the pre-cloud client until Specs 116–121 land; this file is
 | Pockets                              | User-managed sub-accounts (**Pockets** nav item); `Main` is pinned first, never deleted, always the default for new transactions; non-Main pockets are user-reorderable (drag), renameable, and deletable once empty (spec 070); click a card for `/pockets/:id` details (spec 148); list cards are three-column (full-height grip column / name-description-goal / amount), hover-highlight, mute Main while dragging, no list edit/delete/clear-goal (specs 149, 151) |
 | Pocket opening balance               | Each pocket has an opening balance + as-of date that seeds its derived running balance (spec 071)                                                                                                                                                                                   |
 | Month Opening / Ending               | Home month Opening = sum of each pocket’s balance at month-start, inferred by walking txs backward/forward from that pocket’s opening as-of; Ending = Opening + Net (spec 110)                                                                                                      |
-| Goals                                | Per-pocket balance + deadline goal (target amount, target date), not a separate global feature; editable from the pocket edit dialog (spec 072); list Clear removed in spec 149                                                                                                                         |
+| Goals                                | Many live Dexie rows per pocket (description, target, optional date); Drop instead of Clear; details Goals card + dedicated form (spec 152); progress from ledger balance                                                                                                                                |
 | Transfers                            | Move money between pockets as a single `transfer` transaction (source → dest, amount sent, optional admin fee, optional note); shown as a neutral row; fee counts as expense under synthetic **Admin Fee** (spec 073 / 106)                                                         |
-| Currency                             | Single currency; display label only (default `IDR`)                                                                                                                                                                                                                                 |
+| Currency                             | One display ISO (`displayCurrency`, default `IDR`); Settings picker writes every pocket `currencyLabel` on Save (spec 155)                                                                                                                                                           |
 | Budgets                              | None for now                                                                                                                                                                                                                                                                        |
 | Multi-currency / FX                  | None                                                                                                                                                                                                                                                                                |
 | UX                                   | **Desktop-first dashboard chrome**, responsive down to mobile (inset sidebar → sheet + stacked layouts below `md`)                                                                                                                                                                  |
@@ -86,7 +86,7 @@ Optional **WebAuthn** (needs a passphrase): this-device third box, not synced. C
 
 Pipeline: device unlock (if any) → Google → local-discard warning (if needed) → **set** passphrase (new) or **enter** / hex (returning) → hex kit (new accounts) → ledger.
 
-No money UI (Transactions / Pockets / More) until complete. Close tab / refresh / navigate away → **resume the incomplete step**.
+No money UI (Transactions / Pockets / Settings) until complete. Close tab / refresh / navigate away → **resume the incomplete step**.
 
 - Google, no passphrase wrap yet → set-passphrase.
 - Passphrase wrap on server, kit not confirmed → hex screen. If the shown hex is gone, **mint a new** hex (unconfirmed never lived on the server).
@@ -164,7 +164,7 @@ Not a bank. XSS after unlock wins. Signed out, no passphrase: DEK sits next to c
 
 ## Flows
 
-1. **New account:** More/sign-in → device unlock if any → Google → upload-local or virgin → set passphrase → hex kit → ledger. Cut off after Google → resume that box. Recovery wrap is not on the server until kit confirm.
+1. **New account:** Settings/sign-in → device unlock if any → Google → upload-local or virgin → set passphrase → hex kit → ledger. Cut off after Google → resume that box. Recovery wrap is not on the server until kit confirm.
 2. **Returning account:** Google → resume incomplete onboarding else enter passphrase or hex → ledger. WebAuthn first if enrolled on this device. Closed tab mid-unlock → still unlock, not ledger.
 3. **Cloud already has data + this device has data:** warn (local discarded) → cancel = signed out → consent = wipe local, pull cloud, enter passphrase/hex.
 4. **Sign-out / start-fresh:** confirm (cloud is the only copy) → wipe IDB + session → virgin signed-out app.

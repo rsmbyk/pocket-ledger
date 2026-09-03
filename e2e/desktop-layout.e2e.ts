@@ -5,7 +5,7 @@ test.describe('013 desktop layout', () => {
 	test('wide viewport uses app rail, page title, and dialog add', async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 800 });
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 
 		await expect(page.getByTestId('app-drawer-rail')).toBeVisible();
 		await expect(page.getByTestId('open-menu')).toBeVisible();
@@ -41,9 +41,10 @@ test.describe('013 desktop layout', () => {
 
 		await page.getByTestId('open-menu').click();
 		await expect(page.getByTestId('app-drawer-sheet')).toBeVisible();
+		await expect(page.getByTestId('app-drawer-sheet').getByText('Pocket Ledger')).toBeVisible();
 		await expect(
 			page.getByTestId('app-drawer-sheet').getByRole('heading', { name: 'Main' })
-		).toBeVisible();
+		).toHaveCount(0);
 		await page.getByTestId('nav-transactions').click();
 		await expect(page).toHaveURL(/\/transactions\/?$/);
 		await expect(page.getByTestId('app-drawer-sheet')).toBeHidden();
@@ -57,7 +58,7 @@ test.describe('013 desktop layout', () => {
 		const rail = page.getByTestId('app-drawer-rail');
 		await expect(rail.locator('img[src="/favicon.svg"]')).toBeVisible();
 		await expect(rail.getByText('Pocket Ledger')).toBeVisible();
-		await expect(rail.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(rail.getByRole('heading', { name: 'Main' })).toHaveCount(0);
 		await expect(rail.getByText('Menu', { exact: true })).toBeHidden();
 		await expect(rail.getByTestId('nav-add')).toHaveCount(0);
 	});
@@ -176,7 +177,7 @@ test.describe('013 desktop layout', () => {
 	test('command palette navigates and opens add', async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 800 });
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 
 		await page.keyboard.press('Control+K');
 		await expect(page.getByTestId('command-palette')).toBeVisible();

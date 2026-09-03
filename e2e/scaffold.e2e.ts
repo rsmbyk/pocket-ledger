@@ -4,7 +4,7 @@ test.describe('000 scaffold', () => {
 	test('shows shell with default account', async ({ page }) => {
 		await page.goto('/');
 		await expect(page.getByTestId('app-drawer-rail').getByText('Pocket Ledger')).toBeVisible();
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 		await expect(page.getByTestId('theme-cycle')).toBeVisible();
 		await expect(page.getByTestId('recent-add')).toBeVisible();
 	});

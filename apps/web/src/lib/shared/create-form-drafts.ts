@@ -29,10 +29,6 @@ export type PocketCreateDraft = {
 	openingEnabled: boolean;
 	openingRaw: string;
 	openingAsOf: string;
-	goalEnabled: boolean;
-	goalTargetRaw: string;
-	goalDateEnabled: boolean;
-	goalTargetOn: string;
 };
 
 export type CategoryCreateDraft = {
@@ -152,11 +148,7 @@ export function parsePocketCreateDraft(value: string | null | undefined): Pocket
 		notes: asString(obj.notes),
 		openingEnabled: asBool(obj.openingEnabled),
 		openingRaw: asString(obj.openingRaw, '0'),
-		openingAsOf: asString(obj.openingAsOf),
-		goalEnabled: asBool(obj.goalEnabled),
-		goalTargetRaw: asString(obj.goalTargetRaw),
-		goalDateEnabled: asBool(obj.goalDateEnabled),
-		goalTargetOn: asString(obj.goalTargetOn)
+		openingAsOf: asString(obj.openingAsOf)
 	};
 }
 

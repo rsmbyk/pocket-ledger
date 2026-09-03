@@ -4,7 +4,7 @@ import { goToNav } from './nav';
 test.describe('117 path router', () => {
 	test('nav selection updates the URL path', async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 		await goToNav(page, 'transactions');
 		await expect(page).toHaveURL(/\/transactions\/?$/);
 		await expect(
@@ -14,7 +14,7 @@ test.describe('117 path router', () => {
 
 	test('legacy /activity replace-navigates to /transactions', async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 		await page.goto('/activity');
 		await expect(page).toHaveURL(/\/transactions\/?$/);
 		await expect(
@@ -22,10 +22,10 @@ test.describe('117 path router', () => {
 		).toBeVisible();
 	});
 
-	test('path deep-link opens More', async ({ page }) => {
+	test('legacy /more replace-navigates to /settings', async ({ page }) => {
 		await page.goto('/more');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
-		await expect(page.getByTestId('more-panel')).toBeVisible();
+		await expect(page).toHaveURL(/\/settings\/?$/);
+		await expect(page.getByTestId('settings-panel')).toBeVisible();
 	});
 
 	test('unknown path falls back to the home shell', async ({ page }) => {

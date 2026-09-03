@@ -168,3 +168,12 @@ Living behavior contracts for Pocket Ledger.
 | [149](149-pockets-list-card-states/spec.md)              | Pockets list card states                                     | Accepted — grip-to-name alignment superseded by [151](151-pocket-grip-column/spec.md) |
 | [150](150-rename-category-modal/spec.md)                 | Category rename modal + kind dialog titles                   | Accepted                                                                        |
 | [151](151-pocket-grip-column/spec.md)                    | Pocket grip column                                           | Accepted                                                                        |
+| [152](152-pocket-multi-goals/spec.md)                    | Multiple goals per pocket                                    | Accepted                                                                        |
+| [153](153-pocket-delete-edit-form/spec.md)               | Delete pocket from the edit form                             | Accepted                                                                        |
+| [154](154-settings-hub/spec.md)                          | Settings hub (rename More, chrome, Cloud Sync shell)         | Accepted                                                                        |
+| [155](155-settings-currency/spec.md)                     | Settings display currency                                    | Accepted                                                                        |
+| [156](156-settings-idle/spec.md)                         | Settings idle screensaver draft/save                         | Accepted                                                                        |
+| [157](157-settings-privacy/spec.md)                      | Settings privacy passphrase UX                               | Accepted                                                                        |
+| [158](158-settings-backup/spec.md)                       | Settings backup export/import                                | Accepted                                                                        |
+| [159](159-settings-reset/spec.md)                        | Settings reset keep-options                                  | Accepted                                                                        |
+| [160](160-sidebar-account-footer/spec.md)                | Sidebar centered brand + signed-in footer stub               | Accepted                                                                        |

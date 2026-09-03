@@ -1,8 +1,6 @@
-import type { Goal } from '$lib/domain/goals';
-
 /** Pick nearest-deadline legacy goal for Main migration (072). */
 export function pickNearestGoalForMigration<
-	T extends Pick<Goal, 'targetOn' | 'targetMinor' | 'id'>
+	T extends { id: string; targetOn: string; targetMinor: number }
 >(goals: T[]): T | null {
 	if (goals.length === 0) return null;
 	return [...goals].sort((a, b) => {

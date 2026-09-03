@@ -1,14 +1,19 @@
 import { db } from '$lib/data/db';
-import type { Goal } from '$lib/domain/goals';
+import type { PocketGoal } from '$lib/domain/goals';
 
-export async function listGoals(): Promise<Goal[]> {
-	return db.goals.orderBy('name').toArray();
+export async function listGoals(): Promise<PocketGoal[]> {
+	return db.goals.toArray();
 }
 
-export async function putGoal(goal: Goal): Promise<void> {
+export async function listGoalsForAccount(accountId: string): Promise<PocketGoal[]> {
+	return db.goals.where('accountId').equals(accountId).toArray();
+}
+
+export async function putGoal(goal: PocketGoal): Promise<void> {
 	await db.goals.put(goal);
 }
 
-export async function deleteGoal(id: string): Promise<void> {
-	await db.goals.delete(id);
+export async function putGoals(goals: PocketGoal[]): Promise<void> {
+	if (goals.length === 0) return;
+	await db.goals.bulkPut(goals);
 }

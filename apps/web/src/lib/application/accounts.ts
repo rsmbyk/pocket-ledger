@@ -9,14 +9,16 @@ import { db } from '$lib/data/db';
 import {
 	assignNonMainSortOrders,
 	DEFAULT_ACCOUNT_NAME,
-	DEFAULT_CURRENCY_LABEL,
 	listPocketsOrdered,
 	normalizeAccount,
 	type Account
 } from '$lib/domain/account';
 import { ensureSeedCategories } from '$lib/application/transactions';
 import { todayOccurredOn, isValidOccurredOn } from '$lib/domain/transaction-rules';
-import { assertGoalTarget } from '$lib/domain/goals';
+import { isActive } from '$lib/domain/goals';
+import { listGoalsForAccount } from '$lib/data/goals-repo';
+import { softDeleteGoalsForPocket } from '$lib/application/goals';
+import { getDisplayCurrency } from '$lib/application/display-currency';
 
 function createId(): string {
 	return crypto.randomUUID();
@@ -56,7 +58,7 @@ export async function ensureDefaultAccount(): Promise<Account> {
 		{
 			id: createId(),
 			name: DEFAULT_ACCOUNT_NAME,
-			currencyLabel: DEFAULT_CURRENCY_LABEL,
+			currencyLabel: await getDisplayCurrency(),
 			createdAt: new Date().toISOString(),
 			isMain: true,
 			sortOrder: 0,
@@ -125,7 +127,7 @@ export async function createPocket(input: CreatePocketInput): Promise<Account> {
 		{
 			id: createId(),
 			name,
-			currencyLabel: DEFAULT_CURRENCY_LABEL,
+			currencyLabel: await getDisplayCurrency(),
 			createdAt,
 			isMain: false,
 			sortOrder: nonMainCount,
@@ -150,9 +152,6 @@ export type UpdatePocketInput = {
 	openingEnabled?: boolean;
 	openingBalanceMinor?: number;
 	openingAsOf?: string;
-	goalEnabled?: boolean;
-	goalTargetMinor?: number | null;
-	goalTargetOn?: string | null;
 };
 
 export async function updatePocket(input: UpdatePocketInput): Promise<Account> {
@@ -186,24 +185,6 @@ export async function updatePocket(input: UpdatePocketInput): Promise<Account> {
 		}
 	}
 
-	const goalEnabled = input.goalEnabled !== undefined ? input.goalEnabled : existing.goalEnabled;
-	let goalTargetMinor: number | null = null;
-	let goalTargetOn: string | null = null;
-	if (goalEnabled) {
-		goalTargetMinor =
-			input.goalTargetMinor !== undefined ? input.goalTargetMinor : existing.goalTargetMinor;
-		if (goalTargetMinor == null) throw new Error('Goal target is required');
-		assertGoalTarget(goalTargetMinor);
-		const rawOn = input.goalTargetOn !== undefined ? input.goalTargetOn : existing.goalTargetOn;
-		if (rawOn != null && String(rawOn).trim()) {
-			const trimmed = String(rawOn).trim();
-			if (!isValidOccurredOn(trimmed)) throw new Error('Date must be YYYY-MM-DD');
-			goalTargetOn = trimmed;
-		} else {
-			goalTargetOn = null;
-		}
-	}
-
 	const next = normalizeAccount(
 		{
 			...existing,
@@ -211,10 +192,7 @@ export async function updatePocket(input: UpdatePocketInput): Promise<Account> {
 			notes: input.notes !== undefined ? input.notes.trim() : existing.notes,
 			openingBalanceMinor,
 			openingAsOf,
-			openingEnabled,
-			goalTargetMinor,
-			goalTargetOn,
-			goalEnabled
+			openingEnabled
 		},
 		{ today: todayOccurredOn(), isMain: existing.isMain, sortOrder: existing.sortOrder }
 	);
@@ -222,17 +200,30 @@ export async function updatePocket(input: UpdatePocketInput): Promise<Account> {
 	return next;
 }
 
+export const POCKET_DELETE_HAS_TRANSACTIONS =
+	'This pocket still has transactions, including voided. Voiding is not enough.';
+export const POCKET_DELETE_HAS_ACTIVE_GOALS = 'Drop all active goals first.';
+
+export async function pocketDeleteBlockers(id: string): Promise<string[]> {
+	const reasons: string[] = [];
+	const asSource = await db.transactions.where('accountId').equals(id).count();
+	const all = await db.transactions.toArray();
+	const asDest = all.filter((t) => t.counterAccountId === id).length;
+	if (asSource > 0 || asDest > 0) reasons.push(POCKET_DELETE_HAS_TRANSACTIONS);
+	const today = todayOccurredOn();
+	const goals = await listGoalsForAccount(id);
+	if (goals.some((g) => isActive(g, today))) reasons.push(POCKET_DELETE_HAS_ACTIVE_GOALS);
+	return reasons;
+}
+
 export async function deletePocket(id: string): Promise<void> {
 	const existing = await getAccount(id);
 	if (!existing) throw new Error('Pocket not found');
 	if (existing.isMain) throw new Error('The Main pocket cannot be deleted');
 
-	const asSource = await db.transactions.where('accountId').equals(id).count();
-	const all = await db.transactions.toArray();
-	const asDest = all.filter((t) => t.counterAccountId === id).length;
-	if (asSource > 0 || asDest > 0) {
-		throw new Error('Remove or void transactions for this pocket before deleting it');
-	}
+	const blockers = await pocketDeleteBlockers(id);
+	if (blockers.length > 0) throw new Error(blockers.join(' '));
+	await softDeleteGoalsForPocket(id);
 	await deleteAccount(id);
 }
 
@@ -247,14 +238,4 @@ export async function reorderPockets(orderedNonMainIds: string[]): Promise<void>
 	for (const a of updated) {
 		if (!a.isMain) await putAccount(a);
 	}
-}
-
-export async function clearPocketGoal(id: string): Promise<Account> {
-	return updatePocket({
-		id,
-		name: (await getAccount(id))!.name,
-		goalEnabled: false,
-		goalTargetMinor: null,
-		goalTargetOn: null
-	});
 }

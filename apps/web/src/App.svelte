@@ -4,7 +4,6 @@
 	import AppShell from '$lib/ui/AppShell.svelte';
 	import UnlockScreen from '$lib/ui/UnlockScreen.svelte';
 	import {
-		clearPocketGoal,
 		createPocket,
 		deletePocket,
 		ensureDefaultAccount,
@@ -19,6 +18,7 @@
 		listRecentTransactions
 	} from '$lib/application/transactions';
 	import { loadMonthSummary } from '$lib/application/month-summary';
+	import { listGoals, migratePocketGoals } from '$lib/application/goals';
 	import {
 		backupFilename,
 		buildEncryptedBackup,
@@ -36,6 +36,7 @@
 	} from '$lib/application/lock';
 	import { listAllCategories, listResolvedGroups } from '$lib/application/categories';
 	import type { Account } from '$lib/domain/account';
+	import type { PocketGoal } from '$lib/domain/goals';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
 	import type { OverlayGroup } from '$lib/domain/category-overlay';
@@ -73,6 +74,7 @@
 		uploadRecoveryWrap
 	} from '$lib/application/account-lock';
 	import { parseIdleSettings } from '$lib/application/idle';
+	import { getDisplayCurrency, saveDisplayCurrency } from '$lib/application/display-currency';
 	import { enrollWebAuthn } from '$lib/application/webauthn';
 	import {
 		SETTINGS_IDLE_LEAVE_TAB,
@@ -94,6 +96,7 @@
 
 	let account = $state<Account | null>(null);
 	let accounts = $state<Account[]>([]);
+	let goals = $state<PocketGoal[]>([]);
 	let isSinglePot = $state(true);
 	let balanceMinor = $state(0);
 	let transactions = $state<LedgerTransaction[]>([]);
@@ -116,6 +119,7 @@
 	let screensaverOn = $state(false);
 	let idleMinutes = $state(30);
 	let leaveTab = $state(true);
+	let displayCurrency = $state('IDR');
 	let sessions = $state<CloudSession[]>([]);
 	let conflictOpen = $state(false);
 	let pendingGoogleToken = $state<string | null>(null);
@@ -127,15 +131,17 @@
 	let canNextMonth = $derived(monthBounds ? canShiftMonth(monthKey, 1, monthBounds) : false);
 
 	async function refreshLedger(active: Account, key: MonthKey = monthKey) {
-		const [overview, balance, recent, allCategories, monthLoad, groups] = await Promise.all([
+		const [overview, balance, recent, allCategories, monthLoad, groups, allGoals] = await Promise.all([
 			getAccountsOverview(),
 			getAllPocketsBalance(),
 			listRecentTransactions(active.id),
 			listAllCategories(),
 			loadMonthSummary(active.id, key),
-			listResolvedGroups()
+			listResolvedGroups(),
+			listGoals()
 		]);
 		accounts = overview.accounts;
+		goals = allGoals;
 		isSinglePot = overview.isSinglePot;
 		balanceMinor = balance;
 		transactions = recent;
@@ -158,6 +164,7 @@
 		);
 		idleMinutes = idleStored.minutes;
 		leaveTab = idleStored.leaveTab;
+		displayCurrency = await getDisplayCurrency();
 		webauthnEnrolled = Boolean(await getSetting(SETTINGS_WEBAUTHN));
 		const lockout = await loadLockout();
 		lockoutUntil = lockout.lockedUntil;
@@ -186,6 +193,7 @@
 			}
 			sessions = await listCloudSessions().catch(() => []);
 		}
+		await migratePocketGoals();
 		const overview = await getAccountsOverview();
 		const active = overview.accounts[0] ?? null;
 		account = active;
@@ -322,7 +330,7 @@
 	}
 
 	async function onResetLocalData(options: {
-		preserveCategories: boolean;
+		preserveSettings: boolean;
 		preservePassphrase: boolean;
 	}) {
 		await resetLocalData(options);
@@ -435,6 +443,7 @@
 	<AppShell
 		{account}
 		{accounts}
+		{goals}
 		{isSinglePot}
 		{balanceMinor}
 		{transactions}
@@ -483,10 +492,6 @@
 			await reorderPockets(orderedNonMainIds);
 			await onRefreshLedger();
 		}}
-		onClearPocketGoal={async (id) => {
-			await clearPocketGoal(id);
-			await onRefreshLedger();
-		}}
 		onPushTransaction={async (id, deleted) => {
 			if (!signedIn) return;
 			await pushTransactionById(id, deleted === true);
@@ -501,6 +506,7 @@
 		{sessions}
 		{idleMinutes}
 		{leaveTab}
+		{displayCurrency}
 		{onGoogleSignIn}
 		onSignOut={async () => {
 			await logoutCloud();
@@ -512,25 +518,31 @@
 			await revokeCloudSession(id);
 			sessions = await listCloudSessions();
 		}}
-		onIdleMinutes={async (minutes) => {
+		onSaveIdle={async (minutes, on) => {
 			idleMinutes = minutes as typeof idleMinutes;
+			leaveTab = on;
 			await setSetting(SETTINGS_IDLE_MINUTES, String(minutes));
+			await setSetting(SETTINGS_IDLE_LEAVE_TAB, String(on));
 			if (signedIn) {
 				await pushSealedEntity('setting', SETTINGS_IDLE_MINUTES, {
 					key: SETTINGS_IDLE_MINUTES,
 					value: String(minutes)
 				});
-			}
-		}}
-		onLeaveTab={async (on) => {
-			leaveTab = on;
-			await setSetting(SETTINGS_IDLE_LEAVE_TAB, String(on));
-			if (signedIn) {
 				await pushSealedEntity('setting', SETTINGS_IDLE_LEAVE_TAB, {
 					key: SETTINGS_IDLE_LEAVE_TAB,
 					value: String(on)
 				});
 			}
+		}}
+		onSaveCurrency={async (code) => {
+			displayCurrency = await saveDisplayCurrency(code);
+			if (signedIn) {
+				await pushSealedEntity('setting', 'displayCurrency', {
+					key: 'displayCurrency',
+					value: displayCurrency
+				});
+			}
+			await onRefreshLedger();
 		}}
 		onEnrollWebAuthn={async () => {
 			const id = await enrollWebAuthn();

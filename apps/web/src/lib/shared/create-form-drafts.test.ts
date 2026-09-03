@@ -55,11 +55,7 @@ const samplePocket: PocketCreateDraft = {
 	notes: 'trip',
 	openingEnabled: true,
 	openingRaw: '100',
-	openingAsOf: '2026-01-01',
-	goalEnabled: false,
-	goalTargetRaw: '',
-	goalDateEnabled: false,
-	goalTargetOn: ''
+	openingAsOf: '2026-01-01'
 };
 
 const sampleCategory: CategoryCreateDraft = {

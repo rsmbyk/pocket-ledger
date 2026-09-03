@@ -92,7 +92,7 @@ test.describe('017 / 045 activity filters', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 	});
 
 	test('filters by type via Apply and searches amount with separators', async ({ page }) => {
@@ -274,7 +274,7 @@ test.describe('049 / 058 activity filters xl drawer', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 	});
 
 	test('always shows in-layout drawer without open button or Close', async ({ page }) => {
@@ -350,7 +350,7 @@ test.describe('101 activity date sort secondary createdAt', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 	});
 
 	test('same-day rows follow createdAt in the date sort direction', async ({ page }) => {
@@ -396,7 +396,7 @@ test.describe('102 activity session sort + filters', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 	});
 
 	test('persists applied filters across reload', async ({ page }) => {
@@ -428,7 +428,7 @@ test.describe('144 type / pocket check menus', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 	});
 
 	test('Type left squares stay open; uncheck returns to All', async ({ page }) => {
@@ -490,7 +490,7 @@ test.describe('107 filter category picker + type coupling', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 	});
 
 	test('type All groups Income and Expenses; Income narrows; Transfer disables', async ({
@@ -545,7 +545,7 @@ test.describe('132 activity category filter used-only', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 	});
 
 	test('hides Category when the ledger is empty', async ({ page }) => {
