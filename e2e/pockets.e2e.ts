@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
+import { ensureCategory, goToNav, openAdd, openPocketEditFromList, selectTxCategory } from './nav';
 
 test.describe('070–077 pockets pack', () => {
 	test.beforeEach(async ({ page }) => {
@@ -21,7 +21,11 @@ test.describe('070–077 pockets pack', () => {
 		await expect(page.getByTestId('pocket-main-icon')).toBeVisible();
 
 		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
-		await expect(mainRow.getByTestId('pocket-delete')).toHaveCount(0);
+		await expect(page.getByTestId('pocket-edit')).toHaveCount(0);
+		await expect(page.getByTestId('pocket-delete')).toHaveCount(0);
+		await expect(page.getByTestId('pocket-clear-goal')).toHaveCount(0);
+		await expect(page.getByTestId('pockets-panel').getByRole('alert')).toHaveCount(0);
+		await expect(page.getByTestId('pocket-delete-confirm')).toHaveCount(0);
 
 		await page.getByTestId('pocket-add').click();
 		await expect(page.getByTestId('pocket-save')).toBeDisabled();
@@ -34,12 +38,14 @@ test.describe('070–077 pockets pack', () => {
 		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
 		await expect(page.getByTestId('pockets-panel').getByText('Vacation')).toBeVisible();
 
-		await mainRow.getByTestId('pocket-edit').click();
+		await openPocketEditFromList(page, mainRow);
 		await expect(page.getByTestId('pocket-save')).toBeDisabled();
 		await page.getByTestId('pocket-name-input').fill('Household');
 		await expect(page.getByTestId('pocket-save')).toBeEnabled();
 		await page.getByTestId('pocket-save').click();
 		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+		await page.getByTestId('pocket-details-back').click();
+		await expect(page.getByTestId('pockets-panel')).toBeVisible();
 		await expect(mainRow.getByText('Household')).toBeVisible();
 		await expect(page.getByTestId('pocket-main-icon')).toBeVisible();
 	});
@@ -163,7 +169,7 @@ test.describe('070–077 pockets pack', () => {
 		await expect(form).toBeHidden();
 
 		const savingsRow = page.locator('[data-testid^="pocket-row-"]').filter({ hasText: 'Savings' });
-		await savingsRow.getByTestId('pocket-edit').click();
+		await openPocketEditFromList(page, savingsRow);
 		await expect(form).toBeVisible();
 		await page.getByTestId('pocket-goal-enabled').check();
 		const goal = form.getByTestId('pocket-goal-target-input');
@@ -172,5 +178,61 @@ test.describe('070–077 pockets pack', () => {
 		await expect(goal).toHaveValue('100,000');
 		await page.getByTestId('pocket-save').click();
 		await expect(form).toBeHidden();
+	});
+
+	test('149 description under name; hover highlight; Main mutes while dragging', async ({
+		page
+	}) => {
+		await goToNav(page, 'pockets');
+		await page.getByTestId('pocket-add').click();
+		await page.getByTestId('pocket-name-input').fill('Vacation');
+		await page.getByTestId('pocket-description-input').fill('Trip fund');
+		const goalToggle = page.getByTestId('pocket-goal-enabled');
+		await goalToggle.scrollIntoViewIfNeeded();
+		await goalToggle.check();
+		await page.getByTestId('pocket-goal-target-input').fill('8000000');
+		await page.getByTestId('pocket-save').click();
+		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+
+		const vacation = page.locator('[data-testid^="pocket-row-"]').filter({ hasText: 'Vacation' });
+		const nameBox = await vacation.getByText('Vacation', { exact: true }).boundingBox();
+		const desc = vacation.getByTestId('pocket-description');
+		const descBox = await desc.boundingBox();
+		const goalBox = await vacation.getByText(/8,?000,?000/).boundingBox();
+		expect(nameBox && descBox && goalBox).toBeTruthy();
+		expect(Math.abs(nameBox!.x - descBox!.x)).toBeLessThan(24);
+		expect(descBox!.y).toBeGreaterThan(nameBox!.y);
+		expect(goalBox!.y).toBeGreaterThan(descBox!.y);
+		await expect(desc).not.toHaveClass(/border-t/);
+
+		await page.getByTestId('pocket-add').hover();
+		const restBg = await vacation.evaluate((el) => getComputedStyle(el).backgroundColor);
+		await vacation.hover();
+		const hoverBg = await vacation.evaluate((el) => getComputedStyle(el).backgroundColor);
+		expect(hoverBg).not.toBe(restBg);
+
+		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
+		const handle = vacation.locator('.dnd-handle');
+		const handleBox = await handle.boundingBox();
+		expect(handleBox).toBeTruthy();
+		await page.mouse.move(
+			handleBox!.x + handleBox!.width / 2,
+			handleBox!.y + handleBox!.height / 2
+		);
+		await page.mouse.down();
+		await page.mouse.move(
+			handleBox!.x + handleBox!.width / 2,
+			handleBox!.y + 48,
+			{ steps: 16 }
+		);
+		await expect(mainRow).toHaveAttribute('data-dnd-locked', 'true');
+		expect(Number(await mainRow.evaluate((el) => getComputedStyle(el).opacity))).toBeCloseTo(
+			0.6,
+			1
+		);
+		await page.mouse.up();
+		await expect(page.locator('[data-is-dnd-shadow-item-internal]')).toHaveCount(0);
+		await expect(mainRow).not.toHaveAttribute('data-dnd-locked', 'true');
+		expect(Number(await mainRow.evaluate((el) => getComputedStyle(el).opacity))).toBe(1);
 	});
 });

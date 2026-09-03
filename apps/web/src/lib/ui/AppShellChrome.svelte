@@ -169,9 +169,9 @@
 		onRefreshLedger,
 		onCreatePocket,
 		onUpdatePocket,
-		onDeletePocket,
+		onDeletePocket: _onDeletePocket,
 		onReorderPockets,
-		onClearPocketGoal,
+		onClearPocketGoal: _onClearPocketGoal,
 		cloudConfigured = false,
 		userEmail = null,
 		sessions = [],
@@ -189,6 +189,11 @@
 		onOpenEdit,
 		onActivityPocketFilterChange
 	}: Props = $props();
+
+	$effect(() => {
+		void _onDeletePocket;
+		void _onClearPocketGoal;
+	});
 
 	const sidebar = Sidebar.useSidebar();
 
@@ -1002,9 +1007,7 @@
 				{currencyLabel}
 				{onCreatePocket}
 				{onUpdatePocket}
-				{onDeletePocket}
 				{onReorderPockets}
-				onClearGoal={onClearPocketGoal}
 				requestEdit={detailsEditRequest}
 				onRequestEditConsumed={() => (detailsEditRequest = null)}
 				hideList={Boolean(detailsPocket)}

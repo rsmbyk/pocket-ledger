@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
+import { ensureCategory, goToNav, openAdd, openPocketEditFromList, selectTxCategory } from './nav';
 
 test.describe('110 month opening from pocket openings', () => {
 	test.beforeEach(async ({ page }) => {
@@ -11,7 +11,7 @@ test.describe('110 month opening from pocket openings', () => {
 	test('June opening reverses mid-gap expense before pocket as-of', async ({ page }) => {
 		await goToNav(page, 'pockets');
 		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
-		await mainRow.getByTestId('pocket-edit').click();
+		await openPocketEditFromList(page, mainRow);
 		const form = page.getByTestId('pocket-form-dialog');
 		await expect(form).toBeVisible();
 		await page.getByTestId('pocket-opening-enabled').check();

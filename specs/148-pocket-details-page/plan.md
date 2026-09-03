@@ -6,7 +6,7 @@
 
 ## What
 
-Add a `/pockets/:id` details dashboard: click a Pockets list card to open a stack of infographic cards (optional descriptions, balance, optional opening, optional goal, pocket-scoped month summary, latest 10 txs). Pencil on the list still opens the existing edit dialog.
+Add a `/pockets/:id` details dashboard: click a Pockets list card to open a stack of infographic cards (optional descriptions, balance, optional opening, optional goal, pocket-scoped month summary, latest 10 txs). Edit is the details toolbar (list pencil removed in 149).
 
 ## Why
 
@@ -15,7 +15,7 @@ The list is a roster. There is no place to read one pocket — opening, goal, th
 ## Scope
 
 - Nested path `/pockets/:id`; Pockets nav stays highlighted; Back goes to `/pockets`
-- List card (not pencil/delete/clear-goal/drag handle) is the hit target
+- List card (not the drag handle) is the hit target; list pencil/delete/clear-goal removed in 149
 - Card stack in Home scan order; hide opening/goal when unset
 - Latest 10 like Home Recent; Add Transaction pre-fills this pocket; See more applies pocket-only Transactions filters (default month range)
 - Month summary scoped to this pocket; independent month cursor from Home

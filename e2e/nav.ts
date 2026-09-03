@@ -148,6 +148,14 @@ export async function ensureCategory(
 	await expect(page.getByTestId('home-panel')).toBeVisible();
 }
 
+/** Open the pocket form via details toolbar Edit (149: no list pencil). */
+export async function openPocketEditFromList(page: Page, row: Locator): Promise<void> {
+	await row.click();
+	await expect(page.getByTestId('pocket-details-panel')).toBeVisible();
+	await page.getByTestId('pocket-details-edit').click();
+	await expect(page.getByTestId('pocket-form-dialog')).toBeVisible();
+}
+
 /** Open the add-category dialog from the selected kind's first group plus. */
 export async function openAddCategory(page: Page, kind: 'expense' | 'income'): Promise<void> {
 	await selectCategoriesKind(page, kind);

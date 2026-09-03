@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, openAdd, selectTxCategory } from './nav';
+import { ensureCategory, openAdd, openPocketEditFromList, selectTxCategory } from './nav';
 
 test.describe('002 month charts', () => {
 	test.beforeEach(async ({ page }) => {
@@ -57,7 +57,7 @@ test.describe('002 month charts', () => {
 		await page.goto('/pockets');
 		await expect(page.getByTestId('pockets-panel')).toBeVisible();
 		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
-		await mainRow.getByTestId('pocket-edit').click();
+		await openPocketEditFromList(page, mainRow);
 		const form = page.getByTestId('pocket-form-dialog');
 		await expect(form).toBeVisible();
 		await page.getByTestId('pocket-opening-enabled').check();

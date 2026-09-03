@@ -22,21 +22,21 @@ test.describe('148 pocket details', () => {
 		await expect(page.getByTestId('home-panel')).toBeVisible();
 	});
 
-	test('card opens details; pencil still edits; back and nav return to list', async ({ page }) => {
+	test('card opens details; details edit; back and nav return to list', async ({ page }) => {
 		await createVacation(page);
 		const vacation = page.locator('[data-testid^="pocket-row-"]').filter({ hasText: 'Vacation' });
-		await vacation.getByTestId('pocket-edit').click();
-		await expect(page.getByTestId('pocket-form-dialog')).toBeVisible();
-		await expect(page).toHaveURL(/\/pockets\/?$/);
-		await page.keyboard.press('Escape');
-		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
-
 		await vacation.click();
 		await expect(page.getByTestId('pocket-details-panel')).toBeVisible();
 		await expect(page.getByTestId('pocket-details-identity')).toHaveCount(0);
 		await expect(page).toHaveURL(/\/pockets\/[^/]+\/?$/);
 		await expect(page.getByTestId('page-title')).toContainText('Vacation');
 		await expect(page.getByTestId('nav-pockets')).toHaveAttribute('aria-current', 'page');
+
+		await page.getByTestId('pocket-details-edit').click();
+		await expect(page.getByTestId('pocket-form-dialog')).toBeVisible();
+		await expect(page).toHaveURL(/\/pockets\/[^/]+\/?$/);
+		await page.keyboard.press('Escape');
+		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
 
 		await page.getByTestId('pocket-details-back').click();
 		await expect(page.getByTestId('pockets-panel')).toBeVisible();

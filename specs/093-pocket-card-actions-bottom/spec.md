@@ -1,7 +1,7 @@
 # Spec 093: Pocket card actions bottom
 
 - **ID:** 093
-- **Status:** Draft
+- **Status:** Draft — moot after [149](../149-pockets-list-card-states/spec.md) (no list action cluster)
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

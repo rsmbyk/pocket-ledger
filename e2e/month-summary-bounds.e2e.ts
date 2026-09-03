@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { goToNav } from './nav';
+import { goToNav, openPocketEditFromList } from './nav';
 
 async function setMainOpeningAsOf(page: import('@playwright/test').Page, asOf: string) {
 	await goToNav(page, 'pockets');
 	const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
-	await mainRow.getByTestId('pocket-edit').click();
+	await openPocketEditFromList(page, mainRow);
 	const form = page.getByTestId('pocket-form-dialog');
 	await expect(form).toBeVisible();
 	await page.getByTestId('pocket-opening-enabled').check();

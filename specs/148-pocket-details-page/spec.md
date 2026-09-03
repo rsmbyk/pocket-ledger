@@ -8,20 +8,20 @@
 
 ## Intent
 
-Give each pocket a **details dashboard** at `/pockets/:id`: a stack of infographic cards (who it is, current balance, optional opening, optional goal, this pocket’s month summary, latest activity). The Pockets list stays a roster. Clicking a **card** opens details; the list **pencil** still opens the existing edit dialog.
+Give each pocket a **details dashboard** at `/pockets/:id`: a stack of infographic cards (who it is, current balance, optional opening, optional goal, this pocket’s month summary, latest activity). The Pockets list stays a roster. Clicking a **card** opens details. Edit is the details toolbar (`pocket-details-edit`); list pencil was removed in spec 149.
 
 ## Scope
 
 ### In scope
 
 1. **Path** — `/pockets/:id` is a real details view. `parsePath` still returns `pockets` (nav **Pockets** stays highlighted). A single extra path segment is the pocket id. Two or more extra segments stay unknown → Home (117). Trailing slash on `/pockets/:id/` is the same details view.
-2. **List hit target** — Activating the pocket **card** (name, balance, goal chrome, description, empty padding) navigates to `/pockets/{id}`. Prefer a real link (`href`) so middle-click / keyboard work. **Pencil, delete, clear-goal, and the drag handle do not navigate** (`stopPropagation` / sit outside the link).
-3. **Toolbar** — On details: Back (`pocket-details-back`) + `page-title` is the pocket name with Main `Landmark` icon when `isMain`. Back goes to `/pockets` via `goto` (not `history.back()`). Edit (`pocket-details-edit`) opens the **same** `pocket-form-dialog` as the list pencil for that pocket. Hide-amounts eye uses the Home control and storage key (048 / 089) and hides money on this page too. Clicking nav **Pockets** from details opens the list (`/pockets`).
+2. **List hit target** — Activating the pocket **card** (name, balance, goal chrome, description, empty padding) navigates to `/pockets/{id}`. Prefer a real link (`href`) so middle-click / keyboard work. **The drag handle does not navigate** (`stopPropagation` / sit outside the link). List pencil / delete / clear-goal were removed in spec 149.
+3. **Toolbar** — On details: Back (`pocket-details-back`) + `page-title` is the pocket name with Main `Landmark` icon when `isMain`. Back goes to `/pockets` via `goto` (not `history.back()`). Edit (`pocket-details-edit`) opens the **same** `pocket-form-dialog` as create/edit elsewhere. Hide-amounts eye uses the Home control and storage key (048 / 089) and hides money on this page too. Clicking nav **Pockets** from details opens the list (`/pockets`).
 4. **Card stack** (single-column Home stage, `max-w-3xl`), in this order:
    1. **Descriptions** — muted **Descriptions** kicker (same chrome as the Balance label) + notes as the content. **Only when notes are non-empty.** Name lives in the toolbar, not on this card.
    2. **Balance hero** — Home-sized current derived balance (071).
    3. **Opening** — muted **Opening balance** kicker (same chrome as the Balance label) + amount + as-of date. **Only when `openingEnabled`.**
-   4. **Goals** — muted **Goal** kicker (same chrome as the Balance label). Content: current / target; when a date is set, **`DD MMM YYYY (time remaining)`** (e.g. `01 May 2026 (2 months left)`); percent right-aligned above the progress bar. **Only when `goalEnabled`.** No Clear on details (Clear stays on the list). List card chrome (072) is unchanged.
+   4. **Goals** — muted **Goal** kicker (same chrome as the Balance label). Content: current / target; when a date is set, **`DD MMM YYYY (time remaining)`** (e.g. `01 May 2026 (2 months left)`); percent right-aligned above the progress bar. **Only when `goalEnabled`.** No Clear on details. List card chrome (072) is unchanged except spec 149 (no list Clear).
    5. **Month summary** — reuse `MonthSummary.svelte`, **scoped to this pocket**. Independent month cursor from Home (default current month, clamped to this pocket’s bounds).
    6. **Latest transactions** — Home Recent clone: cap **10**, header **Add Transaction**, footer **See more in Transactions** (always visible, including empty).
 5. **Latest 10** — Active txs only (140: voided hidden). A transfer matches if this pocket is source **or** dest (075). Order: `sortTransactions` (occurredOn desc, createdAt desc, id). Row click opens the existing tx sheet. `showPocket` on so transfers still show source → dest.
@@ -33,7 +33,7 @@ Give each pocket a **details dashboard** at `/pockets/:id`: a stack of infograph
 ### Out of scope
 
 - Inline edit of name / opening / goal (keep the dialog)
-- Delete from details (stays on the list)
+- Delete from details (no list delete after 149; relocate later)
 - Changing Home, Pockets list layout, or pocket money rules (071 / 072 / 110 Home opening)
 - All-time Transactions range; 2-column dashboard; chart click → filter
 - Android
@@ -77,18 +77,17 @@ A helper (name may vary) returns `{ filters: { ...DEFAULT_ACTIVITY_FILTERS, pock
 ### Scenario: Card opens details
 
 - **Given** the Pockets list with Main and a pocket named Vacation
-- **When** the user activates the Vacation **card** (not the pencil)
+- **When** the user activates the Vacation **card**
 - **Then** the URL is `/pockets/{vacationId}`
 - **And** `pocket-details-panel` is visible
 - **And** `page-title` is `Vacation`
 - **And** nav Pockets stays current
 
-### Scenario: Pencil still edits
+### Scenario: Details Edit opens the form
 
-- **Given** the Pockets list
-- **When** the user activates `pocket-edit` on a row
+- **Given** pocket details
+- **When** the user activates `pocket-details-edit`
 - **Then** `pocket-form-dialog` opens
-- **And** the URL stays `/pockets`
 
 ### Scenario: Back and nav return to the list
 
@@ -185,10 +184,10 @@ A helper (name may vary) returns `{ filters: { ...DEFAULT_ACTIVITY_FILTERS, pock
 - **When** hide-amounts is on (same preference as Home)
 - **Then** balance, opening, goal money, month summary amounts, and latest row amounts are masked (048 / 089)
 
-### Scenario: Action buttons do not open details
+### Scenario: Drag handle does not open details
 
 - **Given** the Pockets list
-- **When** the user activates pencil, delete, or clear-goal, or uses the drag handle
+- **When** the user uses the drag handle
 - **Then** the URL stays `/pockets`
 
 ## Traceability
@@ -201,5 +200,5 @@ A helper (name may vary) returns `{ filters: { ...DEFAULT_ACTIVITY_FILTERS, pock
 
 ## Related
 
-- 070 list CRUD (pencil stays); 071 derived balance; 072 goal chrome; 075 / 139 pocket filter; 066 / 134 See more copy (this slice **does** pass a pocket filter, unlike 066)
+- 070 list CRUD; 071 derived balance; 072 goal chrome; 075 / 139 pocket filter; 066 / 134 See more copy (this slice **does** pass a pocket filter, unlike 066); 149 list card states (no list pencil)
 - 110 Home Opening remains all-pockets; this spec adds a **scoped** call site only
