@@ -12,7 +12,7 @@ Make the Categories save (check) control obvious when it can be activated.
 
 ### In scope
 
-- Save button (`data-testid="category-save-name"`): **enabled** → `variant="default"` (primary); **disabled** → quiet outline/ghost + disabled opacity
+- Save button (`data-testid="category-rename-save"`, spec 150; was `category-save-name` on the chip): **enabled** → `variant="default"` (primary); **disabled** → quiet outline/ghost + disabled opacity
 - Disable rules unchanged (022): unchanged name, empty trim, or busy
 
 ### Out of scope

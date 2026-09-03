@@ -1,5 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd, openAddCategory, selectTxCategory } from './nav';
+import {
+	categoryChip,
+	ensureCategory,
+	goToNav,
+	openAdd,
+	openAddCategory,
+	selectCategoriesKind,
+	selectTxCategory
+} from './nav';
 
 test.describe('103 modal first-input autofocus', () => {
 	test.beforeEach(async ({ page }) => {
@@ -19,6 +27,19 @@ test.describe('103 modal first-input autofocus', () => {
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
 		await openAddCategory(page, 'expense');
 		await expect(page.getByTestId('category-name-input')).toBeFocused();
+	});
+
+	test('Rename category focuses name', async ({ page }) => {
+		await goToNav(page, 'categories');
+		await expect(page.getByTestId('categories-panel')).toBeVisible();
+		await selectCategoriesKind(page, 'expense');
+		await openAddCategory(page, 'expense');
+		await page.getByTestId('category-name-input').fill('Warung');
+		await page.getByTestId('category-add').click();
+		const warung = categoryChip(page, 'Warung');
+		await warung.hover();
+		await warung.getByTestId('category-edit-name').click();
+		await expect(page.getByTestId('category-rename-name-input')).toBeFocused();
 	});
 
 	test('Add pocket focuses name', async ({ page }) => {

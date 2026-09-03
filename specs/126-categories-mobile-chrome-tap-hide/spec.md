@@ -17,7 +17,7 @@ On Categories, group headers sit on one vertical center, the Income | Expenses t
 1. **Header alignment** — Each group card header is one row. The group title and the header plus (`category-add-in-group`) share the same vertical center. Do not change header height except as needed for that alignment.
 2. **Tab inset** — `category-kind-tabs` uses the same horizontal inset as search, the Add group / Reorder row, and the group-card frame. On a viewport below `md`, the tab list is not wider than those surfaces.
 3. **Tap to hide/show (below `md`)** — The eye / eye-off button is not shown. A short press (click or tap) on a chip toggles hide ↔ show using the existing 123 use cases. Hidden chips stay muted/flat; shown chips stay raised. `data-hidden` and picker omission stay 123.
-4. **Long-press edit (below `md`)** — Holding a **custom** chip for **500ms** starts the existing inline rename (124). Stock chips have no rename. A press that reaches 500ms does **not** also toggle hide/show.
+4. **Long-press edit (below `md`)** — Holding a **custom** chip for **500ms** opens the category rename **dialog** (150; was inline on the chip in 124). Stock chips have no rename. A press that reaches 500ms does **not** also toggle hide/show.
 5. **Desktop unchanged (`md` and up)** — Hover (or focus-within) still reveals icon-only hide/show for every chip and icon-only edit for custom chips only. A click on the chip label does **not** toggle hide/show.
 
 ### Out of scope
@@ -58,9 +58,9 @@ Pure helper (injectable, no Dexie / no Svelte) so Vitest can lock the outcomes:
 
 - Long-press threshold: **500ms**.
 - Slop: **10 CSS px** from pointer-down.
-- While inline rename is open on that chip: press outcomes are **none** (no toggle). Escape still cancels rename (124).
+- While the rename **dialog** is open (150): press outcomes on that chip are **none** (no toggle). Escape closes the dialog.
 - Below `md`, `category-hide` / `category-show` are absent (not in the document, or `hidden` / not visible).
-- Below `md`, the visible pencil is absent. Custom chips still expose `category-edit-name` as a **visually hidden** control (accessible name `Edit {name}`) that starts the same rename. Long-press is the touch path.
+- Below `md`, the visible pencil is absent. Custom chips still expose `category-edit-name` as a **visually hidden** control (accessible name `Edit {name}`) that starts the same rename dialog. Long-press is the touch path.
 - Below `md`, the chip is the hide/show control: accessible name includes Hide or Show plus the category name (e.g. `Hide Groceries` / `Show Groceries`).
 - Below `md`, `contextmenu` on a chip is prevented so a long-press is not stolen by the OS menu.
 - `md+`: helper is unused for click-to-toggle; 124 hover buttons remain the only hide/show and visible-edit path.
@@ -94,7 +94,7 @@ Pure helper (injectable, no Dexie / no Svelte) so Vitest can lock the outcomes:
 
 - **Given** a viewport **390×844**, Expenses, custom Warung
 - **When** the user presses Warung for at least 500ms without moving past slop
-- **Then** inline rename is open for Warung
+- **Then** the category rename dialog is open for Warung
 - **And** Warung’s hidden state is unchanged
 - **And** the visible pencil control is not shown
 
@@ -105,12 +105,12 @@ Pure helper (injectable, no Dexie / no Svelte) so Vitest can lock the outcomes:
 - **Then** Groceries stays shown
 - **And** rename does not start
 
-### Scenario: Rename open ignores tap
+### Scenario: Rename dialog open ignores tap
 
-- **Given** a viewport **390×844** and a custom chip in inline rename
-- **When** the user short-presses that chip (outside the name field actions)
+- **Given** a viewport **390×844** and the category rename dialog open for a custom chip
+- **When** the user would otherwise short-press that chip
 - **Then** hide/show does not change
-- **And** rename stays open until save or Escape
+- **And** rename stays open until save, Cancel, or Escape
 
 ### Scenario: Desktop hover hide still uses the eye
 

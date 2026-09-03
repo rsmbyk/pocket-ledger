@@ -156,8 +156,11 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		const warung = categoryChip(page, 'Warung');
 		await warung.hover();
 		await warung.getByTestId('category-edit-name').click();
-		await page.getByRole('textbox', { name: 'Name for Warung' }).fill('Warung kopi');
-		await page.getByTestId('category-save-name').click();
+		await expect(page.getByTestId('category-rename-dialog')).toBeVisible();
+		await expect(page.getByTestId('category-save-name')).toHaveCount(0);
+		await expect(page.getByTestId('category-rename-save')).toBeDisabled();
+		await page.getByTestId('category-rename-name-input').fill('Warung kopi');
+		await page.getByTestId('category-rename-save').click();
 		await expect(categoryChip(page, 'Warung kopi')).toBeVisible();
 		const groceries = categoryChip(page, 'Groceries');
 		await groceries.hover();
@@ -284,11 +287,10 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await expect(warung.getByTestId('category-hide')).toHaveCount(0);
 		await expect(warung.getByTestId('category-edit-name')).toHaveClass(/sr-only/);
 		await longPress(warung.getByRole('button', { name: 'Hide Warung' }));
-		const renameField = page.getByRole('textbox', { name: 'Name for Warung' });
-		await expect(renameField).toBeVisible();
-		await expect(
-			page.getByTestId('category-chip').filter({ has: renameField })
-		).not.toHaveAttribute('data-hidden', 'true');
+		await expect(page.getByTestId('category-rename-dialog')).toBeVisible();
+		await expect(page.getByTestId('category-rename-name-input')).toBeVisible();
+		await expect(page.getByTestId('category-save-name')).toHaveCount(0);
+		await expect(warung).not.toHaveAttribute('data-hidden', 'true');
 	});
 
 	test('long-press on stock does not toggle below md', async ({ page }) => {
@@ -682,5 +684,56 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await expect(page.getByTestId('category-rename-group-dialog')).toHaveCount(0);
 		await longPress(work.getByTestId('category-group-name'));
 		await expect(work).toHaveAttribute('data-group-hidden', 'true');
+	});
+
+	test('150 kind titles, header tint, helpers, and frozen Current', async ({ page }) => {
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await page.goto('/categories');
+		await selectCategoriesKind(page, 'expense');
+		await clickCategoryGroupAdd(page.getByTestId('category-group-stock-group:food-drink'));
+		const addCategory = page.getByTestId('category-add-dialog');
+		await expect(addCategory.getByRole('heading', { name: 'Add Expenses category' })).toBeVisible();
+		await expect(page.getByTestId('category-add-helper')).toHaveText('In Food & drink');
+		await expect(addCategory.locator('[data-slot=dialog-header]')).toHaveClass(/bg-destructive\/5/);
+		await expect(page.getByTestId('category-name-input')).toHaveAttribute('placeholder', 'Name');
+		await page.getByRole('button', { name: 'Cancel' }).click();
+
+		await page.getByTestId('category-add-group').click();
+		const addGroup = page.getByTestId('category-add-group-dialog');
+		await expect(addGroup.getByRole('heading', { name: 'Add Expenses group' })).toBeVisible();
+		await expect(addGroup.locator('[data-slot=dialog-header]')).toHaveClass(/bg-destructive\/5/);
+		await page.getByRole('button', { name: 'Cancel' }).click();
+
+		await selectCategoriesKind(page, 'income');
+		await page.getByTestId('category-add-group').click();
+		await expect(page.getByRole('heading', { name: 'Add Income group' })).toBeVisible();
+		await expect(page.getByTestId('category-add-group-dialog').locator('[data-slot=dialog-header]')).toHaveClass(
+			/bg-income\/5/
+		);
+		await page.getByTestId('category-group-name-input').fill('Side hustle');
+		await page.getByTestId('category-group-add').click();
+		const custom = groupCardByTitle(page, 'Side hustle');
+		await custom.locator('[data-slot=card-header]').hover();
+		await custom.getByTestId('category-group-edit').click();
+		const renameGroup = page.getByTestId('category-rename-group-dialog');
+		await expect(renameGroup.getByRole('heading', { name: 'Rename Income group' })).toBeVisible();
+		await expect(page.getByTestId('category-rename-group-helper')).toHaveText('Current: Side hustle');
+		await expect(page.getByTestId('category-rename-group-save')).toBeDisabled();
+		await page.getByTestId('category-rename-group-name-input').fill('Gig work');
+		await expect(page.getByTestId('category-rename-group-helper')).toHaveText('Current: Side hustle');
+		await expect(page.getByTestId('category-rename-group-save')).toBeEnabled();
+		await page.getByRole('button', { name: 'Cancel' }).click();
+
+		await clickCategoryGroupAdd(custom);
+		await page.getByTestId('category-name-input').fill('Gig');
+		await page.getByTestId('category-add').click();
+		const gig = categoryChip(page, 'Gig');
+		await gig.hover();
+		await gig.getByTestId('category-edit-name').click();
+		const renameCat = page.getByTestId('category-rename-dialog');
+		await expect(renameCat.getByRole('heading', { name: 'Rename Income category' })).toBeVisible();
+		await expect(page.getByTestId('category-rename-helper')).toHaveText('Current: Gig');
+		await page.getByTestId('category-rename-name-input').fill('Gig apps');
+		await expect(page.getByTestId('category-rename-helper')).toHaveText('Current: Gig');
 	});
 });

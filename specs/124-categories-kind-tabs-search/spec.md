@@ -20,7 +20,7 @@ Make Categories a **one-kind** page: centered Income | Expenses tabs, full width
 4. **Search** directly under the tabs, full width of the stage. Filters the selected kind by **group label** and **category label** (live, case-insensitive substring). Search text is not persisted.
 5. **Toolbar** under search: **Add group** and **Reorder**, each with a leading icon. No page-level **Edit** / **Done** control.
 6. **Group cards:** each group of the selected kind is its own card. Card header is the group name. Income cards green-tinted; expense cards red-tinted. Header includes an icon-only **add** (plus) that opens the existing add-category dialog (018/123) for that group. No add row inside the chip list.
-7. **Chips:** each category is a chip (icon + label). Shown (not hidden) chips are slightly raised. Hover (and focus-within) highlights the chip and reveals icon-only **show/hide** for every category and icon-only **edit** for **custom** categories only. Stock has no edit control and cannot be renamed.
+7. **Chips:** each category is a chip (icon + label). Shown (not hidden) chips are slightly raised. Hover (and focus-within) highlights the chip and reveals icon-only **show/hide** for every category and icon-only **edit** for **custom** categories only. Stock has no edit control and cannot be renamed. **150:** custom edit opens a rename dialog (no inline chip input).
 8. **Reorder:** still group names + DnD within the **selected kind** only (Save / Discard / Reset / dirty leave from 123). Tabs remain; switching kind while the reorder draft is dirty uses the existing leave confirm (leave discards, then switches).
 9. **Viewport:** tabs, search, and toolbar stay on screen; the group-card area scrolls inside the remaining height so the document does not grow with the catalog.
 
@@ -159,7 +159,7 @@ This is presentation filtering only. Dexie and overlay prefs are unchanged.
 ### Scenario: Custom edit on hover
 
 - **Given** custom Warung on Expenses
-- **When** the user activates the chip’s edit control and saves a new name `Warung kopi`
+- **When** the user activates the chip’s edit control, the rename **dialog** opens (150), and they save a new name `Warung kopi`
 - **Then** the custom row is renamed
 - **And** a stock chip such as Groceries has no edit control
 
