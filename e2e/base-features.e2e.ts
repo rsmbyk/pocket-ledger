@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { goToNav } from './nav';
+import { goToNav, openPocketEditFromList } from './nav';
 
 test.describe('003–008 base features', () => {
 	test.beforeEach(async ({ page }) => {
@@ -31,11 +31,12 @@ test.describe('003–008 base features', () => {
 	test('creates a pocket goal with target', async ({ page }) => {
 		await goToNav(page, 'pockets');
 		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
-		await mainRow.getByTestId('pocket-edit').click();
+		await openPocketEditFromList(page, mainRow);
 		await page.getByTestId('pocket-goal-enabled').check();
 		await page.getByTestId('pocket-goal-target-input').fill('1000000');
 		await page.getByTestId('pocket-save').click();
 		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+		await page.getByTestId('pocket-details-back').click();
 		await expect(mainRow).toContainText(/%|1,?000,?000/);
 		await goToNav(page, 'more');
 		await expect(page.getByTestId('more-section-backup')).toBeVisible();

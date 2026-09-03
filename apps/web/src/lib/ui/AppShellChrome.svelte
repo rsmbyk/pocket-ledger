@@ -16,6 +16,8 @@
 	import WalletIcon from '@lucide/svelte/icons/wallet';
 	import HistoryIcon from '@lucide/svelte/icons/history';
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
+	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
+	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
@@ -26,6 +28,7 @@
 	import MorePanel from '$lib/ui/MorePanel.svelte';
 	import CategoriesPanel from '$lib/ui/CategoriesPanel.svelte';
 	import PocketsPanel from '$lib/ui/PocketsPanel.svelte';
+	import PocketDetailsPanel from '$lib/ui/PocketDetailsPanel.svelte';
 	import PocketLabel from '$lib/ui/PocketLabel.svelte';
 	import ActivityTable from '$lib/ui/ActivityTable.svelte';
 	import TransactionListRow from '$lib/ui/TransactionListRow.svelte';
@@ -69,7 +72,8 @@
 	import { readHideAmounts, writeHideAmounts } from '$lib/shared/hide-amounts';
 	import {
 		readActivityListSession,
-		writeActivityListSession
+		writeActivityListSession,
+		activitySessionForPocket
 	} from '$lib/shared/activity-list-session';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
@@ -92,6 +96,7 @@
 		themePreference: ThemePreference;
 		route: AppRoute;
 		pageTitle: string;
+		detailsPocket?: Account | null;
 		onThemePreferenceChange: (next: ThemePreference) => void;
 		onPrevMonth: () => void | Promise<void>;
 		onNextMonth: () => void | Promise<void>;
@@ -151,6 +156,7 @@
 		themePreference,
 		route,
 		pageTitle,
+		detailsPocket = null,
 		onThemePreferenceChange,
 		onPrevMonth,
 		onNextMonth,
@@ -163,9 +169,9 @@
 		onRefreshLedger,
 		onCreatePocket,
 		onUpdatePocket,
-		onDeletePocket,
+		onDeletePocket: _onDeletePocket,
 		onReorderPockets,
-		onClearPocketGoal,
+		onClearPocketGoal: _onClearPocketGoal,
 		cloudConfigured = false,
 		userEmail = null,
 		sessions = [],
@@ -183,6 +189,11 @@
 		onOpenEdit,
 		onActivityPocketFilterChange
 	}: Props = $props();
+
+	$effect(() => {
+		void _onDeletePocket;
+		void _onClearPocketGoal;
+	});
 
 	const sidebar = Sidebar.useSidebar();
 
@@ -214,6 +225,7 @@
 	let categoriesReorderDirty = $state(false);
 	let pendingNav = $state<AppRoute | null>(null);
 	let leaveCategoriesOpen = $state(false);
+	let detailsEditRequest = $state<Account | null>(null);
 
 	const categoryKinds = $derived(
 		Object.fromEntries(Object.values(categoriesById).map((c) => [c.id, c.kind]))
@@ -391,6 +403,16 @@
 		writeActivityListSession({ filters: applied, range: dateRange });
 	}
 
+	function seeMoreForPocket(pocketId: string) {
+		const session = activitySessionForPocket(pocketId);
+		applied = normalizeActivityFilters(session.filters);
+		draft = cloneFilters(applied);
+		dateRange = session.range;
+		writeActivityListSession(session);
+		onActivityPocketFilterChange?.([...applied.pocketIds]);
+		navigate('transactions');
+	}
+
 	function setDateRange(next: TransactionDateRange) {
 		dateRange = next;
 		writeActivityListSession({ filters: applied, range: next });
@@ -543,11 +565,45 @@
 	>
 		<Sidebar.Trigger data-testid="open-menu" />
 		<div class="min-w-0 flex-1">
-			<p class="text-base font-semibold tracking-tight md:text-lg" data-testid="page-title">
-				{pageTitle}
-			</p>
+			<div class="flex min-w-0 items-center gap-1">
+				{#if detailsPocket}
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						data-testid="pocket-details-back"
+						aria-label="Back to pockets"
+						onclick={() => navigate('pockets')}
+					>
+						<ChevronLeftIcon class="size-4" />
+					</Button>
+				{/if}
+				<p class="text-base font-semibold tracking-tight md:text-lg" data-testid="page-title">
+					{#if detailsPocket}
+						<PocketLabel
+							name={detailsPocket.name}
+							isMain={detailsPocket.isMain}
+							class="font-semibold"
+						/>
+					{:else}
+						{pageTitle}
+					{/if}
+				</p>
+			</div>
 		</div>
-		{#if route === 'home'}
+		{#if detailsPocket}
+			<Button
+				type="button"
+				variant="ghost"
+				size="icon-sm"
+				data-testid="pocket-details-edit"
+				aria-label={`Edit ${detailsPocket.name}`}
+				onclick={() => (detailsEditRequest = detailsPocket)}
+			>
+				<PencilIcon class="size-4" />
+			</Button>
+		{/if}
+		{#if route === 'home' || detailsPocket}
 			<Button
 				type="button"
 				variant="ghost"
@@ -931,15 +987,30 @@
 				{/if}
 			</div>
 		{:else if route === 'pockets'}
+			{#if detailsPocket}
+				<PocketDetailsPanel
+					pocket={detailsPocket}
+					balance={pocketBalances[detailsPocket.id] ?? 0}
+					{currencyLabel}
+					{transactions}
+					{categoriesById}
+					pockets={accounts}
+					hideAmounts={hideHomeAmounts}
+					onAdd={openAdd}
+					onSeeMore={() => seeMoreForPocket(detailsPocket.id)}
+					onOpenTx={onOpenEdit}
+				/>
+			{/if}
 			<PocketsPanel
 				pockets={accounts}
 				balances={pocketBalances}
 				{currencyLabel}
 				{onCreatePocket}
 				{onUpdatePocket}
-				{onDeletePocket}
 				{onReorderPockets}
-				onClearGoal={onClearPocketGoal}
+				requestEdit={detailsEditRequest}
+				onRequestEditConsumed={() => (detailsEditRequest = null)}
+				hideList={Boolean(detailsPocket)}
 			/>
 		{:else if route === 'categories'}
 			<CategoriesPanel

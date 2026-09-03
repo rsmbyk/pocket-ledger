@@ -13,7 +13,7 @@ Tighten Categories rows: replace labeled Rename / Delete with icon-only controls
 ### In scope
 
 - Per-row actions in Categories only (not the card Add button, not the add dialog)
-- **Save name:** Check icon, icon-only button, outline variant; `aria-label` like “Save name for {name}”; `data-testid="category-save-name"`
+- **Save name:** Dialog **Save** (`data-testid="category-rename-save"`, spec 150). Previously an icon-only check on the chip (`category-save-name`).
 - **Delete:** Trash icon, icon-only, destructive variant; `aria-label` like “Delete {name}”; existing confirm (015) unchanged
 - Save disabled when trimmed draft equals saved name, when trimmed draft is empty, or while busy
 

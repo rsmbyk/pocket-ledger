@@ -17,7 +17,8 @@ import {
 	shouldShowActivityCategoryFilter,
 	sortTransactions,
 	UNCATEGORIZED_FILTER,
-	usedCategoryIds
+	usedCategoryIds,
+	latestPocketTransactions
 } from './activity-filters';
 import {
 	customRangeToMonth,
@@ -255,6 +256,59 @@ describe('activity-filters', () => {
 			})
 		];
 		expect(sortTransactions(mixed).map((t) => t.id)).toEqual(['2', '1']);
+	});
+
+	it('latestPocketTransactions caps at 10, hides voided, includes transfer either side (148)', () => {
+		const rows: LedgerTransaction[] = [];
+		for (let i = 1; i <= 12; i++) {
+			rows.push({
+				...tx({
+					id: `n-${i}`,
+					type: 'expense',
+					amountMinor: i,
+					occurredOn: `2026-01-${String(i).padStart(2, '0')}`,
+					note: `n-${i}`
+				}),
+				accountId: 'vac'
+			});
+		}
+		rows.push({
+			...tx({
+				id: 'voided',
+				type: 'expense',
+				amountMinor: 99,
+				occurredOn: '2026-06-01',
+				voidedAt: '2026-06-02T00:00:00.000Z',
+				note: 'voided'
+			}),
+			accountId: 'vac'
+		});
+		rows.push({
+			...tx({
+				id: 'xfer',
+				type: 'transfer',
+				amountMinor: 30,
+				occurredOn: '2026-07-15',
+				note: 'xfer'
+			}),
+			accountId: 'acc',
+			counterAccountId: 'vac'
+		});
+		const latest = latestPocketTransactions(rows, 'vac', 10);
+		expect(latest).toHaveLength(10);
+		expect(latest.map((t) => t.id)).toEqual([
+			'xfer',
+			'n-12',
+			'n-11',
+			'n-10',
+			'n-9',
+			'n-8',
+			'n-7',
+			'n-6',
+			'n-5',
+			'n-4'
+		]);
+		expect(latest.some((t) => t.id === 'voided')).toBe(false);
 	});
 
 	it('orders same-day rows by createdAt desc (Spec 101 / 134)', () => {

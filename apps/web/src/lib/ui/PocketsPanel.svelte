@@ -1,9 +1,6 @@
 <script lang="ts">
 	import GripVerticalIcon from '@lucide/svelte/icons/grip-vertical';
-	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import PlusIcon from '@lucide/svelte/icons/plus';
-	import Trash2Icon from '@lucide/svelte/icons/trash-2';
-	import XIcon from '@lucide/svelte/icons/x';
 	import { flip } from 'svelte/animate';
 	import { dragHandle, dragHandleZone, type DndEvent } from 'svelte-dnd-action';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -17,6 +14,7 @@
 	import PocketLabel from '$lib/ui/PocketLabel.svelte';
 	import type { Account } from '$lib/domain/account';
 	import type { CreatePocketInput, UpdatePocketInput } from '$lib/application/accounts';
+	import { pocketDetailsPath } from '$lib/shared/router';
 	import { classifyFormFieldError, type FormFieldKey } from '$lib/domain/form-field-error';
 	import { assertGoalTarget, goalProgressPercent } from '$lib/domain/goals';
 	import { formatRemainingUnit, largestRemainingUnit } from '$lib/domain/goal-time';
@@ -46,9 +44,12 @@
 		currencyLabel: string;
 		onCreatePocket: (input: CreatePocketInput) => void | Promise<void>;
 		onUpdatePocket: (input: UpdatePocketInput) => void | Promise<void>;
-		onDeletePocket: (id: string) => void | Promise<void>;
 		onReorderPockets: (orderedNonMainIds: string[]) => void | Promise<void>;
-		onClearGoal: (id: string) => void | Promise<void>;
+		/** When set, open the existing edit dialog for this pocket (spec 148). */
+		requestEdit?: Account | null;
+		onRequestEditConsumed?: () => void;
+		/** Hide the list; keep dialogs mounted (details page). */
+		hideList?: boolean;
 	};
 
 	type FormBaseline = {
@@ -69,15 +70,16 @@
 		currencyLabel,
 		onCreatePocket,
 		onUpdatePocket,
-		onDeletePocket,
 		onReorderPockets,
-		onClearGoal
+		requestEdit = null,
+		onRequestEditConsumed,
+		hideList = false
 	}: Props = $props();
 
 	const flipDurationMs = 180;
 
 	let busy = $state(false);
-	let error = $state('');
+	let dragging = $state(false);
 
 	let items = $state<Account[]>([]);
 	$effect(() => {
@@ -101,8 +103,6 @@
 	let formError = $state<{ key: FormFieldKey; message: string } | null>(null);
 	let formBaseline = $state<FormBaseline | null>(null);
 	let discardConfirmOpen = $state(false);
-
-	let deleteTarget = $state<{ id: string; name: string } | null>(null);
 
 	const formCreationDate = $derived(
 		formMode === 'edit' && formPocketId
@@ -135,12 +135,8 @@
 
 	async function runAction(action: () => void | Promise<void>) {
 		busy = true;
-		error = '';
 		try {
 			await action();
-		} catch (e) {
-			error = e instanceof Error ? e.message : 'Something went wrong';
-			throw e;
 		} finally {
 			busy = false;
 		}
@@ -343,16 +339,13 @@
 		}
 	}
 
-	function requestDelete(p: Account) {
-		if (p.isMain) return;
-		deleteTarget = { id: p.id, name: p.name };
-	}
-
 	function handleConsider(e: CustomEvent<DndEvent<Account>>) {
+		dragging = true;
 		items = e.detail.items;
 	}
 
 	async function handleFinalize(e: CustomEvent<DndEvent<Account>>) {
+		dragging = false;
 		const next = e.detail.items;
 		items = next;
 		try {
@@ -361,6 +354,13 @@
 			items = pockets.filter((p) => !p.isMain);
 		}
 	}
+
+	$effect(() => {
+		const target = requestEdit;
+		if (!target) return;
+		openEdit(target);
+		onRequestEditConsumed?.();
+	});
 </script>
 
 {#snippet pocketRow(p: Account, draggable: boolean)}
@@ -369,26 +369,37 @@
 	{@const percent = hasGoal ? goalProgressPercent(p.goalTargetMinor!, balance) : 0}
 	{@const remaining =
 		hasGoal && p.goalTargetOn ? largestRemainingUnit(todayOccurredOn(), p.goalTargetOn) : null}
-	<div class={['flex gap-2 px-4 py-3', hasGoal ? 'items-stretch' : 'items-center']}>
+	{@const href = pocketDetailsPath(p.id)}
+	{@const description = p.notes.trim()}
+	<a
+		href={href}
+		class="absolute inset-0 z-0"
+		aria-label={`Open ${p.name}`}
+	></a>
+	<div class="pointer-events-none relative z-10 flex items-stretch gap-2 px-4 py-3">
 		{#if draggable}
-			<button
-				type="button"
+			<span
 				use:dragHandle
-				class="dnd-handle text-muted-foreground hover:text-foreground shrink-0 cursor-grab rounded-sm p-1 active:cursor-grabbing"
+				class="dnd-handle text-muted-foreground hover:text-foreground pointer-events-auto -my-3 flex shrink-0 cursor-grab items-center self-stretch rounded-sm p-1 active:cursor-grabbing"
 				aria-label={`Drag to reorder ${p.name}`}
 			>
 				<GripVerticalIcon class="size-4" aria-hidden="true" />
-			</button>
+			</span>
 		{:else}
-			<span class="size-4 shrink-0" aria-hidden="true"></span>
+			<span class="-my-3 w-6 shrink-0 self-stretch" aria-hidden="true"></span>
 		{/if}
-		<div class="min-w-0 flex-1">
+		<div class="min-w-0 flex-1 self-start">
 			<PocketLabel
 				name={p.name}
 				isMain={p.isMain}
 				class="font-medium"
 				iconTestid={p.isMain ? 'pocket-main-icon' : undefined}
 			/>
+			{#if description}
+				<p class="text-muted-foreground truncate text-xs" data-testid="pocket-description">
+					{description}
+				</p>
+			{/if}
 			{#if hasGoal}
 				<div class="mt-1.5 max-w-xs space-y-1">
 					<p class="text-muted-foreground text-xs">
@@ -408,59 +419,13 @@
 				</div>
 			{/if}
 		</div>
-		<div
-			class={['flex shrink-0 flex-col items-end gap-1', hasGoal && 'justify-between self-stretch']}
-		>
-			<p class="font-medium tabular-nums">{formatMinor(balance, currencyLabel)}</p>
-			<div class={['flex gap-1', hasGoal && 'mt-auto']}>
-				{#if hasGoal}
-					<Button
-						size="icon-sm"
-						variant="destructive"
-						aria-label={`Clear goal for ${p.name}`}
-						data-testid="pocket-clear-goal"
-						disabled={busy}
-						onclick={() => void runAction(() => onClearGoal(p.id))}
-					>
-						<XIcon class="size-4" />
-					</Button>
-				{/if}
-				<Button
-					size="icon-sm"
-					variant="outline"
-					aria-label={`Edit ${p.name}`}
-					data-testid="pocket-edit"
-					disabled={busy}
-					onclick={() => openEdit(p)}
-				>
-					<PencilIcon class="size-4" />
-				</Button>
-				{#if !p.isMain}
-					<Button
-						size="icon-sm"
-						variant="destructive"
-						aria-label={`Delete ${p.name}`}
-						data-testid="pocket-delete"
-						disabled={busy}
-						onclick={() => requestDelete(p)}
-					>
-						<Trash2Icon class="size-4" />
-					</Button>
-				{/if}
-			</div>
-		</div>
+		<p class="shrink-0 self-start font-medium tabular-nums">
+			{formatMinor(balance, currencyLabel)}
+		</p>
 	</div>
-	{#if p.notes.trim()}
-		<div
-			class="border-border text-muted-foreground border-t px-4 py-2 text-xs"
-			data-testid="pocket-description"
-		>
-			{p.notes.trim()}
-		</div>
-	{/if}
 {/snippet}
 
-<div class="space-y-3" data-testid="pockets-panel">
+<div class={['space-y-3', hideList && 'hidden']} data-testid="pockets-panel">
 	<div class="flex items-center justify-end">
 		<Button
 			type="button"
@@ -473,11 +438,17 @@
 			Add Pocket
 		</Button>
 	</div>
-	{#if error}
-		<p class="text-destructive text-sm" role="alert">{error}</p>
-	{/if}
 	{#if mainPocket}
-		<Card.Root class="gap-0 overflow-hidden py-0" data-testid={`pocket-row-${mainPocket.id}`}>
+		<Card.Root
+			class={cn(
+				'relative gap-0 overflow-hidden py-0',
+				dragging && 'opacity-60',
+				!dragging &&
+					'hover:bg-accent/70 hover:ring-foreground/20 focus-within:bg-accent/70 focus-within:ring-foreground/20'
+			)}
+			data-testid={`pocket-row-${mainPocket.id}`}
+			data-dnd-locked={dragging ? 'true' : undefined}
+		>
 			{@render pocketRow(mainPocket, false)}
 		</Card.Root>
 	{/if}
@@ -490,7 +461,14 @@
 	>
 		{#each items as p (p.id)}
 			<div animate:flip={{ duration: flipDurationMs }}>
-				<Card.Root class="gap-0 overflow-hidden py-0" data-testid={`pocket-row-${p.id}`}>
+				<Card.Root
+					class={cn(
+						'relative gap-0 overflow-hidden py-0',
+						!dragging &&
+							'hover:bg-accent/70 hover:ring-foreground/20 focus-within:bg-accent/70 focus-within:ring-foreground/20'
+					)}
+					data-testid={`pocket-row-${p.id}`}
+				>
 					{@render pocketRow(p, true)}
 				</Card.Root>
 			</div>
@@ -764,25 +742,4 @@
 	onOpenChange={(next) => (discardConfirmOpen = next)}
 	onConfirm={confirmFormDiscard}
 	onSecondary={savePocketCreateDraft}
-/>
-
-<ConfirmDialog
-	open={deleteTarget !== null}
-	title="Delete pocket?"
-	description={deleteTarget
-		? `Delete "${deleteTarget.name}"? This cannot be undone. Pockets with transactions must be emptied or voided first.`
-		: 'This cannot be undone.'}
-	confirmLabel="Delete"
-	destructive
-	dangerChrome
-	confirmTestId="pocket-delete-confirm"
-	onOpenChange={(open) => {
-		if (!open) deleteTarget = null;
-	}}
-	onConfirm={async () => {
-		if (!deleteTarget) return;
-		const { id } = deleteTarget;
-		await runAction(() => onDeletePocket(id));
-		deleteTarget = null;
-	}}
 />

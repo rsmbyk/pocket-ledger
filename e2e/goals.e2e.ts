@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd, selectTxCategory } from './nav';
+import { ensureCategory, goToNav, openAdd, openPocketEditFromList, selectTxCategory } from './nav';
 
 /** Spec 072 retired global goals; pocket goals replace them. */
 test.describe('072 pocket goals (replaces 060 More/Home goals)', () => {
@@ -25,10 +25,12 @@ test.describe('072 pocket goals (replaces 060 More/Home goals)', () => {
 
 		await goToNav(page, 'pockets');
 		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
-		await mainRow.getByTestId('pocket-edit').click();
+		await openPocketEditFromList(page, mainRow);
 		await page.getByTestId('pocket-goal-enabled').check();
 		await page.getByTestId('pocket-goal-target-input').fill('100000');
 		await page.getByTestId('pocket-save').click();
+		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+		await page.getByTestId('pocket-details-back').click();
 		await expect(mainRow).toContainText(/25%/);
 	});
 });

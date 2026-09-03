@@ -270,6 +270,17 @@ export function sortTransactions(txs: LedgerTransaction[]): LedgerTransaction[] 
 	});
 }
 
+/** Newest active txs that touch `pocketId`, capped (spec 148). */
+export function latestPocketTransactions(
+	txs: LedgerTransaction[],
+	pocketId: string,
+	limit = 10
+): LedgerTransaction[] {
+	return sortTransactions(
+		filterTransactions(txs, { pocketIds: [pocketId], showVoided: false })
+	).slice(0, limit);
+}
+
 export function groupActivityByOccurredOn(txs: LedgerTransaction[]): ActivityDateGroup[] {
 	const order: string[] = [];
 	const map = new Map<string, LedgerTransaction[]>();

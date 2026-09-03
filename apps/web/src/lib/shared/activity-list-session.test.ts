@@ -3,6 +3,7 @@ import { DEFAULT_ACTIVITY_FILTERS } from '$lib/domain/activity-filters';
 import { defaultTransactionDateRange } from '$lib/domain/transaction-date-range';
 import {
 	ACTIVITY_LIST_SESSION_KEY,
+	activitySessionForPocket,
 	parseActivityListSession,
 	readActivityListSession,
 	writeActivityListSession
@@ -126,5 +127,15 @@ describe('activity-list-session', () => {
 		expect(parsed.filters).not.toHaveProperty('amountRaw');
 		expect(parsed.filters.showVoided).toBe(false);
 		expect(parsed.filters.categoryIds).toEqual([]);
+	});
+
+	it('See more payload is defaults plus one pocket and current month (148)', () => {
+		const now = new Date('2026-09-03T12:00:00');
+		const session = activitySessionForPocket('vac', now);
+		expect(session.filters).toEqual({
+			...DEFAULT_ACTIVITY_FILTERS,
+			pocketIds: ['vac']
+		});
+		expect(session.range).toEqual(defaultTransactionDateRange(now));
 	});
 });

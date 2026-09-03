@@ -109,7 +109,7 @@ Living behavior contracts for Pocket Ledger.
 | [091](091-pocket-helpers-goal-date-suffix/spec.md)     | Pocket helpers + goal-date suffix                            | Accepted                                                                     |
 | [092](092-pocket-label-beside-date/spec.md)            | Pocket label beside date                                     | Accepted                                                                     |
 | [093](093-pocket-card-actions-bottom/spec.md)          | Pocket card actions bottom                                   | Accepted                                                                     |
-| [094](094-pocket-description-footer/spec.md)           | Pocket description footer                                    | Accepted                                                                     |
+| [094](094-pocket-description-footer/spec.md)           | Pocket description footer                                    | Accepted — list footer placement superseded by [149](149-pockets-list-card-states/spec.md) |
 | [095](095-month-summary-header-padding/spec.md)        | Month summary header equal padding                           | Accepted                                                                     |
 | [096](096-pocket-under-amount-date-row/spec.md)        | Pocket under amount, date-aligned                            | Accepted                                                                     |
 | [097](097-pocket-row-center-no-goal/spec.md)           | Pocket row center when no goal                               | Accepted                                                                     |
@@ -164,3 +164,7 @@ Living behavior contracts for Pocket Ledger.
 | [145](145-remove-amount-filter/spec.md)                  | Remove Filters Amount compare                                | Accepted                                                                        |
 | [146](146-reorder-reset-both-discard-confirm/spec.md)    | Reorder Reset both kinds + Discard confirm                   | Accepted                                                                        |
 | [147](147-categories-reorder-whole-row-drag/spec.md)     | Categories reorder whole-row drag                            | Accepted                                                                        |
+| [148](148-pocket-details-page/spec.md)                   | Pocket details page                                          | Accepted — list pencil superseded by [149](149-pockets-list-card-states/spec.md) |
+| [149](149-pockets-list-card-states/spec.md)              | Pockets list card states                                     | Accepted — grip-to-name alignment superseded by [151](151-pocket-grip-column/spec.md) |
+| [150](150-rename-category-modal/spec.md)                 | Category rename modal + kind dialog titles                   | Accepted                                                                        |
+| [151](151-pocket-grip-column/spec.md)                    | Pocket grip column                                           | Accepted                                                                        |

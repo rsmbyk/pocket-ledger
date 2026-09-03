@@ -178,20 +178,24 @@ function categoryTotals(
  * Opening = sum of each pocket’s balance at `${monthKey}-01` (Spec 110).
  * @param categoryMeta Map of category id → name + sortOrder (Categories menu order).
  * @param pockets All pockets; each contributes its day-start balance to Opening.
+ * @param options.pocketId When set (spec 148), Opening and in-month totals are this pocket only.
  */
 export function buildMonthSummary(
 	transactions: LedgerTransaction[],
 	monthKey: MonthKey,
 	categoryMeta: Record<string, CategoryMeta>,
-	pockets: Array<Pick<Account, 'id' | 'openingBalanceMinor' | 'openingAsOf'>> = []
+	pockets: Array<Pick<Account, 'id' | 'openingBalanceMinor' | 'openingAsOf'>> = [],
+	options?: { pocketId?: string }
 ): MonthSummary {
 	if (!isValidMonthKey(monthKey)) {
 		throw new Error('Invalid month key');
 	}
 
 	const monthStart = `${monthKey}-01`;
+	const scopedId = options?.pocketId;
+	const openingPockets = scopedId ? pockets.filter((p) => p.id === scopedId) : pockets;
 	let openingMinor = 0;
-	for (const pocket of pockets) {
+	for (const pocket of openingPockets) {
 		openingMinor += balanceAtDayStart(pocket, monthStart, transactions);
 	}
 	let incomeMinor = 0;
@@ -209,14 +213,18 @@ export function buildMonthSummary(
 
 		if (!transactionInMonth(tx, monthKey)) continue;
 
-		const key = tx.categoryId ?? '';
 		if (tx.type === 'income') {
+			if (scopedId && tx.accountId !== scopedId) continue;
+			const key = tx.categoryId ?? '';
 			incomeMinor += tx.amountMinor;
 			incomeMap.set(key, (incomeMap.get(key) ?? 0) + tx.amountMinor);
 		} else if (tx.type === 'expense') {
+			if (scopedId && tx.accountId !== scopedId) continue;
+			const key = tx.categoryId ?? '';
 			expenseMinor += tx.amountMinor;
 			expenseMap.set(key, (expenseMap.get(key) ?? 0) + tx.amountMinor);
 		} else if (tx.type === 'transfer') {
+			if (scopedId && tx.accountId !== scopedId) continue;
 			const fee = transferFeeMinor(tx);
 			if (fee > 0) {
 				expenseMinor += fee;
