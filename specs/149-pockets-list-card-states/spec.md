@@ -16,7 +16,7 @@ On the Pockets list, each card is a roster row you open for details: grip (or Ma
 
 1. **No card actions** — List cards have no `pocket-edit`, `pocket-delete`, or `pocket-clear-goal`. Keep the non-Main six-dot drag handle (070). Keep Add Pocket. Keep details toolbar Edit (`pocket-details-edit`, 148).
 2. **No list delete chrome** — Remove the panel `{#if error}` `<p role="alert">` and the **Delete pocket?** confirm (`pocket-delete-confirm`). Domain `deletePocket` stays. Form field errors in the create/edit dialog stay.
-3. **Three-column card** — Left: grip or Main spacer, aligned to the name. Middle: name, then description if `notes.trim()`, then goal chrome if enabled. Right: derived amount, top-aligned with the name. `data-testid="pocket-description"` stays. Description is muted `text-xs`, one-line truncate. No `border-t` footer.
+3. **Three-column card** — Left: grip or Main spacer (**151:** full-height column, icon vertically centered). Middle: name, then description if `notes.trim()`, then goal chrome if enabled. Right: derived amount, top-aligned with the name. `data-testid="pocket-description"` stays. Description is muted `text-xs`, one-line truncate. No `border-t` footer.
 4. **Hover / focus highlight** — Pointer hover or `focus-within` (Open-details link) on a list card uses category-chip hover: `bg-accent/70` and a stronger ring (`ring-foreground/20`). No sticky hover after tap. While a drag is in progress, no hover highlight.
 5. **Mute Main while grabbing** — During svelte-dnd-action `consider` until `finalize` (pointer or keyboard), the Main card is `opacity-60` and `data-dnd-locked="true"`. Idle Main is full opacity. Do not mute on handle hover or a click that never starts DnD.
 
@@ -26,7 +26,7 @@ On the Pockets list, each card is a roster row you open for details: grip (or Ma
 - Making Main a drop target or changing `sortOrder`
 - Muting Add Pocket or non-Main rows
 - Hover on pocket details cards or Categories
-- Whole-row drag (grip stays the handle)
+- Whole-row drag (grip **column** is the handle; spec 151)
 - Changing goal copy or progress math (072)
 - New domain/Vitest
 

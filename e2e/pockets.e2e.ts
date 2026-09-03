@@ -1,5 +1,27 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { ensureCategory, goToNav, openAdd, openPocketEditFromList, selectTxCategory } from './nav';
+
+/** Name + description + goal so the list card is tall (149/151). Goal is edit-only. */
+async function createTallVacationPocket(page: Page) {
+	await goToNav(page, 'pockets');
+	await page.getByTestId('pocket-add').click();
+	await page.getByTestId('pocket-name-input').fill('Vacation');
+	await page.getByTestId('pocket-description-input').fill('Trip fund');
+	await page.getByTestId('pocket-save').click();
+	await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+
+	const vacation = page.locator('[data-testid^="pocket-row-"]').filter({ hasText: 'Vacation' });
+	await openPocketEditFromList(page, vacation);
+	const goalToggle = page.getByTestId('pocket-goal-enabled');
+	await goalToggle.scrollIntoViewIfNeeded();
+	await goalToggle.check();
+	await page.getByTestId('pocket-goal-target-input').fill('8000000');
+	await page.getByTestId('pocket-save').click();
+	await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+	await page.getByTestId('pocket-details-back').click();
+	await expect(page.getByTestId('pockets-panel')).toBeVisible();
+	return vacation;
+}
 
 test.describe('070–077 pockets pack', () => {
 	test.beforeEach(async ({ page }) => {
@@ -183,18 +205,7 @@ test.describe('070–077 pockets pack', () => {
 	test('149 description under name; hover highlight; Main mutes while dragging', async ({
 		page
 	}) => {
-		await goToNav(page, 'pockets');
-		await page.getByTestId('pocket-add').click();
-		await page.getByTestId('pocket-name-input').fill('Vacation');
-		await page.getByTestId('pocket-description-input').fill('Trip fund');
-		const goalToggle = page.getByTestId('pocket-goal-enabled');
-		await goalToggle.scrollIntoViewIfNeeded();
-		await goalToggle.check();
-		await page.getByTestId('pocket-goal-target-input').fill('8000000');
-		await page.getByTestId('pocket-save').click();
-		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
-
-		const vacation = page.locator('[data-testid^="pocket-row-"]').filter({ hasText: 'Vacation' });
+		const vacation = await createTallVacationPocket(page);
 		const nameBox = await vacation.getByText('Vacation', { exact: true }).boundingBox();
 		const desc = vacation.getByTestId('pocket-description');
 		const descBox = await desc.boundingBox();
@@ -222,7 +233,7 @@ test.describe('070–077 pockets pack', () => {
 		await page.mouse.down();
 		await page.mouse.move(
 			handleBox!.x + handleBox!.width / 2,
-			handleBox!.y + 48,
+			handleBox!.y + handleBox!.height / 2 + 48,
 			{ steps: 16 }
 		);
 		await expect(mainRow).toHaveAttribute('data-dnd-locked', 'true');
@@ -234,5 +245,39 @@ test.describe('070–077 pockets pack', () => {
 		await expect(page.locator('[data-is-dnd-shadow-item-internal]')).toHaveCount(0);
 		await expect(mainRow).not.toHaveAttribute('data-dnd-locked', 'true');
 		expect(Number(await mainRow.evaluate((el) => getComputedStyle(el).opacity))).toBe(1);
+	});
+
+	test('151 grip column: centered icon; drag from strip; name opens details', async ({
+		page
+	}) => {
+		const vacation = await createTallVacationPocket(page);
+		const handle = vacation.locator('.dnd-handle');
+		const icon = handle.locator('svg');
+		const handleBox = await handle.boundingBox();
+		const iconBox = await icon.boundingBox();
+		expect(handleBox && iconBox).toBeTruthy();
+		expect(handleBox!.height).toBeGreaterThan(iconBox!.height + 16);
+		const iconMidY = iconBox!.y + iconBox!.height / 2;
+		const handleMidY = handleBox!.y + handleBox!.height / 2;
+		expect(Math.abs(iconMidY - handleMidY)).toBeLessThan(8);
+
+		const dragX = handleBox!.x + handleBox!.width / 2;
+		const dragY = iconBox!.y + iconBox!.height + 8;
+		expect(dragY).toBeLessThan(handleBox!.y + handleBox!.height - 2);
+
+		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
+		await page.mouse.move(dragX, dragY);
+		await page.mouse.down();
+		await page.mouse.move(dragX, dragY + 48, { steps: 16 });
+		await expect(mainRow).toHaveAttribute('data-dnd-locked', 'true');
+		await page.mouse.up();
+		await expect(page.locator('[data-is-dnd-shadow-item-internal]')).toHaveCount(0);
+		await expect(mainRow).not.toHaveAttribute('data-dnd-locked', 'true');
+
+		const nameBox = await vacation.getByText('Vacation', { exact: true }).boundingBox();
+		expect(nameBox).toBeTruthy();
+		await page.mouse.click(nameBox!.x + nameBox!.width / 2, nameBox!.y + nameBox!.height / 2);
+		await expect(page).toHaveURL(/\/pockets\/[^/]+\/?$/);
+		await expect(page.getByTestId('pocket-details-panel')).toBeVisible();
 	});
 });

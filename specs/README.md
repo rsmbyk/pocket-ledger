@@ -165,4 +165,5 @@ Living behavior contracts for Pocket Ledger.
 | [146](146-reorder-reset-both-discard-confirm/spec.md)    | Reorder Reset both kinds + Discard confirm                   | Accepted                                                                        |
 | [147](147-categories-reorder-whole-row-drag/spec.md)     | Categories reorder whole-row drag                            | Accepted                                                                        |
 | [148](148-pocket-details-page/spec.md)                   | Pocket details page                                          | Accepted — list pencil superseded by [149](149-pockets-list-card-states/spec.md) |
-| [149](149-pockets-list-card-states/spec.md)              | Pockets list card states                                     | Accepted                                                                        |
+| [149](149-pockets-list-card-states/spec.md)              | Pockets list card states                                     | Accepted — grip-to-name alignment superseded by [151](151-pocket-grip-column/spec.md) |
+| [151](151-pocket-grip-column/spec.md)                    | Pocket grip column                                           | Accepted                                                                        |

@@ -376,20 +376,19 @@
 		class="absolute inset-0 z-0"
 		aria-label={`Open ${p.name}`}
 	></a>
-	<div class="pointer-events-none relative z-10 flex items-start gap-2 px-4 py-3">
+	<div class="pointer-events-none relative z-10 flex items-stretch gap-2 px-4 py-3">
 		{#if draggable}
-			<button
-				type="button"
+			<span
 				use:dragHandle
-				class="dnd-handle text-muted-foreground hover:text-foreground pointer-events-auto shrink-0 cursor-grab rounded-sm p-1 active:cursor-grabbing"
+				class="dnd-handle text-muted-foreground hover:text-foreground pointer-events-auto -my-3 flex shrink-0 cursor-grab items-center self-stretch rounded-sm p-1 active:cursor-grabbing"
 				aria-label={`Drag to reorder ${p.name}`}
 			>
 				<GripVerticalIcon class="size-4" aria-hidden="true" />
-			</button>
+			</span>
 		{:else}
-			<span class="size-4 shrink-0" aria-hidden="true"></span>
+			<span class="-my-3 w-6 shrink-0 self-stretch" aria-hidden="true"></span>
 		{/if}
-		<div class="min-w-0 flex-1">
+		<div class="min-w-0 flex-1 self-start">
 			<PocketLabel
 				name={p.name}
 				isMain={p.isMain}
@@ -420,7 +419,7 @@
 				</div>
 			{/if}
 		</div>
-		<p class="shrink-0 font-medium tabular-nums">
+		<p class="shrink-0 self-start font-medium tabular-nums">
 			{formatMinor(balance, currencyLabel)}
 		</p>
 	</div>
