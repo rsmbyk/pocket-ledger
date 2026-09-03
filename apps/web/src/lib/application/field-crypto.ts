@@ -1,5 +1,6 @@
 import { getDataKey } from '$lib/data/session-key';
 import { db } from '$lib/data/db';
+import type { PocketGoal } from '$lib/domain/goals';
 
 export const CIPHER_PREFIX = 'enc:v1:';
 
@@ -68,7 +69,14 @@ export async function sealAllSensitiveFields(key: CryptoKey): Promise<void> {
 		transactions.map(async (tx) => ({ ...tx, note: await sealField(tx.note, key) }))
 	);
 	const nextGoals = await Promise.all(
-		goals.map(async (goal) => ({ ...goal, name: await sealField(goal.name, key) }))
+		goals.map(async (goal) => {
+			const row = goal as PocketGoal & { name?: string };
+			const { name: _legacyName, ...rest } = row;
+			return {
+				...rest,
+				description: await sealField(row.description || row.name || '', key)
+			};
+		})
 	);
 	const nextCats = await Promise.all(
 		categories.map(async (cat) => ({ ...cat, name: await sealField(cat.name, key) }))
@@ -105,7 +113,14 @@ export async function openAllSensitiveFields(key: CryptoKey): Promise<void> {
 		transactions.map(async (tx) => ({ ...tx, note: await openField(tx.note, key) }))
 	);
 	const nextGoals = await Promise.all(
-		goals.map(async (goal) => ({ ...goal, name: await openField(goal.name, key) }))
+		goals.map(async (goal) => {
+			const row = goal as PocketGoal & { name?: string };
+			const { name: _legacyName, ...rest } = row;
+			return {
+				...rest,
+				description: await openField(row.description || row.name || '', key)
+			};
+		})
 	);
 	const nextCats = await Promise.all(
 		categories.map(async (cat) => ({ ...cat, name: await openField(cat.name, key) }))

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
-import { ensureCategory, goToNav, openAdd, openPocketEditFromList, selectTxCategory } from './nav';
+import { addPocketGoal, ensureCategory, goToNav, openAdd, openPocketEditFromList, selectTxCategory } from './nav';
 
-/** Name + description + goal so the list card is tall (149/151). Goal is edit-only. */
+/** Name + description + goal so the list card is tall (149/151). Goal is details-only (152). */
 async function createTallVacationPocket(page: Page) {
 	await goToNav(page, 'pockets');
 	await page.getByTestId('pocket-add').click();
@@ -11,13 +11,9 @@ async function createTallVacationPocket(page: Page) {
 	await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
 
 	const vacation = page.locator('[data-testid^="pocket-row-"]').filter({ hasText: 'Vacation' });
-	await openPocketEditFromList(page, vacation);
-	const goalToggle = page.getByTestId('pocket-goal-enabled');
-	await goalToggle.scrollIntoViewIfNeeded();
-	await goalToggle.check();
-	await page.getByTestId('pocket-goal-target-input').fill('8000000');
-	await page.getByTestId('pocket-save').click();
-	await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+	await vacation.click();
+	await expect(page.getByTestId('pocket-details-panel')).toBeVisible();
+	await addPocketGoal(page, { target: '8000000' });
 	await page.getByTestId('pocket-details-back').click();
 	await expect(page.getByTestId('pockets-panel')).toBeVisible();
 	return vacation;
@@ -191,15 +187,17 @@ test.describe('070–077 pockets pack', () => {
 		await expect(form).toBeHidden();
 
 		const savingsRow = page.locator('[data-testid^="pocket-row-"]').filter({ hasText: 'Savings' });
-		await openPocketEditFromList(page, savingsRow);
-		await expect(form).toBeVisible();
-		await page.getByTestId('pocket-goal-enabled').check();
-		const goal = form.getByTestId('pocket-goal-target-input');
-		await expect(form.getByText('IDR', { exact: true })).toHaveCount(2);
+		await savingsRow.click();
+		await expect(page.getByTestId('pocket-details-panel')).toBeVisible();
+		await page.getByTestId('pocket-details-add-goal').click();
+		const goalForm = page.getByTestId('pocket-goal-form-dialog');
+		await expect(goalForm).toBeVisible();
+		const goal = goalForm.getByTestId('pocket-goal-target-input');
+		await expect(goalForm.getByText('IDR', { exact: true })).toBeVisible();
 		await goal.fill('100000');
 		await expect(goal).toHaveValue('100,000');
-		await page.getByTestId('pocket-save').click();
-		await expect(form).toBeHidden();
+		await page.getByTestId('pocket-goal-save').click();
+		await expect(goalForm).toBeHidden();
 	});
 
 	test('149 description under name; hover highlight; Main mutes while dragging', async ({
@@ -279,5 +277,50 @@ test.describe('070–077 pockets pack', () => {
 		await page.mouse.click(nameBox!.x + nameBox!.width / 2, nameBox!.y + nameBox!.height / 2);
 		await expect(page).toHaveURL(/\/pockets\/[^/]+\/?$/);
 		await expect(page.getByTestId('pocket-details-panel')).toBeVisible();
+	});
+
+	test('153 delete lives on non-Main edit; empty pocket leaves details', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.getByTestId('pocket-add').click();
+		await expect(page.getByTestId('pocket-delete')).toHaveCount(0);
+		await page.getByTestId('pocket-name-input').fill('Vacation');
+		await page.getByTestId('pocket-save').click();
+		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+
+		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
+		await openPocketEditFromList(page, mainRow);
+		await expect(page.getByTestId('pocket-delete')).toHaveCount(0);
+		await page.keyboard.press('Escape');
+		await page.getByTestId('pocket-details-back').click();
+
+		const vacation = page.locator('[data-testid^="pocket-row-"]').filter({ hasText: 'Vacation' });
+		await vacation.click();
+		await expect(page).toHaveURL(/\/pockets\/[^/]+\/?$/);
+		await page.getByTestId('pocket-details-edit').click();
+		await expect(page.getByTestId('pocket-delete')).toBeVisible();
+		await page.getByTestId('pocket-delete').click();
+		await page.getByTestId('pocket-delete-confirm').click();
+		await expect(page).toHaveURL(/\/pockets\/?$/);
+		await expect(page.getByTestId('pockets-panel').getByText('Vacation')).toHaveCount(0);
+	});
+
+	test('153 delete popover lists the active-goal blocker', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.getByTestId('pocket-add').click();
+		await page.getByTestId('pocket-name-input').fill('Vacation');
+		await page.getByTestId('pocket-save').click();
+		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+
+		const vacation = page.locator('[data-testid^="pocket-row-"]').filter({ hasText: 'Vacation' });
+		await vacation.click();
+		await addPocketGoal(page, { target: '50000' });
+		await page.getByTestId('pocket-details-edit').click();
+		await page.getByTestId('pocket-delete').click();
+		await expect(page.getByTestId('pocket-delete-blocked')).toBeVisible();
+		await expect(page.getByTestId('pocket-delete-blocked')).toContainText(
+			'Drop all active goals first.'
+		);
+		await expect(page.getByTestId('pocket-delete-blocked')).not.toContainText('transactions');
+		await expect(page.getByTestId('pocket-delete-confirm')).toHaveCount(0);
 	});
 });

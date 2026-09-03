@@ -106,7 +106,7 @@
 						</p>
 					{/if}
 				</div>
-				<Button type="submit" class="w-full" disabled={busy || locked} data-testid="unlock-submit">
+				<Button type="submit" class="w-full" disabled={busy || locked || !passphrase} data-testid="unlock-submit">
 					{busy ? 'Checking…' : 'Unlock'}
 				</Button>
 			</form>

@@ -3,7 +3,7 @@ import { normalizeAccount, type Account } from '$lib/domain/account';
 import type { CategoryGroupRow, CategoryRow } from '$lib/data/db';
 import type { LedgerTransaction } from '$lib/domain/transaction';
 import { withVoidedAt } from '$lib/domain/transaction';
-import type { Goal } from '$lib/domain/goals';
+import { migrateAccountGoalsToRows, normalizeStoredGoal, type Goal } from '$lib/domain/goals';
 import type { NetWorthSnapshot } from '$lib/domain/net-worth';
 import {
 	SETTINGS_ENCRYPTION_ENABLED,
@@ -17,7 +17,6 @@ import { ensureLocalDek, isLockEnabled, verifyPassphrase } from '$lib/applicatio
 import { getDataKey, setDataKey } from '$lib/data/session-key';
 import { assignSortOrdersByName } from '$lib/domain/category-order';
 import { todayOccurredOn } from '$lib/domain/transaction-rules';
-import { pickNearestGoalForMigration } from '$lib/domain/goal-migrate';
 import { deleteSetting, setSetting } from '$lib/data/settings-repo';
 import {
 	exportRawDek,
@@ -29,6 +28,74 @@ import {
 } from '$lib/application/wrap';
 
 export const BACKUP_FORMAT_VERSION = 2 as const;
+
+export type BackupInspectSummary = {
+	exportedAt: string | null;
+	pockets: number;
+	transactions: number;
+	categories: number;
+	categoryGroups: number;
+	goals: number;
+};
+
+export type BackupInspectResult =
+	| { ok: true; summary: BackupInspectSummary }
+	| { ok: false; reason: 'v1' | 'invalid' };
+
+function asArrayLength(value: unknown): number | null {
+	if (value == null) return 0;
+	if (!Array.isArray(value)) return null;
+	return value.length;
+}
+
+/** Envelope check without decrypting rows (Spec 158). */
+export function inspectEncryptedBackup(raw: string): BackupInspectResult {
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(raw);
+	} catch {
+		return { ok: false, reason: 'invalid' };
+	}
+	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+		return { ok: false, reason: 'invalid' };
+	}
+	const backup = parsed as Record<string, unknown>;
+	if (backup.formatVersion === 1) return { ok: false, reason: 'v1' };
+	if (backup.formatVersion !== BACKUP_FORMAT_VERSION) return { ok: false, reason: 'invalid' };
+	if (
+		backup.kdf !== KDF_ID ||
+		typeof backup.saltB64 !== 'string' ||
+		typeof backup.wrappedDekB64 !== 'string' ||
+		typeof backup.iterations !== 'number'
+	) {
+		return { ok: false, reason: 'invalid' };
+	}
+	const pockets = asArrayLength(backup.accounts);
+	const transactions = asArrayLength(backup.transactions);
+	const categories = asArrayLength(backup.categories);
+	const categoryGroups = asArrayLength(backup.categoryGroups);
+	const goals = asArrayLength(backup.goals);
+	if (
+		pockets == null ||
+		transactions == null ||
+		categories == null ||
+		categoryGroups == null ||
+		goals == null
+	) {
+		return { ok: false, reason: 'invalid' };
+	}
+	return {
+		ok: true,
+		summary: {
+			exportedAt: typeof backup.exportedAt === 'string' ? backup.exportedAt : null,
+			pockets,
+			transactions,
+			categories,
+			categoryGroups,
+			goals
+		}
+	};
+}
 
 export type LedgerBackup = {
 	formatVersion: typeof BACKUP_FORMAT_VERSION;
@@ -200,23 +267,17 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 			})
 		);
 	}
-	if (normalized.goals.length > 0) {
-		const main = accounts.find((a) => a.isMain);
-		if (main && main.goalTargetMinor == null) {
-			const pick = pickNearestGoalForMigration(normalized.goals);
-			if (pick) {
-				accounts = accounts.map((a) =>
-					a.id === main.id
-						? {
-								...a,
-								goalTargetMinor: pick.targetMinor,
-								goalTargetOn: pick.targetOn
-							}
-						: a
-				);
-			}
-		}
-	}
+	const liveGoals = migrateAccountGoalsToRows(
+		accounts,
+		normalized.goals.map(normalizeStoredGoal).filter((g): g is NonNullable<typeof g> => g != null),
+		new Date().toISOString()
+	);
+	accounts = accounts.map((a) =>
+		normalizeAccount(
+			{ ...a, goalEnabled: false, goalTargetMinor: null, goalTargetOn: null },
+			{ today, isMain: a.isMain, sortOrder: a.sortOrder }
+		)
+	);
 
 	await db.transaction(
 		'rw',
@@ -261,7 +322,7 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 					withVoidedAt({ ...t, voidedAt: t.voidedAt ?? null, feeMinor: t.feeMinor })
 				)
 			);
-			/* Goals live on pockets now; leave goals table empty after migrate. */
+			if (liveGoals.length > 0) await db.goals.bulkPut(liveGoals);
 			await db.netWorthSnapshots.bulkPut(normalized.netWorthSnapshots);
 			await db.settings.bulkPut(normalized.settings.filter((s) => !SECRET_SETTING_KEYS.has(s.key)));
 		}
@@ -320,11 +381,23 @@ function snapshotFromUnknown(parsed: object): LedgerBackup {
 		categories: backup.categories ?? [],
 		categoryGroups: backup.categoryGroups ?? [],
 		transactions: (backup.transactions ?? []).map((t) => withVoidedAt(t as LedgerTransaction)),
-		goals: (backup.goals ?? []).map((g) => ({
-			...g,
-			targetOn: typeof g.targetOn === 'string' && g.targetOn.trim() ? g.targetOn : '2099-12-31',
-			savedMinor: typeof g.savedMinor === 'number' ? g.savedMinor : 0
-		})),
+		goals: (backup.goals ?? []).map((g) => {
+			const raw = g as Goal & { name?: string };
+			return {
+				...raw,
+				accountId: typeof raw.accountId === 'string' ? raw.accountId : '',
+				description:
+					typeof raw.description === 'string'
+						? raw.description
+						: typeof raw.name === 'string'
+							? raw.name
+							: '',
+				targetOn: typeof raw.targetOn === 'string' && raw.targetOn.trim() ? raw.targetOn : null,
+				cancelledAt: typeof raw.cancelledAt === 'string' ? raw.cancelledAt : null,
+				deletedAt: typeof raw.deletedAt === 'string' ? raw.deletedAt : null,
+				createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : new Date().toISOString()
+			};
+		}),
 		netWorthSnapshots: backup.netWorthSnapshots ?? [],
 		settings: (backup.settings ?? []).filter((s) => !SECRET_SETTING_KEYS.has(s.key))
 	};

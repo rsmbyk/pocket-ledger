@@ -1,16 +1,16 @@
 import { expect, test } from '@playwright/test';
-import { goToNav, openPocketEditFromList } from './nav';
+import { addPocketGoal, goToNav } from './nav';
 
 test.describe('003–008 base features', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 	});
 
 	test('More tab shows backup and privacy', async ({ page }) => {
 		await goToNav(page, 'more');
-		await expect(page.getByTestId('more-panel')).toBeVisible();
-		await expect(page.getByTestId('more-sections')).toBeVisible();
+		await expect(page.getByTestId('settings-panel')).toBeVisible();
+		await expect(page.getByTestId('settings-sections')).toBeVisible();
 		await expect(page.getByTestId('export-backup')).toBeVisible();
 		await expect(page.getByTestId('reset-all')).toBeVisible();
 		await expect(page.getByTestId('lock-status')).toContainText(/off/i);
@@ -31,16 +31,13 @@ test.describe('003–008 base features', () => {
 	test('creates a pocket goal with target', async ({ page }) => {
 		await goToNav(page, 'pockets');
 		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
-		await openPocketEditFromList(page, mainRow);
-		await page.getByTestId('pocket-goal-enabled').check();
-		await page.getByTestId('pocket-goal-target-input').fill('1000000');
-		await page.getByTestId('pocket-save').click();
-		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+		await mainRow.click();
+		await addPocketGoal(page, { target: '1000000' });
 		await page.getByTestId('pocket-details-back').click();
 		await expect(mainRow).toContainText(/%|1,?000,?000/);
 		await goToNav(page, 'more');
-		await expect(page.getByTestId('more-section-backup')).toBeVisible();
-		await expect(page.getByTestId('more-section-privacy')).toBeVisible();
+		await expect(page.getByTestId('settings-section-backup')).toBeVisible();
+		await expect(page.getByTestId('settings-section-privacy')).toBeVisible();
 		await expect(page.getByTestId('more-section-goals')).toHaveCount(0);
 		await expect(page.getByTestId('capture-net-worth')).toHaveCount(0);
 	});
@@ -70,6 +67,7 @@ test.describe('003–008 base features', () => {
 		await expect(page.getByTestId('unlock-screen')).toBeVisible();
 		await page.getByTestId('unlock-passphrase').fill('secret-pass');
 		await page.getByTestId('unlock-submit').click();
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('app-shell')).toBeVisible();
+		await expect(page.getByTestId('settings-panel')).toBeVisible();
 	});
 });

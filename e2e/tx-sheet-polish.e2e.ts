@@ -4,7 +4,7 @@ import { ensureCategory, openAdd, selectTxCategory } from './nav';
 test.describe('047 tx sheet polish', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 		await ensureCategory(page, 'Food', 'expense');
 	});
 

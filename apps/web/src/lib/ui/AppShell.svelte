@@ -5,6 +5,7 @@
 	import AppShellChrome from '$lib/ui/AppShellChrome.svelte';
 	import AppCommandPalette from '$lib/ui/AppCommandPalette.svelte';
 	import type { Account } from '$lib/domain/account';
+	import type { PocketGoal } from '$lib/domain/goals';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
 	import type { OverlayGroup } from '$lib/domain/category-overlay';
@@ -13,11 +14,12 @@
 	import type { CreatePocketInput, UpdatePocketInput } from '$lib/application/accounts';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { isAppRoute, isLegacyActivityPath, parsePath, parsePocketId, routeToPath, type AppRoute } from '$lib/shared/router';
+	import { isAppRoute, isLegacyActivityPath, isLegacyMorePath, parsePath, parsePocketId, routeToPath, type AppRoute } from '$lib/shared/router';
 
 	type Props = {
 		account: Account | null;
 		accounts: Account[];
+		goals?: PocketGoal[];
 		isSinglePot: boolean;
 		balanceMinor: number;
 		transactions: LedgerTransaction[];
@@ -38,7 +40,7 @@
 		onExport: (passphrase: string) => void | Promise<void>;
 		onImportFile: (file: File, passphrase: string) => void | Promise<void>;
 		onResetLocalData: (options: {
-			preserveCategories: boolean;
+			preserveSettings: boolean;
 			preservePassphrase: boolean;
 		}) => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
@@ -48,7 +50,6 @@
 		onUpdatePocket: (input: UpdatePocketInput) => void | Promise<void>;
 		onDeletePocket: (id: string) => void | Promise<void>;
 		onReorderPockets: (orderedNonMainIds: string[]) => void | Promise<void>;
-		onClearPocketGoal: (id: string) => void | Promise<void>;
 		onPushTransaction?: (id: string, deleted?: boolean) => void | Promise<void>;
 		onSyncConflict?: () => void | Promise<void>;
 		cloudConfigured?: boolean;
@@ -61,11 +62,12 @@
 		}>;
 		idleMinutes?: number;
 		leaveTab?: boolean;
+		displayCurrency?: string;
 		onGoogleSignIn?: () => void | Promise<void>;
 		onSignOut?: () => void | Promise<void>;
 		onRevokeSession?: (id: string) => void | Promise<void>;
-		onIdleMinutes?: (minutes: number) => void;
-		onLeaveTab?: (on: boolean) => void;
+		onSaveIdle?: (minutes: number, leaveTab: boolean) => void | Promise<void>;
+		onSaveCurrency?: (code: string) => void | Promise<void>;
 		onEnrollWebAuthn?: () => void | Promise<void>;
 		webauthnEnrolled?: boolean;
 		ready: boolean;
@@ -75,6 +77,7 @@
 	let {
 		account,
 		accounts,
+		goals = [],
 		isSinglePot: _isSinglePot,
 		balanceMinor,
 		transactions,
@@ -102,7 +105,6 @@
 		onUpdatePocket,
 		onDeletePocket,
 		onReorderPockets,
-		onClearPocketGoal,
 		onPushTransaction,
 		onSyncConflict,
 		cloudConfigured = false,
@@ -110,11 +112,12 @@
 		sessions = [],
 		idleMinutes = 30,
 		leaveTab = true,
+		displayCurrency = 'IDR',
 		onGoogleSignIn,
 		onSignOut,
 		onRevokeSession,
-		onIdleMinutes,
-		onLeaveTab,
+		onSaveIdle,
+		onSaveCurrency,
 		onEnrollWebAuthn,
 		webauthnEnrolled = false,
 		ready,
@@ -146,7 +149,7 @@
 		{ id: 'transactions', label: 'Transactions' },
 		{ id: 'pockets', label: 'Pockets' },
 		{ id: 'categories', label: 'Categories' },
-		{ id: 'more', label: 'More' }
+		{ id: 'settings', label: 'Settings' }
 	];
 
 	const pageTitle = $derived(
@@ -191,6 +194,12 @@
 	});
 
 	$effect(() => {
+		if (isLegacyMorePath(page.url.pathname)) {
+			void goto('/settings', { replaceState: true });
+		}
+	});
+
+	$effect(() => {
 		if (!ready) return;
 		if (pocketId && !detailsPocket) {
 			void goto('/pockets', { replaceState: true });
@@ -230,6 +239,7 @@
 			<AppShellChrome
 				{account}
 				{accounts}
+				{goals}
 				{balanceMinor}
 				{transactions}
 				{categoriesById}
@@ -259,17 +269,17 @@
 				{onUpdatePocket}
 				{onDeletePocket}
 				{onReorderPockets}
-				{onClearPocketGoal}
 				{cloudConfigured}
 				{userEmail}
 				{sessions}
 				{idleMinutes}
 				{leaveTab}
+				{displayCurrency}
 				{onGoogleSignIn}
 				{onSignOut}
 				{onRevokeSession}
-				{onIdleMinutes}
-				{onLeaveTab}
+				{onSaveIdle}
+				{onSaveCurrency}
 				{onEnrollWebAuthn}
 				{webauthnEnrolled}
 				onNavigate={navigate}
@@ -286,7 +296,7 @@
 		open={txSheetOpen}
 		accountId={account.id}
 		preferredAccountId={preferredAccountId || account.id}
-		currencyLabel={account.currencyLabel}
+		currencyLabel={displayCurrency}
 		{accounts}
 		{editing}
 		onOpenChange={(next) => {

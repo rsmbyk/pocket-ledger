@@ -4,7 +4,7 @@ import { ensureCategory, openAdd, openPocketEditFromList, selectTxCategory } fro
 test.describe('002 month charts', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 		await expect(page.getByTestId('month-summary')).toBeVisible();
 	});
 

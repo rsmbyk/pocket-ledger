@@ -13,10 +13,14 @@
 	import DateField from '$lib/ui/DateField.svelte';
 	import PocketLabel from '$lib/ui/PocketLabel.svelte';
 	import type { Account } from '$lib/domain/account';
-	import type { CreatePocketInput, UpdatePocketInput } from '$lib/application/accounts';
+	import {
+		pocketDeleteBlockers,
+		type CreatePocketInput,
+		type UpdatePocketInput
+	} from '$lib/application/accounts';
 	import { pocketDetailsPath } from '$lib/shared/router';
 	import { classifyFormFieldError, type FormFieldKey } from '$lib/domain/form-field-error';
-	import { assertGoalTarget, goalProgressPercent } from '$lib/domain/goals';
+	import { goalProgressPercent, previewGoal, type PocketGoal } from '$lib/domain/goals';
 	import { formatRemainingUnit, largestRemainingUnit } from '$lib/domain/goal-time';
 	import { formatMinor } from '$lib/domain/money';
 	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
@@ -25,7 +29,6 @@
 		formatAmountDigitsDisplay,
 		isBlockedAmountKey,
 		isValidOccurredOn,
-		parseAmountInput,
 		parseNonNegativeAmountInput,
 		todayOccurredOn
 	} from '$lib/domain/transaction-rules';
@@ -37,13 +40,16 @@
 	} from '$lib/shared/create-form-drafts';
 	import { cn } from '$lib/utils.js';
 	import { shouldIgnoreDismissForNativePicker } from '$lib/ui/native-picker-dismiss';
+	import { Popover } from 'bits-ui';
 
 	type Props = {
 		pockets: Account[];
 		balances: Record<string, number>;
 		currencyLabel: string;
+		goals: PocketGoal[];
 		onCreatePocket: (input: CreatePocketInput) => void | Promise<void>;
 		onUpdatePocket: (input: UpdatePocketInput) => void | Promise<void>;
+		onDeletePocket: (id: string) => void | Promise<void>;
 		onReorderPockets: (orderedNonMainIds: string[]) => void | Promise<void>;
 		/** When set, open the existing edit dialog for this pocket (spec 148). */
 		requestEdit?: Account | null;
@@ -58,18 +64,16 @@
 		openingEnabled: boolean;
 		openingRaw: string;
 		openingAsOf: string;
-		goalEnabled: boolean;
-		goalTargetRaw: string;
-		goalDateEnabled: boolean;
-		goalTargetOn: string;
 	};
 
 	let {
 		pockets,
 		balances,
 		currencyLabel,
+		goals,
 		onCreatePocket,
 		onUpdatePocket,
+		onDeletePocket,
 		onReorderPockets,
 		requestEdit = null,
 		onRequestEditConsumed,
@@ -96,25 +100,26 @@
 	let formOpeningEnabled = $state(false);
 	let formOpeningRaw = $state('0');
 	let formOpeningAsOf = $state(todayOccurredOn());
-	let formGoalEnabled = $state(false);
-	let formGoalTargetRaw = $state('');
-	let formGoalDateEnabled = $state(false);
-	let formGoalTargetOn = $state('');
 	let formError = $state<{ key: FormFieldKey; message: string } | null>(null);
 	let formBaseline = $state<FormBaseline | null>(null);
 	let discardConfirmOpen = $state(false);
+	let deleteConfirmOpen = $state(false);
+	let deleteBlockedOpen = $state(false);
+	let deleteBlockers = $state<string[]>([]);
 
 	const formCreationDate = $derived(
 		formMode === 'edit' && formPocketId
 			? (pockets.find((p) => p.id === formPocketId)?.createdAt.slice(0, 10) ?? todayOccurredOn())
 			: todayOccurredOn()
 	);
+	const formPocket = $derived(
+		formMode === 'edit' && formPocketId ? (pockets.find((p) => p.id === formPocketId) ?? null) : null
+	);
+	const showDelete = $derived(Boolean(formPocket && !formPocket.isMain));
 
 	const formDirty = $derived.by(() => {
 		if (formMode === 'create') {
-			return (
-				formName.trim() !== '' || formNotes.trim() !== '' || formOpeningEnabled || formGoalEnabled
-			);
+			return formName.trim() !== '' || formNotes.trim() !== '' || formOpeningEnabled;
 		}
 		if (!formBaseline) return false;
 		return (
@@ -122,16 +127,11 @@
 			formNotes !== formBaseline.notes ||
 			formOpeningEnabled !== formBaseline.openingEnabled ||
 			formOpeningRaw !== formBaseline.openingRaw ||
-			formOpeningAsOf !== formBaseline.openingAsOf ||
-			formGoalEnabled !== formBaseline.goalEnabled ||
-			formGoalTargetRaw !== formBaseline.goalTargetRaw ||
-			formGoalDateEnabled !== formBaseline.goalDateEnabled ||
-			formGoalTargetOn !== formBaseline.goalTargetOn
+			formOpeningAsOf !== formBaseline.openingAsOf
 		);
 	});
 
 	const formOpeningDisplay = $derived(formatAmountDigitsDisplay(formOpeningRaw));
-	const formGoalTargetDisplay = $derived(formatAmountDigitsDisplay(formGoalTargetRaw));
 
 	async function runAction(action: () => void | Promise<void>) {
 		busy = true;
@@ -158,33 +158,13 @@
 		if (formError?.key === 'opening') formError = null;
 	}
 
-	function onGoalTargetInput(value: string) {
-		formGoalTargetRaw = amountDigitsOnly(value);
-		if (formError?.key === 'goalTarget' || formError?.key === 'amount') formError = null;
-	}
-
-	function onGoalTargetKeydown(event: KeyboardEvent) {
-		if (isBlockedAmountKey(event)) event.preventDefault();
-	}
-
-	function onGoalTargetPaste(event: ClipboardEvent) {
-		event.preventDefault();
-		const text = event.clipboardData?.getData('text') ?? '';
-		formGoalTargetRaw = amountDigitsOnly(text);
-		if (formError?.key === 'goalTarget' || formError?.key === 'amount') formError = null;
-	}
-
 	function snapshotForm(): FormBaseline {
 		return {
 			name: formName,
 			notes: formNotes,
 			openingEnabled: formOpeningEnabled,
 			openingRaw: formOpeningRaw,
-			openingAsOf: formOpeningAsOf,
-			goalEnabled: formGoalEnabled,
-			goalTargetRaw: formGoalTargetRaw,
-			goalDateEnabled: formGoalDateEnabled,
-			goalTargetOn: formGoalTargetOn
+			openingAsOf: formOpeningAsOf
 		};
 	}
 
@@ -194,10 +174,6 @@
 		formOpeningEnabled = draft.openingEnabled;
 		formOpeningRaw = amountDigitsOnly(draft.openingRaw) || '0';
 		formOpeningAsOf = draft.openingAsOf || todayOccurredOn();
-		formGoalEnabled = draft.goalEnabled;
-		formGoalTargetRaw = amountDigitsOnly(draft.goalTargetRaw);
-		formGoalDateEnabled = draft.goalDateEnabled;
-		formGoalTargetOn = draft.goalTargetOn;
 	}
 
 	function openCreate() {
@@ -208,10 +184,6 @@
 		formOpeningEnabled = false;
 		formOpeningRaw = '0';
 		formOpeningAsOf = todayOccurredOn();
-		formGoalEnabled = false;
-		formGoalTargetRaw = '';
-		formGoalDateEnabled = false;
-		formGoalTargetOn = '';
 		formError = null;
 		formBaseline = snapshotForm();
 		const draft = readPocketCreateDraft();
@@ -227,11 +199,6 @@
 		formOpeningEnabled = p.openingEnabled;
 		formOpeningRaw = String(Math.max(0, p.openingBalanceMinor));
 		formOpeningAsOf = p.openingAsOf;
-		formGoalEnabled = p.goalEnabled;
-		formGoalTargetRaw =
-			p.goalTargetMinor != null ? amountDigitsOnly(String(p.goalTargetMinor)) : '';
-		formGoalDateEnabled = p.goalTargetOn != null;
-		formGoalTargetOn = p.goalTargetOn ?? '';
 		formError = null;
 		formBaseline = snapshotForm();
 		formOpen = true;
@@ -305,29 +272,13 @@
 				});
 				clearPocketCreateDraft();
 			} else if (formPocketId) {
-				let goalTargetMinor: number | null = null;
-				let goalTargetOn: string | null = null;
-				if (formGoalEnabled) {
-					goalTargetMinor = formGoalTargetRaw.trim() ? parseAmountInput(formGoalTargetRaw) : null;
-					if (goalTargetMinor == null) throw new Error('Goal target is required');
-					assertGoalTarget(goalTargetMinor);
-					if (formGoalDateEnabled) {
-						goalTargetOn = formGoalTargetOn.trim() || null;
-						if (goalTargetOn && !isValidOccurredOn(goalTargetOn)) {
-							throw new Error('Goal date must be YYYY-MM-DD');
-						}
-					}
-				}
 				await onUpdatePocket({
 					id: formPocketId,
 					name: formName,
 					notes: formNotes,
 					openingEnabled: formOpeningEnabled,
 					openingBalanceMinor,
-					openingAsOf,
-					goalEnabled: formGoalEnabled,
-					goalTargetMinor,
-					goalTargetOn
+					openingAsOf
 				});
 			}
 			formOpen = false;
@@ -355,6 +306,24 @@
 		}
 	}
 
+	async function onDeletePocketClick() {
+		if (!formPocketId) return;
+		const reasons = await pocketDeleteBlockers(formPocketId);
+		if (reasons.length > 0) {
+			deleteBlockers = reasons;
+			deleteBlockedOpen = true;
+			return;
+		}
+		deleteBlockedOpen = false;
+		deleteConfirmOpen = true;
+	}
+
+	async function confirmDeletePocket() {
+		if (!formPocketId) return;
+		await onDeletePocket(formPocketId);
+		formOpen = false;
+	}
+
 	$effect(() => {
 		const target = requestEdit;
 		if (!target) return;
@@ -365,10 +334,13 @@
 
 {#snippet pocketRow(p: Account, draggable: boolean)}
 	{@const balance = balances[p.id] ?? 0}
-	{@const hasGoal = p.goalEnabled && p.goalTargetMinor != null}
-	{@const percent = hasGoal ? goalProgressPercent(p.goalTargetMinor!, balance) : 0}
+	{@const preview = previewGoal(
+		goals.filter((g) => g.accountId === p.id),
+		todayOccurredOn()
+	)}
+	{@const percent = preview ? goalProgressPercent(preview.targetMinor, balance) : 0}
 	{@const remaining =
-		hasGoal && p.goalTargetOn ? largestRemainingUnit(todayOccurredOn(), p.goalTargetOn) : null}
+		preview?.targetOn ? largestRemainingUnit(todayOccurredOn(), preview.targetOn) : null}
 	{@const href = pocketDetailsPath(p.id)}
 	{@const description = p.notes.trim()}
 	<a
@@ -400,11 +372,11 @@
 					{description}
 				</p>
 			{/if}
-			{#if hasGoal}
+			{#if preview}
 				<div class="mt-1.5 max-w-xs space-y-1">
 					<p class="text-muted-foreground text-xs">
 						{formatMinor(Math.max(0, balance), currencyLabel)} / {formatMinor(
-							p.goalTargetMinor!,
+							preview.targetMinor,
 							currencyLabel
 						)} · {percent}%
 					</p>
@@ -609,109 +581,41 @@
 					</p>
 				{/if}
 			</div>
-			{#if formMode === 'edit'}
-				<div class="space-y-2">
-					<label class="flex items-center gap-2 text-sm font-medium">
-						<input
-							type="checkbox"
-							class="size-5 accent-primary md:size-4"
-							bind:checked={formGoalEnabled}
-							data-testid="pocket-goal-enabled"
-							onchange={() => {
-								if (!formGoalEnabled) {
-									formGoalTargetRaw = '';
-									formGoalDateEnabled = false;
-									formGoalTargetOn = '';
-								}
-							}}
-						/>
-						Set goal
-					</label>
-					<div class="grid grid-cols-2 gap-2">
-						<div class="space-y-1">
-							<Label for="pocket-goal-target">Goal target</Label>
-							<InputGroup.Root
-								data-disabled={!formGoalEnabled ? true : undefined}
-								class={cn(!formGoalEnabled && 'shadow-none')}
-							>
-								<InputGroup.Addon class="bg-muted/60 border-input border-r px-2.5">
-									<InputGroup.Text>{currencyLabel}</InputGroup.Text>
-								</InputGroup.Addon>
-								<InputGroup.Input
-									id="pocket-goal-target"
-									inputmode="numeric"
-									autocomplete="off"
-									placeholder="15,000"
-									value={formGoalTargetDisplay}
-									disabled={!formGoalEnabled}
-									data-testid="pocket-goal-target-input"
-									aria-invalid={formError?.key === 'goalTarget' || formError?.key === 'amount'
-										? true
-										: undefined}
-									onkeydown={onGoalTargetKeydown}
-									onpaste={onGoalTargetPaste}
-									oninput={(e) => onGoalTargetInput(e.currentTarget.value)}
-									class={cn('!pl-2.5', !formGoalEnabled && 'shadow-none')}
-								/>
-							</InputGroup.Root>
-							{#if formError?.key === 'goalTarget' || formError?.key === 'amount'}
-								<p
-									class="text-destructive text-sm"
-									role="alert"
-									data-testid="pocket-field-error-goalTarget"
-								>
-									{formError.message}
-								</p>
-							{/if}
-						</div>
-						<div class="space-y-1">
-							<Label for="pocket-goal-date">Goal date</Label>
-							<DateField
-								id="pocket-goal-date"
-								value={formGoalTargetOn}
-								disabled={!formGoalEnabled || !formGoalDateEnabled}
-								testid="pocket-goal-date-input"
-								onValueChange={(next) => {
-									formGoalTargetOn = next;
-									if (formError?.key === 'goalDate') formError = null;
-								}}
-							>
-								{#snippet trailing()}
-									<input
-										type="checkbox"
-										class="size-5 accent-primary md:size-4"
-										bind:checked={formGoalDateEnabled}
-										disabled={!formGoalEnabled}
-										aria-label="Has date"
-										data-testid="pocket-goal-date-enabled"
-										onchange={() => {
-											if (!formGoalDateEnabled) formGoalTargetOn = '';
-										}}
-									/>
-								{/snippet}
-							</DateField>
-							{#if formError?.key === 'goalDate'}
-								<p
-									class="text-destructive text-sm"
-									role="alert"
-									data-testid="pocket-field-error-goalDate"
-								>
-									{formError.message}
-								</p>
-							{/if}
-						</div>
-					</div>
-					{#if !formGoalEnabled}
-						<p class="text-muted-foreground text-xs" data-testid="pocket-goal-helper">
-							No goal will be saved for this pocket.
-						</p>
-					{/if}
-				</div>
-			{/if}
 			{#if formError?.key === 'form'}
 				<p class="text-destructive text-sm" role="alert" data-testid="pocket-field-error-form">
 					{formError.message}
 				</p>
+			{/if}
+			{#if showDelete}
+				<div class="border-destructive/30 space-y-2 border-t pt-3">
+					<Popover.Root bind:open={deleteBlockedOpen}>
+						<Popover.Trigger
+							type="button"
+							class="ring-offset-background focus-visible:ring-ring inline-flex h-9 w-full items-center justify-center rounded-md bg-destructive px-4 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-2 focus-visible:outline-none"
+							data-testid="pocket-delete"
+							onclick={(e) => {
+								e.preventDefault();
+								void onDeletePocketClick();
+							}}
+						>
+							Delete pocket
+						</Popover.Trigger>
+						<Popover.Portal>
+							<Popover.Content
+								class="bg-popover text-popover-foreground z-[70] w-72 rounded-md border p-3 text-sm shadow-md"
+								side="top"
+								sideOffset={8}
+								data-testid="pocket-delete-blocked"
+							>
+								<ul class="space-y-2">
+									{#each deleteBlockers as reason}
+										<li>{reason}</li>
+									{/each}
+								</ul>
+							</Popover.Content>
+						</Popover.Portal>
+					</Popover.Root>
+				</div>
 			{/if}
 			<div class="flex justify-end gap-2">
 				<Button
@@ -742,4 +646,16 @@
 	onOpenChange={(next) => (discardConfirmOpen = next)}
 	onConfirm={confirmFormDiscard}
 	onSecondary={savePocketCreateDraft}
+/>
+
+<ConfirmDialog
+	open={deleteConfirmOpen}
+	title="Delete this pocket?"
+	description="This cannot be undone. Opening balance, notes, and past goals on this pocket go away with it."
+	confirmLabel="Delete"
+	destructive
+	dangerChrome
+	confirmTestId="pocket-delete-confirm"
+	onOpenChange={(next) => (deleteConfirmOpen = next)}
+	onConfirm={confirmDeletePocket}
 />

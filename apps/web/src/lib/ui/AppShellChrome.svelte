@@ -5,7 +5,7 @@
 	import ListIcon from '@lucide/svelte/icons/list';
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
 	import TagsIcon from '@lucide/svelte/icons/tags';
-	import MoreHorizontalIcon from '@lucide/svelte/icons/ellipsis';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import SlidersHorizontalIcon from '@lucide/svelte/icons/sliders-horizontal';
 	import InboxIcon from '@lucide/svelte/icons/inbox';
@@ -37,6 +37,7 @@
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import type { Account } from '$lib/domain/account';
+	import type { PocketGoal } from '$lib/domain/goals';
 	import { verifyPassphrase } from '$lib/application/lock';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
@@ -82,6 +83,7 @@
 	type Props = {
 		account: Account | null;
 		accounts: Account[];
+		goals?: PocketGoal[];
 		balanceMinor: number;
 		transactions: LedgerTransaction[];
 		categoriesById: Record<string, CategoryRow>;
@@ -103,7 +105,7 @@
 		onExport: (passphrase: string) => void | Promise<void>;
 		onImportFile: (file: File, passphrase: string) => void | Promise<void>;
 		onResetLocalData: (options: {
-			preserveCategories: boolean;
+			preserveSettings: boolean;
 			preservePassphrase: boolean;
 		}) => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
@@ -114,7 +116,6 @@
 		onUpdatePocket: (input: UpdatePocketInput) => void | Promise<void>;
 		onDeletePocket: (id: string) => void | Promise<void>;
 		onReorderPockets: (orderedNonMainIds: string[]) => void | Promise<void>;
-		onClearPocketGoal: (id: string) => void | Promise<void>;
 		cloudConfigured?: boolean;
 		userEmail?: string | null;
 		sessions?: Array<{
@@ -125,11 +126,12 @@
 		}>;
 		idleMinutes?: number;
 		leaveTab?: boolean;
+		displayCurrency?: string;
 		onGoogleSignIn?: () => void | Promise<void>;
 		onSignOut?: () => void | Promise<void>;
 		onRevokeSession?: (id: string) => void | Promise<void>;
-		onIdleMinutes?: (minutes: number) => void;
-		onLeaveTab?: (on: boolean) => void;
+		onSaveIdle?: (minutes: number, leaveTab: boolean) => void | Promise<void>;
+		onSaveCurrency?: (code: string) => void | Promise<void>;
 		onEnrollWebAuthn?: () => void | Promise<void>;
 		webauthnEnrolled?: boolean;
 		onNavigate: (route: AppRoute) => void;
@@ -142,6 +144,7 @@
 	let {
 		account,
 		accounts,
+		goals = [],
 		balanceMinor,
 		transactions,
 		categoriesById,
@@ -169,19 +172,19 @@
 		onRefreshLedger,
 		onCreatePocket,
 		onUpdatePocket,
-		onDeletePocket: _onDeletePocket,
+		onDeletePocket,
 		onReorderPockets,
-		onClearPocketGoal: _onClearPocketGoal,
 		cloudConfigured = false,
 		userEmail = null,
 		sessions = [],
 		idleMinutes = 30,
 		leaveTab = true,
+		displayCurrency = 'IDR',
 		onGoogleSignIn,
 		onSignOut,
 		onRevokeSession,
-		onIdleMinutes,
-		onLeaveTab,
+		onSaveIdle,
+		onSaveCurrency,
 		onEnrollWebAuthn,
 		webauthnEnrolled = false,
 		onNavigate,
@@ -190,11 +193,6 @@
 		onActivityPocketFilterChange
 	}: Props = $props();
 
-	$effect(() => {
-		void _onDeletePocket;
-		void _onClearPocketGoal;
-	});
-
 	const sidebar = Sidebar.useSidebar();
 
 	/** Matches Tailwind `md`. */
@@ -202,7 +200,7 @@
 	/** Matches Tailwind `xl` — wide layout uses a non-blocking filter drawer. */
 	const xlWide = new MediaQuery('min-width: 1280px');
 
-	const currencyLabel = $derived(account?.currencyLabel ?? 'IDR');
+	const currencyLabel = $derived(displayCurrency);
 	const recent = $derived(transactions.slice(0, 5));
 
 	let hideHomeAmounts = $state(readHideAmounts());
@@ -316,7 +314,7 @@
 		{ id: 'transactions', label: 'Transactions', icon: ListIcon },
 		{ id: 'pockets', label: 'Pockets', icon: LandmarkIcon },
 		{ id: 'categories', label: 'Categories', icon: TagsIcon },
-		{ id: 'more', label: 'More', icon: MoreHorizontalIcon }
+		{ id: 'settings', label: 'Settings', icon: SettingsIcon }
 	];
 
 	function cloneFilters(criteria: ActivityFilterCriteria): ActivityFilterCriteria {
@@ -518,14 +516,9 @@
 
 <Sidebar.Root collapsible="offcanvas">
 	<Sidebar.Header class="p-4">
-		<div class="flex items-center gap-3">
-			<img src="/favicon.svg" alt="" width="36" height="36" class="size-9 shrink-0 rounded-lg" />
-			<div class="min-w-0 flex-1">
-				<p class="truncate text-sm font-semibold">Pocket Ledger</p>
-				<h1 class="text-muted-foreground truncate text-xs font-normal">
-					{account?.name ?? 'Loading…'}
-				</h1>
-			</div>
+		<div class="flex flex-col items-center gap-2 text-center">
+			<img src="/favicon.svg" alt="" width="36" height="36" class="size-9 rounded-lg" />
+			<p class="text-sm font-semibold">Pocket Ledger</p>
 		</div>
 	</Sidebar.Header>
 
@@ -553,6 +546,17 @@
 			</Sidebar.GroupContent>
 		</Sidebar.Group>
 	</Sidebar.Content>
+	{#if signedIn && userEmail}
+		<Sidebar.Footer class="p-2">
+			<button
+				type="button"
+				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex w-full items-center rounded-md px-2 py-2 text-left text-sm"
+				data-testid="sidebar-account"
+			>
+				<span class="truncate">{userEmail}</span>
+			</button>
+		</Sidebar.Footer>
+	{/if}
 </Sidebar.Root>
 
 <Sidebar.Inset
@@ -995,18 +999,25 @@
 					{transactions}
 					{categoriesById}
 					pockets={accounts}
+					{goals}
 					hideAmounts={hideHomeAmounts}
 					onAdd={openAdd}
 					onSeeMore={() => seeMoreForPocket(detailsPocket.id)}
 					onOpenTx={onOpenEdit}
+					onRefresh={onRefreshLedger}
 				/>
 			{/if}
 			<PocketsPanel
 				pockets={accounts}
 				balances={pocketBalances}
 				{currencyLabel}
+				{goals}
 				{onCreatePocket}
 				{onUpdatePocket}
+				onDeletePocket={async (id) => {
+					await onDeletePocket(id);
+					if (detailsPocket?.id === id) onNavigate('pockets');
+				}}
 				{onReorderPockets}
 				requestEdit={detailsEditRequest}
 				onRequestEditConsumed={() => (detailsEditRequest = null)}
@@ -1028,6 +1039,7 @@
 				{sessions}
 				{idleMinutes}
 				{leaveTab}
+				{displayCurrency}
 				{onExport}
 				{onImportFile}
 				{onResetLocalData}
@@ -1036,8 +1048,8 @@
 				{onGoogleSignIn}
 				{onSignOut}
 				{onRevokeSession}
-				{onIdleMinutes}
-				{onLeaveTab}
+				{onSaveIdle}
+				{onSaveCurrency}
 				{onEnrollWebAuthn}
 				{webauthnEnrolled}
 			/>

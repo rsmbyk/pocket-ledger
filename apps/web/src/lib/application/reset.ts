@@ -1,8 +1,9 @@
 import { db } from '$lib/data/db';
 import {
-	SETTINGS_CATEGORY_MIGRATED,
-	SETTINGS_CATEGORY_OVERLAY,
+	SETTINGS_DISPLAY_CURRENCY,
 	SETTINGS_ENCRYPTION_ENABLED,
+	SETTINGS_IDLE_LEAVE_TAB,
+	SETTINGS_IDLE_MINUTES,
 	SETTINGS_LOCK_SALT,
 	SETTINGS_LOCK_VERIFIER,
 	SETTINGS_RAW_DEK,
@@ -12,7 +13,7 @@ import { clearDataKey } from '$lib/data/session-key';
 import { ensureDefaultAccount } from '$lib/application/accounts';
 
 export type ResetLocalDataOptions = {
-	preserveCategories: boolean;
+	preserveSettings: boolean;
 	preservePassphrase: boolean;
 };
 
@@ -24,23 +25,23 @@ const LOCK_SETTING_KEYS = new Set([
 	SETTINGS_WRAPPED_DEK
 ]);
 
+const DISPLAY_SETTING_KEYS = new Set([
+	SETTINGS_DISPLAY_CURRENCY,
+	SETTINGS_IDLE_MINUTES,
+	SETTINGS_IDLE_LEAVE_TAB
+]);
+
 /**
- * Wipe ledger data with optional preserve for categories and passphrase lock.
- * Always clears transactions, goals, net-worth, and the session key.
- * Recreates the default Main account.
- * Preserving categories also keeps the raw DEK so sealed names stay readable
- * (Spec 024 after always-on DEK).
+ * Wipe ledger data. Categories always go. Settings (currency + idle) and
+ * the device passphrase can be kept. Recreates the default Main account.
  */
 export async function resetLocalData(options: ResetLocalDataOptions): Promise<void> {
 	const keepKeys = new Set<string>();
 	if (options.preservePassphrase) {
 		for (const key of LOCK_SETTING_KEYS) keepKeys.add(key);
 	}
-	if (options.preserveCategories) {
-		keepKeys.add(SETTINGS_RAW_DEK);
-		keepKeys.add(SETTINGS_ENCRYPTION_ENABLED);
-		keepKeys.add(SETTINGS_CATEGORY_OVERLAY);
-		keepKeys.add(SETTINGS_CATEGORY_MIGRATED);
+	if (options.preserveSettings) {
+		for (const key of DISPLAY_SETTING_KEYS) keepKeys.add(key);
 	}
 	const preservedSettings =
 		keepKeys.size > 0 ? (await db.settings.toArray()).filter((row) => keepKeys.has(row.key)) : [];
@@ -63,7 +64,8 @@ export async function resetLocalData(options: ResetLocalDataOptions): Promise<vo
 				db.goals.clear(),
 				db.netWorthSnapshots.clear(),
 				db.settings.clear(),
-				...(options.preserveCategories ? [] : [db.categories.clear(), db.categoryGroups.clear()])
+				db.categories.clear(),
+				db.categoryGroups.clear()
 			]);
 			if (preservedSettings.length > 0) {
 				await db.settings.bulkPut(preservedSettings);

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
 	balanceAtDayStart,
+	dayAfter,
 	derivePocketBalance,
+	goalEndOfDayBalance,
 	pocketDelta,
 	sumAllPocketBalances
 } from './pocket-balance';
@@ -180,5 +182,27 @@ describe('sumAllPocketBalances', () => {
 		expect(sumAllPocketBalances([main, vac], [xfer])).toBe(99_750);
 		expect(derivePocketBalance(main, [xfer])).toBe(89_750);
 		expect(derivePocketBalance(vac, [xfer])).toBe(10_000);
+	});
+});
+
+describe('goalEndOfDayBalance', () => {
+	const pocket = { id: 'a', openingBalanceMinor: 100_000, openingAsOf: '2026-01-01' };
+
+	it('counts txs on the target day and ignores later days', () => {
+		expect(dayAfter('2026-01-15')).toBe('2026-01-16');
+		const onDay = tx({
+			type: 'income',
+			amountMinor: 25_000,
+			accountId: 'a',
+			occurredOn: '2026-01-15'
+		});
+		const after = tx({
+			id: 't2',
+			type: 'income',
+			amountMinor: 10_000,
+			accountId: 'a',
+			occurredOn: '2026-01-16'
+		});
+		expect(goalEndOfDayBalance(pocket, '2026-01-15', [onDay, after])).toBe(125_000);
 	});
 });

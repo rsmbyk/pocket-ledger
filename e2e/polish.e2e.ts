@@ -4,7 +4,7 @@ import { confirmVoid, ensureCategory, goToNav, openAdd, selectTxCategory } from 
 test.describe('012 polish / 014 void / 030', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 		await ensureCategory(page, 'Food', 'expense');
 	});
 

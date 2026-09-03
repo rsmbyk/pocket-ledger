@@ -18,7 +18,7 @@ async function setMainOpeningAsOf(page: import('@playwright/test').Page, asOf: s
 test.describe('109 month summary bounds', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 		await expect(page.getByTestId('month-summary')).toBeVisible();
 	});
 

@@ -4,7 +4,7 @@ import { ensureCategory, goToNav, openAdd, openPocketEditFromList, selectTxCateg
 test.describe('110 month opening from pocket openings', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/');
-		await expect(page.getByRole('heading', { name: 'Main' })).toBeVisible();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
 		await expect(page.getByTestId('month-summary')).toBeVisible();
 	});
 

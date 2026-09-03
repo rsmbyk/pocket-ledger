@@ -5,12 +5,15 @@ import {
 	ensureDefaultAccount,
 	getAccountsOverview,
 	hasOnlyDefaultAccount,
+	pocketDeleteBlockers,
 	reorderPockets,
 	updatePocket
 } from './accounts';
 import { addTransaction } from './transactions';
+import { createPocketGoal, dropPocketGoal, listPocketGoals } from './goals';
 import { DEFAULT_ACCOUNT_NAME } from '$lib/domain/account';
 import { db } from '$lib/data/db';
+import { todayOccurredOn } from '$lib/domain/transaction-rules';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 describe('accounts application', () => {
@@ -112,6 +115,26 @@ describe('accounts application', () => {
 		await ensureDefaultAccount();
 		const vac = await createPocket({ name: 'Vacation' });
 		await addTransaction({ accountId: vac.id, type: 'expense', amountRaw: '1000' });
-		await expect(deletePocket(vac.id)).rejects.toThrow(/before deleting/);
+		await expect(deletePocket(vac.id)).rejects.toThrow(/still has transactions/i);
+	});
+
+	it('refuses to delete a pocket with active goals and cascades past rows', async () => {
+		await ensureDefaultAccount();
+		const vac = await createPocket({ name: 'Vacation' });
+		const today = todayOccurredOn();
+		await createPocketGoal({
+			accountId: vac.id,
+			targetRaw: '50000',
+			targetOn: today
+		});
+		await expect(deletePocket(vac.id)).rejects.toThrow(/active goals/i);
+
+		await dropPocketGoal((await listPocketGoals(vac.id))[0]!.id);
+		expect(await pocketDeleteBlockers(vac.id)).toEqual([]);
+		await deletePocket(vac.id);
+		expect((await getAccountsOverview()).accounts).toHaveLength(1);
+		const leftover = await db.goals.where('accountId').equals(vac.id).toArray();
+		expect(leftover.length).toBeGreaterThan(0);
+		expect(leftover.every((g) => g.deletedAt != null)).toBe(true);
 	});
 });

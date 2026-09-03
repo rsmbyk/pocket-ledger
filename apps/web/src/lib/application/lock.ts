@@ -76,7 +76,11 @@ async function migratePlaintextIfNeeded(dek: CryptoKey): Promise<void> {
 	]);
 	const needs =
 		transactions.some((t) => t.note && !isSealed(t.note)) ||
-		goals.some((g) => g.name && !isSealed(g.name)) ||
+		goals.some((g) => {
+			const row = g as typeof g & { name?: string };
+			const text = row.description || row.name || '';
+			return Boolean(text) && !isSealed(text);
+		}) ||
 		categories.some((c) => c.name && !isSealed(c.name));
 	if (needs) {
 		await sealAllSensitiveFields(dek);
