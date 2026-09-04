@@ -278,6 +278,46 @@ export async function createPostgresStore(pool) {
 				);
 				return mapUser(updated.rows[0]);
 			});
+		},
+		async deleteAccount(userSub) {
+			await withTx(pool, async (client) => {
+				await client.query(
+					`-- pl:delete-user-entities
+					DELETE FROM entities WHERE user_sub = $1`,
+					[userSub]
+				);
+				await client.query(
+					`-- pl:delete-user-sessions
+					DELETE FROM sessions WHERE user_sub = $1`,
+					[userSub]
+				);
+				await client.query(
+					`-- pl:delete-user
+					DELETE FROM users WHERE google_sub = $1`,
+					[userSub]
+				);
+			});
+		},
+		async resetAccountKeepSession(userSub, sessionId) {
+			await withTx(pool, async (client) => {
+				await client.query(
+					`-- pl:delete-user-entities
+					DELETE FROM entities WHERE user_sub = $1`,
+					[userSub]
+				);
+				await client.query(
+					`-- pl:delete-other-sessions
+					DELETE FROM sessions WHERE user_sub = $1 AND id <> $2`,
+					[userSub, sessionId]
+				);
+				await client.query(
+					`-- pl:reset-user-wraps
+					UPDATE users
+					SET wrap = NULL, recovery_wrap = NULL, wrap_rev = 0
+					WHERE google_sub = $1`,
+					[userSub]
+				);
+			});
 		}
 	};
 }

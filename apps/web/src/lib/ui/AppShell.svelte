@@ -66,6 +66,8 @@
 		onGoogleSignIn?: () => void | Promise<void>;
 		onGoogleCredential?: (idToken: string) => void | Promise<void>;
 		onSignOut?: () => void | Promise<void>;
+		onResetCloudSignOut?: () => void | Promise<void>;
+		onResetCloudStaySignedIn?: () => void | Promise<void>;
 		onRevokeSession?: (id: string) => void | Promise<void>;
 		onSaveIdle?: (minutes: number, leaveTab: boolean) => void | Promise<void>;
 		onSaveCurrency?: (code: string) => void | Promise<void>;
@@ -117,6 +119,8 @@
 		onGoogleSignIn,
 		onGoogleCredential,
 		onSignOut,
+		onResetCloudSignOut,
+		onResetCloudStaySignedIn,
 		onRevokeSession,
 		onSaveIdle,
 		onSaveCurrency,
@@ -280,6 +284,8 @@
 				{onGoogleSignIn}
 				{onGoogleCredential}
 				{onSignOut}
+				{onResetCloudSignOut}
+				{onResetCloudStaySignedIn}
 				{onRevokeSession}
 				{onSaveIdle}
 				{onSaveCurrency}

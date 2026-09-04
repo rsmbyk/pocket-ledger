@@ -113,6 +113,18 @@ export async function revokeCloudSession(id: string): Promise<void> {
 	await request(`/v1/sessions/${id}`, { method: 'DELETE' });
 }
 
+/** Spec 180 temporary: wipe this account’s cloud copy. */
+export async function resetCloudAccount(opts: { signOut: boolean }): Promise<{
+	ok: true;
+	signedOut: boolean;
+	onboarding?: AuthMe['onboarding'];
+}> {
+	return request('/v1/debug/reset-cloud', {
+		method: 'POST',
+		body: JSON.stringify({ signOut: opts.signOut })
+	});
+}
+
 export type CloudWrap = {
 	wrap: unknown;
 	recoveryWrap?: unknown;

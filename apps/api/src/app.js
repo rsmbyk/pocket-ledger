@@ -183,6 +183,25 @@ export function createApp(deps) {
 		}
 	});
 
+	app.post('/v1/debug/reset-cloud', async (c) => {
+		const session = await requireSession(c, store);
+		if (session.ok === false) return session.res;
+		const body = await c.req.json().catch(() => ({}));
+		const signOut = body.signOut === true;
+		if (signOut) {
+			await store.deleteAccount(session.value.userSub);
+			deleteCookie(c, COOKIE_NAME, cookieOpts(cookieSecure));
+			return c.json({ ok: true, signedOut: true });
+		}
+		await store.resetAccountKeepSession(session.value.userSub, session.value.id);
+		const user = await store.getUser(session.value.userSub);
+		return c.json({
+			ok: true,
+			signedOut: false,
+			onboarding: onboardingState(user)
+		});
+	});
+
 	return app;
 }
 
