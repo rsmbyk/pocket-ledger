@@ -27,6 +27,7 @@
 	import { fakeGoogleEnabled, googleClientId } from '$lib/application/cloud-api';
 	import { mountGoogleSignInButton } from '$lib/application/google-signin';
 	import { untrack } from 'svelte';
+	import { mode } from 'mode-watcher';
 
 	type Props = {
 		lockEnabled: boolean;
@@ -173,6 +174,7 @@
 
 	$effect(() => {
 		const el = gisHost;
+		const colorScheme = mode.current === 'dark' ? 'dark' : 'light';
 		const showGis =
 			Boolean(el) &&
 			cloudConfigured &&
@@ -186,6 +188,7 @@
 		void mountGoogleSignInButton({
 			host: el,
 			clientId,
+			colorScheme,
 			onCredential: (credential) => {
 				if (cancelled || !onCred) return;
 				void wrap(() => onCred(credential));
