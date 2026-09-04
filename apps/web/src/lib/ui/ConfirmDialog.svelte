@@ -83,7 +83,7 @@
 	{#if secondaryLabel && onSecondary}
 		<Button
 			type="button"
-			variant="outline"
+			variant="default"
 			disabled={busy}
 			data-testid={secondaryTestId}
 			onclick={() => void secondary()}
