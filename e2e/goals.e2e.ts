@@ -55,4 +55,36 @@ test.describe('152 pocket goals', () => {
 		await page.getByTestId('pocket-details-see-past-goals').click();
 		await expect(page.getByTestId('pocket-past-goals-dialog')).toContainText('Dropped');
 	});
+
+	test('amount caret stays on the same digit (172)', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.locator('[data-testid^="pocket-row-"]').first().click();
+		await page.getByTestId('pocket-details-add-goal').click();
+		const input = page.getByTestId('pocket-goal-target-input');
+		await expect(input).toBeVisible();
+
+		await input.fill('15000');
+		await expect(input).toHaveValue('15,000');
+		await input.evaluate((el: HTMLInputElement) => {
+			el.focus();
+			el.setSelectionRange(1, 1);
+		});
+		await input.press('Backspace');
+		await expect(input).toHaveValue('5,000');
+		await expect
+			.poll(async () => input.evaluate((el: HTMLInputElement) => el.selectionStart))
+			.toBe(0);
+
+		await input.fill('15000');
+		await expect(input).toHaveValue('15,000');
+		await input.evaluate((el: HTMLInputElement) => {
+			el.focus();
+			el.setSelectionRange(2, 2);
+		});
+		await input.press('9');
+		await expect(input).toHaveValue('159,000');
+		await expect
+			.poll(async () => input.evaluate((el: HTMLInputElement) => el.selectionStart))
+			.toBe(3);
+	});
 });

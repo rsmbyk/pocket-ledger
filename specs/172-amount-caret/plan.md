@@ -1,13 +1,13 @@
 # Plan 172: Amount field caret stays put
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Depends on:** 105, 037
 
 ## What
 
-After thousand grouping updates, the caret stays on the same digit in grouped amount fields (goal Target, pocket opening, tx Amount, transfer amount/fee).
+After thousand grouping updates, the caret stays on the same digit in grouped amount fields (goal Target, pocket opening, tx Amount, transfer amount/fee, expense fee).
 
 ## Why
 

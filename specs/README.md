@@ -188,7 +188,7 @@ Living behavior contracts for Pocket Ledger.
 | [169](169-confirm-pass-icon-only/spec.md)                | Confirm passphrase icon only                                 | Accepted                                                                        |
 | [170](170-goal-row-percent-end/spec.md)                  | Goal row amounts, date, percent, bar                         | Accepted                                                                        |
 | [171](171-goal-bar-color-steps/spec.md)                  | Goal bar color steps                                         | Accepted                                                                        |
-| [172](172-amount-caret/spec.md)                          | Amount field caret stays put                                 | Draft                                                                           |
+| [172](172-amount-caret/spec.md)                          | Amount field caret stays put                                 | Accepted                                                                        |
 | [173](173-tx-type-tabs/spec.md)                          | Tx type chrome is always tabs                                | Accepted                                                                        |
 | [174](174-expense-admin-fee/spec.md)                     | Expense admin fee                                            | Accepted                                                                        |
 | [175](175-reorder-toolbar-labels/spec.md)                | Reorder toolbar Default + Cancel                             | Accepted                                                                        |

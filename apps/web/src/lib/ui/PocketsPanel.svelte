@@ -38,6 +38,7 @@
 		writePocketCreateDraft,
 		type PocketCreateDraft
 	} from '$lib/shared/create-form-drafts';
+	import { applyGroupedAmountInput } from '$lib/ui/amount-field-caret';
 	import { cn } from '$lib/utils.js';
 	import { shouldIgnoreDismissForNativePicker } from '$lib/ui/native-picker-dismiss';
 	import { Popover } from 'bits-ui';
@@ -142,9 +143,11 @@
 		}
 	}
 
-	function onOpeningInput(value: string) {
-		formOpeningRaw = amountDigitsOnly(value);
-		if (formError?.key === 'opening') formError = null;
+	function onOpeningInput(el: HTMLInputElement) {
+		applyGroupedAmountInput(el, (digits) => {
+			formOpeningRaw = digits;
+			if (formError?.key === 'opening') formError = null;
+		});
 	}
 
 	function onOpeningKeydown(event: KeyboardEvent) {
@@ -525,7 +528,7 @@
 								aria-invalid={formError?.key === 'opening' ? true : undefined}
 								onkeydown={onOpeningKeydown}
 								onpaste={onOpeningPaste}
-								oninput={(e) => onOpeningInput(e.currentTarget.value)}
+								oninput={(e) => onOpeningInput(e.currentTarget)}
 								class={cn('!pl-2.5', !formOpeningEnabled && 'shadow-none')}
 							/>
 						</InputGroup.Root>

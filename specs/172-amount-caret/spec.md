@@ -1,7 +1,7 @@
 # Spec 172: Amount field caret stays put
 
 - **ID:** 172
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)
@@ -15,7 +15,7 @@ Typing or deleting in the middle (or at the start) of a grouped amount field lea
 ### In scope
 
 1. Domain helper (name may vary) in `apps/web/src/lib/domain/transaction-rules.ts`: given the formatted string and how many **digits** were left of the caret on `input`, return the new `selectionStart`. Grouping commas do not count.
-2. After `amountDigitsOnly` + format, restore caret (`tick` then `setSelectionRange`). Apply on: goal Target, pocket opening, tx Amount, transfer amount, transfer fee.
+2. After `amountDigitsOnly` + format, restore caret (`tick` then `setSelectionRange`). Apply on: goal Target, pocket opening, tx Amount, transfer amount, transfer fee, expense fee.
 3. Grouping and digits-only rules stay 105 / 037. Paste that replaces the whole field may still land at the end.
 
 ### Out of scope
@@ -46,7 +46,7 @@ Typing or deleting in the middle (or at the start) of a grouped amount field lea
 
 ### Scenario: Same chrome elsewhere
 
-- **Given** the same grouping on opening / tx Amount / transfer amount / transfer fee
+- **Given** the same grouping on opening / tx Amount / transfer amount / transfer fee / expense fee
 - **When** they edit mid-value
 - **Then** caret behaves the same
 
@@ -54,7 +54,7 @@ Typing or deleting in the middle (or at the start) of a grouped amount field lea
 
 - Vitest: `apps/web/src/lib/domain/transaction-rules.test.ts` — caret index for delete-first-digit and mid-insert
 - Playwright: `e2e/goals.e2e.ts` — Backspace / mid-type on `pocket-goal-target-input`; `selectionStart`
-- Implementation: helper in `transaction-rules.ts`; `oninput` on the five fields
+- Implementation: helper in `transaction-rules.ts`; `oninput` on the six fields
 
 ## Related
 

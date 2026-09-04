@@ -42,6 +42,7 @@
 		writeTxCreateDraft,
 		type TxCreateDraft
 	} from '$lib/shared/create-form-drafts';
+	import { applyGroupedAmountInput } from '$lib/ui/amount-field-caret';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import DateField from '$lib/ui/DateField.svelte';
 	import CategoryPicker from '$lib/ui/CategoryPicker.svelte';
@@ -420,48 +421,60 @@
 		})();
 	});
 
-	function onAmountInput(value: string) {
-		amountRaw = amountDigitsOnly(value);
-		if (fieldError?.key === 'amount') clearFieldError();
+	function onAmountInput(el: HTMLInputElement) {
+		applyGroupedAmountInput(el, (digits) => {
+			amountRaw = digits;
+			if (fieldError?.key === 'amount') clearFieldError();
+		});
 	}
 
 	function onAmountPaste(event: ClipboardEvent) {
 		event.preventDefault();
-		onAmountInput(event.clipboardData?.getData('text') ?? '');
+		amountRaw = amountDigitsOnly(event.clipboardData?.getData('text') ?? '');
+		if (fieldError?.key === 'amount') clearFieldError();
 	}
 
 	function onAmountKeydown(event: KeyboardEvent) {
 		if (isBlockedAmountKey(event)) event.preventDefault();
 	}
 
-	function onTransferAmountInput(value: string) {
-		transferAmountRaw = amountDigitsOnly(value);
-		if (fieldError?.key === 'amount') clearFieldError();
+	function onTransferAmountInput(el: HTMLInputElement) {
+		applyGroupedAmountInput(el, (digits) => {
+			transferAmountRaw = digits;
+			if (fieldError?.key === 'amount') clearFieldError();
+		});
 	}
 
 	function onTransferAmountPaste(event: ClipboardEvent) {
 		event.preventDefault();
-		onTransferAmountInput(event.clipboardData?.getData('text') ?? '');
+		transferAmountRaw = amountDigitsOnly(event.clipboardData?.getData('text') ?? '');
+		if (fieldError?.key === 'amount') clearFieldError();
 	}
 
-	function onTransferFeeInput(value: string) {
-		transferFeeRaw = amountDigitsOnly(value);
-		if (fieldError?.key === 'fee') clearFieldError();
+	function onTransferFeeInput(el: HTMLInputElement) {
+		applyGroupedAmountInput(el, (digits) => {
+			transferFeeRaw = digits;
+			if (fieldError?.key === 'fee') clearFieldError();
+		});
 	}
 
 	function onTransferFeePaste(event: ClipboardEvent) {
 		event.preventDefault();
-		onTransferFeeInput(event.clipboardData?.getData('text') ?? '');
+		transferFeeRaw = amountDigitsOnly(event.clipboardData?.getData('text') ?? '');
+		if (fieldError?.key === 'fee') clearFieldError();
 	}
 
-	function onExpenseFeeInput(value: string) {
-		expenseFeeRaw = amountDigitsOnly(value);
-		if (fieldError?.key === 'fee') clearFieldError();
+	function onExpenseFeeInput(el: HTMLInputElement) {
+		applyGroupedAmountInput(el, (digits) => {
+			expenseFeeRaw = digits;
+			if (fieldError?.key === 'fee') clearFieldError();
+		});
 	}
 
 	function onExpenseFeePaste(event: ClipboardEvent) {
 		event.preventDefault();
-		onExpenseFeeInput(event.clipboardData?.getData('text') ?? '');
+		expenseFeeRaw = amountDigitsOnly(event.clipboardData?.getData('text') ?? '');
+		if (fieldError?.key === 'fee') clearFieldError();
 	}
 
 	async function onTypeChange(next: AddableTransactionType) {
@@ -779,7 +792,7 @@
 						value={formatAmountDigitsDisplay(transferAmountRaw)}
 						onkeydown={onAmountKeydown}
 						onpaste={onTransferAmountPaste}
-						oninput={(e) => onTransferAmountInput(e.currentTarget.value)}
+						oninput={(e) => onTransferAmountInput(e.currentTarget)}
 						disabled={isVoidedView || saving}
 						class={cn('!pl-2.5', (isVoidedView || saving) && 'shadow-none')}
 						aria-label="Amount"
@@ -807,7 +820,7 @@
 						value={formatAmountDigitsDisplay(transferFeeRaw)}
 						onkeydown={onAmountKeydown}
 						onpaste={onTransferFeePaste}
-						oninput={(e) => onTransferFeeInput(e.currentTarget.value)}
+						oninput={(e) => onTransferFeeInput(e.currentTarget)}
 						disabled={isVoidedView || saving}
 						class={cn('!pl-2.5', (isVoidedView || saving) && 'shadow-none')}
 						aria-label="Fee"
@@ -874,7 +887,7 @@
 						value={amountDisplay}
 						onkeydown={onAmountKeydown}
 						onpaste={onAmountPaste}
-						oninput={(e) => onAmountInput(e.currentTarget.value)}
+						oninput={(e) => onAmountInput(e.currentTarget)}
 						disabled={isVoidedView || saving}
 						class={cn('!pl-2.5', (isVoidedView || saving) && 'shadow-none')}
 						aria-label="Amount"
@@ -903,7 +916,7 @@
 							value={formatAmountDigitsDisplay(expenseFeeRaw)}
 							onkeydown={onAmountKeydown}
 							onpaste={onExpenseFeePaste}
-							oninput={(e) => onExpenseFeeInput(e.currentTarget.value)}
+							oninput={(e) => onExpenseFeeInput(e.currentTarget)}
 							disabled={isVoidedView || saving}
 							class={cn('!pl-2.5', (isVoidedView || saving) && 'shadow-none')}
 							aria-label="Fee"
