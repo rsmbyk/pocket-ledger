@@ -38,11 +38,6 @@
 		showCategory
 	} from '$lib/application/categories';
 	import {
-		clearCategoryCreateDraft,
-		readCategoryCreateDraft,
-		writeCategoryCreateDraft
-	} from '$lib/shared/create-form-drafts';
-	import {
 		readCategoriesKind,
 		writeCategoriesKind
 	} from '$lib/shared/categories-kind-session';
@@ -112,7 +107,8 @@
 	let renameCategoryId = $state('');
 	let renameCategoryName = $state('');
 	let renameCategoryOriginal = $state('');
-	let discardConfirmOpen = $state(false);
+	let leaveForm = $state<'add' | 'addGroup' | 'renameGroup' | 'renameCategory' | null>(null);
+	let leaveConfirmOpen = $state(false);
 	let reorderDiscardOpen = $state(false);
 	let busy = $state(false);
 	let error = $state('');
@@ -137,6 +133,15 @@
 	);
 	const renameCategoryDirty = $derived(
 		renameCategoryName.trim() !== '' && renameCategoryName.trim() !== renameCategoryOriginal
+	);
+	const leaveConfirmTestId = $derived(
+		leaveForm === 'addGroup'
+			? 'category-add-group-discard-confirm'
+			: leaveForm === 'renameGroup'
+				? 'category-rename-group-discard-confirm'
+				: leaveForm === 'renameCategory'
+					? 'category-rename-discard-confirm'
+					: 'category-discard-confirm'
 	);
 	const headerActionReveal =
 		'md:pointer-events-none md:opacity-0 md:group-hover/card-header:pointer-events-auto md:group-hover/card-header:opacity-100 md:group-focus-within/card-header:pointer-events-auto md:group-focus-within/card-header:opacity-100';
@@ -219,17 +224,77 @@
 		addGroupId = groupId;
 		addName = '';
 		nameFieldError = '';
-		const draft = readCategoryCreateDraft(selectedKind);
-		if (draft) addName = draft.name;
 		addDialogOpen = true;
 	}
 
-	function requestAddDiscard() {
-		if (!addDirty) {
+	function closeLeaveForm(form: 'add' | 'addGroup' | 'renameGroup' | 'renameCategory') {
+		if (form === 'add') {
 			addDialogOpen = false;
+			addName = '';
 			return;
 		}
-		discardConfirmOpen = true;
+		if (form === 'addGroup') {
+			addGroupDialogOpen = false;
+			addGroupName = '';
+			return;
+		}
+		if (form === 'renameGroup') {
+			renameGroupDialogOpen = false;
+			renameGroupName = '';
+			renameGroupOriginal = '';
+			renameGroupId = '';
+			return;
+		}
+		closeRenameCategory();
+	}
+
+	function leaveFormDirty(form: 'add' | 'addGroup' | 'renameGroup' | 'renameCategory'): boolean {
+		if (form === 'add') return addDirty;
+		if (form === 'addGroup') return addGroupDirty;
+		if (form === 'renameGroup') return renameGroupDirty;
+		return renameCategoryDirty;
+	}
+
+	function requestLeave(form: 'add' | 'addGroup' | 'renameGroup' | 'renameCategory') {
+		if (!leaveFormDirty(form)) {
+			closeLeaveForm(form);
+			return;
+		}
+		leaveForm = form;
+		leaveConfirmOpen = true;
+	}
+
+	function onLeaveInteractOutside(
+		form: 'add' | 'addGroup' | 'renameGroup' | 'renameCategory',
+		e: PointerEvent
+	) {
+		const dirty = leaveFormDirty(form);
+		if (!dirty && !leaveConfirmOpen) return;
+		e.preventDefault();
+		if (dirty) {
+			leaveForm = form;
+			leaveConfirmOpen = true;
+		}
+	}
+
+	function onLeaveEscapeKeydown(
+		form: 'add' | 'addGroup' | 'renameGroup' | 'renameCategory',
+		e: KeyboardEvent
+	) {
+		const dirty = leaveFormDirty(form);
+		if (!dirty && !leaveConfirmOpen) return;
+		e.preventDefault();
+		if (dirty) {
+			leaveForm = form;
+			leaveConfirmOpen = true;
+		}
+	}
+
+	function confirmLeave() {
+		const form = leaveForm;
+		leaveConfirmOpen = false;
+		leaveForm = null;
+		if (form) closeLeaveForm(form);
 	}
 
 	function showReorderList(kind: CategoryKind) {
@@ -933,13 +998,17 @@
 	open={addDialogOpen}
 	onOpenChange={(next) => {
 		if (next) addDialogOpen = true;
-		else requestAddDiscard();
+		else requestLeave('add');
 	}}
 >
 	<Dialog.Content
 		class={kindDialogContentClass}
 		showCloseButton={false}
 		data-testid="category-add-dialog"
+		interactOutsideBehavior="close"
+		escapeKeydownBehavior="close"
+		onInteractOutside={(e) => onLeaveInteractOutside('add', e)}
+		onEscapeKeydown={(e) => onLeaveEscapeKeydown('add', e)}
 	>
 		<Dialog.Header class={kindDialogHeaderClass}>
 			<Dialog.Title>Add {meta.title} category</Dialog.Title>
@@ -951,7 +1020,6 @@
 				e.preventDefault();
 				void runAction(async () => {
 					await createCategory(addName, selectedKind, addGroupId);
-					clearCategoryCreateDraft(selectedKind);
 					addName = '';
 					addDialogOpen = false;
 				});
@@ -975,7 +1043,7 @@
 				</p>
 			{/if}
 			<div class="flex justify-end gap-2">
-				<Button type="button" variant="outline" disabled={busy} onclick={() => requestAddDiscard()}>
+				<Button type="button" variant="outline" disabled={busy} onclick={() => requestLeave('add')}>
 					Cancel
 				</Button>
 				<Button type="submit" disabled={busy || addName.trim() === ''} data-testid="category-add">
@@ -986,8 +1054,21 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root bind:open={addGroupDialogOpen}>
-	<Dialog.Content class={kindDialogContentClass} data-testid="category-add-group-dialog">
+<Dialog.Root
+	open={addGroupDialogOpen}
+	onOpenChange={(next) => {
+		if (next) addGroupDialogOpen = true;
+		else requestLeave('addGroup');
+	}}
+>
+	<Dialog.Content
+		class={kindDialogContentClass}
+		data-testid="category-add-group-dialog"
+		interactOutsideBehavior="close"
+		escapeKeydownBehavior="close"
+		onInteractOutside={(e) => onLeaveInteractOutside('addGroup', e)}
+		onEscapeKeydown={(e) => onLeaveEscapeKeydown('addGroup', e)}
+	>
 		<Dialog.Header class={kindDialogHeaderClass}>
 			<Dialog.Title>Add {meta.title} group</Dialog.Title>
 			<Dialog.Description>Placed last among {meta.title.toLowerCase()}.</Dialog.Description>
@@ -1017,7 +1098,7 @@
 					type="button"
 					variant="outline"
 					onclick={() => {
-						addGroupDialogOpen = false;
+						requestLeave('addGroup');
 					}}
 				>
 					Cancel
@@ -1030,8 +1111,21 @@
 	</Dialog.Content>
 </Dialog.Root>
 
-<Dialog.Root bind:open={renameGroupDialogOpen}>
-	<Dialog.Content class={kindDialogContentClass} data-testid="category-rename-group-dialog">
+<Dialog.Root
+	open={renameGroupDialogOpen}
+	onOpenChange={(next) => {
+		if (next) renameGroupDialogOpen = true;
+		else requestLeave('renameGroup');
+	}}
+>
+	<Dialog.Content
+		class={kindDialogContentClass}
+		data-testid="category-rename-group-dialog"
+		interactOutsideBehavior="close"
+		escapeKeydownBehavior="close"
+		onInteractOutside={(e) => onLeaveInteractOutside('renameGroup', e)}
+		onEscapeKeydown={(e) => onLeaveEscapeKeydown('renameGroup', e)}
+	>
 		<Dialog.Header class={kindDialogHeaderClass}>
 			<Dialog.Title>Rename {meta.title} group</Dialog.Title>
 			<Dialog.Description>Must be unique among {meta.title.toLowerCase()}.</Dialog.Description>
@@ -1068,7 +1162,7 @@
 					type="button"
 					variant="outline"
 					onclick={() => {
-						renameGroupDialogOpen = false;
+						requestLeave('renameGroup');
 					}}
 				>
 					Cancel
@@ -1089,10 +1183,17 @@
 	open={renameCategoryDialogOpen}
 	onOpenChange={(next) => {
 		if (next) renameCategoryDialogOpen = true;
-		else closeRenameCategory();
+		else requestLeave('renameCategory');
 	}}
 >
-	<Dialog.Content class={kindDialogContentClass} data-testid="category-rename-dialog">
+	<Dialog.Content
+		class={kindDialogContentClass}
+		data-testid="category-rename-dialog"
+		interactOutsideBehavior="close"
+		escapeKeydownBehavior="close"
+		onInteractOutside={(e) => onLeaveInteractOutside('renameCategory', e)}
+		onEscapeKeydown={(e) => onLeaveEscapeKeydown('renameCategory', e)}
+	>
 		<Dialog.Header class={kindDialogHeaderClass}>
 			<Dialog.Title>Rename {meta.title} category</Dialog.Title>
 			<Dialog.Description>Must be unique among {meta.title.toLowerCase()}.</Dialog.Description>
@@ -1125,7 +1226,7 @@
 				</p>
 			{/if}
 			<div class="flex justify-end gap-2">
-				<Button type="button" variant="outline" disabled={busy} onclick={() => closeRenameCategory()}>
+				<Button type="button" variant="outline" disabled={busy} onclick={() => requestLeave('renameCategory')}>
 					Cancel
 				</Button>
 				<Button
@@ -1152,26 +1253,14 @@
 />
 
 <ConfirmDialog
-	open={discardConfirmOpen}
+	open={leaveConfirmOpen}
 	title="Discard unsaved changes?"
-	description="Discard permanently, or save a draft to continue later."
+	description="Your edits will be lost if you leave without saving."
 	confirmLabel="Discard"
 	destructive
-	confirmTestId="category-discard-confirm"
-	secondaryLabel="Save draft"
-	secondaryTestId="category-discard-save-draft"
-	onOpenChange={(next) => (discardConfirmOpen = next)}
-	onConfirm={() => {
-		clearCategoryCreateDraft(selectedKind);
-		discardConfirmOpen = false;
-		addDialogOpen = false;
-		addName = '';
-	}}
-	onSecondary={() => {
-		writeCategoryCreateDraft(selectedKind, { name: addName });
-		discardConfirmOpen = false;
-		addDialogOpen = false;
-	}}
+	confirmTestId={leaveConfirmTestId}
+	onOpenChange={(next) => (leaveConfirmOpen = next)}
+	onConfirm={confirmLeave}
 />
 
 <style>

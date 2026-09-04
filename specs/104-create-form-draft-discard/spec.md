@@ -8,18 +8,20 @@
 
 ## Intent
 
-On **create** flows only, when the user discards a dirty form, offer **Save draft** so the values can be restored the next time that same create window opens. Restored drafts are treated as dirty against clean create defaults, so the discard prompt still appears even with no further edits. Drafts live in `sessionStorage` for the tab session only.
+On **Add transaction** create only, when the user discards a dirty form, offer **Save draft** so the values can be restored the next time that same create window opens. Restored drafts are treated as dirty against clean create defaults, so the discard prompt still appears even with no further edits. Drafts live in `sessionStorage` for the tab session only.
+
+**Superseded for pockets and categories:** Spec [184](../184-form-modal-unsaved-leave/spec.md) removed Save draft and session restore from Add pocket and Add category. Those hosts use two-button discard only.
 
 ## Scope
 
 ### In scope
 
-1. **Create surfaces:** Add transaction (Normal + Transfer), Add pocket, Add category (Income and Expense)
-2. **Three-action discard (create only):** Cancel (keep editing), Discard (close + clear draft), Save draft (write sessionStorage + close)
+1. **Create surface:** Add transaction (Normal + Transfer) only
+2. **Three-action discard (tx create only):** Cancel (keep editing), Discard (close + clear draft), Save draft (write sessionStorage + close)
 3. **Restore on open:** if a draft exists for that create identity, hydrate the form; baseline remains clean create defaults → dirty
 4. **Clear draft** on Discard or successful create
-5. **Pocket/category create:** add prevent-then-warn dirty dismiss (same contract as Spec 080/085 for tx), then the three-action dialog
-6. Shared session helper with injectable `Storage`; malformed JSON → no draft
+5. Shared session helper with injectable `Storage`; malformed JSON → no draft
+6. **Pocket/category create drafts:** superseded by Spec 184 (two-button discard, no session draft)
 
 ### Out of scope
 
@@ -34,8 +36,6 @@ On **create** flows only, when the user discards a dirty form, offer **Save draf
 - Backend: `sessionStorage` only
 - Keys:
   - `pocket-ledger-draft-tx-create` — includes mode (`normal` | `transfer`) and all create fields
-  - `pocket-ledger-draft-pocket-create`
-  - `pocket-ledger-draft-category-create-income` / `pocket-ledger-draft-category-create-expense`
 - Missing / malformed / non-object → treat as no draft
 - Do not restore drafts into edit
 - Restore dirty contract: compare hydrated values to clean create baseline (not to the draft itself)
@@ -72,16 +72,11 @@ On **create** flows only, when the user discards a dirty form, offer **Save draf
 
 ### Scenario: Pocket create draft
 
-- **Given** Add pocket is dirty
-- **When** the user Save drafts, closes, and reopens Add pocket
-- **Then** fields restore and the form is dirty (discard still prompts)
+Superseded by Spec 184 — Add pocket has no Save draft.
 
 ### Scenario: Category create draft per kind
 
-- **Given** Add Expense category has a saved draft
-- **When** the user opens Add Income category
-- **Then** Income create does not show the Expense draft
-- **And** reopening Add Expense restores the Expense draft and is dirty
+Superseded by Spec 184 — Add category has no Save draft.
 
 ### Scenario: Garbage storage
 
@@ -93,10 +88,11 @@ On **create** flows only, when the user discards a dirty form, offer **Save draf
 
 - Vitest: `src/lib/shared/create-form-drafts.test.ts`
 - Playwright: `e2e/create-form-drafts.e2e.ts`
-- Implementation: `src/lib/shared/create-form-drafts.ts`; `ConfirmDialog.svelte`; `QuickAddSheet.svelte`; `PocketsPanel.svelte`; `CategoriesPanel.svelte`
+- Implementation: `apps/web/src/lib/shared/create-form-drafts.ts`; `ConfirmDialog.svelte`; `QuickAddSheet.svelte`
 
 ## Related
 
 - Spec 080, 085 (dirty modal dismiss)
 - Spec 102 (sessionStorage helper pattern)
-- Spec 037, 044, 070, 018 (create surfaces)
+- Spec 037, 044 (tx create)
+- Spec 184 (form modal unsaved-leave; pocket/category drafts removed)

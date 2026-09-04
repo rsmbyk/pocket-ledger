@@ -725,7 +725,9 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await page.getByTestId('category-rename-group-name-input').fill('Gig work');
 		await expect(page.getByTestId('category-rename-group-helper')).toHaveText('Current: Side hustle');
 		await expect(page.getByTestId('category-rename-group-save')).toBeEnabled();
-		await page.getByRole('button', { name: 'Cancel' }).click();
+		await page.getByTestId('category-rename-group-dialog').getByRole('button', { name: 'Cancel' }).click();
+		await page.getByTestId('category-rename-group-discard-confirm').click();
+		await expect(page.getByTestId('category-rename-group-dialog')).toBeHidden();
 
 		await clickCategoryGroupAdd(custom);
 		await page.getByTestId('category-name-input').fill('Gig');

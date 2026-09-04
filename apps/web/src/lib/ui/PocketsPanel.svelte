@@ -32,12 +32,6 @@
 		parseNonNegativeAmountInput,
 		todayOccurredOn
 	} from '$lib/domain/transaction-rules';
-	import {
-		clearPocketCreateDraft,
-		readPocketCreateDraft,
-		writePocketCreateDraft,
-		type PocketCreateDraft
-	} from '$lib/shared/create-form-drafts';
 	import { applyGroupedAmountInput } from '$lib/ui/amount-field-caret';
 	import { cn } from '$lib/utils.js';
 	import { shouldIgnoreDismissForNativePicker } from '$lib/ui/native-picker-dismiss';
@@ -171,14 +165,6 @@
 		};
 	}
 
-	function applyPocketDraft(draft: PocketCreateDraft) {
-		formName = draft.name;
-		formNotes = draft.notes;
-		formOpeningEnabled = draft.openingEnabled;
-		formOpeningRaw = amountDigitsOnly(draft.openingRaw) || '0';
-		formOpeningAsOf = draft.openingAsOf || todayOccurredOn();
-	}
-
 	function openCreate() {
 		formMode = 'create';
 		formPocketId = null;
@@ -189,8 +175,6 @@
 		formOpeningAsOf = todayOccurredOn();
 		formError = null;
 		formBaseline = snapshotForm();
-		const draft = readPocketCreateDraft();
-		if (draft) applyPocketDraft(draft);
 		formOpen = true;
 	}
 
@@ -208,7 +192,7 @@
 	}
 
 	function requestFormDiscard() {
-		if (formMode !== 'create' || !formDirty) {
+		if (!formDirty) {
 			formOpen = false;
 			return;
 		}
@@ -228,25 +212,18 @@
 			e.preventDefault();
 			return;
 		}
-		if (formMode !== 'create' || (!formDirty && !discardConfirmOpen)) return;
+		if (!formDirty && !discardConfirmOpen) return;
 		e.preventDefault();
 		if (formDirty) discardConfirmOpen = true;
 	}
 
 	function onFormEscapeKeydown(e: KeyboardEvent) {
-		if (formMode !== 'create' || (!formDirty && !discardConfirmOpen)) return;
+		if (!formDirty && !discardConfirmOpen) return;
 		e.preventDefault();
 		if (formDirty) discardConfirmOpen = true;
 	}
 
 	function confirmFormDiscard() {
-		if (formMode === 'create') clearPocketCreateDraft();
-		discardConfirmOpen = false;
-		formOpen = false;
-	}
-
-	function savePocketCreateDraft() {
-		writePocketCreateDraft(snapshotForm());
 		discardConfirmOpen = false;
 		formOpen = false;
 	}
@@ -273,7 +250,6 @@
 					openingBalanceMinor,
 					openingAsOf
 				});
-				clearPocketCreateDraft();
 			} else if (formPocketId) {
 				await onUpdatePocket({
 					id: formPocketId,
@@ -629,15 +605,12 @@
 <ConfirmDialog
 	open={discardConfirmOpen}
 	title="Discard unsaved changes?"
-	description="Discard permanently, or save a draft to continue later."
+	description="Your edits will be lost if you leave without saving."
 	confirmLabel="Discard"
 	destructive
 	confirmTestId="pocket-discard-confirm"
-	secondaryLabel="Save draft"
-	secondaryTestId="pocket-discard-save-draft"
 	onOpenChange={(next) => (discardConfirmOpen = next)}
 	onConfirm={confirmFormDiscard}
-	onSecondary={savePocketCreateDraft}
 />
 
 <ConfirmDialog

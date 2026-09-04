@@ -87,4 +87,44 @@ test.describe('152 pocket goals', () => {
 			.poll(async () => input.evaluate((el: HTMLInputElement) => el.selectionStart))
 			.toBe(3);
 	});
+
+	test('add goal dirty leave warns; clean close does not (184)', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.locator('[data-testid^="pocket-row-"]').first().click();
+		await page.getByTestId('pocket-details-add-goal').click();
+		const dialog = page.getByTestId('pocket-goal-form-dialog');
+		await expect(dialog).toBeVisible();
+		await dialog.getByRole('button', { name: 'Cancel' }).click();
+		await expect(page.getByTestId('pocket-goal-discard-confirm')).toHaveCount(0);
+		await expect(dialog).toBeHidden();
+
+		await page.getByTestId('pocket-details-add-goal').click();
+		await page.getByTestId('pocket-goal-description-input').fill('5454545');
+		await page.getByTestId('pocket-goal-target-input').fill('15000');
+		await dialog.getByRole('button', { name: 'Cancel' }).click();
+		await expect(page.getByTestId('pocket-goal-discard-confirm')).toBeVisible();
+		await expect(page.getByTestId('tx-discard-save-draft')).toHaveCount(0);
+		await page.getByTestId('confirm-dialog-cancel').click();
+		await expect(page.getByTestId('pocket-goal-description-input')).toHaveValue('5454545');
+		await dialog.getByRole('button', { name: 'Cancel' }).click();
+		await page.getByTestId('pocket-goal-discard-confirm').click();
+		await expect(dialog).toBeHidden();
+	});
+
+	test('edit goal dirty leave warns (184)', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.locator('[data-testid^="pocket-row-"]').first().click();
+		await addPocketGoal(page, { target: '50000', description: 'Rent' });
+		await page.getByTestId('pocket-details-goals-list').locator('button').first().click();
+		const dialog = page.getByTestId('pocket-goal-form-dialog');
+		await expect(dialog).toBeVisible();
+		await page.getByTestId('pocket-goal-description-input').fill('Rent!');
+		await dialog.getByRole('button', { name: 'Cancel' }).click();
+		await expect(page.getByTestId('pocket-goal-discard-confirm')).toBeVisible();
+		await page.getByTestId('confirm-dialog-cancel').click();
+		await expect(page.getByTestId('pocket-goal-description-input')).toHaveValue('Rent!');
+		await dialog.getByRole('button', { name: 'Cancel' }).click();
+		await page.getByTestId('pocket-goal-discard-confirm').click();
+		await expect(dialog).toBeHidden();
+	});
 });
