@@ -1,5 +1,5 @@
--- Spec 121 schema (Cloud SQL). Runtime tests use the in-memory store;
--- apply this when DATABASE_URL points at Postgres.
+-- Spec 121/178 schema (Cloud SQL). Runtime tests use the in-memory store.
+-- Apply this when DATABASE_URL points at Postgres.
 CREATE TABLE IF NOT EXISTS users (
   google_sub TEXT PRIMARY KEY,
   email TEXT NOT NULL,

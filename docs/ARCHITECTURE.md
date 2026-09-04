@@ -2,7 +2,7 @@
 
 Two modes, one web app. **Signed out:** client-only Dexie PWA, no API. **Signed in:** SvelteKit talks to Hono; Dexie is a cache; Cloud SQL holds ciphertext.
 
-Docs describe the **target**. Specs 117–121 are in the tree: Kit PWA, Cloud Run stubs, wrapping, Google session, and ciphertext sync. Android stays parked (Spec 122).
+Docs describe the **target**. Specs 117–121 and 178 are in the tree: Kit PWA, Cloud Run, wrapping, Google session, ciphertext sync, and production Cloud SQL. Android stays parked (Spec 122).
 
 ## Target layout
 
@@ -104,7 +104,7 @@ Panel chrome still lives in `AppShell`; `src/lib/shared/router.ts` maps pathname
 
 ## Sync (signed-in, Spec 121)
 
-Unit = one encrypted entity + plain `id`, `kind`, server monotonic `rev`, `deleted`. Save sends the `rev` this device read. Newer server `rev` → **409** → close editor, discard typing, refresh. Deletes are gravestones. Wraps are one account coat-check (`wrapRev`). Pull on unlock, after save, and every 30s while visible and unlocked. No offline mutation queue.
+Unit = one encrypted entity + plain `id`, `kind`, server monotonic `rev`, `deleted`. Save sends the `rev` this device read. Newer server `rev` → **409** → close editor, discard typing, refresh. Deletes are gravestones. Wraps are one account coat-check (`wrapRev`). Pull on unlock, after save, and every 30s while visible and unlocked. No offline mutation queue. Production persists in Cloud SQL when `DATABASE_URL` is set (Spec 178); local/CI stay in-memory.
 
 ## Testing map
 

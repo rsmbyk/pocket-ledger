@@ -9,11 +9,12 @@ export class LocalConflictError extends Error {
 }
 
 export function apiBase(): string {
-	return (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+	return ((import.meta.env.VITE_API_URL as string | undefined) ?? '').trim().replace(/\/$/, '');
 }
 
 export function cloudConfigured(): boolean {
-	return apiBase().length > 0;
+	if (!apiBase()) return false;
+	return fakeGoogleEnabled() || googleClientId().length > 0;
 }
 
 export function fakeGoogleEnabled(): boolean {
@@ -21,7 +22,7 @@ export function fakeGoogleEnabled(): boolean {
 }
 
 export function googleClientId(): string {
-	return (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '';
+	return ((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '').trim();
 }
 
 type Json = Record<string, unknown>;

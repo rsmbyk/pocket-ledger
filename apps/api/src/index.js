@@ -1,9 +1,10 @@
 import { serve } from '@hono/node-server';
 import { createApp } from './app.js';
-import { createMemoryStore } from './memory-store.js';
+import { openStore } from './store.js';
 
 /**
- * Specs 118–121: health, Google session, wrap coat-check, sync.
+ * Specs 118–121, 178: health, Google session, wrap coat-check, sync.
+ * DATABASE_URL → Cloud SQL / Postgres. Unset → in-memory.
  * Set GOOGLE_CLIENT_ID to verify real GIS tokens. AUTH_ALLOW_FAKE=1 accepts `fake.<sub>.<email>`.
  */
 
@@ -30,8 +31,9 @@ async function verifyGoogle(idToken) {
 	return { sub: payload.sub, email: payload.email ?? '' };
 }
 
+const store = await openStore();
 const app = createApp({
-	store: createMemoryStore(),
+	store,
 	verifyGoogle,
 	webOrigin,
 	cookieSecure

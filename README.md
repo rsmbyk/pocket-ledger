@@ -2,7 +2,7 @@
 
 Local-first personal finance tracker with optional Google cloud sync. Signed-out: PWA, data stays on the device (IndexedDB). Signed-in: E2E ciphertext on GCP; we never have the passphrase.
 
-**Live:** https://pocket-ledger-web-w6fanfnuqa-et.a.run.app (Cloud Run, `asia-southeast2`). Changing origin starts an empty IndexedDB; restore an encrypted backup or sign in if you need history.
+**Live:** https://pocket-ledger-web-w6fanfnuqa-uc.a.run.app (Cloud Run, `us-central1`). Confirm the URL after the first Iowa deploy if the hash differs. Changing origin starts an empty IndexedDB; restore an encrypted backup or sign in if you need history.
 
 ## Stack
 
@@ -41,7 +41,7 @@ npm run build
 
 ## Deploy
 
-**Production:** path-filtered GitHub Actions → Cloud Run (`deploy-web.yml` vs `deploy-api.yml`). A web-only change does not deploy the API service, and vice versa. Repo variables `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_DEPLOY_SA`, and `GCP_REGION` (`asia-southeast2`) are set. Cloud Build uses `cloudbuild.web.yaml` / `cloudbuild.api.yaml` (Artifact Registry `cloud-run-source-deploy`).
+**Production:** path-filtered GitHub Actions → Cloud Run (`deploy-web.yml` vs `deploy-api.yml`). A web-only change does not deploy the API service, and vice versa. Repo variables `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_DEPLOY_SA`, and `GCP_REGION` (`us-central1`) are set. Cloud Build uses `cloudbuild.web.yaml` / `cloudbuild.api.yaml` (Artifact Registry `cloud-run-source-deploy`). Spec 178 bakes `VITE_API_URL` / `VITE_GOOGLE_CLIENT_ID` into the web image and attaches Cloud SQL when those GitHub vars are set — see [docs/HOSTING.md](docs/HOSTING.md).
 
 Cutover is a **new origin** = empty IndexedDB.
 
@@ -56,7 +56,7 @@ Read these before changing behavior:
 | [docs/PRODUCT.md](docs/PRODUCT.md)           | Locked product decisions (two modes, dropped/parked) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, wrapping, workspaces                         |
 | [docs/PROCESS.md](docs/PROCESS.md)           | SDD + TDD + GitHub Flow                              |
-| [docs/HOSTING.md](docs/HOSTING.md)           | GCP Cloud Run (Jakarta, two services)                |
+| [docs/HOSTING.md](docs/HOSTING.md)           | GCP Cloud Run (Iowa, two services)                   |
 | [docs/FIRST_WORK.md](docs/FIRST_WORK.md)     | Scaffold scope                                       |
 | [docs/ROADMAP.md](docs/ROADMAP.md)           | Feature order                                        |
 | [specs/](specs/)                             | Living behavior specs                                |

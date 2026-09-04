@@ -1,7 +1,21 @@
-# Spec 118: Cloud Run web image (static SvelteKit via Dockerfile.web).
+# Spec 118/178: Cloud Run web image (static SvelteKit via Dockerfile.web).
+substitutions:
+  _IMAGE: 'unused'
+  _VITE_API_URL: ''
+  _VITE_GOOGLE_CLIENT_ID: ''
 steps:
   - name: gcr.io/cloud-builders/docker
-    args: ['build', '-t', '${_IMAGE}', '-f', 'Dockerfile.web', '.']
+    args:
+      - 'build'
+      - '-t'
+      - '${_IMAGE}'
+      - '-f'
+      - 'Dockerfile.web'
+      - '--build-arg'
+      - 'VITE_API_URL=${_VITE_API_URL}'
+      - '--build-arg'
+      - 'VITE_GOOGLE_CLIENT_ID=${_VITE_GOOGLE_CLIENT_ID}'
+      - '.'
 images:
   - '${_IMAGE}'
 options:
