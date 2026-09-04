@@ -100,10 +100,14 @@ echo -n 'postgresql://pl:PASSWORD@/pocket_ledger?host=/cloudsql/pocket-ledger-rs
   | gcloud secrets create database-url --data-file=-
 ```
 
-Cloud Run runtime SA (default compute) needs accessor + Cloud SQL client. Project number is `513150170654`:
+Use a dedicated Cloud Run runtime SA (`pocket-ledger-run`). Secret Manager rejects IAM bindings on the default Compute Engine SA in this project (`…-compute@developer.gserviceaccount.com` “does not exist” even though Cloud Run can still run as it). Project number is `513150170654`. The GitHub deploy SA must be allowed to act as the runtime SA (`roles/iam.serviceAccountUser`).
 
 ```bash
-RUNTIME_SA="x-frank.g@example.org"
+RUNTIME_SA="pocket-ledger-run@pocket-ledger-rsmbyk.iam.gserviceaccount.com"
+DEPLOY_SA="pocket-ledger-deploy@pocket-ledger-rsmbyk.iam.gserviceaccount.com"
+
+gcloud iam service-accounts create pocket-ledger-run \
+  --display-name="Pocket Ledger Cloud Run runtime"
 
 gcloud secrets add-iam-policy-binding database-url \
   --member="serviceAccount:${RUNTIME_SA}" \
@@ -112,6 +116,14 @@ gcloud secrets add-iam-policy-binding database-url \
 gcloud projects add-iam-policy-binding pocket-ledger-rsmbyk \
   --member="serviceAccount:${RUNTIME_SA}" \
   --role=roles/cloudsql.client
+
+gcloud projects add-iam-policy-binding pocket-ledger-rsmbyk \
+  --member="serviceAccount:${RUNTIME_SA}" \
+  --role=roles/logging.logWriter
+
+gcloud iam service-accounts add-iam-policy-binding "${RUNTIME_SA}" \
+  --member="serviceAccount:${DEPLOY_SA}" \
+  --role=roles/iam.serviceAccountUser
 ```
 
 ### 4. Google Identity Services

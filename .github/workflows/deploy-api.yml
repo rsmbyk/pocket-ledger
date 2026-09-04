@@ -59,6 +59,7 @@ jobs:
           DEPLOY_ARGS=(
             --image "$IMAGE"
             --region "$REGION"
+            --service-account=pocket-ledger-run@${PROJECT_ID}.iam.gserviceaccount.com
             --allow-unauthenticated
             --min-instances=0
             --max-instances=1
