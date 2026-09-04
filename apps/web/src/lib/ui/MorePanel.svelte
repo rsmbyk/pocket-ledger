@@ -104,6 +104,7 @@
 	let accountNewPass = $state('');
 	let accountNewConfirm = $state('');
 	let accountPassError = $state<string | null>(null);
+	let accountPassBusy = $state(false);
 	let resetOpen = $state(false);
 	let preserveSettings = $state(false);
 	let preservePassphrase = $state(false);
@@ -622,8 +623,9 @@
 						class="flex flex-col gap-2"
 						onsubmit={(e) => {
 							e.preventDefault();
-							if (!canChangeAccount || !onChangeAccountPassphrase) return;
+							if (!canChangeAccount || !onChangeAccountPassphrase || accountPassBusy) return;
 							accountPassError = null;
+							accountPassBusy = true;
 							void (async () => {
 								try {
 									await onChangeAccountPassphrase(accountCurrentPass, accountNewPass);
@@ -633,6 +635,8 @@
 								} catch (err) {
 									accountPassError =
 										err instanceof Error ? err.message : 'Could not change passphrase';
+								} finally {
+									accountPassBusy = false;
 								}
 							})();
 						}}
@@ -666,7 +670,7 @@
 						<Button
 							type="submit"
 							class="w-full"
-							disabled={!canChangeAccount}
+							disabled={!canChangeAccount || accountPassBusy}
 							data-testid="change-account-submit">Change passphrase</Button
 						>
 					</form>

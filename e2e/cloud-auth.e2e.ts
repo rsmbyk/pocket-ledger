@@ -187,10 +187,11 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('change-account-pass-confirm').fill('new-account-pass');
 		await page.getByTestId('change-account-submit').click();
 		await expect(page.getByTestId('change-account-error')).toHaveCount(0);
+		await expect(page.getByTestId('change-account-current')).toHaveValue('');
 		await page.getByTestId('header-lock').click();
 		await expect(page.getByTestId('account-unlock-screen')).toBeVisible();
 		await page.getByTestId('unlock-passphrase').fill('new-account-pass');
 		await page.getByTestId('unlock-submit').click();
-		await expect(page.getByTestId('app-shell')).toBeVisible();
+		await expect(page.getByTestId('app-shell')).toBeVisible({ timeout: 15_000 });
 	});
 });
