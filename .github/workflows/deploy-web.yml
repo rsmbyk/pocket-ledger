@@ -45,16 +45,25 @@ jobs:
         env:
           PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
           REGION: ${{ vars.GCP_REGION }}
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
         run: |
           gcloud config set project "$PROJECT_ID"
           REGION="${REGION:-asia-southeast2}"
           IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/pocket-ledger-web"
+          VITE_API_URL="${VITE_API_URL:-https://pocket-ledger-api-w6fanfnuqa-et.a.run.app}"
           gcloud builds submit \
             --config cloudbuild.web.yaml \
-            --substitutions=_IMAGE="$IMAGE" \
+            --substitutions=_IMAGE="$IMAGE",_VITE_API_URL="$VITE_API_URL",_VITE_GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}" \
             --timeout=1200s
           gcloud run deploy pocket-ledger-web \
             --image "$IMAGE" \
             --region "$REGION" \
             --allow-unauthenticated \
+            --min-instances=0 \
+            --max-instances=1 \
+            --cpu=1 \
+            --memory=256Mi \
+            --cpu-throttling \
+            --no-cpu-boost \
             --quiet

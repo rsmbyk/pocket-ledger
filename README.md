@@ -41,7 +41,7 @@ npm run build
 
 ## Deploy
 
-**Production:** path-filtered GitHub Actions → Cloud Run (`deploy-web.yml` vs `deploy-api.yml`). A web-only change does not deploy the API service, and vice versa. Repo variables `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_DEPLOY_SA`, and `GCP_REGION` (`asia-southeast2`) are set. Cloud Build uses `cloudbuild.web.yaml` / `cloudbuild.api.yaml` (Artifact Registry `cloud-run-source-deploy`).
+**Production:** path-filtered GitHub Actions → Cloud Run (`deploy-web.yml` vs `deploy-api.yml`). A web-only change does not deploy the API service, and vice versa. Repo variables `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_DEPLOY_SA`, and `GCP_REGION` (`asia-southeast2`) are set. Cloud Build uses `cloudbuild.web.yaml` / `cloudbuild.api.yaml` (Artifact Registry `cloud-run-source-deploy`). Spec 178 bakes `VITE_API_URL` / `VITE_GOOGLE_CLIENT_ID` into the web image and attaches Cloud SQL when those GitHub vars are set — see [docs/HOSTING.md](docs/HOSTING.md).
 
 Cutover is a **new origin** = empty IndexedDB.
 

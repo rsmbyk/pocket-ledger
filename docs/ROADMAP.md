@@ -8,10 +8,11 @@ Ordered slices. Each slice gets a numbered spec before code.
 2. **GitHub Actions CI** — check, unit, e2e; no deploy → `specs/116-github-actions-ci/`
 3. ~~**SvelteKit path URLs + PWA** — replace hash router; keep SW~~ → `specs/117-sveltekit-path-urls-pwa/`
 4. ~~**Cloud Run web** — path-filtered Actions; retire Cloudflare production~~ → `specs/118-gcp-cloud-run-web/`
-5. **Google Sign-In + account lock** — mandatory passphrase, hex kit, resumable onboarding, session manager → `specs/119-google-sign-in-account-lock/`
-6. **Local DEK wrapping + encrypted backup** — always-on DEK; signed-out export/import only → `specs/120-local-dek-wrapping-encrypted-backup/`
-7. **Signed-in sync** — `rev`, 409 close+refresh, gravestones, 30s poll, settings → `specs/121-signed-in-sync/`
-8. **Android** — parked; second GitHub repo `pocket-ledger-android`, not this tree → `specs/122-android-second-repo-parked/`
+5. ~~**Google Sign-In + account lock** — mandatory passphrase, hex kit, resumable onboarding, session manager~~ → `specs/119-google-sign-in-account-lock/`
+6. ~~**Local DEK wrapping + encrypted backup** — always-on DEK; signed-out export/import only~~ → `specs/120-local-dek-wrapping-encrypted-backup/`
+7. ~~**Signed-in sync** — `rev`, 409 close+refresh, gravestones, 30s poll, settings~~ → `specs/121-signed-in-sync/`
+8. ~~**Production Cloud SQL + Google** — durable Postgres, bake GIS client id~~ → `specs/178-production-cloud-sql-google/`
+9. **Android** — parked; second GitHub repo `pocket-ledger-android`, not this tree → `specs/122-android-second-repo-parked/`
 
 Parked after this wave (not v1): cloud lockout + email, wipe/delete account, Argon2id, custom domain, GCS. See `docs/PRODUCT.md`.
 

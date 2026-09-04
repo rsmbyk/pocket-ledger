@@ -194,3 +194,4 @@ Living behavior contracts for Pocket Ledger.
 | [175](175-reorder-toolbar-labels/spec.md)                | Reorder toolbar Default + Cancel                             | Accepted                                                                        |
 | [176](176-form-submit-save/spec.md)                      | Form submit is Save                                          | Accepted                                                                        |
 | [177](177-tx-footer-row/spec.md)                         | Tx Save and Close on one row                                 | Accepted                                                                        |
+| [178](178-production-cloud-sql-google/spec.md)           | Production Cloud SQL + Google Sign-In                        | Accepted                                                                        |

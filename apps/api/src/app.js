@@ -40,8 +40,8 @@ export function createApp(deps) {
 		const body = await c.req.json().catch(() => ({}));
 		const identity = await verifyGoogle(String(body.idToken ?? ''));
 		if (!identity) return c.json({ error: 'invalid_token' }, 401);
-		const user = store.ensureUser({ googleSub: identity.sub, email: identity.email });
-		const cloudHasData = store.cloudHasData(user.googleSub);
+		const user = await store.ensureUser({ googleSub: identity.sub, email: identity.email });
+		const cloudHasData = await store.cloudHasData(user.googleSub);
 		const localHasData = body.localHasData === true;
 		if (cloudHasData && localHasData && body.discardLocal !== true) {
 			return c.json(
@@ -53,7 +53,7 @@ export function createApp(deps) {
 				409
 			);
 		}
-		const session = store.createSession({
+		const session = await store.createSession({
 			userSub: user.googleSub,
 			userAgent: c.req.header('user-agent') ?? ''
 		});
@@ -66,9 +66,9 @@ export function createApp(deps) {
 	});
 
 	app.post('/v1/auth/logout', async (c) => {
-		const session = requireSession(c, store);
+		const session = await requireSession(c, store);
 		if (session.ok === false) return session.res;
-		store.deleteSession(session.value.id);
+		await store.deleteSession(session.value.id);
 		deleteCookie(c, COOKIE_NAME, cookieOpts(cookieSecure));
 		return c.json({ ok: true });
 	});
@@ -79,11 +79,11 @@ export function createApp(deps) {
 	});
 
 	app.get('/v1/me', async (c) => {
-		const session = requireSession(c, store);
+		const session = await requireSession(c, store);
 		if (session.ok === false) return session.res;
-		const user = store.getUser(session.value.userSub);
+		const user = await store.getUser(session.value.userSub);
 		if (!user) return c.json({ error: 'unknown_user' }, 401);
-		store.touchSession(session.value.id);
+		await store.touchSession(session.value.id);
 		writeSessionCookie(c, session.value.id, cookieSecure);
 		return c.json({
 			user: publicUser(user),
@@ -93,10 +93,11 @@ export function createApp(deps) {
 	});
 
 	app.get('/v1/sessions', async (c) => {
-		const session = requireSession(c, store);
+		const session = await requireSession(c, store);
 		if (session.ok === false) return session.res;
+		const sessions = await store.listSessions(session.value.userSub);
 		return c.json({
-			sessions: store.listSessions(session.value.userSub).map((s) => ({
+			sessions: sessions.map((s) => ({
 				id: s.id,
 				userAgent: s.userAgent,
 				createdAt: s.createdAt,
@@ -107,14 +108,14 @@ export function createApp(deps) {
 	});
 
 	app.delete('/v1/sessions/:id', async (c) => {
-		const session = requireSession(c, store);
+		const session = await requireSession(c, store);
 		if (session.ok === false) return session.res;
 		const id = c.req.param('id');
-		const target = store.getSession(id);
+		const target = await store.getSession(id);
 		if (!target || target.userSub !== session.value.userSub) {
 			return c.json({ error: 'not_found' }, 404);
 		}
-		store.deleteSession(id);
+		await store.deleteSession(id);
 		if (id === session.value.id) {
 			deleteCookie(c, COOKIE_NAME, cookieOpts(cookieSecure));
 		}
@@ -122,9 +123,9 @@ export function createApp(deps) {
 	});
 
 	app.get('/v1/wrap', async (c) => {
-		const session = requireSession(c, store);
+		const session = await requireSession(c, store);
 		if (session.ok === false) return session.res;
-		const user = store.getUser(session.value.userSub);
+		const user = await store.getUser(session.value.userSub);
 		if (!user) return c.json({ error: 'unknown_user' }, 401);
 		return c.json({
 			wrap: user.wrap,
@@ -136,11 +137,11 @@ export function createApp(deps) {
 	});
 
 	app.put('/v1/wrap', async (c) => {
-		const session = requireSession(c, store);
+		const session = await requireSession(c, store);
 		if (session.ok === false) return session.res;
 		const body = await c.req.json().catch(() => ({}));
 		try {
-			const user = store.putWrap(session.value.userSub, {
+			const user = await store.putWrap(session.value.userSub, {
 				wrap: body.wrap ?? null,
 				recoveryWrap: body.recoveryWrap,
 				wrapRev: Number(body.wrapRev ?? 0)
@@ -156,17 +157,17 @@ export function createApp(deps) {
 	});
 
 	app.get('/v1/sync', async (c) => {
-		const session = requireSession(c, store);
+		const session = await requireSession(c, store);
 		if (session.ok === false) return session.res;
-		return c.json({ entities: store.listEntities(session.value.userSub) });
+		return c.json({ entities: await store.listEntities(session.value.userSub) });
 	});
 
 	app.put('/v1/sync/:kind/:id', async (c) => {
-		const session = requireSession(c, store);
+		const session = await requireSession(c, store);
 		if (session.ok === false) return session.res;
 		const body = await c.req.json().catch(() => ({}));
 		try {
-			const row = store.putEntity(session.value.userSub, {
+			const row = await store.putEntity(session.value.userSub, {
 				id: c.req.param('id'),
 				kind: c.req.param('kind'),
 				rev: Number(body.rev ?? 0),
@@ -207,10 +208,10 @@ function writeSessionCookie(c, id, secure) {
 	setCookie(c, COOKIE_NAME, id, cookieOpts(secure));
 }
 
-function requireSession(c, store) {
+async function requireSession(c, store) {
 	const id = getCookie(c, COOKIE_NAME);
 	if (!id) return { ok: false, res: c.json({ error: 'unauthorized' }, 401) };
-	const session = store.getSession(id);
+	const session = await store.getSession(id);
 	if (!session || session.expiresAt < Date.now()) {
 		return { ok: false, res: c.json({ error: 'unauthorized' }, 401) };
 	}

@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "COOKIE_SECURE=0 AUTH_ALLOW_FAKE=1 node --watch src/index.js",
 		"start": "node src/index.js",
-		"check": "node --check src/index.js && node --check src/app.js && node --check src/memory-store.js",
+		"check": "node --check src/index.js && node --check src/app.js && node --check src/memory-store.js && node --check src/postgres-store.js && node --check src/store.js",
 		"test:unit": "vitest",
 		"test:unit:run": "vitest run"
 	},
@@ -15,6 +15,7 @@
 	},
 	"dependencies": {
 		"@hono/node-server": "^1.19.0",
-		"hono": "^4.9.0"
+		"hono": "^4.9.0",
+		"pg": "^8.23.0"
 	}
 }

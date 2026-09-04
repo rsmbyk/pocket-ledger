@@ -44,6 +44,9 @@ jobs:
         env:
           PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
           REGION: ${{ vars.GCP_REGION }}
+          WEB_ORIGIN: ${{ vars.WEB_ORIGIN }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          CLOUD_SQL_INSTANCE: ${{ vars.CLOUD_SQL_INSTANCE }}
         run: |
           gcloud config set project "$PROJECT_ID"
           REGION="${REGION:-asia-southeast2}"
@@ -52,8 +55,26 @@ jobs:
             --config cloudbuild.api.yaml \
             --substitutions=_IMAGE="$IMAGE" \
             --timeout=1200s
-          gcloud run deploy pocket-ledger-api \
-            --image "$IMAGE" \
-            --region "$REGION" \
-            --allow-unauthenticated \
+          WEB_ORIGIN="${WEB_ORIGIN:-https://pocket-ledger-web-w6fanfnuqa-et.a.run.app}"
+          DEPLOY_ARGS=(
+            --image "$IMAGE"
+            --region "$REGION"
+            --allow-unauthenticated
+            --min-instances=0
+            --max-instances=1
+            --cpu=1
+            --memory=256Mi
+            --cpu-throttling
+            --no-cpu-boost
             --quiet
+          )
+          ENV_VARS="WEB_ORIGIN=${WEB_ORIGIN}"
+          if [ -n "${GOOGLE_CLIENT_ID}" ]; then
+            ENV_VARS="${ENV_VARS},GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}"
+          fi
+          DEPLOY_ARGS+=(--update-env-vars "$ENV_VARS")
+          if [ -n "${CLOUD_SQL_INSTANCE}" ]; then
+            DEPLOY_ARGS+=(--add-cloudsql-instances="$CLOUD_SQL_INSTANCE")
+            DEPLOY_ARGS+=(--set-secrets=DATABASE_URL=database-url:latest)
+          fi
+          gcloud run deploy pocket-ledger-api "${DEPLOY_ARGS[@]}"

@@ -33,7 +33,7 @@ npm-workspaces monorepo (Node 22): `apps/web` (SvelteKit, `adapter-static`) + `a
 - Playwright Chromium is needed for more than E2E: the `apps/web` Vitest `client` project runs in **real Chromium** (`@vitest/browser-playwright`), so a missing browser breaks `npm run test:unit:run` too. Re-run `npx playwright install chromium` if you hit "browser not found". Unit run = web (`apps/web`) + api (`apps/api`).
 - Two run modes:
   - `npm run dev` (web only, port 5173) = signed-out, **local-only** PWA (Dexie/IndexedDB). No API, no Google sign-in — nothing to provision.
-  - Full stack (needed for sign-in + cloud sync) = web + `npm run dev:api`. The API uses an in-memory store (no Postgres / `DATABASE_URL` wired yet), so there is still nothing to provision or seed.
+  - Full stack (needed for sign-in + cloud sync) = web + `npm run dev:api`. The API uses an in-memory store unless `DATABASE_URL` is set (Spec 178 / Cloud SQL in production).
 - Full-stack local recipe (fake Google, no real OAuth). Use `127.0.0.1` everywhere so the API's CORS `WEB_ORIGIN` exactly matches the browser origin (do NOT mix `localhost` and `127.0.0.1`):
   - API: `WEB_ORIGIN=http://127.0.0.1:5173 PORT=8080 npm run dev:api` (the `dev:api` script already sets `COOKIE_SECURE=0 AUTH_ALLOW_FAKE=1`; API health at `/healthz`).
   - Web: run Vite **inside `apps/web`** to avoid nested-`npm -w` argument mangling: `cd apps/web && VITE_API_URL=http://127.0.0.1:8080 VITE_FAKE_GOOGLE=1 npx vite dev --host 127.0.0.1 --port 5173`.
