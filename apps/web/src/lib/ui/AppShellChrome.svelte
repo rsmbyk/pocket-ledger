@@ -48,6 +48,7 @@
 	import { derivePocketBalance } from '$lib/domain/pocket-balance';
 	import { formatMinor } from '$lib/domain/money';
 	import { isAppRoute, type AppRoute } from '$lib/shared/router';
+	import { profileInitials } from '$lib/application/google-profile';
 	import {
 		DEFAULT_ACTIVITY_FILTERS,
 		activityFiltersEqual,
@@ -110,6 +111,7 @@
 		}) => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
+		onChangeAccountPassphrase?: (oldPass: string, nextPass: string) => void | Promise<void>;
 		onLockSession: () => void;
 		onRefreshLedger: () => void | Promise<void>;
 		onCreatePocket: (input: CreatePocketInput) => void | Promise<void>;
@@ -118,6 +120,8 @@
 		onReorderPockets: (orderedNonMainIds: string[]) => void | Promise<void>;
 		cloudConfigured?: boolean;
 		userEmail?: string | null;
+		userDisplayName?: string;
+		userPictureUrl?: string;
 		sessions?: Array<{
 			id: string;
 			userAgent: string;
@@ -173,6 +177,7 @@
 		onResetLocalData,
 		onEnableLock,
 		onDisableLock,
+		onChangeAccountPassphrase,
 		onLockSession,
 		onRefreshLedger,
 		onCreatePocket,
@@ -181,6 +186,8 @@
 		onReorderPockets,
 		cloudConfigured = false,
 		userEmail = null,
+		userDisplayName = '',
+		userPictureUrl = '',
 		sessions = [],
 		idleMinutes = 30,
 		leaveTab = true,
@@ -561,10 +568,28 @@
 		<Sidebar.Footer class="p-2">
 			<button
 				type="button"
-				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex w-full items-center rounded-md px-2 py-2 text-left text-sm"
+				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm"
 				data-testid="sidebar-account"
 			>
-				<span class="truncate">{userEmail}</span>
+				<span
+					class="bg-muted flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-medium"
+					aria-hidden="true"
+				>
+					{#if userPictureUrl}
+						<img
+							src={userPictureUrl}
+							alt=""
+							class="size-full object-cover"
+							referrerpolicy="no-referrer"
+						/>
+					{:else}
+						{profileInitials(userDisplayName, userEmail)}
+					{/if}
+				</span>
+				<span class="min-w-0 flex-1">
+					<span class="block truncate font-medium">{userDisplayName || userEmail}</span>
+					<span class="text-muted-foreground block truncate text-xs">{userEmail}</span>
+				</span>
 			</button>
 		</Sidebar.Footer>
 	{/if}
@@ -1056,6 +1081,7 @@
 				{onResetLocalData}
 				{onEnableLock}
 				{onDisableLock}
+				{onChangeAccountPassphrase}
 				{onGoogleSignIn}
 				{onGoogleCredential}
 				{onDebugFakeSignUp}

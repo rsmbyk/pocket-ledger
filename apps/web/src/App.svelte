@@ -50,6 +50,7 @@
 	} from '$lib/domain/month-summary';
 	import { parseThemePreference, THEME_STORAGE_KEY, type ThemePreference } from '$lib/shared/theme';
 	import AccountPassphraseScreen from '$lib/ui/AccountPassphraseScreen.svelte';
+	import AccountRecoveryScreen from '$lib/ui/AccountRecoveryScreen.svelte';
 	import HexKitScreen from '$lib/ui/HexKitScreen.svelte';
 	import ScreensaverOverlay from '$lib/ui/ScreensaverOverlay.svelte';
 	import LocalConflictDialog from '$lib/ui/LocalConflictDialog.svelte';
@@ -69,6 +70,7 @@
 	import { localHasData } from '$lib/application/local-has-data';
 	import { generateRecoveryKit, type RecoveryKit } from '$lib/application/hex-kit';
 	import {
+		changeAccountPassphrase,
 		setAccountPassphrase,
 		unlockAccountWithHex,
 		unlockAccountWithPassphrase,
@@ -85,13 +87,20 @@
 	} from '$lib/data/db';
 	import { getSetting, setSetting } from '$lib/data/settings-repo';
 	import { loadLockout, saveLockout } from '$lib/application/device-lockout-repo';
-	import { isLockedOut, recordSuccess, recordWrongGuess } from '$lib/application/device-lockout';
+	import {
+		loadPendingPassphraseReset,
+		loadRecoveryOffered,
+		savePendingPassphraseReset,
+		saveRecoveryOffered
+	} from '$lib/application/account-recovery-flags';
+	import { displayNameFromIdentity } from '$lib/application/google-profile';
+	import { isLockedOut, recordSuccess, recordWrongGuess, emptyLockout } from '$lib/application/device-lockout';
 	import {
 		pullAndApply,
 		pushSealedEntity,
 		pushTransactionById
 	} from '$lib/application/sync-client';
-	import { clearDataKey } from '$lib/data/session-key';
+	import { clearDataKey, getDataKey } from '$lib/data/session-key';
 	import type { AuthMe } from '$lib/application/cloud-api';
 
 	let account = $state<Account | null>(null);
@@ -114,9 +123,15 @@
 	let themePreference = $state<ThemePreference>('system');
 	let signedIn = $state(false);
 	let userEmail = $state<string | null>(null);
+	let userDisplayName = $state('');
+	let userPictureUrl = $state('');
 	let cloudGoogleSub = $state<string | null>(null);
 	let accountOnboarding = $state<AuthMe['onboarding'] | null>(null);
 	let recoveryKit = $state<RecoveryKit | null>(null);
+	let recoveryOffered = $state(false);
+	let pendingPassphraseReset = $state(false);
+	let accountRecoveryOpen = $state(false);
+	let dekPresent = $state(false);
 	let screensaverOn = $state(false);
 	let idleMinutes = $state(30);
 	let leaveTab = $state(true);
@@ -156,9 +171,18 @@
 	}
 
 	async function bootstrap() {
-		const dekState = await ensureLocalDek();
-		lockEnabled = await isLockEnabled();
-		unlocked = dekState === 'unlocked';
+		recoveryOffered = await loadRecoveryOffered();
+		pendingPassphraseReset = await loadPendingPassphraseReset();
+		if (pendingPassphraseReset && !getDataKey()) {
+			lockEnabled = true;
+			unlocked = false;
+			dekPresent = false;
+		} else {
+			const dekState = await ensureLocalDek();
+			lockEnabled = await isLockEnabled();
+			unlocked = dekState === 'unlocked';
+			dekPresent = Boolean(getDataKey());
+		}
 		const idleStored = parseIdleSettings(
 			await getSetting(SETTINGS_IDLE_MINUTES),
 			await getSetting(SETTINGS_IDLE_LEAVE_TAB)
@@ -226,6 +250,7 @@
 			if (Date.now() - lastActivity >= idleMinutes * 60_000) {
 				lockSession();
 				unlocked = false;
+				dekPresent = false;
 				screensaverOn = true;
 			}
 		}, 1000);
@@ -233,6 +258,7 @@
 			if (document.visibilityState === 'hidden' && leaveTab && unlocked) {
 				lockSession();
 				unlocked = false;
+				dekPresent = false;
 				screensaverOn = true;
 			}
 		};
@@ -294,17 +320,28 @@
 			const next = recordWrongGuess(lockout, new Date());
 			await saveLockout(next);
 			lockoutUntil = next.lockedUntil;
+			if (signedIn && next.lockedUntil) {
+				await saveRecoveryOffered(true);
+				recoveryOffered = true;
+			}
 			throw new Error('Incorrect passphrase');
 		}
 		await saveLockout(recordSuccess(lockout, new Date()));
 		lockoutUntil = null;
+		if (signedIn) {
+			await saveRecoveryOffered(false);
+			recoveryOffered = false;
+		}
 		unlocked = true;
+		dekPresent = true;
 		if (account) await refreshLedger(account);
 	}
 
 	function applyMe(me: AuthMe) {
 		signedIn = true;
 		userEmail = me.user.email;
+		userDisplayName = displayNameFromIdentity(me.user.displayName, me.user.email);
+		userPictureUrl = me.user.pictureUrl ?? '';
 		cloudGoogleSub = me.user.googleSub;
 		accountOnboarding = me.onboarding;
 		if (me.onboarding === 'needs-kit' && !recoveryKit) {
@@ -413,11 +450,38 @@
 	/>
 {:else if lockEnabled && !unlocked && !signedIn}
 	<UnlockScreen variant="device" lockedUntil={lockoutUntil} {onUnlock} />
+{:else if signedIn && (accountRecoveryOpen || (pendingPassphraseReset && !dekPresent))}
+	<AccountRecoveryScreen
+		onRecover={async (hex) => {
+			const ok = await unlockAccountWithHex(hex);
+			if (!ok) throw new Error('Recovery kit did not match');
+			await savePendingPassphraseReset(true);
+			pendingPassphraseReset = true;
+			accountRecoveryOpen = false;
+			dekPresent = true;
+			accountOnboarding = 'needs-passphrase';
+		}}
+	/>
 {:else if signedIn && accountOnboarding === 'needs-passphrase'}
 	<AccountPassphraseScreen
 		onSubmit={async (passphrase) => {
 			await setAccountPassphrase(passphrase);
 			lockEnabled = true;
+			await savePendingPassphraseReset(false);
+			await saveRecoveryOffered(false);
+			await saveLockout(emptyLockout(new Date()));
+			lockoutUntil = null;
+			pendingPassphraseReset = false;
+			recoveryOffered = false;
+			const me = await fetchMe();
+			if (!me) throw new Error('Not signed in');
+			applyMe(me);
+			if (me.onboarding === 'complete') {
+				unlocked = true;
+				await bootstrap();
+				if (account) await refreshLedger(account);
+				return;
+			}
 			recoveryKit = generateRecoveryKit();
 			accountOnboarding = 'needs-kit';
 		}}
@@ -436,14 +500,10 @@
 {:else if signedIn && accountOnboarding === 'complete' && !unlocked}
 	<UnlockScreen
 		variant="account"
-		allowHex
+		lockedUntil={lockoutUntil}
+		showRecovery={recoveryOffered}
 		{onUnlock}
-		onUnlockHex={async (hex) => {
-			const ok = await unlockAccountWithHex(hex);
-			if (!ok) throw new Error('Recovery kit did not match');
-			accountOnboarding = 'needs-passphrase';
-			unlocked = true;
-		}}
+		onOpenRecovery={() => (accountRecoveryOpen = true)}
 	/>
 {:else if lockEnabled && !unlocked}
 	<UnlockScreen variant="device" lockedUntil={lockoutUntil} {onUnlock} />
@@ -480,9 +540,13 @@
 			await disableLock(passphrase);
 			lockEnabled = false;
 		}}
+		onChangeAccountPassphrase={async (oldPass, nextPass) => {
+			await changeAccountPassphrase(oldPass, nextPass);
+		}}
 		onLockSession={() => {
 			lockSession();
 			unlocked = false;
+			dekPresent = false;
 		}}
 		onCreatePocket={async (input: CreatePocketInput) => {
 			await createPocket(input);
@@ -511,6 +575,8 @@
 		}}
 		cloudConfigured={cloudConfigured()}
 		{userEmail}
+		{userDisplayName}
+		{userPictureUrl}
 		{sessions}
 		{idleMinutes}
 		{leaveTab}

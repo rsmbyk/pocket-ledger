@@ -1,11 +1,4 @@
 export const TX_CREATE_DRAFT_KEY = 'pocket-ledger-draft-tx-create';
-export const POCKET_CREATE_DRAFT_KEY = 'pocket-ledger-draft-pocket-create';
-export const CATEGORY_CREATE_DRAFT_KEYS = {
-	income: 'pocket-ledger-draft-category-create-income',
-	expense: 'pocket-ledger-draft-category-create-expense'
-} as const;
-
-export type CategoryCreateKind = keyof typeof CATEGORY_CREATE_DRAFT_KEYS;
 
 export type TxCreateDraft = {
 	mode: 'normal' | 'transfer';
@@ -24,26 +17,10 @@ export type TxCreateDraft = {
 	transferOccurredOn: string;
 };
 
-export type PocketCreateDraft = {
-	name: string;
-	notes: string;
-	openingEnabled: boolean;
-	openingRaw: string;
-	openingAsOf: string;
-};
-
-export type CategoryCreateDraft = {
-	name: string;
-};
-
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 function asString(value: unknown, fallback = ''): string {
 	return typeof value === 'string' ? value : fallback;
-}
-
-function asBool(value: unknown): boolean {
-	return value === true;
 }
 
 function defaultSessionStorage(): StorageLike | null | undefined {
@@ -138,73 +115,4 @@ export function clearTxCreateDraft(
 	storage: Pick<Storage, 'removeItem'> | null | undefined = defaultSessionStorage()
 ): void {
 	clearRaw(TX_CREATE_DRAFT_KEY, storage);
-}
-
-/** Parse pocket create draft; requires at least a string name field present in object shape. */
-export function parsePocketCreateDraft(value: string | null | undefined): PocketCreateDraft | null {
-	const obj = parseObject(value);
-	if (!obj) return null;
-	if (!('name' in obj) || typeof obj.name !== 'string') return null;
-	return {
-		name: asString(obj.name),
-		notes: asString(obj.notes),
-		openingEnabled: asBool(obj.openingEnabled),
-		openingRaw: asString(obj.openingRaw, '0'),
-		openingAsOf: asString(obj.openingAsOf)
-	};
-}
-
-export function readPocketCreateDraft(
-	storage: Pick<Storage, 'getItem'> | null | undefined = defaultSessionStorage()
-): PocketCreateDraft | null {
-	return parsePocketCreateDraft(readRaw(POCKET_CREATE_DRAFT_KEY, storage));
-}
-
-export function writePocketCreateDraft(
-	draft: PocketCreateDraft,
-	storage: Pick<Storage, 'setItem'> | null | undefined = defaultSessionStorage()
-): void {
-	const normalized = parsePocketCreateDraft(JSON.stringify(draft));
-	if (!normalized) return;
-	writeRaw(POCKET_CREATE_DRAFT_KEY, JSON.stringify(normalized), storage);
-}
-
-export function clearPocketCreateDraft(
-	storage: Pick<Storage, 'removeItem'> | null | undefined = defaultSessionStorage()
-): void {
-	clearRaw(POCKET_CREATE_DRAFT_KEY, storage);
-}
-
-export function parseCategoryCreateDraft(
-	value: string | null | undefined
-): CategoryCreateDraft | null {
-	const obj = parseObject(value);
-	if (!obj) return null;
-	const name = asString(obj.name).trim();
-	if (!name) return null;
-	return { name: asString(obj.name) };
-}
-
-export function readCategoryCreateDraft(
-	kind: CategoryCreateKind,
-	storage: Pick<Storage, 'getItem'> | null | undefined = defaultSessionStorage()
-): CategoryCreateDraft | null {
-	return parseCategoryCreateDraft(readRaw(CATEGORY_CREATE_DRAFT_KEYS[kind], storage));
-}
-
-export function writeCategoryCreateDraft(
-	kind: CategoryCreateKind,
-	draft: CategoryCreateDraft,
-	storage: Pick<Storage, 'setItem'> | null | undefined = defaultSessionStorage()
-): void {
-	const normalized = parseCategoryCreateDraft(JSON.stringify(draft));
-	if (!normalized) return;
-	writeRaw(CATEGORY_CREATE_DRAFT_KEYS[kind], JSON.stringify(normalized), storage);
-}
-
-export function clearCategoryCreateDraft(
-	kind: CategoryCreateKind,
-	storage: Pick<Storage, 'removeItem'> | null | undefined = defaultSessionStorage()
-): void {
-	clearRaw(CATEGORY_CREATE_DRAFT_KEYS[kind], storage);
 }

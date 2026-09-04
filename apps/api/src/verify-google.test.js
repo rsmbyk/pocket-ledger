@@ -8,7 +8,12 @@ describe('verifyGoogleToken fake tokens', () => {
 			allowedSub: '',
 			googleClientId: ''
 		});
-		expect(identity).toEqual({ sub: 'sub1', email: 'a@b.com' });
+		expect(identity).toEqual({
+			sub: 'sub1',
+			email: 'a@b.com',
+			name: 'a',
+			picture: ''
+		});
 	});
 
 	it('rejects fake tokens when AUTH_ALLOW_FAKE is off', async () => {
@@ -40,7 +45,9 @@ describe('verifyGoogleToken fake tokens', () => {
 		);
 		expect(identity).toEqual({
 			sub: 'pl-debug-cursor',
-			email: 'cursor-debug@pocket-ledger.test'
+			email: 'cursor-debug@pocket-ledger.test',
+			name: 'cursor-debug',
+			picture: ''
 		});
 	});
 
@@ -50,6 +57,11 @@ describe('verifyGoogleToken fake tokens', () => {
 			allowedSub: '',
 			googleClientId: ''
 		});
-		expect(identity).toEqual({ sub: 'sub1', email: 'e2e@example.com' });
+		expect(identity).toEqual({
+			sub: 'sub1',
+			email: 'e2e@example.com',
+			name: 'e2e',
+			picture: ''
+		});
 	});
 });

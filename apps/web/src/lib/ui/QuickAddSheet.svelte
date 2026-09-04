@@ -647,6 +647,20 @@
 	{@const selected = accounts.find((a) => a.id === selectedId)}
 	<div class="space-y-2">
 		<Label>{labelText}</Label>
+		{#if options.length < 2}
+			<div
+				class="border-input bg-background flex h-11 w-full items-center rounded-md border px-3 text-sm md:h-9"
+				data-testid={testid}
+				aria-label={labelText}
+				aria-readonly="true"
+			>
+				{#if selected}
+					<PocketLabel name={selected.name} isMain={selected.isMain} optical />
+				{:else}
+					<span class="text-muted-foreground">Choose a pocket</span>
+				{/if}
+			</div>
+		{:else}
 		<DropdownMenu.Root>
 			<DropdownMenu.Trigger
 				class="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-11 w-full items-center justify-between rounded-md border px-3 text-sm focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:h-9"
@@ -676,6 +690,7 @@
 				{/each}
 			</DropdownMenu.Content>
 		</DropdownMenu.Root>
+		{/if}
 		{#if errorKey}
 			{@render fieldErrorAlert(errorKey, `tx-field-error-${errorKey}`)}
 		{/if}

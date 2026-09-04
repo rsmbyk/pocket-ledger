@@ -7,6 +7,8 @@ function toUserRow(u) {
 	return {
 		google_sub: u.googleSub,
 		email: u.email,
+		display_name: u.displayName ?? '',
+		picture_url: u.pictureUrl ?? '',
 		wrap: u.wrap,
 		recovery_wrap: u.recoveryWrap,
 		wrap_rev: u.wrapRev,
@@ -58,7 +60,7 @@ function createFakePool() {
 		if (trimmed === 'BEGIN' || trimmed === 'COMMIT' || trimmed === 'ROLLBACK') {
 			return { rows: [] };
 		}
-		if (/CREATE TABLE/i.test(text)) {
+		if (/CREATE TABLE/i.test(text) || /ALTER TABLE/i.test(text)) {
 			return { rows: [] };
 		}
 		const tag = tagOf(text);
@@ -68,16 +70,19 @@ function createFakePool() {
 				return { rows: u ? [toUserRow(u)] : [] };
 			}
 			case 'ensure-user': {
-				if (users.has(params[0])) return { rows: [] };
-				users.set(params[0], {
+				const existing = users.get(params[0]);
+				const next = {
 					googleSub: params[0],
 					email: params[1],
-					wrap: null,
-					recoveryWrap: null,
-					wrapRev: 0,
-					createdAt: new Date().toISOString()
-				});
-				return { rows: [toUserRow(users.get(params[0]))] };
+					displayName: params[2] ?? existing?.displayName ?? '',
+					pictureUrl: params[3] ?? existing?.pictureUrl ?? '',
+					wrap: params.length >= 5 ? params[4] : (existing?.wrap ?? null),
+					recoveryWrap: params.length >= 6 ? params[5] : (existing?.recoveryWrap ?? null),
+					wrapRev: params.length >= 7 ? params[6] : (existing?.wrapRev ?? 0),
+					createdAt: existing?.createdAt ?? new Date().toISOString()
+				};
+				users.set(params[0], next);
+				return { rows: [toUserRow(next)] };
 			}
 			case 'cloud-has-data': {
 				let hasEntities = false;
@@ -154,9 +159,9 @@ function createFakePool() {
 			case 'put-wrap': {
 				const user = users.get(params[0]);
 				if (!user) return { rows: [] };
-				if (user.wrapRev !== params[4]) return { rows: [] };
-				if (params[1] != null) user.wrap = params[1];
-				if (params[2] === 1) user.recoveryWrap = params[3];
+				if (user.wrapRev !== params[5]) return { rows: [] };
+				if (params[1] === 1) user.wrap = params[2];
+				if (params[3] === 1) user.recoveryWrap = params[4];
 				user.wrapRev += 1;
 				return { rows: [toUserRow(user)] };
 			}
@@ -257,6 +262,20 @@ describe('postgres store', () => {
 		await expect(
 			store.putWrap(user.googleSub, { wrap: { kdf: 'other' }, wrapRev: 1 })
 		).rejects.toMatchObject({ code: 'conflict' });
+	});
+
+	it('clears wrap to null while keeping recovery wrap (185)', async () => {
+		const store = await createPostgresStore(createFakePool());
+		const user = await store.ensureUser({ googleSub: 'sub1', email: 'a@b.com' });
+		await store.putWrap(user.googleSub, {
+			wrap: { kdf: 'x' },
+			recoveryWrap: { kdf: 'kit' },
+			wrapRev: 0
+		});
+		const next = await store.putWrap(user.googleSub, { wrap: null, wrapRev: 1 });
+		expect(next.wrap).toBeNull();
+		expect(next.recoveryWrap).toEqual({ kdf: 'kit' });
+		expect(next.wrapRev).toBe(2);
 	});
 
 	it('cloudHasData is true once a wrap exists', async () => {

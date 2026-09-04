@@ -65,7 +65,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export type AuthMe = {
-	user: { googleSub: string; email: string };
+	user: {
+		googleSub: string;
+		email: string;
+		displayName?: string;
+		pictureUrl?: string;
+	};
 	onboarding: 'needs-passphrase' | 'needs-kit' | 'complete';
 	sessionId?: string;
 	cloudHasData?: boolean;

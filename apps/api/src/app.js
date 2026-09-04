@@ -14,7 +14,7 @@ export function onboardingState(user) {
 /**
  * @param {{
  *   store: ReturnType<typeof import('./memory-store.js').createMemoryStore>;
- *   verifyGoogle: (idToken: string) => Promise<{ sub: string; email: string } | null>;
+ *   verifyGoogle: (idToken: string) => Promise<{ sub: string; email: string; name?: string; picture?: string } | null>;
  *   webOrigin: string;
  *   cookieSecure?: boolean;
  * }} deps
@@ -40,7 +40,12 @@ export function createApp(deps) {
 		const body = await c.req.json().catch(() => ({}));
 		const identity = await verifyGoogle(String(body.idToken ?? ''));
 		if (!identity) return c.json({ error: 'invalid_token' }, 401);
-		const user = await store.ensureUser({ googleSub: identity.sub, email: identity.email });
+		const user = await store.ensureUser({
+			googleSub: identity.sub,
+			email: identity.email,
+			displayName: identity.name ?? '',
+			pictureUrl: identity.picture ?? ''
+		});
 		const cloudHasData = await store.cloudHasData(user.googleSub);
 		const localHasData = body.localHasData === true;
 		if (cloudHasData && localHasData && body.discardLocal !== true) {
@@ -142,7 +147,7 @@ export function createApp(deps) {
 		const body = await c.req.json().catch(() => ({}));
 		try {
 			const user = await store.putWrap(session.value.userSub, {
-				wrap: body.wrap ?? null,
+				wrap: Object.prototype.hasOwnProperty.call(body, 'wrap') ? body.wrap : undefined,
 				recoveryWrap: body.recoveryWrap,
 				wrapRev: Number(body.wrapRev ?? 0)
 			});
@@ -209,6 +214,8 @@ function publicUser(user) {
 	return {
 		googleSub: user.googleSub,
 		email: user.email,
+		displayName: user.displayName ?? '',
+		pictureUrl: user.pictureUrl ?? '',
 		onboarding: onboardingState(user)
 	};
 }

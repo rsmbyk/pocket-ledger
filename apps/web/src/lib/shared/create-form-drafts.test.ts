@@ -1,22 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-	CATEGORY_CREATE_DRAFT_KEYS,
-	POCKET_CREATE_DRAFT_KEY,
 	TX_CREATE_DRAFT_KEY,
-	clearCategoryCreateDraft,
-	clearPocketCreateDraft,
 	clearTxCreateDraft,
-	parseCategoryCreateDraft,
-	parsePocketCreateDraft,
 	parseTxCreateDraft,
-	readCategoryCreateDraft,
-	readPocketCreateDraft,
 	readTxCreateDraft,
-	writeCategoryCreateDraft,
-	writePocketCreateDraft,
 	writeTxCreateDraft,
-	type CategoryCreateDraft,
-	type PocketCreateDraft,
 	type TxCreateDraft
 } from './create-form-drafts';
 
@@ -49,18 +37,6 @@ const sampleTx: TxCreateDraft = {
 	expenseFeeDigits: '',
 	transferNote: '',
 	transferOccurredOn: '2026-07-20'
-};
-
-const samplePocket: PocketCreateDraft = {
-	name: 'Vacation',
-	notes: 'trip',
-	openingEnabled: true,
-	openingRaw: '100',
-	openingAsOf: '2026-01-01'
-};
-
-const sampleCategory: CategoryCreateDraft = {
-	name: 'Groceries'
 };
 
 describe('create-form-drafts', () => {
@@ -110,34 +86,5 @@ describe('create-form-drafts', () => {
 		expect(readTxCreateDraft(storage)?.expenseFeeDigits).toBe('250');
 		const { expenseFeeDigits: _omit, ...legacy } = sampleTx;
 		expect(parseTxCreateDraft(JSON.stringify(legacy))?.expenseFeeDigits).toBe('');
-	});
-
-	it('round-trips pocket create draft and clears', () => {
-		const storage = memoryStorage();
-		expect(parsePocketCreateDraft(null)).toBeNull();
-		expect(parsePocketCreateDraft('{}')).toBeNull();
-		writePocketCreateDraft(samplePocket, storage);
-		expect(storage.map.has(POCKET_CREATE_DRAFT_KEY)).toBe(true);
-		expect(readPocketCreateDraft(storage)).toEqual(samplePocket);
-		clearPocketCreateDraft(storage);
-		expect(readPocketCreateDraft(storage)).toBeNull();
-	});
-
-	it('isolates category drafts per kind', () => {
-		const storage = memoryStorage();
-		writeCategoryCreateDraft('expense', sampleCategory, storage);
-		writeCategoryCreateDraft('income', { name: 'Salary' }, storage);
-		expect(readCategoryCreateDraft('expense', storage)).toEqual(sampleCategory);
-		expect(readCategoryCreateDraft('income', storage)).toEqual({ name: 'Salary' });
-		expect(storage.map.has(CATEGORY_CREATE_DRAFT_KEYS.expense)).toBe(true);
-		expect(storage.map.has(CATEGORY_CREATE_DRAFT_KEYS.income)).toBe(true);
-		clearCategoryCreateDraft('expense', storage);
-		expect(readCategoryCreateDraft('expense', storage)).toBeNull();
-		expect(readCategoryCreateDraft('income', storage)).toEqual({ name: 'Salary' });
-	});
-
-	it('rejects empty category names as no draft', () => {
-		expect(parseCategoryCreateDraft(JSON.stringify({ name: '  ' }))).toBeNull();
-		expect(parseCategoryCreateDraft(JSON.stringify({ name: 12 }))).toBeNull();
 	});
 });

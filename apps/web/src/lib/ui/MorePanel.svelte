@@ -5,8 +5,6 @@
 	import BanknoteIcon from '@lucide/svelte/icons/banknote';
 	import MoonIcon from '@lucide/svelte/icons/moon';
 	import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert';
-	import CheckIcon from '@lucide/svelte/icons/check';
-	import XIcon from '@lucide/svelte/icons/x';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import { Popover } from 'bits-ui';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -15,6 +13,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
+	import NewPassphraseFields from '$lib/ui/NewPassphraseFields.svelte';
 	import { IDLE_MINUTES, DEFAULT_IDLE_MINUTES, DEFAULT_LEAVE_TAB } from '$lib/application/idle';
 	import {
 		DEFAULT_DISPLAY_CURRENCY,
@@ -24,6 +23,7 @@
 	} from '$lib/domain/display-currency';
 	import { inspectEncryptedBackup, type BackupInspectSummary } from '$lib/application/backup';
 	import { verifyPassphrase } from '$lib/application/lock';
+	import { newPassphraseLiveState } from '$lib/application/new-passphrase-fields';
 	import { fakeGoogleEnabled, googleClientId } from '$lib/application/cloud-api';
 	import { mountGoogleSignInButton } from '$lib/application/google-signin';
 	import { untrack } from 'svelte';
@@ -51,6 +51,7 @@
 		}) => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
+		onChangeAccountPassphrase?: (oldPass: string, nextPass: string) => void | Promise<void>;
 		onGoogleSignIn?: () => void | Promise<void>;
 		onGoogleCredential?: (idToken: string) => void | Promise<void>;
 		onDebugFakeSignUp?: () => void | Promise<void>;
@@ -79,6 +80,7 @@
 		onResetLocalData,
 		onEnableLock,
 		onDisableLock,
+		onChangeAccountPassphrase,
 		onGoogleSignIn,
 		onGoogleCredential,
 		onDebugFakeSignUp,
@@ -98,6 +100,11 @@
 	let lockPass = $state('');
 	let lockPassConfirm = $state('');
 	let lockPassError = $state<string | null>(null);
+	let accountCurrentPass = $state('');
+	let accountNewPass = $state('');
+	let accountNewConfirm = $state('');
+	let accountPassError = $state<string | null>(null);
+	let accountPassBusy = $state(false);
 	let resetOpen = $state(false);
 	let preserveSettings = $state(false);
 	let preservePassphrase = $state(false);
@@ -159,9 +166,11 @@
 		currencies.find((c) => c.code === currencyDraft) ?? currencies[0]!
 	);
 
-	const passLongEnough = $derived(lockPass.length >= 8);
-	const passMatch = $derived(lockPass.length > 0 && lockPass === lockPassConfirm);
-	const canEnableLock = $derived(passLongEnough && passMatch);
+	const canEnableLock = $derived(newPassphraseLiveState(lockPass, lockPassConfirm).canSubmit);
+	const canChangeAccount = $derived(
+		Boolean(accountCurrentPass.trim()) &&
+			newPassphraseLiveState(accountNewPass, accountNewConfirm).canSubmit
+	);
 
 	async function wrap(action: () => void | Promise<void>) {
 		try {
@@ -569,49 +578,15 @@
 							})();
 						}}
 					>
-						<div class="relative">
-							<Input
-								type="password"
-								placeholder="New passphrase (min 8)"
-								bind:value={lockPass}
-								autocomplete="new-password"
-								class="pr-10"
-								data-testid="enable-lock-pass"
-								oninput={() => (lockPassError = null)}
-							/>
-							{#if lockPass.length > 0}
-								{#if passLongEnough}
-									<CheckIcon class="text-income pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
-								{:else}
-									<XIcon class="text-destructive pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
-								{/if}
-							{/if}
-						</div>
-						{#if lockPass.length > 0}
-							<ul class="space-y-1 text-sm" data-testid="enable-lock-requirements">
-								<li class={passLongEnough ? 'text-income' : 'text-destructive'}>
-									At least 8 characters
-								</li>
-							</ul>
-						{/if}
-						<div class="relative">
-							<Input
-								type="password"
-								placeholder="Confirm passphrase"
-								bind:value={lockPassConfirm}
-								autocomplete="new-password"
-								class="pr-10"
-								data-testid="enable-lock-pass-confirm"
-								oninput={() => (lockPassError = null)}
-							/>
-							{#if lockPassConfirm.length > 0}
-								{#if passMatch}
-									<CheckIcon class="text-income pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
-								{:else}
-									<XIcon class="text-destructive pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2" />
-								{/if}
-							{/if}
-						</div>
+						<NewPassphraseFields
+							bind:passphrase={lockPass}
+							bind:confirm={lockPassConfirm}
+							passphrasePlaceholder="New passphrase (min 8)"
+							passphraseTestId="enable-lock-pass"
+							confirmTestId="enable-lock-pass-confirm"
+							requirementsTestId="enable-lock-requirements"
+							onInput={() => (lockPassError = null)}
+						/>
 						{#if lockPassError}
 							<p class="text-destructive text-sm" role="alert">{lockPassError}</p>
 						{/if}
@@ -644,10 +619,61 @@
 						>
 					</form>
 				{:else}
-					<p class="text-muted-foreground text-sm">
-						While signed in, the account passphrase stays on. You can change it from unlock after a
-						reload, not remove it.
-					</p>
+					<form
+						class="flex flex-col gap-2"
+						onsubmit={(e) => {
+							e.preventDefault();
+							if (!canChangeAccount || !onChangeAccountPassphrase || accountPassBusy) return;
+							accountPassError = null;
+							accountPassBusy = true;
+							void (async () => {
+								try {
+									await onChangeAccountPassphrase(accountCurrentPass, accountNewPass);
+									accountCurrentPass = '';
+									accountNewPass = '';
+									accountNewConfirm = '';
+								} catch (err) {
+									accountPassError =
+										err instanceof Error ? err.message : 'Could not change passphrase';
+								} finally {
+									accountPassBusy = false;
+								}
+							})();
+						}}
+					>
+						<p class="text-muted-foreground text-sm">
+							While signed in, the account passphrase stays on. You can change it here, not remove
+							it.
+						</p>
+						<Input
+							type="password"
+							placeholder="Current passphrase"
+							bind:value={accountCurrentPass}
+							autocomplete="current-password"
+							data-testid="change-account-current"
+							oninput={() => (accountPassError = null)}
+						/>
+						<NewPassphraseFields
+							bind:passphrase={accountNewPass}
+							bind:confirm={accountNewConfirm}
+							passphrasePlaceholder="New passphrase (min 8)"
+							passphraseTestId="change-account-pass"
+							confirmTestId="change-account-pass-confirm"
+							requirementsTestId="change-account-requirements"
+							onInput={() => (accountPassError = null)}
+						/>
+						{#if accountPassError}
+							<p class="text-destructive text-sm" role="alert" data-testid="change-account-error">
+								{accountPassError}
+							</p>
+						{/if}
+						<Button
+							type="submit"
+							class="w-full"
+							disabled={!canChangeAccount || accountPassBusy}
+							data-testid="change-account-submit">Change passphrase</Button
+						>
+					</form>
 				{/if}
 			</Card.Content>
 		</Card.Root>

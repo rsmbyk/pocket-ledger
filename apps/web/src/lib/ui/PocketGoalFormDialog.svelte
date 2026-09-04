@@ -17,8 +17,12 @@
 		todayOccurredOn
 	} from '$lib/domain/transaction-rules';
 	import { applyGroupedAmountInput } from '$lib/ui/amount-field-caret';
-	import { cn } from '$lib/utils.js';
 	import { shouldIgnoreDismissForNativePicker } from '$lib/ui/native-picker-dismiss';
+	import {
+		GOAL_CREATE_BASELINE,
+		isGoalFormDirty,
+		type GoalFormBaseline
+	} from '$lib/application/goal-form-dirty';
 
 	export type GoalFormSnapshot = {
 		description: string;
@@ -49,7 +53,8 @@
 	let error = $state<{ key: FormFieldKey; message: string } | null>(null);
 	let busy = $state(false);
 	let dropConfirmOpen = $state(false);
-	let baseline = $state<GoalFormSnapshot | null>(null);
+	let discardConfirmOpen = $state(false);
+	let baseline = $state<GoalFormBaseline>(GOAL_CREATE_BASELINE);
 
 	const today = $derived(todayOccurredOn());
 	const targetDisplay = $derived(formatAmountDigitsDisplay(targetRaw));
@@ -64,15 +69,12 @@
 		}
 	});
 
-	const dirty = $derived.by(() => {
-		if (mode === 'create' || !baseline) return validTarget;
-		const nextOn = dateEnabled && targetOn.trim() ? targetOn.trim() : null;
-		return (
-			description.trim() !== baseline.description ||
-			targetRaw !== amountDigitsOnly(String(baseline.targetMinor)) ||
-			nextOn !== baseline.targetOn
-		);
-	});
+	const dirty = $derived(
+		isGoalFormDirty(
+			{ description, targetRaw, dateEnabled, targetOn },
+			baseline
+		)
+	);
 
 	const canSave = $derived(!busy && validTarget && dirty);
 
@@ -83,13 +85,14 @@
 		dateEnabled = Boolean(initial?.targetOn);
 		targetOn = initial?.targetOn ?? '';
 		error = null;
+		discardConfirmOpen = false;
 		baseline = initial
 			? {
 					description: initial.description,
-					targetMinor: initial.targetMinor,
+					targetRaw: amountDigitsOnly(String(initial.targetMinor)),
 					targetOn: initial.targetOn
 				}
-			: null;
+			: GOAL_CREATE_BASELINE;
 	});
 
 	function onTargetInput(el: HTMLInputElement) {
@@ -109,13 +112,43 @@
 		if (error?.key === 'goalTarget' || error?.key === 'amount') error = null;
 	}
 
+	function requestDiscard() {
+		if (dropConfirmOpen) return;
+		if (!dirty) {
+			onOpenChange(false);
+			return;
+		}
+		discardConfirmOpen = true;
+	}
+
 	function handleOpenChange(next: boolean) {
-		if (!next && dropConfirmOpen) return;
-		onOpenChange(next);
+		if (next) {
+			onOpenChange(true);
+			return;
+		}
+		if (dropConfirmOpen) return;
+		requestDiscard();
 	}
 
 	function onInteractOutside(e: PointerEvent) {
-		if (shouldIgnoreDismissForNativePicker(e)) e.preventDefault();
+		if (shouldIgnoreDismissForNativePicker(e)) {
+			e.preventDefault();
+			return;
+		}
+		if ((!dirty && !discardConfirmOpen) || dropConfirmOpen) return;
+		e.preventDefault();
+		if (dirty) discardConfirmOpen = true;
+	}
+
+	function onEscapeKeydown(e: KeyboardEvent) {
+		if ((!dirty && !discardConfirmOpen) || dropConfirmOpen) return;
+		e.preventDefault();
+		if (dirty) discardConfirmOpen = true;
+	}
+
+	function confirmDiscard() {
+		discardConfirmOpen = false;
+		onOpenChange(false);
 	}
 
 	async function submit() {
@@ -150,6 +183,7 @@
 		interactOutsideBehavior="close"
 		escapeKeydownBehavior="close"
 		onInteractOutside={onInteractOutside}
+		onEscapeKeydown={onEscapeKeydown}
 	>
 		<Dialog.Header>
 			<Dialog.Title>{mode === 'create' ? 'Add goal' : 'Edit goal'}</Dialog.Title>
@@ -244,7 +278,7 @@
 				</div>
 			{/if}
 			<div class="flex justify-end gap-2">
-				<Button type="button" variant="outline" disabled={busy} onclick={() => onOpenChange(false)}>
+				<Button type="button" variant="outline" disabled={busy} onclick={() => requestDiscard()}>
 					Cancel
 				</Button>
 				<Button type="submit" disabled={!canSave} data-testid="pocket-goal-save">Save</Button>
@@ -266,4 +300,15 @@
 		await onDrop?.();
 		onOpenChange(false);
 	}}
+/>
+
+<ConfirmDialog
+	open={discardConfirmOpen}
+	title="Discard unsaved changes?"
+	description="Your edits will be lost if you leave without saving."
+	confirmLabel="Discard"
+	destructive
+	confirmTestId="pocket-goal-discard-confirm"
+	onOpenChange={(next) => (discardConfirmOpen = next)}
+	onConfirm={confirmDiscard}
 />
