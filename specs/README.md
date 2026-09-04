@@ -195,3 +195,4 @@ Living behavior contracts for Pocket Ledger.
 | [176](176-form-submit-save/spec.md)                      | Form submit is Save                                          | Accepted                                                                        |
 | [177](177-tx-footer-row/spec.md)                         | Tx Save and Close on one row                                 | Accepted                                                                        |
 | [178](178-production-cloud-sql-google/spec.md)           | Production Cloud SQL + Google Sign-In                        | Accepted                                                                        |
+| [179](179-gis-popup-sign-in/spec.md)                     | GIS popup sign-in (not One Tap)                              | Accepted                                                                        |

@@ -55,9 +55,7 @@
 	import LocalConflictDialog from '$lib/ui/LocalConflictDialog.svelte';
 	import {
 		cloudConfigured,
-		fakeGoogleEnabled,
 		fetchMe,
-		googleClientId,
 		listCloudSessions,
 		LocalConflictError,
 		logoutCloud,
@@ -90,7 +88,6 @@
 		pushSealedEntity,
 		pushTransactionById
 	} from '$lib/application/sync-client';
-	import { promptGoogleIdToken } from '$lib/application/google-signin';
 	import { clearDataKey } from '$lib/data/session-key';
 	import type { AuthMe } from '$lib/application/cloud-api';
 
@@ -360,23 +357,21 @@
 		}
 	}
 
-	async function onGoogleSignIn() {
-		const token = fakeGoogleEnabled()
-			? `fake.${crypto.randomUUID()}.e2e@example.com`
-			: googleClientId()
-				? await promptGoogleIdToken(googleClientId())
-				: null;
-		if (!token) throw new Error('Google Sign-In is not configured on this build');
+	async function onGoogleCredential(idToken: string) {
 		try {
-			await finishGoogle(token);
+			await finishGoogle(idToken);
 		} catch (err) {
 			if (err instanceof LocalConflictError) {
-				pendingGoogleToken = token;
+				pendingGoogleToken = idToken;
 				conflictOpen = true;
 				return;
 			}
 			throw err;
 		}
+	}
+
+	async function onGoogleSignIn() {
+		await onGoogleCredential(`fake.${crypto.randomUUID()}.e2e@example.com`);
 	}
 </script>
 
@@ -508,6 +503,7 @@
 		{leaveTab}
 		{displayCurrency}
 		{onGoogleSignIn}
+		{onGoogleCredential}
 		onSignOut={async () => {
 			await logoutCloud();
 			clearDataKey();

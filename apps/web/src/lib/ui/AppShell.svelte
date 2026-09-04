@@ -64,6 +64,7 @@
 		leaveTab?: boolean;
 		displayCurrency?: string;
 		onGoogleSignIn?: () => void | Promise<void>;
+		onGoogleCredential?: (idToken: string) => void | Promise<void>;
 		onSignOut?: () => void | Promise<void>;
 		onRevokeSession?: (id: string) => void | Promise<void>;
 		onSaveIdle?: (minutes: number, leaveTab: boolean) => void | Promise<void>;
@@ -114,6 +115,7 @@
 		leaveTab = true,
 		displayCurrency = 'IDR',
 		onGoogleSignIn,
+		onGoogleCredential,
 		onSignOut,
 		onRevokeSession,
 		onSaveIdle,
@@ -276,6 +278,7 @@
 				{leaveTab}
 				{displayCurrency}
 				{onGoogleSignIn}
+				{onGoogleCredential}
 				{onSignOut}
 				{onRevokeSession}
 				{onSaveIdle}

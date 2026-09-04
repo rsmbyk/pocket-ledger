@@ -24,6 +24,9 @@
 	} from '$lib/domain/display-currency';
 	import { inspectEncryptedBackup, type BackupInspectSummary } from '$lib/application/backup';
 	import { verifyPassphrase } from '$lib/application/lock';
+	import { fakeGoogleEnabled, googleClientId } from '$lib/application/cloud-api';
+	import { mountGoogleSignInButton } from '$lib/application/google-signin';
+	import { untrack } from 'svelte';
 
 	type Props = {
 		lockEnabled: boolean;
@@ -48,6 +51,7 @@
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
 		onGoogleSignIn?: () => void | Promise<void>;
+		onGoogleCredential?: (idToken: string) => void | Promise<void>;
 		onSignOut?: () => void | Promise<void>;
 		onRevokeSession?: (id: string) => void | Promise<void>;
 		onSaveIdle?: (minutes: number, leaveTab: boolean) => void | Promise<void>;
@@ -71,6 +75,7 @@
 		onEnableLock,
 		onDisableLock,
 		onGoogleSignIn,
+		onGoogleCredential,
 		onSignOut,
 		onRevokeSession,
 		onSaveIdle,
@@ -105,6 +110,7 @@
 	let disableLockConfirmOpen = $state(false);
 	let signOutOpen = $state(false);
 	let error = $state<string | null>(null);
+	let gisHost = $state<HTMLDivElement | undefined>(undefined);
 
 	let currencyDraft = $state(DEFAULT_DISPLAY_CURRENCY);
 	let currencySearch = $state('');
@@ -153,6 +159,35 @@
 			error = err instanceof Error ? err.message : 'Something went wrong';
 		}
 	}
+
+	$effect(() => {
+		const el = gisHost;
+		const showGis =
+			Boolean(el) &&
+			cloudConfigured &&
+			!signedIn &&
+			!fakeGoogleEnabled() &&
+			googleClientId().length > 0;
+		if (!el || !showGis) return;
+		const clientId = googleClientId();
+		const onCred = untrack(() => onGoogleCredential);
+		let cancelled = false;
+		void mountGoogleSignInButton({
+			host: el,
+			clientId,
+			onCredential: (credential) => {
+				if (cancelled || !onCred) return;
+				void wrap(() => onCred(credential));
+			}
+		}).catch((err) => {
+			if (cancelled) return;
+			error = err instanceof Error ? err.message : 'Something went wrong';
+		});
+		return () => {
+			cancelled = true;
+			el.replaceChildren();
+		};
+	});
 
 	function pickCurrency(option: CurrencyOption) {
 		currencyDraft = option.code;
@@ -213,15 +248,7 @@
 							Optional. Google only. You can keep using Pocket Ledger without an account.
 						{/if}
 					</p>
-					{#if cloudConfigured && !signedIn && onGoogleSignIn}
-						<Button
-							type="button"
-							onclick={() => void wrap(onGoogleSignIn)}
-							data-testid="google-sign-in"
-						>
-							Sign in with Google
-						</Button>
-					{:else if signedIn}
+					{#if signedIn}
 						{#if sessions.length > 0}
 							<ul class="space-y-2 text-sm" data-testid="session-list">
 								{#each sessions as session (session.id)}
@@ -262,6 +289,16 @@
 								{webauthnEnrolled ? 'This device unlock is on' : 'Use this device’s screen lock'}
 							</Button>
 						{/if}
+					{:else if cloudConfigured && fakeGoogleEnabled() && onGoogleSignIn}
+						<Button
+							type="button"
+							onclick={() => void wrap(onGoogleSignIn)}
+							data-testid="google-sign-in"
+						>
+							Sign in with Google
+						</Button>
+					{:else if cloudConfigured && googleClientId()}
+						<div bind:this={gisHost} data-testid="google-sign-in"></div>
 					{:else}
 						<p class="text-muted-foreground text-sm">
 							Cloud sign-in is not configured on this build.

@@ -1,4 +1,6 @@
-/** Google Identity Services helper (Spec 119). */
+/** Google Identity Services helper (Specs 119, 179). */
+
+export const GSI_CLIENT_SRC = 'https://accounts.google.com/gsi/client';
 
 declare global {
 	interface Window {
@@ -8,7 +10,9 @@ declare global {
 					initialize: (opts: {
 						client_id: string;
 						callback: (res: { credential: string }) => void;
+						ux_mode?: 'popup' | 'redirect';
 					}) => void;
+					renderButton: (parent: HTMLElement, opts: Record<string, string | number>) => void;
 					prompt: () => void;
 				};
 			};
@@ -16,18 +20,27 @@ declare global {
 	}
 }
 
-export async function promptGoogleIdToken(clientId: string): Promise<string> {
-	await loadScript('https://accounts.google.com/gsi/client');
-	return new Promise((resolve, reject) => {
-		if (!window.google?.accounts.id) {
-			reject(new Error('Google Sign-In failed to load'));
-			return;
-		}
-		window.google.accounts.id.initialize({
-			client_id: clientId,
-			callback: (res) => resolve(res.credential)
-		});
-		window.google.accounts.id.prompt();
+export async function mountGoogleSignInButton(opts: {
+	host: HTMLElement;
+	clientId: string;
+	onCredential: (credential: string) => void;
+}): Promise<void> {
+	await loadScript(GSI_CLIENT_SRC);
+	const gis = window.google?.accounts.id;
+	if (!gis?.initialize || !gis.renderButton) {
+		throw new Error('Google Sign-In failed to load');
+	}
+	gis.initialize({
+		client_id: opts.clientId,
+		ux_mode: 'popup',
+		callback: (res) => opts.onCredential(res.credential)
+	});
+	opts.host.replaceChildren();
+	gis.renderButton(opts.host, {
+		type: 'standard',
+		theme: 'outline',
+		size: 'large',
+		text: 'signin_with'
 	});
 }
 
