@@ -12,7 +12,8 @@ Ordered slices. Each slice gets a numbered spec before code.
 6. ~~**Local DEK wrapping + encrypted backup** — always-on DEK; signed-out export/import only~~ → `specs/120-local-dek-wrapping-encrypted-backup/`
 7. ~~**Signed-in sync** — `rev`, 409 close+refresh, gravestones, 30s poll, settings~~ → `specs/121-signed-in-sync/`
 8. ~~**Production Cloud SQL + Google** — durable Postgres, bake GIS client id~~ → `specs/178-production-cloud-sql-google/`
-9. **Android** — parked; second GitHub repo `pocket-ledger-android`, not this tree → `specs/122-android-second-repo-parked/`
+9. **GIS popup sign-in** — official GIS button, not One Tap `prompt()` → `specs/179-gis-popup-sign-in/`
+10. **Android** — parked; second GitHub repo `pocket-ledger-android`, not this tree → `specs/122-android-second-repo-parked/`
 
 Parked after this wave (not v1): cloud lockout + email, wipe/delete account, Argon2id, custom domain, GCS. See `docs/PRODUCT.md`.
 

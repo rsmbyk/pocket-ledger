@@ -137,7 +137,7 @@ In APIs & Services → OAuth consent screen:
 Credentials → Create credentials → **OAuth client ID** → application type **Web application**:
 
 - Authorized JavaScript origins: `https://pocket-ledger-web-w6fanfnuqa-uc.a.run.app` only (the Iowa web URL; add it after the first web deploy if the hash differs)
-- Redirect URIs: not required for `google.accounts.id.prompt()`
+- Redirect URIs: not required for the GIS **Sign in with Google** button (`renderButton`, `ux_mode: popup`). Do **not** use One Tap `google.accounts.id.prompt()` — FedCM One Tap often fails silently on Cloud Run.
 
 Copy the client id into GitHub repo variable `GOOGLE_CLIENT_ID`.
 
