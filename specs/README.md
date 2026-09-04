@@ -199,3 +199,4 @@ Living behavior contracts for Pocket Ledger.
 | [180](180-debug-reset-cloud/spec.md)                     | Debug reset cloud (temporary)                                | Accepted                                                                        |
 | [181](181-debug-fake-signup/spec.md)                     | Debug fake signup (temporary)                                | Accepted                                                                        |
 | [182](182-gis-button-theme/spec.md)                      | GIS button follows light/dark                                | Accepted                                                                        |
+| [183](183-onboarding-passphrase-live-check/spec.md)      | Onboarding passphrase live check                             | Accepted                                                                        |

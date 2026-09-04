@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Input } from '$lib/components/ui/input/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
+	import NewPassphraseFields from '$lib/ui/NewPassphraseFields.svelte';
+	import { newPassphraseLiveState } from '$lib/application/new-passphrase-fields';
 
 	type Props = {
 		title?: string;
@@ -13,6 +14,7 @@
 	let confirm = $state('');
 	let error = $state<string | null>(null);
 	let busy = $state(false);
+	const canSubmit = $derived(newPassphraseLiveState(pass, confirm).canSubmit);
 </script>
 
 <div
@@ -31,14 +33,7 @@
 				class="space-y-3"
 				onsubmit={(e) => {
 					e.preventDefault();
-					if (pass !== confirm) {
-						error = 'Passphrases do not match';
-						return;
-					}
-					if (pass.length < 8) {
-						error = 'Passphrase must be at least 8 characters';
-						return;
-					}
+					if (!canSubmit || busy) return;
 					busy = true;
 					error = null;
 					void (async () => {
@@ -52,26 +47,24 @@
 					})();
 				}}
 			>
-				<Input
-					type="password"
-					placeholder="Account passphrase (min 8)"
-					bind:value={pass}
-					data-testid="account-pass"
-					autocomplete="new-password"
-					oninput={() => (error = null)}
-				/>
-				<Input
-					type="password"
-					placeholder="Confirm passphrase"
-					bind:value={confirm}
-					data-testid="account-pass-confirm"
-					autocomplete="new-password"
-					oninput={() => (error = null)}
+				<NewPassphraseFields
+					bind:passphrase={pass}
+					bind:confirm
+					passphrasePlaceholder="Account passphrase (min 8)"
+					passphraseTestId="account-pass"
+					confirmTestId="account-pass-confirm"
+					requirementsTestId="account-pass-requirements"
+					onInput={() => (error = null)}
 				/>
 				{#if error}
 					<p class="text-destructive text-sm" role="alert">{error}</p>
 				{/if}
-				<Button type="submit" class="w-full" disabled={busy} data-testid="account-pass-submit">
+				<Button
+					type="submit"
+					class="w-full"
+					disabled={!canSubmit || busy}
+					data-testid="account-pass-submit"
+				>
 					Continue
 				</Button>
 			</form>

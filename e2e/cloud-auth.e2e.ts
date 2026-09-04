@@ -37,6 +37,24 @@ test.describe('119 cloud onboarding', () => {
 		await expect(page.getByTestId('export-backup')).toHaveCount(0);
 	});
 
+	test('183 account passphrase Continue stays disabled until the pair is valid', async ({
+		page
+	}) => {
+		await page.goto('/');
+		await goToNav(page, 'more');
+		await page.getByTestId('google-sign-in').click();
+		await expect(page.getByTestId('account-passphrase-screen')).toBeVisible();
+		await expect(page.getByTestId('account-pass-submit')).toBeDisabled();
+		await expect(page.getByTestId('account-pass-requirements')).toHaveCount(0);
+		await page.getByTestId('account-pass').fill('short');
+		await expect(page.getByTestId('account-pass-submit')).toBeDisabled();
+		await expect(page.getByTestId('account-pass-requirements')).toBeVisible();
+		await page.getByTestId('account-pass').fill('account-pass');
+		await expect(page.getByTestId('account-pass-submit')).toBeDisabled();
+		await page.getByTestId('account-pass-confirm').fill('account-pass');
+		await expect(page.getByTestId('account-pass-submit')).toBeEnabled();
+	});
+
 	test('debug reset stay signed in returns to passphrase without GIS', async ({ page }) => {
 		await page.goto('/');
 		await goToNav(page, 'more');
