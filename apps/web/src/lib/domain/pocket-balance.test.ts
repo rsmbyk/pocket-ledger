@@ -66,6 +66,33 @@ describe('pocketDelta', () => {
 		expect(pocketDelta(xfer, 'main')).toBe(-10_250);
 		expect(pocketDelta(xfer, 'vac')).toBe(10_000);
 	});
+
+	it('charges expense fee on the pocket (174)', () => {
+		expect(
+			pocketDelta(
+				tx({
+					type: 'expense',
+					amountMinor: 15_000,
+					feeMinor: 250,
+					accountId: 'a',
+					occurredOn: '2026-01-01'
+				}),
+				'a'
+			)
+		).toBe(-15_250);
+		expect(
+			pocketDelta(
+				tx({
+					type: 'income',
+					amountMinor: 15_000,
+					feeMinor: 250,
+					accountId: 'a',
+					occurredOn: '2026-01-01'
+				}),
+				'a'
+			)
+		).toBe(15_000);
+	});
 });
 
 describe('derivePocketBalance', () => {

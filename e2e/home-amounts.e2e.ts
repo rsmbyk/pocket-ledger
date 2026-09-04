@@ -8,7 +8,7 @@ test.describe('048 home amount hide + by-category icons', () => {
 		await ensureCategory(page, 'Food', 'expense');
 		await openAdd(page);
 		const dialog = page.getByRole('dialog');
-		await dialog.getByRole('button', { name: 'Expense', exact: true }).click();
+		await dialog.getByTestId('tx-type-expense').click();
 		await dialog.getByRole('textbox', { name: 'Amount' }).fill('15000');
 		await selectTxCategory(page, 'Food', dialog);
 		await dialog.getByTestId('tx-save').click();

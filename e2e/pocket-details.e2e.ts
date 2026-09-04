@@ -99,14 +99,14 @@ test.describe('148 pocket details', () => {
 		await goToNav(page, 'home');
 		await openAdd(page);
 		const incomeDialog = page.getByRole('dialog');
-		await incomeDialog.getByRole('button', { name: 'Income', exact: true }).click();
+		await incomeDialog.getByTestId('tx-type-income').click();
 		await incomeDialog.getByLabel(/amount/i).fill('100000');
 		await selectTxCategory(page, 'Salary', incomeDialog);
 		await incomeDialog.getByRole('button', { name: 'Save' }).click();
 
 		await openAdd(page);
 		const expenseDialog = page.getByRole('dialog');
-		await expenseDialog.getByRole('button', { name: 'Expense', exact: true }).click();
+		await expenseDialog.getByTestId('tx-type-expense').click();
 		await expenseDialog.getByTestId('tx-pocket').click();
 		await page.getByRole('menuitem', { name: 'Vacation', exact: true }).dispatchEvent('click');
 		await expenseDialog.getByLabel(/amount/i).fill('15000');

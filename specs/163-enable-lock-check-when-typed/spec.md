@@ -15,7 +15,7 @@ New-passphrase and confirm do not show live icons or requirement coloring until 
 ### In scope
 
 1. `enable-lock-pass`: icon + **At least 8 characters** only when `lockPass.length > 0`.
-2. `enable-lock-pass-confirm`: icon + **Passphrases match** only when `lockPassConfirm.length > 0`.
+2. `enable-lock-pass-confirm`: icon only when `lockPassConfirm.length > 0`. No **Passphrases match** helper ([169](../169-confirm-pass-icon-only/spec.md)).
 3. Enable button enablement unchanged (157).
 
 ### Out of scope
@@ -60,3 +60,4 @@ New-passphrase and confirm do not show live icons or requirement coloring until 
 ## Related
 
 - 157 Settings privacy passphrase UX
+- 169 Confirm passphrase icon only

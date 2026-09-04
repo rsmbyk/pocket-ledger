@@ -125,7 +125,7 @@ export function transactionInMonth(
 	return tx.occurredOn.startsWith(`${monthKey}-`);
 }
 
-function transferFeeMinor(tx: Pick<LedgerTransaction, 'feeMinor'>): MinorUnits {
+function storedFeeMinor(tx: Pick<LedgerTransaction, 'feeMinor'>): MinorUnits {
 	const fee = tx.feeMinor ?? 0;
 	if (!Number.isInteger(fee) || fee < 0) {
 		throw new Error('Stored fee must be a non-negative integer');
@@ -223,9 +223,14 @@ export function buildMonthSummary(
 			const key = tx.categoryId ?? '';
 			expenseMinor += tx.amountMinor;
 			expenseMap.set(key, (expenseMap.get(key) ?? 0) + tx.amountMinor);
+			const fee = storedFeeMinor(tx);
+			if (fee > 0) {
+				expenseMinor += fee;
+				expenseMap.set(ADMIN_FEE_CATEGORY_ID, (expenseMap.get(ADMIN_FEE_CATEGORY_ID) ?? 0) + fee);
+			}
 		} else if (tx.type === 'transfer') {
 			if (scopedId && tx.accountId !== scopedId) continue;
-			const fee = transferFeeMinor(tx);
+			const fee = storedFeeMinor(tx);
 			if (fee > 0) {
 				expenseMinor += fee;
 				expenseMap.set(ADMIN_FEE_CATEGORY_ID, (expenseMap.get(ADMIN_FEE_CATEGORY_ID) ?? 0) + fee);

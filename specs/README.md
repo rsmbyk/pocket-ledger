@@ -182,3 +182,15 @@ Living behavior contracts for Pocket Ledger.
 | [163](163-enable-lock-check-when-typed/spec.md)          | Enable-lock live check only after typing                     | Accepted                                                                        |
 | [164](164-settings-danger-dialog-chrome/spec.md)         | Flush danger chrome on import / reset dialogs                | Accepted                                                                        |
 | [165](165-reset-keep-settings-copy/spec.md)              | Reset keep-option helper copy                                | Accepted                                                                        |
+| [166](166-import-wrong-passphrase/spec.md)               | Import confirm keeps file on wrong passphrase                | Accepted                                                                        |
+| [167](167-backup-section-gap/spec.md)                    | Backup inner-section gap                                     | Accepted                                                                        |
+| [168](168-import-choose-button/spec.md)                  | Import helper + Choose file button                           | Accepted                                                                        |
+| [169](169-confirm-pass-icon-only/spec.md)                | Confirm passphrase icon only                                 | Accepted                                                                        |
+| [170](170-goal-row-percent-end/spec.md)                  | Goal row amounts, date, percent, bar                         | Accepted                                                                        |
+| [171](171-goal-bar-color-steps/spec.md)                  | Goal bar color steps                                         | Accepted                                                                        |
+| [172](172-amount-caret/spec.md)                          | Amount field caret stays put                                 | Accepted                                                                        |
+| [173](173-tx-type-tabs/spec.md)                          | Tx type chrome is always tabs                                | Accepted                                                                        |
+| [174](174-expense-admin-fee/spec.md)                     | Expense admin fee                                            | Accepted                                                                        |
+| [175](175-reorder-toolbar-labels/spec.md)                | Reorder toolbar Default + Cancel                             | Accepted                                                                        |
+| [176](176-form-submit-save/spec.md)                      | Form submit is Save                                          | Accepted                                                                        |
+| [177](177-tx-footer-row/spec.md)                         | Tx Save and Close on one row                                 | Accepted                                                                        |

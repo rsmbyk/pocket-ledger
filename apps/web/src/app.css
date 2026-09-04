@@ -26,6 +26,7 @@
 	--accent-foreground: #161a1e;
 	--destructive: #c43315;
 	--income: #059669;
+	--goal-mid: #eab308;
 	--border: #d0d5db;
 	--input: #d0d5db;
 	--ring: #161a1e;
@@ -63,6 +64,7 @@
 	--accent-foreground: #e8ecf0;
 	--destructive: #f37850;
 	--income: #34d399;
+	--goal-mid: #facc15;
 	--border: #32383f;
 	--input: #32383f;
 	--ring: #e8ecf0;
@@ -104,6 +106,7 @@
 	--color-accent-foreground: var(--accent-foreground);
 	--color-destructive: var(--destructive);
 	--color-income: var(--income);
+	--color-goal-mid: var(--goal-mid);
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);

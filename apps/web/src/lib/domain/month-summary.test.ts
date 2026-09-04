@@ -198,6 +198,40 @@ describe('month-summary', () => {
 		expect(summary.endingMinor).toBe(-350);
 	});
 
+	it('counts expense fees as Admin Fee and reduces opening by prior fees (174)', () => {
+		const pockets = [{ id: 'main', openingBalanceMinor: 0, openingAsOf: '2026-01-01' }];
+		const rows = [
+			tx({
+				type: 'expense',
+				amountMinor: 15_000,
+				feeMinor: 250,
+				occurredOn: '2026-06-15',
+				accountId: 'main',
+				categoryId: 'food'
+			}),
+			tx({
+				type: 'expense',
+				amountMinor: 10_000,
+				feeMinor: 100,
+				occurredOn: '2026-07-02',
+				accountId: 'main',
+				categoryId: 'food'
+			})
+		];
+		const summary = buildMonthSummary(
+			rows,
+			'2026-07',
+			{ food: { name: 'Food', sortOrder: 0 } },
+			pockets
+		);
+		expect(summary.openingMinor).toBe(-15_250);
+		expect(summary.expenseMinor).toBe(10_100);
+		expect(summary.expenseByCategory).toEqual([
+			{ categoryId: 'food', label: 'Food', amountMinor: 10_000 },
+			{ categoryId: '__admin_fee__', label: 'Admin Fee', amountMinor: 100 }
+		]);
+	});
+
 	it('scopes opening, income, and expense to one pocket (148)', () => {
 		const pockets = [
 			{ id: 'main', openingBalanceMinor: 100_000, openingAsOf: '2026-01-01' },

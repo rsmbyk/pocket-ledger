@@ -78,17 +78,51 @@ test.describe('154–159 Settings hub', () => {
 		await page.getByTestId('enable-lock-pass-confirm').fill('secret-pass');
 		await expect(page.getByTestId('enable-lock')).toBeEnabled();
 		await expect(page.getByTestId('enable-lock-requirements')).toBeVisible();
-		await expect(page.getByText('Passphrases match')).toBeVisible();
+		await expect(page.getByText('Passphrases match')).toHaveCount(0);
 	});
 
 	test('158 invalid backup file opens the not-a-backup dialog', async ({ page }) => {
 		await goToNav(page, 'settings');
+		await expect(page.getByTestId('import-backup-choose')).toBeVisible();
+		await expect(page.getByText('No file chosen')).toHaveCount(0);
 		await page.getByTestId('import-backup').setInputFiles({
 			name: 'not-a-backup.json',
 			mimeType: 'application/json',
 			buffer: Buffer.from('{')
 		});
 		await expect(page.getByTestId('backup-import-invalid-dialog')).toBeVisible();
+		await expect(page.getByTestId('backup-import-summary')).toHaveCount(0);
+	});
+
+	test('166 wrong import passphrase stays on confirm and keeps the file', async ({ page }) => {
+		await goToNav(page, 'settings');
+		const downloadPromise = page.waitForEvent('download');
+		await page.getByTestId('export-backup').click();
+		await page.getByTestId('export-backup-pass').fill('export-pass');
+		await page.getByTestId('export-backup-pass-confirm').fill('export-pass');
+		await page.getByTestId('export-backup-confirm').click();
+		const download = await downloadPromise;
+		const filePath = await download.path();
+		expect(filePath).toBeTruthy();
+
+		await page.getByTestId('import-backup').setInputFiles(filePath!);
+		await expect(page.getByTestId('backup-import-summary')).toBeVisible();
+		await expect(page.getByTestId('import-backup-filename')).toBeVisible();
+		await page.getByTestId('import-backup-open').click();
+		await page.getByTestId('import-backup-pass').fill('wrong-pass');
+		await page.getByTestId('import-backup-confirm').click();
+		await expect(page.getByTestId('import-backup-dialog')).toBeVisible();
+		await expect(page.getByTestId('import-backup-pass-error')).toHaveText('Incorrect passphrase');
+		await expect(page.getByTestId('settings-panel').getByRole('alert')).toHaveCount(0);
+
+		await page.getByTestId('import-backup-dialog').getByRole('button', { name: 'Cancel' }).click();
+		await expect(page.getByTestId('import-backup-dialog')).toHaveCount(0);
+		await expect(page.getByTestId('backup-import-summary')).toBeVisible();
+
+		await page.getByTestId('import-backup-open').click();
+		await page.getByTestId('import-backup-pass').fill('export-pass');
+		await page.getByTestId('import-backup-confirm').click();
+		await expect(page.getByTestId('import-backup-dialog')).toHaveCount(0);
 		await expect(page.getByTestId('backup-import-summary')).toHaveCount(0);
 	});
 });

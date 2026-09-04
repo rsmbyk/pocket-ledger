@@ -11,7 +11,7 @@ test.describe('047 tx sheet polish', () => {
 	test('Void is outlined danger and labels do not open category', async ({ page }) => {
 		await openAdd(page);
 		const dialog = page.getByRole('dialog');
-		await dialog.getByRole('button', { name: 'Expense', exact: true }).click();
+		await dialog.getByTestId('tx-type-expense').click();
 		await dialog.getByRole('textbox', { name: 'Amount' }).fill('15000');
 		await selectTxCategory(page, 'Food', dialog);
 		await expect(page.getByTestId('tx-header-icon-add')).toBeVisible();

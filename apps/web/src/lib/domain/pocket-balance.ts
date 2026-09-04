@@ -8,7 +8,7 @@ export type PocketBalanceTx = Pick<
 	'type' | 'amountMinor' | 'feeMinor' | 'accountId' | 'counterAccountId' | 'occurredOn' | 'voidedAt'
 >;
 
-function transferFeeMinor(tx: Pick<PocketBalanceTx, 'feeMinor'>): MinorUnits {
+function storedFeeMinor(tx: Pick<PocketBalanceTx, 'feeMinor'>): MinorUnits {
 	const fee = tx.feeMinor ?? 0;
 	if (!Number.isInteger(fee) || fee < 0) {
 		throw new Error('Stored fee must be a non-negative integer');
@@ -30,10 +30,11 @@ export function pocketDelta(tx: PocketBalanceTx, pocketId: string): MinorUnits {
 		return tx.accountId === pocketId ? tx.amountMinor : 0;
 	}
 	if (tx.type === 'expense') {
-		return tx.accountId === pocketId ? -tx.amountMinor : 0;
+		const fee = storedFeeMinor(tx);
+		return tx.accountId === pocketId ? -(tx.amountMinor + fee) : 0;
 	}
 	if (tx.type === 'transfer') {
-		const fee = transferFeeMinor(tx);
+		const fee = storedFeeMinor(tx);
 		if (tx.accountId === pocketId) return -(tx.amountMinor + fee);
 		if (tx.counterAccountId === pocketId) return tx.amountMinor;
 		return 0;

@@ -16,7 +16,7 @@ async function seedIncomeAndExpense(page: Page): Promise<void> {
 	const dialog = page.getByTestId('tx-dialog');
 	let form = (await sheet.isVisible().catch(() => false)) ? sheet : dialog;
 
-	await form.getByRole('button', { name: 'Income', exact: true }).click();
+	await form.getByTestId('tx-type-income').click();
 	await form.getByRole('textbox', { name: 'Amount' }).fill('100000');
 	await selectTxCategory(page, 'Salary', form);
 	await form.getByRole('button', { name: 'Save' }).click();
@@ -24,7 +24,7 @@ async function seedIncomeAndExpense(page: Page): Promise<void> {
 
 	await openAdd(page);
 	form = (await sheet.isVisible().catch(() => false)) ? sheet : dialog;
-	await form.getByRole('button', { name: 'Expense', exact: true }).click();
+	await form.getByTestId('tx-type-expense').click();
 	await form.getByRole('textbox', { name: 'Amount' }).fill('15000');
 	await selectTxCategory(page, 'Food', form);
 	await form.getByRole('textbox', { name: 'Note' }).fill('secret lunch');
@@ -363,7 +363,7 @@ test.describe('101 activity date sort secondary createdAt', () => {
 			.catch(() => false))
 			? page.getByTestId('tx-sheet')
 			: page.getByTestId('tx-dialog');
-		await form.getByRole('button', { name: 'Expense', exact: true }).click();
+		await form.getByTestId('tx-type-expense').click();
 		await form.getByRole('textbox', { name: 'Amount' }).fill('1000');
 		await selectTxCategory(page, 'Food', form);
 		await form.getByRole('textbox', { name: 'Note' }).fill('earlier-created');
@@ -376,7 +376,7 @@ test.describe('101 activity date sort secondary createdAt', () => {
 			.catch(() => false))
 			? page.getByTestId('tx-sheet')
 			: page.getByTestId('tx-dialog');
-		await form.getByRole('button', { name: 'Expense', exact: true }).click();
+		await form.getByTestId('tx-type-expense').click();
 		await form.getByRole('textbox', { name: 'Amount' }).fill('2000');
 		await selectTxCategory(page, 'Food', form);
 		await form.getByRole('textbox', { name: 'Note' }).fill('later-created');
@@ -571,7 +571,7 @@ test.describe('132 activity category filter used-only', () => {
 		await page.goto('/');
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
-		await sheet.getByRole('button', { name: 'Income', exact: true }).click();
+		await sheet.getByTestId('tx-type-income').click();
 		await sheet.getByTestId('tx-category').click();
 		await expect(page.getByRole('option', { name: 'Bonus', exact: true })).toBeVisible();
 	});
@@ -580,7 +580,7 @@ test.describe('132 activity category filter used-only', () => {
 		await ensureCategory(page, 'Groceries', 'expense');
 		await openAdd(page);
 		const form = page.getByRole('dialog');
-		await form.getByRole('button', { name: 'Expense', exact: true }).click();
+		await form.getByTestId('tx-type-expense').click();
 		await form.getByRole('textbox', { name: 'Amount' }).fill('15000');
 		await selectTxCategory(page, 'Groceries', form);
 		await form.getByRole('button', { name: 'Save' }).click();

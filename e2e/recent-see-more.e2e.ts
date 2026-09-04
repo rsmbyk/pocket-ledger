@@ -18,7 +18,7 @@ test.describe('066 recent see more', () => {
 		await ensureCategory(page, 'Food', 'expense');
 		await openAdd(page);
 		const dialog = page.getByRole('dialog');
-		await dialog.getByRole('button', { name: 'Expense', exact: true }).click();
+		await dialog.getByTestId('tx-type-expense').click();
 		await dialog.getByLabel(/amount/i).fill('15000');
 		await selectTxCategory(page, 'Food', dialog);
 		await dialog.getByRole('button', { name: 'Save' }).click();

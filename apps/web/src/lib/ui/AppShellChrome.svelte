@@ -246,8 +246,9 @@
 	);
 	const categoryShowAdminFee = $derived(
 		showActivityCategoryFilter &&
-			categoryKindsAllowed === 'all' &&
-			hasAdminFeeLedgerRow(transactions)
+			hasAdminFeeLedgerRow(transactions) &&
+			(categoryKindsAllowed === 'all' ||
+				(Array.isArray(categoryKindsAllowed) && categoryKindsAllowed.includes('expense')))
 	);
 	const categoryShowUncategorized = $derived(
 		showActivityCategoryFilter && hasUncategorizedLedgerRow(transactions)

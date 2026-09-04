@@ -26,7 +26,7 @@ test.describe('152 pocket goals', () => {
 		await ensureCategory(page, 'Salary', 'income');
 		await openAdd(page);
 		const dialog = page.getByRole('dialog');
-		await dialog.getByRole('button', { name: 'Income', exact: true }).click();
+		await dialog.getByTestId('tx-type-income').click();
 		await dialog.getByLabel(/amount/i).fill('25000');
 		await selectTxCategory(page, 'Salary', dialog);
 		await dialog.getByRole('button', { name: 'Save' }).click();
@@ -34,9 +34,12 @@ test.describe('152 pocket goals', () => {
 		await goToNav(page, 'pockets');
 		await mainRow.click();
 		await addPocketGoal(page, { target: '100000' });
-		await expect(page.getByTestId('pocket-details-goals-list')).toContainText(/25%/);
+		const list = page.getByTestId('pocket-details-goals-list');
+		await expect(list.getByTestId('goal-progress-percent')).toHaveText('25%');
+		await expect(list.getByTestId('goal-progress-amounts')).not.toHaveText(/·/);
 		await page.getByTestId('pocket-details-back').click();
-		await expect(mainRow).toContainText(/25%/);
+		await expect(mainRow.getByTestId('goal-progress-percent')).toHaveText('25%');
+		await expect(mainRow.getByTestId('goal-progress-amounts')).not.toHaveText(/·/);
 	});
 
 	test('drop dated goal into past', async ({ page }) => {
@@ -51,5 +54,37 @@ test.describe('152 pocket goals', () => {
 		await expect(page.getByTestId('pocket-details-see-past-goals')).toBeVisible();
 		await page.getByTestId('pocket-details-see-past-goals').click();
 		await expect(page.getByTestId('pocket-past-goals-dialog')).toContainText('Dropped');
+	});
+
+	test('amount caret stays on the same digit (172)', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.locator('[data-testid^="pocket-row-"]').first().click();
+		await page.getByTestId('pocket-details-add-goal').click();
+		const input = page.getByTestId('pocket-goal-target-input');
+		await expect(input).toBeVisible();
+
+		await input.fill('15000');
+		await expect(input).toHaveValue('15,000');
+		await input.evaluate((el: HTMLInputElement) => {
+			el.focus();
+			el.setSelectionRange(1, 1);
+		});
+		await input.press('Backspace');
+		await expect(input).toHaveValue('5,000');
+		await expect
+			.poll(async () => input.evaluate((el: HTMLInputElement) => el.selectionStart))
+			.toBe(0);
+
+		await input.fill('15000');
+		await expect(input).toHaveValue('15,000');
+		await input.evaluate((el: HTMLInputElement) => {
+			el.focus();
+			el.setSelectionRange(2, 2);
+		});
+		await input.press('9');
+		await expect(input).toHaveValue('159,000');
+		await expect
+			.poll(async () => input.evaluate((el: HTMLInputElement) => el.selectionStart))
+			.toBe(3);
 	});
 });

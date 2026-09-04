@@ -92,7 +92,10 @@ export function isCategoryFilterCompatible(
 	if (!id) return true;
 	if (isCategoryFilterDisabled(types)) return false;
 	const allowed = categoryKindsForTypes(types);
-	if (id === ADMIN_FEE_CATEGORY_ID) return allowed === 'all';
+	if (id === ADMIN_FEE_CATEGORY_ID) {
+		if (allowed === 'all') return true;
+		return Array.isArray(allowed) && allowed.includes('expense');
+	}
 	if (id === UNCATEGORIZED_FILTER) return true;
 	const kind = categoryKinds[id];
 	if (!kind) return allowed === 'all';
@@ -140,9 +143,12 @@ export function hasUncategorizedLedgerRow(transactions: LedgerTransaction[]): bo
 	return transactions.some((tx) => !(tx.categoryId?.trim() ?? ''));
 }
 
-/** True when some transfer has a positive admin fee. */
+/** True when some transfer or expense has a positive admin fee. */
 export function hasAdminFeeLedgerRow(transactions: LedgerTransaction[]): boolean {
-	return transactions.some((tx) => tx.type === 'transfer' && (tx.feeMinor ?? 0) > 0);
+	return transactions.some(
+		(tx) =>
+			(tx.type === 'transfer' || tx.type === 'expense') && (tx.feeMinor ?? 0) > 0
+	);
 }
 
 /** Digits-only form of a search query for loose amount matching. */
@@ -216,7 +222,9 @@ function matchesCategories(tx: LedgerTransaction, categoryIds: readonly string[]
 	if (categoryIds.length === 0) return true;
 	return categoryIds.some((id) => {
 		if (id === ADMIN_FEE_CATEGORY_ID) {
-			return tx.type === 'transfer' && (tx.feeMinor ?? 0) > 0;
+			return (
+				(tx.type === 'transfer' || tx.type === 'expense') && (tx.feeMinor ?? 0) > 0
+			);
 		}
 		if (id === UNCATEGORIZED_FILTER) return tx.categoryId == null;
 		return tx.categoryId === id;

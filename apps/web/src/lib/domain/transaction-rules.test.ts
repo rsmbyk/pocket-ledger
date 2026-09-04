@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
 	balanceDelta,
 	formatAmountDigitsDisplay,
+	caretAfterAmountInput,
+	caretIndexForDigitCount,
+	digitCountBeforeCaret,
 	isBlockedAmountKey,
 	isCreateTxDirty,
 	isEditTxDirty,
@@ -35,6 +38,22 @@ describe('transaction-rules', () => {
 		expect(formatAmountDigitsDisplay('15000')).toBe('15,000');
 		expect(formatAmountDigitsDisplay('15,000')).toBe('15,000');
 		expect(formatAmountDigitsDisplay('')).toBe('');
+	});
+
+	it('keeps the caret on the same digit after grouping (172)', () => {
+		expect(digitCountBeforeCaret('15,000', 1)).toBe(1);
+		expect(caretIndexForDigitCount('5,000', 0)).toBe(0);
+		expect(caretAfterAmountInput('5,000', 0)).toEqual({ digits: '5000', selectionStart: 0 });
+
+		expect(digitCountBeforeCaret('159,000', 3)).toBe(3);
+		expect(caretIndexForDigitCount('159,000', 3)).toBe(3);
+		expect(caretAfterAmountInput('159,000', 3)).toEqual({
+			digits: '159000',
+			selectionStart: 3
+		});
+
+		expect(caretAfterAmountInput('', 0)).toEqual({ digits: '', selectionStart: 0 });
+		expect(caretIndexForDigitCount('15,000', 5)).toBe(6);
 	});
 
 	it('blocks non-digit amount keys', () => {

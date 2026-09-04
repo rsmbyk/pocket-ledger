@@ -21,6 +21,7 @@
 		cloneKindGroupOrder,
 		groupsInOrder,
 		isReorderDirty,
+		isFactoryKindGroupOrder,
 		resetBothKindsInOrder,
 		setKindOrder,
 		snapshotGroupOrders,
@@ -128,6 +129,7 @@
 	const filteredRows = $derived(filterCatalogGroups(kindGroups, kindCategories, searchQuery));
 
 	const addDirty = $derived(addName.trim() !== '');
+	const reorderIsFactory = $derived(isFactoryKindGroupOrder(reorderDraft, groups));
 	const addGroupDirty = $derived(addGroupName.trim() !== '');
 	const addTargetGroupName = $derived(groups.find((g) => g.id === addGroupId)?.name ?? '');
 	const renameGroupDirty = $derived(
@@ -611,11 +613,11 @@
 				type="button"
 				variant="outline"
 				size="sm"
-				disabled={busy}
+				disabled={busy || reorderIsFactory}
 				data-testid="category-reorder-reset"
 				onclick={resetReorder}
 			>
-				Reset
+				Default
 			</Button>
 			<Button
 				type="button"
@@ -625,7 +627,7 @@
 				data-testid="category-reorder-discard"
 				onclick={discardReorder}
 			>
-				Discard
+				Cancel
 			</Button>
 			<Button
 				type="button"
@@ -977,7 +979,7 @@
 					Cancel
 				</Button>
 				<Button type="submit" disabled={busy || addName.trim() === ''} data-testid="category-add">
-					Add
+					Save
 				</Button>
 			</div>
 		</form>
@@ -1021,7 +1023,7 @@
 					Cancel
 				</Button>
 				<Button type="submit" disabled={busy || !addGroupDirty} data-testid="category-group-add">
-					Add
+					Save
 				</Button>
 			</div>
 		</form>

@@ -78,5 +78,6 @@ Opening balance and Goal target on the pocket form use the same amount-entry chr
 ## Related
 
 - Spec 037, 039 (Amount chrome)
+- Spec 172 (caret stays on the same digit after grouping)
 - Spec 071 (opening — negatives superseded for writes)
 - Spec 072, 086 (goals / optional checkboxes)

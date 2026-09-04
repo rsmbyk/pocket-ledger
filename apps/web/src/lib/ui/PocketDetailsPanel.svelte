@@ -13,6 +13,7 @@
 	import MonthSummaryCard from '$lib/ui/MonthSummary.svelte';
 	import TransactionListRow from '$lib/ui/TransactionListRow.svelte';
 	import PocketGoalFormDialog from '$lib/ui/PocketGoalFormDialog.svelte';
+	import GoalProgressChrome from '$lib/ui/GoalProgressChrome.svelte';
 	import type { Account } from '$lib/domain/account';
 	import type { CategoryRow } from '$lib/data/db';
 	import { latestPocketTransactions } from '$lib/domain/activity-filters';
@@ -24,7 +25,6 @@
 		sortPastGoals,
 		type PocketGoal
 	} from '$lib/domain/goals';
-	import { formatRemainingUnit, largestRemainingUnit } from '$lib/domain/goal-time';
 	import { formatMinor } from '$lib/domain/money';
 	import {
 		buildMonthSummary,
@@ -222,10 +222,6 @@
 			{:else}
 				<ul class="divide-border divide-y" data-testid="pocket-details-goals-list">
 					{#each activeGoals as goal (goal.id)}
-						{@const percent = goalProgressPercent(goal.targetMinor, balance)}
-						{@const remaining = goal.targetOn
-							? largestRemainingUnit(today, goal.targetOn)
-							: null}
 						{@const title = goal.description.trim()}
 						<li>
 							<button
@@ -237,17 +233,14 @@
 								{#if title}
 									<p class="text-sm font-medium">{title}</p>
 								{/if}
-								<p class="text-muted-foreground text-xs tabular-nums">
-									{money(Math.max(0, balance))} / {money(goal.targetMinor)} · {percent}%
-								</p>
-								{#if remaining && goal.targetOn}
-									<p class="text-muted-foreground text-xs">
-										{formatOccurredOnDisplay(goal.targetOn)} ({formatRemainingUnit(remaining)})
-									</p>
-								{/if}
-								<div class="bg-muted mt-1 h-1.5 overflow-hidden rounded-full">
-									<div class="bg-primary h-full rounded-full" style={`width: ${percent}%`}></div>
-								</div>
+								<GoalProgressChrome
+									currentMinor={balance}
+									targetMinor={goal.targetMinor}
+									percent={goalProgressPercent(goal.targetMinor, balance)}
+									targetOn={goal.targetOn}
+									{currencyLabel}
+									{hideAmounts}
+								/>
 							</button>
 						</li>
 					{/each}

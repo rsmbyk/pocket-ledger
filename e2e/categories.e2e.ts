@@ -89,6 +89,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await clickCategoryGroupAdd(page.getByTestId('category-group-stock-group:food-drink'));
 		await expect(page.getByTestId('category-add-dialog')).toBeVisible();
 		await page.getByTestId('category-name-input').fill('Warung');
+		await expect(page.getByTestId('category-add')).toHaveText('Save');
 		await page.getByTestId('category-add').click();
 		await expect(categoryChip(page, 'Warung')).toBeVisible();
 		await expect(
@@ -97,7 +98,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
-		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
+		await sheet.getByTestId('tx-type-expense').click();
 		await selectTxCategory(page, 'Warung', sheet);
 		await expect(sheet.getByTestId('tx-category')).toContainText('Warung');
 	});
@@ -133,7 +134,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await page.goto('/');
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
-		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
+		await sheet.getByTestId('tx-type-expense').click();
 		await sheet.getByTestId('tx-category').click();
 		await page.getByTestId('category-picker-search').fill('Groceries');
 		await expect(page.getByRole('option', { name: 'Groceries', exact: true })).toHaveCount(0);
@@ -187,8 +188,9 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await expect(page.getByTestId('category-search')).toHaveCount(0);
 		await expect(page.getByRole('button', { name: 'Done' })).toHaveCount(0);
 		await expect(page.getByTestId('category-reorder-save')).toBeVisible();
-		await expect(page.getByTestId('category-reorder-discard')).toBeVisible();
-		await expect(page.getByTestId('category-reorder-reset')).toBeVisible();
+		await expect(page.getByTestId('category-reorder-discard')).toHaveText('Cancel');
+		await expect(page.getByTestId('category-reorder-reset')).toHaveText('Default');
+		await expect(page.getByTestId('category-reorder-reset')).toBeDisabled();
 		await expect(page.getByTestId('category-chip')).toHaveCount(0);
 		await expect(page.getByTestId('category-group-row-stock-group:home')).toBeVisible();
 		await expect(page.getByTestId('category-group-row-stock-group:work')).toHaveCount(0);
@@ -262,7 +264,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await page.goto('/');
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
-		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
+		await sheet.getByTestId('tx-type-expense').click();
 		await sheet.getByTestId('tx-category').click();
 		await page.getByTestId('category-picker-search').fill('Groceries');
 		await expect(page.getByRole('option', { name: 'Groceries', exact: true })).toHaveCount(0);
@@ -432,6 +434,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		);
 		await page.mouse.up();
 		await expect(page.getByTestId('category-reorder-save')).toBeEnabled();
+		await expect(page.getByTestId('category-reorder-reset')).toBeEnabled();
 
 		await selectCategoriesKind(page, 'income');
 		await page.getByTestId('category-reorder-reset').click();
@@ -496,7 +499,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await page.goto('/');
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
-		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
+		await sheet.getByTestId('tx-type-expense').click();
 		await sheet.getByTestId('tx-category').click();
 		const foodDrink = page.getByTestId('picker-group-stock-group:food-drink');
 		await foodDrink.scrollIntoViewIfNeeded();
@@ -516,7 +519,7 @@ test.describe('123 overlay catalog / 124–126 categories chrome', () => {
 		await page.goto('/');
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
-		await sheet.getByRole('button', { name: 'Income', exact: true }).click();
+		await sheet.getByTestId('tx-type-income').click();
 		await sheet.getByTestId('tx-category').click();
 		await page.getByTestId('category-picker-search').fill('work');
 		await expect(page.getByTestId('picker-group-stock-group:work')).toBeVisible();

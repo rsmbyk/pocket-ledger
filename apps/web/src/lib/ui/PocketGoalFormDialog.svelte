@@ -16,6 +16,7 @@
 		parseAmountInput,
 		todayOccurredOn
 	} from '$lib/domain/transaction-rules';
+	import { applyGroupedAmountInput } from '$lib/ui/amount-field-caret';
 	import { cn } from '$lib/utils.js';
 	import { shouldIgnoreDismissForNativePicker } from '$lib/ui/native-picker-dismiss';
 
@@ -91,9 +92,11 @@
 			: null;
 	});
 
-	function onTargetInput(value: string) {
-		targetRaw = amountDigitsOnly(value);
-		if (error?.key === 'goalTarget' || error?.key === 'amount') error = null;
+	function onTargetInput(el: HTMLInputElement) {
+		applyGroupedAmountInput(el, (digits) => {
+			targetRaw = digits;
+			if (error?.key === 'goalTarget' || error?.key === 'amount') error = null;
+		});
 	}
 
 	function onTargetKeydown(event: KeyboardEvent) {
@@ -102,7 +105,8 @@
 
 	function onTargetPaste(event: ClipboardEvent) {
 		event.preventDefault();
-		onTargetInput(event.clipboardData?.getData('text') ?? '');
+		targetRaw = amountDigitsOnly(event.clipboardData?.getData('text') ?? '');
+		if (error?.key === 'goalTarget' || error?.key === 'amount') error = null;
 	}
 
 	function handleOpenChange(next: boolean) {
@@ -186,7 +190,7 @@
 							aria-invalid={error?.key === 'goalTarget' || error?.key === 'amount' ? true : undefined}
 							onkeydown={onTargetKeydown}
 							onpaste={onTargetPaste}
-							oninput={(e) => onTargetInput(e.currentTarget.value)}
+							oninput={(e) => onTargetInput(e.currentTarget)}
 							class="!pl-2.5"
 						/>
 					</InputGroup.Root>

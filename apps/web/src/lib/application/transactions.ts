@@ -16,6 +16,7 @@ import { isVoided, type LedgerTransaction, type TransactionId } from '$lib/domai
 import {
 	isValidOccurredOn,
 	parseAmountInput,
+	parseNonNegativeAmountInput,
 	todayOccurredOn,
 	type AddableTransactionType
 } from '$lib/domain/transaction-rules';
@@ -35,6 +36,8 @@ export type AddTransactionInput = {
 	categoryId?: string | null;
 	note?: string;
 	occurredOn?: string;
+	/** Expense admin fee; blank / omitted → 0. Ignored for income. */
+	feeRaw?: string;
 };
 
 export type UpdateTransactionInput = AddTransactionInput & {
@@ -69,6 +72,15 @@ export async function addTransaction(input: AddTransactionInput): Promise<Ledger
 
 	const categoryId = await resolveCategoryId(input.type, input.categoryId);
 
+	let feeMinor = 0;
+	if (input.type === 'expense') {
+		try {
+			feeMinor = parseNonNegativeAmountInput(input.feeRaw ?? '');
+		} catch {
+			throw new Error('Fee must be a whole number');
+		}
+	}
+
 	const notePlain = (input.note ?? '').trim();
 	const tx: LedgerTransaction = {
 		id: createId(),
@@ -76,7 +88,7 @@ export async function addTransaction(input: AddTransactionInput): Promise<Ledger
 		counterAccountId: null,
 		type: input.type,
 		amountMinor,
-		feeMinor: 0,
+		feeMinor,
 		categoryId,
 		note: await sealField(notePlain),
 		occurredOn,
@@ -132,13 +144,22 @@ export async function updateTransaction(input: UpdateTransactionInput): Promise<
 		existing.categoryId
 	);
 
+	let feeMinor = 0;
+	if (existing.type === 'expense') {
+		try {
+			feeMinor = parseNonNegativeAmountInput(input.feeRaw ?? '');
+		} catch {
+			throw new Error('Fee must be a whole number');
+		}
+	}
+
 	const notePlain = (input.note ?? '').trim();
 	const tx: LedgerTransaction = {
 		...existing,
 		accountId: input.accountId,
 		type: existing.type,
 		amountMinor,
-		feeMinor: 0,
+		feeMinor,
 		categoryId,
 		note: await sealField(notePlain),
 		occurredOn,

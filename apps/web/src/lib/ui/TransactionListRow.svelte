@@ -69,7 +69,7 @@
 			: formatMinor(tx.type === 'expense' ? -tx.amountMinor : tx.amountMinor, currencyLabel)
 	);
 	const feeMinor = $derived(tx.feeMinor ?? 0);
-	const showFee = $derived(isTransfer && feeMinor > 0);
+	const showFee = $derived(!isTransfer ? tx.type === 'expense' && feeMinor > 0 : feeMinor > 0);
 	const feeText = $derived(`Fee ${formatMinor(feeMinor, currencyLabel)}`);
 
 	function pocketInfo(id: string | null): PocketInfo {
@@ -210,7 +210,7 @@
 		{#if showFee && !hideAmount}
 			<p
 				class={['text-muted-foreground text-xs tabular-nums', voided && 'line-through']}
-				data-testid={`${testid}-transfer-fee`}
+				data-testid={isTransfer ? `${testid}-transfer-fee` : `${testid}-fee`}
 			>
 				{feeText}
 			</p>

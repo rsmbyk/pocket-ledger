@@ -67,6 +67,39 @@ export function formatAmountDigitsDisplay(raw: string): string {
 	return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+/** How many digits sit left of `caret` in a live amount field value. */
+export function digitCountBeforeCaret(value: string, caret: number | null): number {
+	if (caret == null) return amountDigitsOnly(value).length;
+	const pos = Math.max(0, Math.min(caret, value.length));
+	return amountDigitsOnly(value.slice(0, pos)).length;
+}
+
+/** Index in a grouped display string after `digitCount` digits (empty → 0). */
+export function caretIndexForDigitCount(formatted: string, digitCount: number): number {
+	if (!formatted || digitCount <= 0) return 0;
+	let seen = 0;
+	for (let i = 0; i < formatted.length; i++) {
+		if (formatted[i] >= '0' && formatted[i] <= '9') {
+			seen += 1;
+			if (seen === digitCount) return i + 1;
+		}
+	}
+	return formatted.length;
+}
+
+/** Digits to store and caret to restore after grouping the live `input` value. */
+export function caretAfterAmountInput(
+	liveValue: string,
+	caret: number | null
+): { digits: string; selectionStart: number } {
+	const digitCount = digitCountBeforeCaret(liveValue, caret);
+	const digits = amountDigitsOnly(liveValue);
+	return {
+		digits,
+		selectionStart: caretIndexForDigitCount(formatAmountDigitsDisplay(digits), digitCount)
+	};
+}
+
 export type TxFormBaseline = {
 	type: AddableTransactionType;
 	amountDigits: string;
