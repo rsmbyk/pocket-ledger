@@ -103,6 +103,15 @@ test.describe('070–077 pockets pack', () => {
 		await expect(page.locator('[data-testid$="-transfer-icon"]').first()).toBeVisible();
 	});
 
+	test('single pocket Add is read-only (187)', async ({ page }) => {
+		await openAdd(page);
+		const dialog = page.getByRole('dialog');
+		await expect(dialog.getByTestId('tx-pocket')).toBeVisible();
+		await dialog.getByTestId('tx-pocket').click();
+		await expect(page.locator('[data-testid^="tx-pocket-option-"]')).toHaveCount(0);
+		await dialog.getByTestId('tx-close').click();
+	});
+
 	test('Normal add shows pocket picker; inline amount error', async ({ page }) => {
 		await goToNav(page, 'pockets');
 		await page.getByTestId('pocket-add').click();
