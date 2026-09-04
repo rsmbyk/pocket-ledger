@@ -1,6 +1,10 @@
-/** Google Identity Services helper (Specs 119, 179). */
+/** Google Identity Services helper (Specs 119, 179, 182). */
 
 export const GSI_CLIENT_SRC = 'https://accounts.google.com/gsi/client';
+
+export function gisButtonTheme(colorScheme: 'light' | 'dark'): 'outline' | 'outline_dark' {
+	return colorScheme === 'dark' ? 'outline_dark' : 'outline';
+}
 
 declare global {
 	interface Window {
@@ -23,6 +27,7 @@ declare global {
 export async function mountGoogleSignInButton(opts: {
 	host: HTMLElement;
 	clientId: string;
+	colorScheme?: 'light' | 'dark';
 	onCredential: (credential: string) => void;
 }): Promise<void> {
 	await loadScript(GSI_CLIENT_SRC);
@@ -38,7 +43,7 @@ export async function mountGoogleSignInButton(opts: {
 	opts.host.replaceChildren();
 	gis.renderButton(opts.host, {
 		type: 'standard',
-		theme: 'outline',
+		theme: gisButtonTheme(opts.colorScheme === 'dark' ? 'dark' : 'light'),
 		size: 'large',
 		text: 'signin_with'
 	});

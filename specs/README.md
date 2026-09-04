@@ -197,3 +197,5 @@ Living behavior contracts for Pocket Ledger.
 | [178](178-production-cloud-sql-google/spec.md)           | Production Cloud SQL + Google Sign-In                        | Accepted                                                                        |
 | [179](179-gis-popup-sign-in/spec.md)                     | GIS popup sign-in (not One Tap)                              | Accepted                                                                        |
 | [180](180-debug-reset-cloud/spec.md)                     | Debug reset cloud (temporary)                                | Accepted                                                                        |
+| [181](181-debug-fake-signup/spec.md)                     | Debug fake signup (temporary)                                | Accepted                                                                        |
+| [182](182-gis-button-theme/spec.md)                      | GIS button follows light/dark                                | Accepted                                                                        |

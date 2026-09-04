@@ -25,6 +25,14 @@ export function googleClientId(): string {
 	return ((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '').trim();
 }
 
+/** Spec 181 temporary: fixed fake Google identity for production Cursor testing. */
+export const DEBUG_FAKE_GOOGLE_SUB = 'pl-debug-cursor';
+export const DEBUG_FAKE_GOOGLE_TOKEN = `fake.${DEBUG_FAKE_GOOGLE_SUB}.cursor-debug@pocket-ledger.test`;
+
+export function shouldWipeCloudOnSignOut(googleSub: string | null | undefined): boolean {
+	return googleSub === DEBUG_FAKE_GOOGLE_SUB;
+}
+
 type Json = Record<string, unknown>;
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {

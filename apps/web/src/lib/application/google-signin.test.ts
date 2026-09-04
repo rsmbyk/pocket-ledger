@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GSI_CLIENT_SRC, mountGoogleSignInButton } from './google-signin';
+import { GSI_CLIENT_SRC, gisButtonTheme, mountGoogleSignInButton } from './google-signin';
 
 type GisId = {
 	initialize: ReturnType<typeof vi.fn>;
@@ -34,6 +34,13 @@ function stubGis(): GisId {
 	return gis;
 }
 
+describe('gisButtonTheme', () => {
+	it('maps light to outline and dark to outline_dark', () => {
+		expect(gisButtonTheme('light')).toBe('outline');
+		expect(gisButtonTheme('dark')).toBe('outline_dark');
+	});
+});
+
 describe('mountGoogleSignInButton', () => {
 	afterEach(() => {
 		vi.unstubAllGlobals();
@@ -45,7 +52,12 @@ describe('mountGoogleSignInButton', () => {
 		const host = { replaceChildren: vi.fn() } as unknown as HTMLElement;
 		const onCredential = vi.fn();
 
-		await mountGoogleSignInButton({ host, clientId: 'cid.apps.googleusercontent.com', onCredential });
+		await mountGoogleSignInButton({
+			host,
+			clientId: 'cid.apps.googleusercontent.com',
+			colorScheme: 'light',
+			onCredential
+		});
 
 		expect(gis.initialize).toHaveBeenCalledWith(
 			expect.objectContaining({
@@ -55,9 +67,27 @@ describe('mountGoogleSignInButton', () => {
 		);
 		expect(gis.renderButton).toHaveBeenCalledWith(
 			host,
-			expect.objectContaining({ type: 'standard', text: 'signin_with' })
+			expect.objectContaining({ type: 'standard', text: 'signin_with', theme: 'outline' })
 		);
 		expect(gis.prompt).not.toHaveBeenCalled();
+	});
+
+	it('renders outline_dark when the color scheme is dark', async () => {
+		stubDocument(true);
+		const gis = stubGis();
+		const host = { replaceChildren: vi.fn() } as unknown as HTMLElement;
+
+		await mountGoogleSignInButton({
+			host,
+			clientId: 'cid.apps.googleusercontent.com',
+			colorScheme: 'dark',
+			onCredential: vi.fn()
+		});
+
+		expect(gis.renderButton).toHaveBeenCalledWith(
+			host,
+			expect.objectContaining({ theme: 'outline_dark' })
+		);
 	});
 
 	it('forwards the GIS credential JWT to onCredential', async () => {

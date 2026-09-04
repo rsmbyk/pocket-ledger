@@ -61,7 +61,9 @@
 		logoutCloud,
 		resetCloudAccount,
 		revokeCloudSession,
+		shouldWipeCloudOnSignOut,
 		signInWithGoogleToken,
+		DEBUG_FAKE_GOOGLE_TOKEN,
 		type CloudSession
 	} from '$lib/application/cloud-api';
 	import { localHasData } from '$lib/application/local-has-data';
@@ -112,6 +114,7 @@
 	let themePreference = $state<ThemePreference>('system');
 	let signedIn = $state(false);
 	let userEmail = $state<string | null>(null);
+	let cloudGoogleSub = $state<string | null>(null);
 	let accountOnboarding = $state<AuthMe['onboarding'] | null>(null);
 	let recoveryKit = $state<RecoveryKit | null>(null);
 	let screensaverOn = $state(false);
@@ -302,6 +305,7 @@
 	function applyMe(me: AuthMe) {
 		signedIn = true;
 		userEmail = me.user.email;
+		cloudGoogleSub = me.user.googleSub;
 		accountOnboarding = me.onboarding;
 		if (me.onboarding === 'needs-kit' && !recoveryKit) {
 			recoveryKit = generateRecoveryKit();
@@ -373,6 +377,14 @@
 
 	async function onGoogleSignIn() {
 		await onGoogleCredential(`fake.${crypto.randomUUID()}.e2e@example.com`);
+	}
+
+	async function onDebugFakeSignUp() {
+		clearDataKey();
+		await db.delete();
+		await db.open();
+		await ensureLocalDek();
+		await onGoogleCredential(DEBUG_FAKE_GOOGLE_TOKEN);
 	}
 </script>
 
@@ -505,8 +517,14 @@
 		{displayCurrency}
 		{onGoogleSignIn}
 		{onGoogleCredential}
+		{onDebugFakeSignUp}
+		debugFakeUser={shouldWipeCloudOnSignOut(cloudGoogleSub)}
 		onSignOut={async () => {
-			await logoutCloud();
+			if (shouldWipeCloudOnSignOut(cloudGoogleSub)) {
+				await resetCloudAccount({ signOut: true });
+			} else {
+				await logoutCloud();
+			}
 			clearDataKey();
 			await db.delete();
 			window.location.assign('/');
