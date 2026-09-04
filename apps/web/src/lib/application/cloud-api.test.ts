@@ -38,3 +38,24 @@ describe('cloudConfigured', () => {
 		expect(cloudConfigured()).toBe(true);
 	});
 });
+
+describe('debug fake signup identity', () => {
+	afterEach(() => {
+		vi.unstubAllEnvs();
+		vi.resetModules();
+	});
+
+	it('wipes cloud on sign-out only for the fixed debug sub', async () => {
+		vi.stubEnv('VITE_API_URL', 'http://127.0.0.1:8787');
+		vi.stubEnv('VITE_GOOGLE_CLIENT_ID', '123.apps.googleusercontent.com');
+		vi.stubEnv('VITE_FAKE_GOOGLE', '');
+		const { DEBUG_FAKE_GOOGLE_SUB, DEBUG_FAKE_GOOGLE_TOKEN, shouldWipeCloudOnSignOut } =
+			await import('./cloud-api');
+		expect(DEBUG_FAKE_GOOGLE_TOKEN).toBe(
+			`fake.${DEBUG_FAKE_GOOGLE_SUB}.cursor-debug@pocket-ledger.test`
+		);
+		expect(shouldWipeCloudOnSignOut(DEBUG_FAKE_GOOGLE_SUB)).toBe(true);
+		expect(shouldWipeCloudOnSignOut('real-google-sub')).toBe(false);
+		expect(shouldWipeCloudOnSignOut(null)).toBe(false);
+	});
+});

@@ -19,14 +19,14 @@ Cutover to Cloud Run is a **new origin** = **empty IndexedDB**. Data on the Clou
 
 **Production deploy path is GitHub Actions → Cloud Run** (Spec 118). Repo variables `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_DEPLOY_SA`, and `GCP_REGION` (`us-central1`) are set. If `GCP_PROJECT_ID` is missing, the deploy workflows still skip Cloud Run so PRs can CI. Google’s frontend reserves `/healthz`, so probe `/v1/me` (401 when signed out) instead.
 
-Production signed-in (Spec 178): bake `VITE_API_URL` (defaults to the API `*.run.app` URL) and `VITE_GOOGLE_CLIENT_ID` into the web image. The API uses Cloud SQL when GitHub var `CLOUD_SQL_INSTANCE` is set and Secret Manager `database-url` is bound. **Do not set `AUTH_ALLOW_FAKE` on Cloud Run.** Until `GOOGLE_CLIENT_ID` is set, Settings shows “Cloud sign-in is not configured on this build.” Set `GOOGLE_CLIENT_ID` and `CLOUD_SQL_INSTANCE` together so Sign in never appears without persistence.
+Production signed-in (Spec 178): bake `VITE_API_URL` (defaults to the API `*.run.app` URL) and `VITE_GOOGLE_CLIENT_ID` into the web image. The API uses Cloud SQL when GitHub var `CLOUD_SQL_INSTANCE` is set and Secret Manager `database-url` is bound. **Spec 181 temporary:** Cloud Run sets `AUTH_ALLOW_FAKE=1` and `AUTH_FAKE_SUB=pl-debug-cursor` so Settings can **Sign up with fake account** without GIS (Cursor’s browser cannot finish the Google popup). Remove with specs 180–181. Until `GOOGLE_CLIENT_ID` is set, Settings shows “Cloud sign-in is not configured on this build.” Set `GOOGLE_CLIENT_ID` and `CLOUD_SQL_INSTANCE` together so Sign in never appears without persistence.
 
 ## Cookie and CORS
 
 - Session cookie: **7-day rolling**, HttpOnly, Secure, on the API host. Production uses SameSite=None (`COOKIE_SECURE` default).
 - Web origin is allowlisted on the API for credentialed CORS (`WEB_ORIGIN`).
 - Do not put the session cookie on the web host.
-- API env: `GOOGLE_CLIENT_ID` (GIS audience), `AUTH_ALLOW_FAKE=1` only for local/e2e (`fake.<sub>.<email>` tokens), `COOKIE_SECURE=0` on http://127.0.0.1, `WEB_ORIGIN`, `DATABASE_URL` (production).
+- API env: `GOOGLE_CLIENT_ID` (GIS audience), `AUTH_ALLOW_FAKE=1` for local/e2e (`fake.<sub>.<email>` tokens) and **temporarily** on Cloud Run with `AUTH_FAKE_SUB=pl-debug-cursor` (Spec 181). `COOKIE_SECURE=0` on http://127.0.0.1, `WEB_ORIGIN`, `DATABASE_URL` (production).
 
 Web build env: `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID`. `VITE_FAKE_GOOGLE=1` for e2e only — never bake fake Google into the Cloud Run web image.
 
