@@ -49,9 +49,9 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
         run: |
           gcloud config set project "$PROJECT_ID"
-          REGION="${REGION:-asia-southeast2}"
+          REGION="${REGION:-us-central1}"
           IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/pocket-ledger-web"
-          VITE_API_URL="${VITE_API_URL:-https://pocket-ledger-api-w6fanfnuqa-et.a.run.app}"
+          VITE_API_URL="${VITE_API_URL:-https://pocket-ledger-api-w6fanfnuqa-uc.a.run.app}"
           gcloud builds submit \
             --config cloudbuild.web.yaml \
             --substitutions=_IMAGE="$IMAGE",_VITE_API_URL="$VITE_API_URL",_VITE_GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}" \

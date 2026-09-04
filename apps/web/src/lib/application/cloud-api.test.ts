@@ -15,7 +15,7 @@ describe('cloudConfigured', () => {
 	});
 
 	it('is false with only an API URL (no fake Google, no client id)', async () => {
-		vi.stubEnv('VITE_API_URL', 'https://pocket-ledger-api-w6fanfnuqa-et.a.run.app');
+		vi.stubEnv('VITE_API_URL', 'https://pocket-ledger-api-w6fanfnuqa-uc.a.run.app');
 		vi.stubEnv('VITE_GOOGLE_CLIENT_ID', '');
 		vi.stubEnv('VITE_FAKE_GOOGLE', '');
 		const { cloudConfigured } = await import('./cloud-api');
@@ -23,7 +23,7 @@ describe('cloudConfigured', () => {
 	});
 
 	it('is true with API URL and a Google client id', async () => {
-		vi.stubEnv('VITE_API_URL', 'https://pocket-ledger-api-w6fanfnuqa-et.a.run.app');
+		vi.stubEnv('VITE_API_URL', 'https://pocket-ledger-api-w6fanfnuqa-uc.a.run.app');
 		vi.stubEnv('VITE_GOOGLE_CLIENT_ID', '123.apps.googleusercontent.com');
 		vi.stubEnv('VITE_FAKE_GOOGLE', '');
 		const { cloudConfigured } = await import('./cloud-api');

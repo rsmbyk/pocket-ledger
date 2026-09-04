@@ -11,7 +11,7 @@ Signed-in mode needs a Google identity, an API, and Postgres ciphertext. Local-o
 ## Decision
 
 - Leave Cloudflare as the production target.
-- Host **two Cloud Run** services: static web (`adapter-static`) and Hono API.
+- Host **two Cloud Run** services in **us-central1** (Iowa): static web (`adapter-static`) and Hono API. Region is Iowa so Cloud Run’s always-free allowance applies (Jakarta does not).
 - Default `*.run.app` hostnames are OK; custom domain is parked.
 - Session cookie on the **API** host; CORS from the web origin.
 - Deploy with GitHub Actions + Workload Identity Federation, **path-filtered** so a web change does not roll the API service (and vice versa).

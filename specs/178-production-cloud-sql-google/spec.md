@@ -35,10 +35,10 @@ Make production signed-in real and durable: Google Identity Services on the Clou
 
 - Operator never has the passphrase, hex kit, or raw DEK (unchanged). Server stores ciphertext + wrap envelopes only.
 - Production Sign in must not be enabled without Cloud SQL attached on the API (same slice). GitHub vars may be empty until Ronald finishes console ops; empty Google client id keeps the Settings copy “not configured on this build.”
-- Known URLs: web `https://pocket-ledger-web-w6fanfnuqa-et.a.run.app`; API `https://pocket-ledger-api-w6fanfnuqa-et.a.run.app`.
+- Known URLs: web `https://pocket-ledger-web-w6fanfnuqa-uc.a.run.app`; API `https://pocket-ledger-api-w6fanfnuqa-uc.a.run.app` (confirm hash after first Iowa deploy). Jakarta `-et` origins are retired after cutover (empty IndexedDB on the new URL).
 - OAuth consent stays **Testing**; add Ronald’s Gmail as a test user. Do not start Google verification.
-- GIS Web client authorized JavaScript origin = web `*.run.app` only.
-- Cloud SQL: `asia-southeast2`, **Enterprise** (not Plus), `db-f1-micro`, zonal, 10 GiB **HDD**, **no** storage auto-increase, **one** daily backup, **no** PITR, **no** HA, **no** VPC connector. Connector unix socket. No `0.0.0.0/0` authorized networks. Deletion protection on (no cost). Create with gcloud so the Console does not pick Plus.
+- GIS Web client authorized JavaScript origin = Iowa web `*.run.app` only.
+- Cloud SQL: `us-central1`, **Enterprise** (not Plus), `db-f1-micro`, zonal, 10 GiB **HDD**, **no** storage auto-increase, **one** daily backup, **no** PITR, **no** HA, **no** VPC connector. Connector unix socket. No `0.0.0.0/0` authorized networks. Deletion protection on (no cost). Create with gcloud so the Console does not pick Plus.
 - Cloud Run (web + API): min instances **0**, max **1**, 256 MiB, CPU throttling, no CPU boost.
 - Local `npm run dev:api` stays `AUTH_ALLOW_FAKE=1` + memory unless `DATABASE_URL` is set.
 

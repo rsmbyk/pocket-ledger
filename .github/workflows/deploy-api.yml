@@ -49,13 +49,13 @@ jobs:
           CLOUD_SQL_INSTANCE: ${{ vars.CLOUD_SQL_INSTANCE }}
         run: |
           gcloud config set project "$PROJECT_ID"
-          REGION="${REGION:-asia-southeast2}"
+          REGION="${REGION:-us-central1}"
           IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/cloud-run-source-deploy/pocket-ledger-api"
           gcloud builds submit \
             --config cloudbuild.api.yaml \
             --substitutions=_IMAGE="$IMAGE" \
             --timeout=1200s
-          WEB_ORIGIN="${WEB_ORIGIN:-https://pocket-ledger-web-w6fanfnuqa-et.a.run.app}"
+          WEB_ORIGIN="${WEB_ORIGIN:-https://pocket-ledger-web-w6fanfnuqa-uc.a.run.app}"
           DEPLOY_ARGS=(
             --image "$IMAGE"
             --region "$REGION"
