@@ -66,7 +66,10 @@ test.describe('119 cloud onboarding', () => {
 		await expect(page.getByTestId('app-shell')).toBeVisible();
 		await goToNav(page, 'more');
 		await page.getByTestId('debug-reset-cloud-sign-out').click();
-		await page.getByTestId('debug-reset-cloud-sign-out-confirm').click();
+		await Promise.all([
+			page.waitForURL((url) => new URL(url).pathname === '/'),
+			page.getByTestId('debug-reset-cloud-sign-out-confirm').click()
+		]);
 		await page.goto('/settings');
 		await expect(page.getByTestId('google-sign-in')).toBeVisible();
 	});
