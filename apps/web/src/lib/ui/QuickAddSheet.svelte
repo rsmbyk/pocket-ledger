@@ -93,6 +93,7 @@
 	let mode = $state<AddMode>('normal');
 	let type = $state<AddableTransactionType>('expense');
 	let amountRaw = $state('');
+	let expenseFeeRaw = $state('');
 	let categoryId = $state('');
 	let note = $state('');
 	let occurredOn = $state(todayOccurredOn());
@@ -108,7 +109,9 @@
 		destId: string;
 		occurredOn: string;
 	} | null>(null);
-	let editBaseline = $state<(Omit<TxFormBaseline, 'type'> & { accountId: string }) | null>(null);
+	let editBaseline = $state<
+		(Omit<TxFormBaseline, 'type'> & { accountId: string; feeDigits: string }) | null
+	>(null);
 	let transferEditBaseline = $state<TransferEditBaseline | null>(null);
 	let voidConfirmOpen = $state(false);
 	let discardConfirmOpen = $state(false);
@@ -141,6 +144,9 @@
 				: 'Add money in or out, or move money between pockets.'
 	);
 	const amountDisplay = $derived(formatAmountDigitsDisplay(amountRaw));
+	const typeTab = $derived<'income' | 'expense' | 'transfer'>(
+		mode === 'transfer' || isTransferEdit ? 'transfer' : type
+	);
 
 	const transferSourceOptions = $derived(accounts);
 	const transferDestOptions = $derived(accounts);
@@ -160,7 +166,8 @@
 			: isEdit
 				? editBaseline !== null &&
 					(isEditTxDirty({ amountDigits: amountRaw, categoryId, note, occurredOn }, editBaseline) ||
-						selectedAccountId !== editBaseline.accountId)
+						selectedAccountId !== editBaseline.accountId ||
+						expenseFeeRaw !== editBaseline.feeDigits)
 				: mode === 'transfer'
 					? transferCreateBaseline !== null &&
 						(transferAmountRaw !== '' ||
@@ -174,7 +181,8 @@
 							{ type, amountDigits: amountRaw, categoryId, note, occurredOn },
 							createBaseline
 						) ||
-							selectedAccountId !== createBaseline.accountId)
+							selectedAccountId !== createBaseline.accountId ||
+							expenseFeeRaw !== '')
 	);
 
 	const saveDisabled = $derived(
@@ -199,7 +207,9 @@
 							isEditTxDirty(
 								{ amountDigits: amountRaw, categoryId, note, occurredOn },
 								editBaseline
-							) || selectedAccountId !== editBaseline.accountId
+							) ||
+							selectedAccountId !== editBaseline.accountId ||
+							expenseFeeRaw !== editBaseline.feeDigits
 						)
 					: mode === 'transfer'
 						? !transferAmountRaw ||
@@ -268,6 +278,7 @@
 			transferDestId,
 			transferAmountDigits: transferAmountRaw,
 			transferFeeDigits: transferFeeRaw,
+			expenseFeeDigits: expenseFeeRaw,
 			transferNote,
 			transferOccurredOn
 		};
@@ -326,6 +337,8 @@
 					mode = 'normal';
 					type = editing.type === 'income' ? 'income' : 'expense';
 					amountRaw = String(editing.amountMinor);
+					expenseFeeRaw =
+						editing.type === 'expense' && editing.feeMinor > 0 ? String(editing.feeMinor) : '';
 					note = editing.note;
 					occurredOn = editing.occurredOn;
 					selectedAccountId = editing.accountId;
@@ -337,7 +350,11 @@
 						categoryId: editing.categoryId ?? '',
 						note: editing.note,
 						occurredOn: editing.occurredOn,
-						accountId: editing.accountId
+						accountId: editing.accountId,
+						feeDigits:
+							editing.type === 'expense' && editing.feeMinor > 0
+								? String(editing.feeMinor)
+								: ''
 					};
 					transferEditBaseline = null;
 					createBaseline = null;
@@ -350,6 +367,7 @@
 				mode = 'normal';
 				type = 'expense';
 				amountRaw = '';
+				expenseFeeRaw = '';
 				note = '';
 				occurredOn = today;
 				categoryId = '';
@@ -381,6 +399,7 @@
 					mode = draft.mode;
 					type = draft.type;
 					amountRaw = draft.amountDigits;
+					expenseFeeRaw = draft.expenseFeeDigits;
 					categoryId = draft.categoryId;
 					note = draft.note;
 					occurredOn = draft.occurredOn || today;
@@ -435,6 +454,16 @@
 		onTransferFeeInput(event.clipboardData?.getData('text') ?? '');
 	}
 
+	function onExpenseFeeInput(value: string) {
+		expenseFeeRaw = amountDigitsOnly(value);
+		if (fieldError?.key === 'fee') clearFieldError();
+	}
+
+	function onExpenseFeePaste(event: ClipboardEvent) {
+		event.preventDefault();
+		onExpenseFeeInput(event.clipboardData?.getData('text') ?? '');
+	}
+
 	async function onTypeChange(next: AddableTransactionType) {
 		if (isEdit || isVoidedView) return;
 		type = next;
@@ -448,6 +477,18 @@
 		if (isEdit || isVoidedView) return;
 		mode = next;
 		clearFieldError();
+	}
+
+	function onTypeTabChange(v: string) {
+		if (isEdit || isVoidedView) return;
+		if (v === 'transfer') {
+			selectMode('transfer');
+			return;
+		}
+		if (v === 'income' || v === 'expense') {
+			if (mode !== 'normal') selectMode('normal');
+			void onTypeChange(v);
+		}
 	}
 
 	async function save() {
@@ -473,6 +514,7 @@
 					accountId: selectedAccountId,
 					type,
 					amountRaw,
+					feeRaw: type === 'expense' ? expenseFeeRaw : '',
 					categoryId,
 					note,
 					occurredOn
@@ -494,6 +536,7 @@
 					accountId: selectedAccountId,
 					type,
 					amountRaw,
+					feeRaw: type === 'expense' ? expenseFeeRaw : '',
 					categoryId,
 					note,
 					occurredOn
@@ -634,55 +677,67 @@
 			void save();
 		}}
 	>
-		{#if isEdit || isVoidedView}
-			{#if isTransferEdit}
-				<span
-					class="mx-auto inline-flex w-fit rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
-					data-testid="tx-type-badge-transfer"
-				>
-					Transfer
-				</span>
-			{:else}
-				<span
-					class={cn(
-						'mx-auto inline-flex w-fit rounded-md px-2 py-0.5 text-xs font-medium',
-						type === 'expense'
-							? 'bg-destructive/10 text-destructive'
-							: 'bg-income/10 text-income'
-					)}
-				>
-					{type === 'expense' ? 'Expense' : 'Income'}
-				</span>
-			{/if}
-		{:else if canOfferTransfer}
-			<Tabs.Root
-				value={mode}
-				onValueChange={(v) => {
-					if (v === 'normal' || v === 'transfer') selectMode(v);
-				}}
-				class="w-full"
-				data-testid="tx-mode-tabs"
-			>
-				<Tabs.List variant="default" class="w-full">
+		<Tabs.Root
+			value={typeTab}
+			onValueChange={onTypeTabChange}
+			class="w-full"
+			data-testid="tx-mode-tabs"
+		>
+			<Tabs.List variant="default" class="w-full">
+				{#if isEdit || isVoidedView}
+					{#if typeTab === 'income'}
+						<Tabs.Trigger
+							value="income"
+							disabled
+							data-testid="tx-type-income"
+							class="flex-1 data-active:bg-income/20 data-active:text-income dark:data-active:border-income/50 dark:data-active:bg-income/30"
+						>
+							Income
+						</Tabs.Trigger>
+					{:else if typeTab === 'expense'}
+						<Tabs.Trigger
+							value="expense"
+							disabled
+							data-testid="tx-type-expense"
+							class="flex-1 data-active:bg-destructive/20 data-active:text-destructive dark:data-active:border-destructive/50 dark:data-active:bg-destructive/35"
+						>
+							Expense
+						</Tabs.Trigger>
+					{:else}
+						<Tabs.Trigger value="transfer" disabled data-testid="tx-mode-transfer" class="flex-1">
+							Transfer
+						</Tabs.Trigger>
+					{/if}
+				{:else}
 					<Tabs.Trigger
-						value="normal"
+						value="income"
 						disabled={saving}
-						data-testid="tx-mode-normal"
-						class="flex-1"
+						data-testid="tx-type-income"
+						class="flex-1 data-active:bg-income/20 data-active:text-income dark:data-active:border-income/50 dark:data-active:bg-income/30"
 					>
-						Normal
+						Income
 					</Tabs.Trigger>
+					{#if canOfferTransfer}
+						<Tabs.Trigger
+							value="transfer"
+							disabled={saving}
+							data-testid="tx-mode-transfer"
+							class="flex-1"
+						>
+							Transfer
+						</Tabs.Trigger>
+					{/if}
 					<Tabs.Trigger
-						value="transfer"
+						value="expense"
 						disabled={saving}
-						data-testid="tx-mode-transfer"
-						class="flex-1"
+						data-testid="tx-type-expense"
+						class="flex-1 data-active:bg-destructive/20 data-active:text-destructive dark:data-active:border-destructive/50 dark:data-active:bg-destructive/35"
 					>
-						Transfer
+						Expense
 					</Tabs.Trigger>
-				</Tabs.List>
-			</Tabs.Root>
-		{/if}
+				{/if}
+			</Tabs.List>
+		</Tabs.Root>
 
 		{#if (mode === 'transfer' && !isEdit) || isTransferEdit}
 			{@render pocketPicker(
@@ -790,39 +845,6 @@
 				/>
 			</div>
 		{:else}
-			{#if !isEdit}
-				<div class="grid grid-cols-2 gap-2">
-					<Button
-						type="button"
-						class={cn(
-							'w-full border font-semibold',
-							type === 'income'
-								? 'border-income/40 bg-income/15 text-income hover:bg-income/20'
-								: 'border-border bg-background text-muted-foreground hover:bg-muted/50'
-						)}
-						disabled={saving}
-						aria-pressed={type === 'income'}
-						onclick={() => void onTypeChange('income')}
-					>
-						Income
-					</Button>
-					<Button
-						type="button"
-						class={cn(
-							'w-full border font-semibold',
-							type === 'expense'
-								? 'border-destructive/40 bg-destructive/15 text-destructive hover:bg-destructive/20'
-								: 'border-border bg-background text-muted-foreground hover:bg-muted/50'
-						)}
-						disabled={saving}
-						aria-pressed={type === 'expense'}
-						onclick={() => void onTypeChange('expense')}
-					>
-						Expense
-					</Button>
-				</div>
-			{/if}
-
 			{@render pocketPicker(
 				'Pocket',
 				accounts,
@@ -862,6 +884,36 @@
 				</InputGroup.Root>
 				{@render fieldErrorAlert('amount', 'tx-field-error-amount')}
 			</div>
+
+			{#if type === 'expense'}
+				<div class="space-y-2">
+					<Label>Fee</Label>
+					<InputGroup.Root
+						data-disabled={isVoidedView || saving ? true : undefined}
+						class={cn((isVoidedView || saving) && 'shadow-none')}
+					>
+						<InputGroup.Addon class="bg-muted/60 border-input border-r px-2.5">
+							<InputGroup.Text>{currencyLabel}</InputGroup.Text>
+						</InputGroup.Addon>
+						<InputGroup.Input
+							name="expense-fee"
+							inputmode="numeric"
+							autocomplete="off"
+							placeholder="Optional"
+							value={formatAmountDigitsDisplay(expenseFeeRaw)}
+							onkeydown={onAmountKeydown}
+							onpaste={onExpenseFeePaste}
+							oninput={(e) => onExpenseFeeInput(e.currentTarget.value)}
+							disabled={isVoidedView || saving}
+							class={cn('!pl-2.5', (isVoidedView || saving) && 'shadow-none')}
+							aria-label="Fee"
+							aria-invalid={fieldAlert('fee') ? true : undefined}
+							data-testid="tx-expense-fee"
+						/>
+					</InputGroup.Root>
+					{@render fieldErrorAlert('fee', 'tx-field-error-fee')}
+				</div>
+			{/if}
 
 			<div class="space-y-2">
 				<Label>Category</Label>
@@ -916,12 +968,7 @@
 			</p>
 		{/if}
 
-		<div class="flex flex-col gap-2 pt-2">
-			{#if !isVoidedView}
-				<Button type="submit" class="w-full" disabled={saveDisabled} data-testid="tx-save">
-					{saving ? 'Saving…' : 'Save'}
-				</Button>
-			{/if}
+		<div class={cn('gap-2 pt-2', isVoidedView ? 'flex flex-col' : 'grid grid-cols-2')}>
 			<Button
 				type="button"
 				variant="outline"
@@ -932,6 +979,11 @@
 			>
 				Close
 			</Button>
+			{#if !isVoidedView}
+				<Button type="submit" class="w-full" disabled={saveDisabled} data-testid="tx-save">
+					{saving ? 'Saving…' : 'Save'}
+				</Button>
+			{/if}
 		</div>
 	</form>
 {/snippet}

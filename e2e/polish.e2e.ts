@@ -17,7 +17,7 @@ test.describe('012 polish / 014 void / 030', () => {
 	test('edits and voids a transaction from activity', async ({ page }) => {
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
-		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
+		await sheet.getByTestId('tx-type-expense').click();
 		await sheet.getByLabel(/amount/i).fill('15000');
 		await selectTxCategory(page, 'Food', sheet);
 		await sheet.getByTestId('tx-save').click();
@@ -56,7 +56,7 @@ test.describe('012 polish / 014 void / 030', () => {
 	test('recent row opens edit', async ({ page }) => {
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
-		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
+		await sheet.getByTestId('tx-type-expense').click();
 		await sheet.getByLabel(/amount/i).fill('15000');
 		await selectTxCategory(page, 'Food', sheet);
 		await sheet.getByTestId('tx-save').click();
@@ -68,7 +68,7 @@ test.describe('012 polish / 014 void / 030', () => {
 	test('voided transaction opens read-only', async ({ page }) => {
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
-		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
+		await sheet.getByTestId('tx-type-expense').click();
 		await sheet.getByLabel(/amount/i).fill('15000');
 		await selectTxCategory(page, 'Food', sheet);
 		await sheet.getByTestId('tx-save').click();

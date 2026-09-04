@@ -1,7 +1,7 @@
 # Spec 177: Tx Save and Close on one row
 
 - **ID:** 177
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

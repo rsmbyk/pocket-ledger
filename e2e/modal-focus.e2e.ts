@@ -68,7 +68,7 @@ test.describe('103 modal first-input autofocus', () => {
 		await ensureCategory(page, 'Food', 'expense');
 		await openAdd(page);
 		const form = page.locator('[data-testid="tx-dialog"], [data-testid="tx-sheet"]');
-		await form.getByRole('button', { name: 'Expense', exact: true }).click();
+		await form.getByTestId('tx-type-expense').click();
 		await form.getByTestId('tx-amount').fill('15000');
 		await selectTxCategory(page, 'Food', form);
 		await form.getByTestId('tx-save').click();

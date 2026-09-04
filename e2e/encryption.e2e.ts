@@ -8,7 +8,7 @@ test.describe('011 field encryption', () => {
 		await ensureCategory(page, 'Food', 'expense');
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
-		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
+		await sheet.getByTestId('tx-type-expense').click();
 		await sheet.getByLabel(/amount/i).fill('15000');
 		await selectTxCategory(page, 'Food', sheet);
 		await sheet.getByLabel(/note/i).fill('secret lunch');

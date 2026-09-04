@@ -8,7 +8,7 @@ test.describe('024 reset everything', () => {
 		await ensureCategory(page, 'Warung', 'expense');
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');
-		await sheet.getByRole('button', { name: 'Expense', exact: true }).click();
+		await sheet.getByTestId('tx-type-expense').click();
 		await sheet.getByLabel(/amount/i).fill('15000');
 		await selectTxCategory(page, 'Warung', sheet);
 		await sheet.getByTestId('tx-save').click();

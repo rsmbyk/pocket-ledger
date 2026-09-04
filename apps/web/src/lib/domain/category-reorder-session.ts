@@ -54,6 +54,11 @@ export function resetBothKindsInOrder(
 	return resetKindInOrder(resetKindInOrder(draft, groups, 'income'), groups, 'expense');
 }
 
+/** True when both kinds already match factory stock then customs (Spec 175). */
+export function isFactoryKindGroupOrder(draft: KindGroupOrder, groups: OverlayGroup[]): boolean {
+	return !isReorderDirty(draft, resetBothKindsInOrder(draft, groups));
+}
+
 export function groupsInOrder(groups: OverlayGroup[], ids: string[]): OverlayGroup[] {
 	const byId = new Map(groups.map((g) => [g.id, g]));
 	return ids.flatMap((id) => {

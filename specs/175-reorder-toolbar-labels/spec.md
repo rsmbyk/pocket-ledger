@@ -1,7 +1,7 @@
 # Spec 175: Reorder toolbar Default + Cancel
 
 - **ID:** 175
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

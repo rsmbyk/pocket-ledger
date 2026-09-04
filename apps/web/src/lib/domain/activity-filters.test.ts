@@ -12,6 +12,7 @@ import {
 	isCategoryFilterCompatible,
 	isCategoryFilterDisabled,
 	isDefaultActivityFilters,
+	hasAdminFeeLedgerRow,
 	nextRevealEndIndex,
 	resolveCategoryIdsForTypes,
 	shouldShowActivityCategoryFilter,
@@ -111,7 +112,8 @@ describe('activity-filters', () => {
 		expect(isCategoryFilterCompatible('food', ['expense'], kinds)).toBe(true);
 		expect(isCategoryFilterCompatible('food', ['income'], kinds)).toBe(false);
 		expect(isCategoryFilterCompatible(ADMIN_FEE_CATEGORY_ID, [], kinds)).toBe(true);
-		expect(isCategoryFilterCompatible(ADMIN_FEE_CATEGORY_ID, ['expense'], kinds)).toBe(false);
+		expect(isCategoryFilterCompatible(ADMIN_FEE_CATEGORY_ID, ['expense'], kinds)).toBe(true);
+		expect(isCategoryFilterCompatible(ADMIN_FEE_CATEGORY_ID, ['income'], kinds)).toBe(false);
 		expect(isCategoryFilterCompatible(UNCATEGORIZED_FILTER, ['income'], kinds)).toBe(true);
 		expect(resolveCategoryIdsForTypes(['food'], ['income'], kinds)).toEqual([]);
 		expect(resolveCategoryIdsForTypes(['food'], ['expense'], kinds)).toEqual(['food']);
@@ -136,9 +138,16 @@ describe('activity-filters', () => {
 		);
 	});
 
-	it('filters Admin Fee via sentinel to transfers with fee', () => {
+	it('filters Admin Fee via sentinel to transfers or expenses with fee', () => {
 		const mixed = [
 			tx({ type: 'expense', amountMinor: 9, occurredOn: '2026-07-16', note: 'exp' }),
+			tx({
+				type: 'expense',
+				amountMinor: 9,
+				occurredOn: '2026-07-16',
+				note: 'exp-fee',
+				feeMinor: 40
+			}),
 			{
 				...tx({ type: 'transfer', amountMinor: 100, occurredOn: '2026-07-16', note: 'free' }),
 				counterAccountId: 'vac',
@@ -161,15 +170,22 @@ describe('activity-filters', () => {
 				feeMinor: 50
 			}
 		];
+		expect(hasAdminFeeLedgerRow(mixed)).toBe(true);
 		expect(
 			filterTransactions(mixed, {
 				categoryIds: [ADMIN_FEE_CATEGORY_ID],
 				showVoided: true
 			}).map((t) => t.note)
-		).toEqual(['paid', 'void-fee']);
+		).toEqual(['exp-fee', 'paid', 'void-fee']);
 		expect(
 			filterTransactions(mixed, { categoryIds: [ADMIN_FEE_CATEGORY_ID] }).map((t) => t.note)
-		).toEqual(['paid']);
+		).toEqual(['exp-fee', 'paid']);
+		expect(
+			filterTransactions(mixed, {
+				types: ['expense'],
+				categoryIds: [ADMIN_FEE_CATEGORY_ID]
+			}).map((t) => t.note)
+		).toEqual(['exp-fee']);
 	});
 
 	it('hides voided by default', () => {

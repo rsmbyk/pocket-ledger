@@ -1,7 +1,7 @@
 # Spec 173: Tx type chrome is always tabs
 
 - **ID:** 173
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

@@ -24,7 +24,7 @@ test.describe('110 month opening from pocket openings', () => {
 		await goToNav(page, 'home');
 		await openAdd(page);
 		const dialog = page.getByRole('dialog');
-		await dialog.getByRole('button', { name: 'Expense', exact: true }).click();
+		await dialog.getByTestId('tx-type-expense').click();
 		await dialog.getByLabel(/amount/i).fill('25000');
 		await selectTxCategory(page, 'Food', dialog);
 		await dialog.getByTestId('tx-occurred-on').locator('input[type="date"]').fill('2026-06-05');

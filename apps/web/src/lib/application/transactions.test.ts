@@ -66,6 +66,36 @@ describe('transactions application', () => {
 		expect(await getAccountBalance(account.id)).toBe(-2500);
 	});
 
+	it('persists expense fee and ignores fee on income (174)', async () => {
+		const account = await ensureDefaultAccount();
+		const expense = await addTransaction({
+			accountId: account.id,
+			type: 'expense',
+			amountRaw: '15000',
+			feeRaw: '250'
+		});
+		expect(expense.feeMinor).toBe(250);
+		expect(await getAccountBalance(account.id)).toBe(-15_250);
+
+		const updated = await updateTransaction({
+			id: expense.id,
+			accountId: account.id,
+			type: 'expense',
+			amountRaw: '15000',
+			feeRaw: '100'
+		});
+		expect(updated.feeMinor).toBe(100);
+		expect(await getAccountBalance(account.id)).toBe(-15_100);
+
+		const income = await addTransaction({
+			accountId: account.id,
+			type: 'income',
+			amountRaw: '5000',
+			feeRaw: '999'
+		});
+		expect(income.feeMinor).toBe(0);
+	});
+
 	it('rejects mismatched category kind', async () => {
 		const account = await ensureDefaultAccount();
 		const income = (await listCategories()).find((c) => c.id === 'stock:income:salary')!;

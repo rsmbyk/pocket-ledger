@@ -1,6 +1,6 @@
 # Plan 176: Form submit is Save
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Depends on:** 038, 084

@@ -5,6 +5,7 @@ import {
 	groupsInOrder,
 	isReorderDirty,
 	resetBothKindsInOrder,
+	isFactoryKindGroupOrder,
 	setKindOrder,
 	snapshotGroupOrders
 } from './category-reorder-session';
@@ -57,6 +58,14 @@ describe('category-reorder-session', () => {
 		expect(reset.expense.at(-1)).toBe(side.id);
 		expect(reset.income[0]).toBe(work.id);
 		expect(reset.income[1]).toBe(business.id);
+	});
+
+	it('detects factory order for Default disable (175)', () => {
+		const groups = [home, utilities, side, work, business];
+		const factory = resetBothKindsInOrder(snapshotGroupOrders(groups), groups);
+		expect(isFactoryKindGroupOrder(factory, groups)).toBe(true);
+		const scrambled = setKindOrder(factory, 'expense', [side.id, home.id, utilities.id]);
+		expect(isFactoryKindGroupOrder(scrambled, groups)).toBe(false);
 	});
 
 	it('maps ids back to groups and drops unknown ids', () => {

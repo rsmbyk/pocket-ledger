@@ -26,7 +26,7 @@ test.describe('152 pocket goals', () => {
 		await ensureCategory(page, 'Salary', 'income');
 		await openAdd(page);
 		const dialog = page.getByRole('dialog');
-		await dialog.getByRole('button', { name: 'Income', exact: true }).click();
+		await dialog.getByTestId('tx-type-income').click();
 		await dialog.getByLabel(/amount/i).fill('25000');
 		await selectTxCategory(page, 'Salary', dialog);
 		await dialog.getByRole('button', { name: 'Save' }).click();

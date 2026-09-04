@@ -12,7 +12,7 @@ test.describe('001 transactions', () => {
 		await openAdd(page);
 		await expect(page.getByRole('heading', { name: 'Add transaction' })).toBeVisible();
 
-		await page.getByRole('button', { name: 'Expense', exact: true }).click();
+		await page.getByTestId('tx-type-expense').click();
 		await page.getByRole('textbox', { name: 'Amount' }).fill('15000');
 		await selectTxCategory(page, 'Food');
 		await page.getByRole('button', { name: 'Save' }).click();
@@ -28,7 +28,7 @@ test.describe('001 transactions', () => {
 	test('adds income and increases balance', async ({ page }) => {
 		await ensureCategory(page, 'Salary', 'income');
 		await openAdd(page);
-		await page.getByRole('button', { name: 'Income', exact: true }).click();
+		await page.getByTestId('tx-type-income').click();
 		await page.getByRole('textbox', { name: 'Amount' }).fill('100000');
 		await selectTxCategory(page, 'Salary');
 		await page.getByRole('button', { name: 'Save' }).click();

@@ -1,6 +1,6 @@
 # Plan 174: Expense admin fee
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Depends on:** 106, 107, 104

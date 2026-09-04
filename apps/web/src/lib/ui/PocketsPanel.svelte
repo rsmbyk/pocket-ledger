@@ -616,7 +616,7 @@
 					Cancel
 				</Button>
 				<Button type="submit" disabled={busy || !formDirty} data-testid="pocket-save">
-					{formMode === 'create' ? 'Create' : 'Save'}
+					Save
 				</Button>
 			</div>
 		</form>

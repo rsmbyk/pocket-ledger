@@ -56,7 +56,7 @@ test.describe('106 transfer admin fee', () => {
 		await ensureCategory(page, 'Salary', 'income');
 		await openAdd(page);
 		const form = page.getByRole('dialog');
-		await form.getByRole('button', { name: 'Income', exact: true }).click();
+		await form.getByTestId('tx-type-income').click();
 		await form.getByRole('textbox', { name: 'Amount' }).fill('1000');
 		await selectTxCategory(page, 'Salary', form);
 		await form.getByRole('button', { name: 'Save' }).click();
@@ -96,6 +96,25 @@ test.describe('106 transfer admin fee', () => {
 		await expect(page.locator('[data-testid$="-transfer-fee"]').first()).toBeVisible();
 	});
 
+	test('expense fee books Admin Fee; income has no Fee field', async ({ page }) => {
+		await openAdd(page);
+		const dialog = page.getByRole('dialog');
+		await dialog.getByTestId('tx-type-expense').click();
+		await expect(dialog.getByTestId('tx-expense-fee')).toBeVisible();
+		await dialog.getByTestId('tx-amount').fill('15000');
+		await dialog.getByTestId('tx-expense-fee').fill('250');
+		await dialog.getByRole('button', { name: 'Save' }).click();
+		await expect(dialog).toBeHidden({ timeout: 10_000 });
+		await expect(page.getByText(/Fee\s.*250/).first()).toBeVisible();
+		await expect(page.getByTestId('admin-fee-system').first()).toBeVisible();
+
+		await openAdd(page);
+		const again = page.getByRole('dialog');
+		await again.getByTestId('tx-type-income').click();
+		await expect(again.getByTestId('tx-expense-fee')).toHaveCount(0);
+		await again.getByTestId('tx-close').click();
+	});
+
 	test('Categories panel has no Admin Fee row; Normal picker excludes it', async ({ page }) => {
 		await goToNav(page, 'categories');
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
@@ -104,7 +123,7 @@ test.describe('106 transfer admin fee', () => {
 		await goToNav(page, 'home');
 		await openAdd(page);
 		const dialog = page.getByRole('dialog');
-		await dialog.getByRole('button', { name: 'Expense', exact: true }).click();
+		await dialog.getByTestId('tx-type-expense').click();
 		await dialog.getByTestId('tx-category').click();
 		await expect(page.getByRole('menuitem', { name: 'Admin Fee' })).toHaveCount(0);
 		await page.keyboard.press('Escape');

@@ -197,7 +197,7 @@ test.describe('013 desktop layout', () => {
 		await ensureCategory(page, 'Food', 'expense');
 		await openAdd(page);
 		const dialog = page.getByTestId('tx-dialog');
-		await dialog.getByRole('button', { name: 'Expense', exact: true }).click();
+		await dialog.getByTestId('tx-type-expense').click();
 		await dialog.getByLabel(/amount/i).fill('15000');
 		await selectTxCategory(page, 'Food', dialog);
 		await dialog.getByTestId('tx-save').click();

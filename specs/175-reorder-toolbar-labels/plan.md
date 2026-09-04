@@ -1,6 +1,6 @@
 # Plan 175: Reorder toolbar Default + Cancel
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Depends on:** 123, 146

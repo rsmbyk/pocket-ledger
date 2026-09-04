@@ -1,7 +1,7 @@
 # Spec 174: Expense admin fee
 
 - **ID:** 174
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)
@@ -96,7 +96,7 @@ Expenses may include an optional **admin fee** on the same row, using the same s
 
 ## Related
 
-- 106 Transfer admin fee
-- 107 / 139 filter category picker
+- 106 Transfer admin fee (fee now also on expense)
+- 107 / 139 filter category picker (Admin Fee on Expense type)
 - 104 create-form drafts
 - 110 month opening from pockets

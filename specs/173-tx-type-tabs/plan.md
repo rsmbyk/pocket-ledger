@@ -1,6 +1,6 @@
 # Plan 173: Tx type chrome is always tabs
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Depends on:** 039, 073, 081

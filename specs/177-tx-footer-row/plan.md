@@ -1,6 +1,6 @@
 # Plan 177: Tx Save and Close on one row
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Depends on:** 037, 082

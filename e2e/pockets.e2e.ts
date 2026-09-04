@@ -51,6 +51,7 @@ test.describe('070–077 pockets pack', () => {
 		await expect(description).toBeVisible();
 		await expect(description).toHaveJSProperty('tagName', 'INPUT');
 		await page.getByTestId('pocket-name-input').fill('Vacation');
+		await expect(page.getByTestId('pocket-save')).toHaveText('Save');
 		await expect(page.getByTestId('pocket-save')).toBeEnabled();
 		await page.getByTestId('pocket-save').click();
 		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
@@ -78,6 +79,10 @@ test.describe('070–077 pockets pack', () => {
 		await openAdd(page);
 		const dialog = page.getByRole('dialog');
 		await expect(dialog.getByTestId('tx-mode-tabs')).toBeVisible();
+		await expect(dialog.getByTestId('tx-mode-normal')).toHaveCount(0);
+		await expect(dialog.getByTestId('tx-type-income')).toBeVisible();
+		await expect(dialog.getByTestId('tx-mode-transfer')).toBeVisible();
+		await expect(dialog.getByTestId('tx-type-expense')).toBeVisible();
 		await dialog.getByTestId('tx-mode-transfer').click();
 		await expect(dialog.getByTestId('tx-transfer-source')).toBeVisible();
 		await expect(dialog.getByTestId('tx-transfer-dest')).toBeVisible();
@@ -118,6 +123,14 @@ test.describe('070–077 pockets pack', () => {
 		await openAdd(page);
 		const sheet = page.getByTestId('tx-dialog');
 		await expect(sheet).toBeVisible();
+		await expect(sheet.getByTestId('tx-mode-transfer')).toHaveCount(0);
+		await expect(sheet.getByTestId('tx-type-income')).toBeVisible();
+		await expect(sheet.getByTestId('tx-type-expense')).toBeVisible();
+		const closeBox = await sheet.getByTestId('tx-close').boundingBox();
+		const saveBox = await sheet.getByTestId('tx-save').boundingBox();
+		expect(closeBox && saveBox).toBeTruthy();
+		expect(Math.abs(closeBox!.y - saveBox!.y)).toBeLessThan(8);
+		expect(closeBox!.x).toBeLessThan(saveBox!.x);
 		await sheet.getByTestId('tx-amount').fill('1500');
 		await sheet.getByTestId('tx-close').click();
 		await expect(page.getByTestId('tx-discard-confirm')).toBeVisible();
@@ -137,7 +150,7 @@ test.describe('070–077 pockets pack', () => {
 		await ensureCategory(page, 'Food', 'expense');
 		await openAdd(page);
 		const dialog = page.getByRole('dialog');
-		await dialog.getByRole('button', { name: 'Expense', exact: true }).click();
+		await dialog.getByTestId('tx-type-expense').click();
 		await dialog.getByLabel(/amount/i).fill('1200');
 		await selectTxCategory(page, 'Food', dialog);
 		await dialog.getByRole('button', { name: 'Save' }).click();
