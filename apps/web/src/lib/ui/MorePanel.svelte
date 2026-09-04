@@ -51,6 +51,7 @@
 		}) => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
+		onChangeAccountPassphrase?: (oldPass: string, nextPass: string) => void | Promise<void>;
 		onGoogleSignIn?: () => void | Promise<void>;
 		onGoogleCredential?: (idToken: string) => void | Promise<void>;
 		onDebugFakeSignUp?: () => void | Promise<void>;
@@ -79,6 +80,7 @@
 		onResetLocalData,
 		onEnableLock,
 		onDisableLock,
+		onChangeAccountPassphrase,
 		onGoogleSignIn,
 		onGoogleCredential,
 		onDebugFakeSignUp,
@@ -98,6 +100,10 @@
 	let lockPass = $state('');
 	let lockPassConfirm = $state('');
 	let lockPassError = $state<string | null>(null);
+	let accountCurrentPass = $state('');
+	let accountNewPass = $state('');
+	let accountNewConfirm = $state('');
+	let accountPassError = $state<string | null>(null);
 	let resetOpen = $state(false);
 	let preserveSettings = $state(false);
 	let preservePassphrase = $state(false);
@@ -160,6 +166,10 @@
 	);
 
 	const canEnableLock = $derived(newPassphraseLiveState(lockPass, lockPassConfirm).canSubmit);
+	const canChangeAccount = $derived(
+		Boolean(accountCurrentPass.trim()) &&
+			newPassphraseLiveState(accountNewPass, accountNewConfirm).canSubmit
+	);
 
 	async function wrap(action: () => void | Promise<void>) {
 		try {
@@ -608,10 +618,58 @@
 						>
 					</form>
 				{:else}
-					<p class="text-muted-foreground text-sm">
-						While signed in, the account passphrase stays on. You can change it from unlock after a
-						reload, not remove it.
-					</p>
+					<form
+						class="flex flex-col gap-2"
+						onsubmit={(e) => {
+							e.preventDefault();
+							if (!canChangeAccount || !onChangeAccountPassphrase) return;
+							accountPassError = null;
+							void (async () => {
+								try {
+									await onChangeAccountPassphrase(accountCurrentPass, accountNewPass);
+									accountCurrentPass = '';
+									accountNewPass = '';
+									accountNewConfirm = '';
+								} catch (err) {
+									accountPassError =
+										err instanceof Error ? err.message : 'Could not change passphrase';
+								}
+							})();
+						}}
+					>
+						<p class="text-muted-foreground text-sm">
+							While signed in, the account passphrase stays on. You can change it here, not remove
+							it.
+						</p>
+						<Input
+							type="password"
+							placeholder="Current passphrase"
+							bind:value={accountCurrentPass}
+							autocomplete="current-password"
+							data-testid="change-account-current"
+							oninput={() => (accountPassError = null)}
+						/>
+						<NewPassphraseFields
+							bind:passphrase={accountNewPass}
+							bind:confirm={accountNewConfirm}
+							passphrasePlaceholder="New passphrase (min 8)"
+							passphraseTestId="change-account-pass"
+							confirmTestId="change-account-pass-confirm"
+							requirementsTestId="change-account-requirements"
+							onInput={() => (accountPassError = null)}
+						/>
+						{#if accountPassError}
+							<p class="text-destructive text-sm" role="alert" data-testid="change-account-error">
+								{accountPassError}
+							</p>
+						{/if}
+						<Button
+							type="submit"
+							class="w-full"
+							disabled={!canChangeAccount}
+							data-testid="change-account-submit">Change passphrase</Button
+						>
+					</form>
 				{/if}
 			</Card.Content>
 		</Card.Root>

@@ -44,5 +44,23 @@ export async function unlockAccountWithHex(typed: string): Promise<boolean> {
 	const dek = await unwrapDek(cloud.recoveryWrap as WrapEnvelope, normalizeKitInput(typed));
 	if (!dek) return false;
 	setDataKey(dek);
+	const result = await putCloudWrap({ wrap: null, wrapRev: cloud.wrapRev });
+	await rememberWrapRev(result.wrapRev);
 	return true;
+}
+
+export function rejectUnchangedPassphrase(oldPass: string, nextPass: string): void {
+	if (oldPass === nextPass) throw new Error('New passphrase must be different');
+}
+
+export async function changeAccountPassphrase(oldPass: string, nextPass: string): Promise<void> {
+	const cloud = await fetchCloudWrap();
+	if (!cloud.wrap) throw new Error('Incorrect passphrase');
+	const dek = await unwrapDek(cloud.wrap as WrapEnvelope, oldPass);
+	if (!dek) throw new Error('Incorrect passphrase');
+	rejectUnchangedPassphrase(oldPass, nextPass);
+	const wrap = await wrapDek(dek, nextPass);
+	const result = await putCloudWrap({ wrap, wrapRev: cloud.wrapRev });
+	await rememberWrapRev(result.wrapRev);
+	await enableLock(nextPass);
 }

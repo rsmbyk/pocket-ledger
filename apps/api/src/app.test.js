@@ -181,6 +181,51 @@ describe('sync CAS', () => {
 			body: JSON.stringify({ wrap: { kdf: 'other' }, wrapRev: 1 })
 		});
 		expect(stale.status).toBe(409);
+		const cleared = await app.request('/v1/wrap', {
+			method: 'PUT',
+			headers: { cookie, 'content-type': 'application/json' },
+			body: JSON.stringify({ wrap: null, wrapRev: 2 })
+		});
+		expect(cleared.status).toBe(200);
+		const wrap = await app.request('/v1/wrap', { headers: { cookie } });
+		const wrapBody = await wrap.json();
+		expect(wrapBody.wrap).toBeNull();
+		expect(wrapBody.recoveryWrap).toEqual({ kdf: 'pbkdf2-sha256' });
+		expect(wrapBody.onboarding).toBe('needs-passphrase');
+	});
+
+	it('PUT wrap null clears the passphrase wrap and keeps recovery (185)', async () => {
+		const { app } = appWith();
+		const login = await app.request('/v1/auth/google', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ idToken: 'fake.sub1.a@b.com' })
+		});
+		const cookie = cookieHeader(login);
+		await app.request('/v1/wrap', {
+			method: 'PUT',
+			headers: { cookie, 'content-type': 'application/json' },
+			body: JSON.stringify({ wrap: { kdf: 'pbkdf2-sha256' }, wrapRev: 0 })
+		});
+		await app.request('/v1/wrap', {
+			method: 'PUT',
+			headers: { cookie, 'content-type': 'application/json' },
+			body: JSON.stringify({
+				recoveryWrap: { kdf: 'pbkdf2-sha256' },
+				wrapRev: 1
+			})
+		});
+		const cleared = await app.request('/v1/wrap', {
+			method: 'PUT',
+			headers: { cookie, 'content-type': 'application/json' },
+			body: JSON.stringify({ wrap: null, wrapRev: 2 })
+		});
+		expect(cleared.status).toBe(200);
+		expect((await cleared.json()).onboarding).toBe('needs-passphrase');
+		const wrap = await app.request('/v1/wrap', { headers: { cookie } });
+		const body = await wrap.json();
+		expect(body.wrap).toBeNull();
+		expect(body.recoveryWrap).toEqual({ kdf: 'pbkdf2-sha256' });
 	});
 });
 

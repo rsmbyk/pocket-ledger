@@ -19,12 +19,19 @@ export function createMemoryStore() {
 			users.set(user.googleSub, { ...user });
 			return users.get(user.googleSub);
 		},
-		ensureUser({ googleSub, email }) {
+		ensureUser({ googleSub, email, displayName = '', pictureUrl = '' }) {
 			const existing = users.get(googleSub);
-			if (existing) return existing;
+			if (existing) {
+				existing.email = email;
+				existing.displayName = displayName ?? existing.displayName ?? '';
+				existing.pictureUrl = pictureUrl ?? existing.pictureUrl ?? '';
+				return existing;
+			}
 			const created = {
 				googleSub,
 				email,
+				displayName: displayName ?? '',
+				pictureUrl: pictureUrl ?? '',
 				wrap: null,
 				recoveryWrap: null,
 				wrapRev: 0,
@@ -111,7 +118,7 @@ export function createMemoryStore() {
 				err.current = user;
 				throw err;
 			}
-			user.wrap = wrap ?? user.wrap;
+			user.wrap = wrap !== undefined ? wrap : user.wrap;
 			if (recoveryWrap !== undefined) user.recoveryWrap = recoveryWrap;
 			user.wrapRev = user.wrapRev + 1;
 			return user;

@@ -45,6 +45,7 @@
 		}) => void | Promise<void>;
 		onEnableLock: (passphrase: string) => void | Promise<void>;
 		onDisableLock: (passphrase: string) => void | Promise<void>;
+		onChangeAccountPassphrase?: (oldPass: string, nextPass: string) => void | Promise<void>;
 		onLockSession: () => void;
 		onCreatePocket: (input: CreatePocketInput) => void | Promise<void>;
 		onUpdatePocket: (input: UpdatePocketInput) => void | Promise<void>;
@@ -54,6 +55,8 @@
 		onSyncConflict?: () => void | Promise<void>;
 		cloudConfigured?: boolean;
 		userEmail?: string | null;
+		userDisplayName?: string;
+		userPictureUrl?: string;
 		sessions?: Array<{
 			id: string;
 			userAgent: string;
@@ -105,6 +108,7 @@
 		onResetLocalData,
 		onEnableLock,
 		onDisableLock,
+		onChangeAccountPassphrase,
 		onLockSession,
 		onCreatePocket,
 		onUpdatePocket,
@@ -114,6 +118,8 @@
 		onSyncConflict,
 		cloudConfigured = false,
 		userEmail = null,
+		userDisplayName = '',
+		userPictureUrl = '',
 		sessions = [],
 		idleMinutes = 30,
 		leaveTab = true,
@@ -274,6 +280,7 @@
 				{onResetLocalData}
 				{onEnableLock}
 				{onDisableLock}
+				{onChangeAccountPassphrase}
 				{onLockSession}
 				{onCreatePocket}
 				{onUpdatePocket}
@@ -281,6 +288,8 @@
 				{onReorderPockets}
 				{cloudConfigured}
 				{userEmail}
+				{userDisplayName}
+				{userPictureUrl}
 				{sessions}
 				{idleMinutes}
 				{leaveTab}

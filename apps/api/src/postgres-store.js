@@ -10,6 +10,8 @@ function mapUser(row) {
 	return {
 		googleSub: row.google_sub,
 		email: row.email,
+		displayName: row.display_name ?? '',
+		pictureUrl: row.picture_url ?? '',
 		wrap: row.wrap ?? null,
 		recoveryWrap: row.recovery_wrap ?? null,
 		wrapRev: row.wrap_rev,
@@ -101,7 +103,7 @@ export async function createPostgresStore(pool) {
 		async getUser(sub) {
 			const res = await pool.query(
 				`-- pl:get-user
-				SELECT google_sub, email, wrap, recovery_wrap, wrap_rev, created_at
+				SELECT google_sub, email, display_name, picture_url, wrap, recovery_wrap, wrap_rev, created_at
 				FROM users WHERE google_sub = $1`,
 				[sub]
 			);
@@ -110,17 +112,21 @@ export async function createPostgresStore(pool) {
 		async putUser(user) {
 			const res = await pool.query(
 				`-- pl:ensure-user
-				INSERT INTO users (google_sub, email, wrap, recovery_wrap, wrap_rev)
-				VALUES ($1, $2, $3, $4, $5)
+				INSERT INTO users (google_sub, email, display_name, picture_url, wrap, recovery_wrap, wrap_rev)
+				VALUES ($1, $2, $3, $4, $5, $6, $7)
 				ON CONFLICT (google_sub) DO UPDATE SET
 					email = EXCLUDED.email,
+					display_name = EXCLUDED.display_name,
+					picture_url = EXCLUDED.picture_url,
 					wrap = EXCLUDED.wrap,
 					recovery_wrap = EXCLUDED.recovery_wrap,
 					wrap_rev = EXCLUDED.wrap_rev
-				RETURNING google_sub, email, wrap, recovery_wrap, wrap_rev, created_at`,
+				RETURNING google_sub, email, display_name, picture_url, wrap, recovery_wrap, wrap_rev, created_at`,
 				[
 					user.googleSub,
 					user.email,
+					user.displayName ?? '',
+					user.pictureUrl ?? '',
 					user.wrap ?? null,
 					user.recoveryWrap ?? null,
 					user.wrapRev ?? 0
@@ -128,19 +134,19 @@ export async function createPostgresStore(pool) {
 			);
 			return mapUser(res.rows[0]);
 		},
-		async ensureUser({ googleSub, email }) {
-			const inserted = await pool.query(
+		async ensureUser({ googleSub, email, displayName = '', pictureUrl = '' }) {
+			const upserted = await pool.query(
 				`-- pl:ensure-user
-				INSERT INTO users (google_sub, email)
-				VALUES ($1, $2)
-				ON CONFLICT (google_sub) DO NOTHING
-				RETURNING google_sub, email, wrap, recovery_wrap, wrap_rev, created_at`,
-				[googleSub, email]
+				INSERT INTO users (google_sub, email, display_name, picture_url)
+				VALUES ($1, $2, $3, $4)
+				ON CONFLICT (google_sub) DO UPDATE SET
+					email = EXCLUDED.email,
+					display_name = EXCLUDED.display_name,
+					picture_url = EXCLUDED.picture_url
+				RETURNING google_sub, email, display_name, picture_url, wrap, recovery_wrap, wrap_rev, created_at`,
+				[googleSub, email, displayName ?? '', pictureUrl ?? '']
 			);
-			if (inserted.rows[0]) return mapUser(inserted.rows[0]);
-			const existing = await this.getUser(googleSub);
-			if (!existing) throw new Error('missing user');
-			return existing;
+			return mapUser(upserted.rows[0]);
 		},
 		async cloudHasData(sub) {
 			const res = await pool.query(
@@ -256,7 +262,7 @@ export async function createPostgresStore(pool) {
 			return withTx(pool, async (client) => {
 				const got = await client.query(
 					`-- pl:get-user
-					SELECT google_sub, email, wrap, recovery_wrap, wrap_rev, created_at
+					SELECT google_sub, email, display_name, picture_url, wrap, recovery_wrap, wrap_rev, created_at
 					FROM users WHERE google_sub = $1
 					FOR UPDATE`,
 					[userSub]
@@ -265,16 +271,24 @@ export async function createPostgresStore(pool) {
 				if (!user) throw new Error('missing user');
 				if (user.wrapRev !== wrapRev) throw conflict(user);
 				const setRecovery = recoveryWrap !== undefined ? 1 : 0;
+				const setWrap = wrap !== undefined ? 1 : 0;
 				const updated = await client.query(
 					`-- pl:put-wrap
 					UPDATE users
 					SET
-						wrap = COALESCE($2::jsonb, wrap),
-						recovery_wrap = CASE WHEN $3::int = 1 THEN $4::jsonb ELSE recovery_wrap END,
+						wrap = CASE WHEN $2::int = 1 THEN $3::jsonb ELSE wrap END,
+						recovery_wrap = CASE WHEN $4::int = 1 THEN $5::jsonb ELSE recovery_wrap END,
 						wrap_rev = wrap_rev + 1
-					WHERE google_sub = $1 AND wrap_rev = $5
-					RETURNING google_sub, email, wrap, recovery_wrap, wrap_rev, created_at`,
-					[userSub, wrap ?? null, setRecovery, setRecovery ? recoveryWrap ?? null : null, wrapRev]
+					WHERE google_sub = $1 AND wrap_rev = $6
+					RETURNING google_sub, email, display_name, picture_url, wrap, recovery_wrap, wrap_rev, created_at`,
+					[
+						userSub,
+						setWrap,
+						setWrap ? wrap : null,
+						setRecovery,
+						setRecovery ? recoveryWrap ?? null : null,
+						wrapRev
+					]
 				);
 				return mapUser(updated.rows[0]);
 			});

@@ -3,29 +3,41 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
+	import { formatLockoutRemaining } from '$lib/application/lockout-wait';
 
 	type Props = {
 		variant?: 'device' | 'account';
-		allowHex?: boolean;
 		lockedUntil?: number | null;
+		showRecovery?: boolean;
 		onUnlock: (passphrase: string) => void | Promise<void>;
-		onUnlockHex?: (hex: string) => void | Promise<void>;
+		onOpenRecovery?: () => void;
 	};
 
 	let {
 		variant = 'device',
-		allowHex = false,
 		lockedUntil = null,
+		showRecovery = false,
 		onUnlock,
-		onUnlockHex
+		onOpenRecovery
 	}: Props = $props();
 	let passphrase = $state('');
-	let hex = $state('');
 	let error = $state<string | null>(null);
 	let busy = $state(false);
 	let now = $state(Date.now());
 
 	const locked = $derived(lockedUntil != null && now < lockedUntil);
+	const remainingLabel = $derived(
+		lockedUntil != null ? formatLockoutRemaining(lockedUntil - now) : '0:00'
+	);
+
+	$effect(() => {
+		if (lockedUntil == null) return;
+		now = Date.now();
+		const id = setInterval(() => {
+			now = Date.now();
+		}, 1000);
+		return () => clearInterval(id);
+	});
 
 	async function submitPass() {
 		if (locked) return;
@@ -33,19 +45,6 @@
 		error = null;
 		try {
 			await onUnlock(passphrase);
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'Unlock failed';
-		} finally {
-			busy = false;
-		}
-	}
-
-	async function submitHex() {
-		if (!onUnlockHex) return;
-		busy = true;
-		error = null;
-		try {
-			await onUnlockHex(hex);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Unlock failed';
 		} finally {
@@ -72,71 +71,54 @@
 		<Card.Content>
 			{#if locked}
 				<p class="text-destructive text-sm" role="alert" data-testid="lockout-wait">
-					Too many guesses. Try again later.
+					Too many guesses. Try again in {remainingLabel}.
 				</p>
-			{/if}
-			<form
-				class="space-y-3"
-				onsubmit={(e) => {
-					e.preventDefault();
-					void submitPass();
-				}}
-			>
-				<div class="space-y-2">
-					<Label for="unlock-pass"
-						>{variant === 'account' ? 'Account passphrase' : 'Device passphrase'}</Label
-					>
-					<Input
-						id="unlock-pass"
-						type="password"
-						autocomplete="current-password"
-						bind:value={passphrase}
-						data-testid="unlock-passphrase"
-						disabled={locked}
-						aria-invalid={error ? true : undefined}
-						oninput={() => (error = null)}
-					/>
-					{#if error}
-						<p
-							class="text-destructive text-sm"
-							role="alert"
-							data-testid="unlock-field-error-passphrase"
-						>
-							{error}
-						</p>
-					{/if}
-				</div>
-				<Button type="submit" class="w-full" disabled={busy || locked || !passphrase} data-testid="unlock-submit">
-					{busy ? 'Checking…' : 'Unlock'}
-				</Button>
-			</form>
-			{#if allowHex && onUnlockHex}
+			{:else}
 				<form
-					class="mt-6 space-y-3"
-					data-testid="hex-unlock-form"
+					class="space-y-3"
 					onsubmit={(e) => {
 						e.preventDefault();
-						void submitHex();
+						void submitPass();
 					}}
 				>
-					<Label for="unlock-hex">Or paste your recovery kit</Label>
-					<Input
-						id="unlock-hex"
-						bind:value={hex}
-						data-testid="unlock-hex"
-						autocomplete="off"
-						spellcheck={false}
-					/>
-					<Button
-						type="submit"
-						variant="outline"
-						class="w-full"
-						disabled={busy}
-						data-testid="unlock-hex-submit"
-					>
-						Unlock with kit
+					<div class="space-y-2">
+						<Label for="unlock-pass"
+							>{variant === 'account' ? 'Account passphrase' : 'Device passphrase'}</Label
+						>
+						<Input
+							id="unlock-pass"
+							type="password"
+							autocomplete="current-password"
+							bind:value={passphrase}
+							data-testid="unlock-passphrase"
+							aria-invalid={error ? true : undefined}
+							oninput={() => (error = null)}
+						/>
+						{#if error}
+							<p
+								class="text-destructive text-sm"
+								role="alert"
+								data-testid="unlock-field-error-passphrase"
+							>
+								{error}
+							</p>
+						{/if}
+					</div>
+					<Button type="submit" class="w-full" disabled={busy || !passphrase} data-testid="unlock-submit">
+						{busy ? 'Checking…' : 'Unlock'}
 					</Button>
 				</form>
+			{/if}
+			{#if showRecovery && onOpenRecovery}
+				<Button
+					type="button"
+					variant="outline"
+					class="mt-4 w-full"
+					data-testid="account-recovery-open"
+					onclick={onOpenRecovery}
+				>
+					Reset with recovery kit
+				</Button>
 			{/if}
 		</Card.Content>
 	</Card.Root>

@@ -199,8 +199,10 @@ Living behavior contracts for Pocket Ledger.
 | [180](180-debug-reset-cloud/spec.md)                     | Debug reset cloud (temporary)                                | Accepted                                                                        |
 | [181](181-debug-fake-signup/spec.md)                     | Debug fake signup (temporary)                                | Accepted                                                                        |
 | [182](182-gis-button-theme/spec.md)                      | GIS button follows light/dark                                | Accepted                                                                        |
-<<<<<<< HEAD
-| [184](184-form-modal-unsaved-leave/spec.md)              | Form modal unsaved-leave; Save draft only on Add tx          | Accepted                                                                        |
-=======
 | [183](183-onboarding-passphrase-live-check/spec.md)      | Onboarding passphrase live check                             | Accepted                                                                        |
->>>>>>> feat/183-onboarding-passphrase-live-check
+| [184](184-form-modal-unsaved-leave/spec.md)              | Form modal unsaved-leave; Save draft only on Add tx          | Accepted                                                                        |
+| [185](185-account-recovery-after-fails/spec.md)          | Account recovery after 3 failed unlocks                      | Accepted                                                                        |
+| [186](186-sidebar-google-profile/spec.md)                | Sidebar Google profile picture, name, email                  | Accepted                                                                        |
+| [187](187-tx-pocket-readonly-single/spec.md)             | Pocket field read-only when only Main                        | Accepted                                                                        |
+| [188](188-change-account-passphrase/spec.md)             | Signed-in change account passphrase                          | Accepted                                                                        |
+| [189](189-save-draft-emphasis/spec.md)                   | Save draft is the primary discard action                     | Accepted                                                                        |
