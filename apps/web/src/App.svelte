@@ -59,6 +59,7 @@
 		listCloudSessions,
 		LocalConflictError,
 		logoutCloud,
+		resetCloudAccount,
 		revokeCloudSession,
 		signInWithGoogleToken,
 		type CloudSession
@@ -506,6 +507,18 @@
 		{onGoogleCredential}
 		onSignOut={async () => {
 			await logoutCloud();
+			clearDataKey();
+			await db.delete();
+			window.location.assign('/');
+		}}
+		onResetCloudSignOut={async () => {
+			await resetCloudAccount({ signOut: true });
+			clearDataKey();
+			await db.delete();
+			window.location.assign('/');
+		}}
+		onResetCloudStaySignedIn={async () => {
+			await resetCloudAccount({ signOut: false });
 			clearDataKey();
 			await db.delete();
 			window.location.assign('/');

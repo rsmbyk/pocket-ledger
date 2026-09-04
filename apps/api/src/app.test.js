@@ -183,3 +183,82 @@ describe('sync CAS', () => {
 		expect(stale.status).toBe(409);
 	});
 });
+
+describe('debug reset cloud', () => {
+	it('rejects without a session', async () => {
+		const { app } = appWith();
+		const res = await app.request('/v1/debug/reset-cloud', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ signOut: true })
+		});
+		expect(res.status).toBe(401);
+	});
+
+	it('signOut true deletes the user and clears the cookie', async () => {
+		const { app, store } = appWith();
+		const login = await app.request('/v1/auth/google', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ idToken: 'fake.sub1.a@b.com' })
+		});
+		const cookie = cookieHeader(login);
+		await app.request('/v1/wrap', {
+			method: 'PUT',
+			headers: { cookie, 'content-type': 'application/json' },
+			body: JSON.stringify({ wrap: { kdf: 'pbkdf2-sha256' }, wrapRev: 0 })
+		});
+		await app.request('/v1/sync/tx/tx1', {
+			method: 'PUT',
+			headers: { cookie, 'content-type': 'application/json' },
+			body: JSON.stringify({ rev: 0, blob: 'sealed' })
+		});
+		const reset = await app.request('/v1/debug/reset-cloud', {
+			method: 'POST',
+			headers: { cookie, 'content-type': 'application/json' },
+			body: JSON.stringify({ signOut: true })
+		});
+		expect(reset.status).toBe(200);
+		expect((await reset.json()).signedOut).toBe(true);
+		expect(store.getUser('sub1')).toBeNull();
+		const me = await app.request('/v1/me', { headers: { cookie } });
+		expect(me.status).toBe(401);
+		const again = await app.request('/v1/auth/google', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ idToken: 'fake.sub1.a@b.com', localHasData: false })
+		});
+		expect((await again.json()).onboarding).toBe('needs-passphrase');
+	});
+
+	it('signOut false keeps the session and needs-passphrase', async () => {
+		const { app } = appWith();
+		const login = await app.request('/v1/auth/google', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ idToken: 'fake.sub1.a@b.com' })
+		});
+		const cookie = cookieHeader(login);
+		await app.request('/v1/wrap', {
+			method: 'PUT',
+			headers: { cookie, 'content-type': 'application/json' },
+			body: JSON.stringify({
+				wrap: { kdf: 'pbkdf2-sha256' },
+				recoveryWrap: { kdf: 'pbkdf2-sha256' },
+				wrapRev: 0
+			})
+		});
+		const reset = await app.request('/v1/debug/reset-cloud', {
+			method: 'POST',
+			headers: { cookie, 'content-type': 'application/json' },
+			body: JSON.stringify({ signOut: false })
+		});
+		expect(reset.status).toBe(200);
+		const body = await reset.json();
+		expect(body.signedOut).toBe(false);
+		expect(body.onboarding).toBe('needs-passphrase');
+		const me = await app.request('/v1/me', { headers: { cookie } });
+		expect(me.status).toBe(200);
+		expect((await me.json()).onboarding).toBe('needs-passphrase');
+	});
+});

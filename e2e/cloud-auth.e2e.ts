@@ -36,4 +36,38 @@ test.describe('119 cloud onboarding', () => {
 		await goToNav(page, 'more');
 		await expect(page.getByTestId('export-backup')).toHaveCount(0);
 	});
+
+	test('debug reset stay signed in returns to passphrase without GIS', async ({ page }) => {
+		await page.goto('/');
+		await goToNav(page, 'more');
+		await page.getByTestId('google-sign-in').click();
+		await page.getByTestId('account-pass').fill('account-pass');
+		await page.getByTestId('account-pass-confirm').fill('account-pass');
+		await page.getByTestId('account-pass-submit').click();
+		await page.getByTestId('hex-kit-stored').check();
+		await page.getByTestId('hex-kit-confirm').click();
+		await expect(page.getByTestId('app-shell')).toBeVisible();
+		await goToNav(page, 'more');
+		await page.getByTestId('debug-reset-cloud-stay').click();
+		await page.getByTestId('debug-reset-cloud-stay-confirm').click();
+		await expect(page.getByTestId('account-passphrase-screen')).toBeVisible();
+		await expect(page.getByTestId('google-sign-in')).toHaveCount(0);
+	});
+
+	test('debug reset and sign out shows Sign in again', async ({ page }) => {
+		await page.goto('/');
+		await goToNav(page, 'more');
+		await page.getByTestId('google-sign-in').click();
+		await page.getByTestId('account-pass').fill('account-pass');
+		await page.getByTestId('account-pass-confirm').fill('account-pass');
+		await page.getByTestId('account-pass-submit').click();
+		await page.getByTestId('hex-kit-stored').check();
+		await page.getByTestId('hex-kit-confirm').click();
+		await expect(page.getByTestId('app-shell')).toBeVisible();
+		await goToNav(page, 'more');
+		await page.getByTestId('debug-reset-cloud-sign-out').click();
+		await page.getByTestId('debug-reset-cloud-sign-out-confirm').click();
+		await page.goto('/settings');
+		await expect(page.getByTestId('google-sign-in')).toBeVisible();
+	});
 });

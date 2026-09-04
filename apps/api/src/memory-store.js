@@ -115,6 +115,28 @@ export function createMemoryStore() {
 			if (recoveryWrap !== undefined) user.recoveryWrap = recoveryWrap;
 			user.wrapRev = user.wrapRev + 1;
 			return user;
+		},
+		deleteAccount(userSub) {
+			for (const key of [...entities.keys()]) {
+				if (key.startsWith(`${userSub}\0`)) entities.delete(key);
+			}
+			for (const [id, session] of sessions) {
+				if (session.userSub === userSub) sessions.delete(id);
+			}
+			users.delete(userSub);
+		},
+		resetAccountKeepSession(userSub, sessionId) {
+			for (const key of [...entities.keys()]) {
+				if (key.startsWith(`${userSub}\0`)) entities.delete(key);
+			}
+			for (const [id, session] of sessions) {
+				if (session.userSub === userSub && id !== sessionId) sessions.delete(id);
+			}
+			const user = users.get(userSub);
+			if (!user) return;
+			user.wrap = null;
+			user.recoveryWrap = null;
+			user.wrapRev = 0;
 		}
 	};
 }

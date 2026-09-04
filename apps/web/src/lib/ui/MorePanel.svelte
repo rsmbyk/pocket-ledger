@@ -53,6 +53,8 @@
 		onGoogleSignIn?: () => void | Promise<void>;
 		onGoogleCredential?: (idToken: string) => void | Promise<void>;
 		onSignOut?: () => void | Promise<void>;
+		onResetCloudSignOut?: () => void | Promise<void>;
+		onResetCloudStaySignedIn?: () => void | Promise<void>;
 		onRevokeSession?: (id: string) => void | Promise<void>;
 		onSaveIdle?: (minutes: number, leaveTab: boolean) => void | Promise<void>;
 		onSaveCurrency?: (code: string) => void | Promise<void>;
@@ -77,6 +79,8 @@
 		onGoogleSignIn,
 		onGoogleCredential,
 		onSignOut,
+		onResetCloudSignOut,
+		onResetCloudStaySignedIn,
 		onRevokeSession,
 		onSaveIdle,
 		onSaveCurrency,
@@ -109,6 +113,8 @@
 	let exportPassError = $state<string | null>(null);
 	let disableLockConfirmOpen = $state(false);
 	let signOutOpen = $state(false);
+	let resetCloudSignOutOpen = $state(false);
+	let resetCloudStayOpen = $state(false);
 	let error = $state<string | null>(null);
 	let gisHost = $state<HTMLDivElement | undefined>(undefined);
 
@@ -279,6 +285,26 @@
 						>
 							Sign out
 						</Button>
+						{#if onResetCloudSignOut}
+							<Button
+								type="button"
+								variant="destructive"
+								data-testid="debug-reset-cloud-sign-out"
+								onclick={() => (resetCloudSignOutOpen = true)}
+							>
+								Reset cloud and sign out
+							</Button>
+						{/if}
+						{#if onResetCloudStaySignedIn}
+							<Button
+								type="button"
+								variant="destructive"
+								data-testid="debug-reset-cloud-stay"
+								onclick={() => (resetCloudStayOpen = true)}
+							>
+								Reset cloud, stay signed in
+							</Button>
+						{/if}
 						{#if onEnrollWebAuthn}
 							<Button
 								type="button"
@@ -992,5 +1018,33 @@
 	onOpenChange={(open) => (signOutOpen = open)}
 	onConfirm={async () => {
 		if (onSignOut) await wrap(onSignOut);
+	}}
+/>
+
+<ConfirmDialog
+	open={resetCloudSignOutOpen}
+	title="Reset cloud and sign out?"
+	description="Testing only. Permanently deletes this account’s cloud copy and wipes this device. You will need to Sign in with Google again."
+	confirmLabel="Reset and sign out"
+	destructive
+	dangerChrome
+	confirmTestId="debug-reset-cloud-sign-out-confirm"
+	onOpenChange={(open) => (resetCloudSignOutOpen = open)}
+	onConfirm={async () => {
+		if (onResetCloudSignOut) await wrap(onResetCloudSignOut);
+	}}
+/>
+
+<ConfirmDialog
+	open={resetCloudStayOpen}
+	title="Reset cloud, stay signed in?"
+	description="Testing only. Permanently deletes this account’s cloud copy and wipes this device. You stay signed in and will set a new passphrase."
+	confirmLabel="Reset and stay signed in"
+	destructive
+	dangerChrome
+	confirmTestId="debug-reset-cloud-stay-confirm"
+	onOpenChange={(open) => (resetCloudStayOpen = open)}
+	onConfirm={async () => {
+		if (onResetCloudStaySignedIn) await wrap(onResetCloudStaySignedIn);
 	}}
 />

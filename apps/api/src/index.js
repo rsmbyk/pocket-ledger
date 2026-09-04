@@ -3,7 +3,7 @@ import { createApp } from './app.js';
 import { openStore } from './store.js';
 
 /**
- * Specs 118–121, 178: health, Google session, wrap coat-check, sync.
+ * Specs 118–121, 178, 180: health, Google session, wrap coat-check, sync, debug reset.
  * DATABASE_URL → Cloud SQL / Postgres. Unset → in-memory.
  * Set GOOGLE_CLIENT_ID to verify real GIS tokens. AUTH_ALLOW_FAKE=1 accepts `fake.<sub>.<email>`.
  */
