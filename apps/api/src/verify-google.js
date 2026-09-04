@@ -12,7 +12,7 @@
  *   googleClientId: string;
  *   fetchImpl?: typeof fetch;
  * }} opts
- * @returns {Promise<{ sub: string; email: string } | null>}
+ * @returns {Promise<{ sub: string; email: string; name: string; picture: string } | null>}
  */
 export async function verifyGoogleToken(idToken, opts) {
 	const { allowFake, allowedSub, googleClientId, fetchImpl = fetch } = opts;
@@ -22,7 +22,9 @@ export async function verifyGoogleToken(idToken, opts) {
 		const sub = (dot === -1 ? rest : rest.slice(0, dot)) || 'dev';
 		if (allowedSub && sub !== allowedSub) return null;
 		const email = dot === -1 ? 'dev@localhost' : rest.slice(dot + 1);
-		return { sub, email: email || 'dev@localhost' };
+		const resolvedEmail = email || 'dev@localhost';
+		const local = resolvedEmail.split('@')[0] || resolvedEmail;
+		return { sub, email: resolvedEmail, name: local, picture: '' };
 	}
 	if (!googleClientId) return null;
 	const url = new URL('https://oauth2.googleapis.com/tokeninfo');
@@ -34,5 +36,10 @@ export async function verifyGoogleToken(idToken, opts) {
 	if (payload.iss !== 'accounts.google.com' && payload.iss !== 'https://accounts.google.com') {
 		return null;
 	}
-	return { sub: payload.sub, email: payload.email ?? '' };
+	return {
+		sub: payload.sub,
+		email: payload.email ?? '',
+		name: typeof payload.name === 'string' ? payload.name : '',
+		picture: typeof payload.picture === 'string' ? payload.picture : ''
+	};
 }
