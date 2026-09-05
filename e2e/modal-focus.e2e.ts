@@ -50,20 +50,6 @@ test.describe('103 modal first-input autofocus', () => {
 		await expect(page.getByTestId('pocket-name-input')).toBeFocused();
 	});
 
-	test('Show money focuses passphrase', async ({ page }) => {
-		await goToNav(page, 'more');
-		await page.getByTestId('enable-lock-pass').fill('secret-pass');
-		await page.getByPlaceholder('Confirm passphrase').fill('secret-pass');
-		await page.getByTestId('enable-lock').click();
-
-		await goToNav(page, 'home');
-		await page.getByTestId('toggle-home-amounts').click();
-		await expect(page.getByTestId('account-balance')).toHaveText('••••');
-		await page.getByTestId('toggle-home-amounts').click();
-		await expect(page.getByTestId('show-money-dialog')).toBeVisible();
-		await expect(page.getByTestId('show-money-passphrase')).toBeFocused();
-	});
-
 	test('ConfirmDialog without text fields keeps focus inside confirm', async ({ page }) => {
 		await ensureCategory(page, 'Food', 'expense');
 		await openAdd(page);

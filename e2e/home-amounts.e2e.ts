@@ -45,7 +45,23 @@ test.describe('048 home amount hide + by-category icons', () => {
 		).toHaveCount(1);
 	});
 
-	test('show money requires passphrase when lock is on', async ({ page }) => {
+	test('213 eye hides Activity and Pockets list amounts', async ({ page }) => {
+		await page.getByTestId('toggle-home-amounts').click();
+		await expect(page.getByTestId('account-balance')).toHaveText('••••');
+		await goToNav(page, 'transactions');
+		await expect(page.getByTestId('toggle-home-amounts')).toBeVisible();
+		const activityAmount = page
+			.getByTestId('activity-list')
+			.locator('[data-testid^="activity-row-"]')
+			.first()
+			.locator('p.tabular-nums');
+		await expect(activityAmount).toHaveText('••••');
+		await goToNav(page, 'pockets');
+		await expect(page.getByTestId('toggle-home-amounts')).toBeVisible();
+		await expect(page.getByTestId('pocket-row-balance').first()).toHaveText('••••');
+	});
+
+	test('214 show money is one tap when lock is on', async ({ page }) => {
 		await goToNav(page, 'more');
 		await page.getByTestId('enable-lock-pass').fill('secret-pass');
 		await page.getByPlaceholder('Confirm passphrase').fill('secret-pass');
@@ -56,14 +72,7 @@ test.describe('048 home amount hide + by-category icons', () => {
 		await page.getByTestId('toggle-home-amounts').click();
 		await expect(page.getByTestId('account-balance')).toHaveText('••••');
 		await page.getByTestId('toggle-home-amounts').click();
-		await expect(page.getByTestId('show-money-dialog')).toBeVisible();
-		await page.getByTestId('show-money-passphrase').fill('wrong-pass');
-		await page.getByTestId('show-money-confirm').click();
-		await expect(page.getByTestId('show-money-error')).toBeVisible();
-		await expect(page.getByTestId('account-balance')).toHaveText('••••');
-		await page.getByTestId('show-money-passphrase').fill('secret-pass');
-		await page.getByTestId('show-money-confirm').click();
-		await expect(page.getByTestId('show-money-dialog')).toBeHidden();
+		await expect(page.getByTestId('show-money-dialog')).toHaveCount(0);
 		await expect(page.getByTestId('account-balance')).not.toHaveText('••••');
 	});
 });

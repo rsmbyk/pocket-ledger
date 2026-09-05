@@ -52,6 +52,7 @@
 		onRequestEditConsumed?: () => void;
 		/** Hide the list; keep dialogs mounted (details page). */
 		hideList?: boolean;
+		hideAmounts?: boolean;
 	};
 
 	type FormBaseline = {
@@ -73,7 +74,8 @@
 		onReorderPockets,
 		requestEdit = null,
 		onRequestEditConsumed,
-		hideList = false
+		hideList = false,
+		hideAmounts = false
 	}: Props = $props();
 
 	const flipDurationMs = 180;
@@ -362,11 +364,12 @@
 					percent={goalProgressPercent(preview.targetMinor, balance)}
 					targetOn={preview.targetOn}
 					{currencyLabel}
+					{hideAmounts}
 				/>
 			{/if}
 		</div>
-		<p class="shrink-0 self-start font-medium tabular-nums">
-			{formatMinor(balance, currencyLabel)}
+		<p class="shrink-0 self-start font-medium tabular-nums" data-testid="pocket-row-balance">
+			{hideAmounts ? '••••' : formatMinor(balance, currencyLabel)}
 		</p>
 	</div>
 {/snippet}

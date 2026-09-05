@@ -35,10 +35,8 @@
 	import TransactionRangePicker from '$lib/ui/TransactionRangePicker.svelte';
 	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
-	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import type { Account } from '$lib/domain/account';
 	import type { PocketGoal } from '$lib/domain/goals';
-	import { verifyPassphrase } from '$lib/application/lock';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
 	import type { OverlayGroup } from '$lib/domain/category-overlay';
@@ -221,10 +219,6 @@
 	const recent = $derived(transactions.slice(0, 5));
 
 	let hideHomeAmounts = $state(readHideAmounts());
-	let showMoneyDialogOpen = $state(false);
-	let showMoneyPass = $state('');
-	let showMoneyError = $state<string | null>(null);
-	let showMoneyBusy = $state(false);
 
 	const initialActivitySession = readActivityListSession();
 	let applied = $state<ActivityFilterCriteria>(
@@ -354,37 +348,8 @@
 	}
 
 	function toggleHomeAmounts() {
-		if (!hideHomeAmounts) {
-			hideHomeAmounts = true;
-			writeHideAmounts(true);
-			return;
-		}
-		if (lockEnabled) {
-			showMoneyPass = '';
-			showMoneyError = null;
-			showMoneyDialogOpen = true;
-			return;
-		}
-		hideHomeAmounts = false;
-		writeHideAmounts(false);
-	}
-
-	async function confirmShowMoney() {
-		showMoneyBusy = true;
-		showMoneyError = null;
-		try {
-			const ok = await verifyPassphrase(showMoneyPass);
-			if (!ok) {
-				showMoneyError = 'Incorrect passphrase';
-				return;
-			}
-			hideHomeAmounts = false;
-			writeHideAmounts(false);
-			showMoneyDialogOpen = false;
-			showMoneyPass = '';
-		} finally {
-			showMoneyBusy = false;
-		}
+		hideHomeAmounts = !hideHomeAmounts;
+		writeHideAmounts(hideHomeAmounts);
 	}
 
 	function navigate(next: string) {
@@ -643,7 +608,7 @@
 				<PencilIcon class="size-4" />
 			</Button>
 		{/if}
-		{#if route === 'home' || detailsPocket}
+		{#if route === 'home' || route === 'transactions' || route === 'pockets'}
 			<Button
 				type="button"
 				variant="ghost"
@@ -1015,6 +980,7 @@
 						{categoryName}
 						{categoryIconSlug}
 						{pocketsById}
+						hideAmounts={hideHomeAmounts}
 						onEdit={onOpenEdit}
 					/>
 				</div>
@@ -1050,6 +1016,7 @@
 				balances={pocketBalances}
 				{currencyLabel}
 				{goals}
+				hideAmounts={hideHomeAmounts}
 				{onCreatePocket}
 				{onUpdatePocket}
 				onDeletePocket={async (id) => {
@@ -1100,66 +1067,6 @@
 		{/if}
 	</div>
 </Sidebar.Inset>
-
-<Dialog.Root
-	bind:open={showMoneyDialogOpen}
-	onOpenChange={(open) => {
-		showMoneyDialogOpen = open;
-		if (!open) {
-			showMoneyPass = '';
-			showMoneyError = null;
-		}
-	}}
->
-	<Dialog.Content class="max-w-sm sm:max-w-sm" data-testid="show-money-dialog">
-		<Dialog.Header>
-			<Dialog.Title>Show money?</Dialog.Title>
-			<Dialog.Description>Enter your passphrase to reveal amounts.</Dialog.Description>
-		</Dialog.Header>
-		<form
-			class="space-y-3"
-			onsubmit={(e) => {
-				e.preventDefault();
-				void confirmShowMoney();
-			}}
-		>
-			<div class="space-y-2">
-				<Label for="show-money-pass">Passphrase</Label>
-				<Input
-					id="show-money-pass"
-					type="password"
-					autocomplete="current-password"
-					bind:value={showMoneyPass}
-					data-testid="show-money-passphrase"
-					aria-invalid={showMoneyError ? true : undefined}
-					oninput={() => (showMoneyError = null)}
-				/>
-				{#if showMoneyError}
-					<p class="text-destructive text-sm" role="alert" data-testid="show-money-error">
-						{showMoneyError}
-					</p>
-				{/if}
-			</div>
-			<div class="flex justify-end gap-2">
-				<Button
-					type="button"
-					variant="outline"
-					disabled={showMoneyBusy}
-					onclick={() => (showMoneyDialogOpen = false)}
-				>
-					Cancel
-				</Button>
-				<Button
-					type="submit"
-					disabled={showMoneyBusy || !showMoneyPass}
-					data-testid="show-money-confirm"
-				>
-					{showMoneyBusy ? 'Checking…' : 'Show'}
-				</Button>
-			</div>
-		</form>
-	</Dialog.Content>
-</Dialog.Root>
 
 <ConfirmDialog
 	open={leaveCategoriesOpen}
