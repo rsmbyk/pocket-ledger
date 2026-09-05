@@ -6,10 +6,12 @@ describe('newPassphraseLiveState', () => {
 		expect(newPassphraseLiveState('', '')).toEqual({
 			passLongEnough: false,
 			passMatch: false,
+			passDiffersFromOld: true,
 			canSubmit: false,
 			showPassIcon: false,
 			showConfirmIcon: false,
-			showRequirements: false
+			showRequirements: false,
+			showDifferRule: false
 		});
 	});
 
@@ -36,5 +38,22 @@ describe('newPassphraseLiveState', () => {
 		expect(state.passLongEnough).toBe(true);
 		expect(state.passMatch).toBe(false);
 		expect(state.canSubmit).toBe(false);
+	});
+
+	it('blocks submit and shows the differ rule when new equals old', () => {
+		const state = newPassphraseLiveState('account-pass', 'account-pass', 'account-pass');
+		expect(state.passLongEnough).toBe(true);
+		expect(state.passMatch).toBe(true);
+		expect(state.passDiffersFromOld).toBe(false);
+		expect(state.canSubmit).toBe(false);
+		expect(state.showDifferRule).toBe(true);
+		expect(state.showPassIcon).toBe(true);
+	});
+
+	it('allows a new passphrase that differs from old', () => {
+		const state = newPassphraseLiveState('new-account-pass', 'new-account-pass', 'account-pass');
+		expect(state.passDiffersFromOld).toBe(true);
+		expect(state.canSubmit).toBe(true);
+		expect(state.showDifferRule).toBe(true);
 	});
 });

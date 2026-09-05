@@ -119,11 +119,13 @@ test.describe('119 cloud onboarding', () => {
 		await expect(page.getByTestId('unlock-passphrase')).toHaveCount(0);
 		await page.getByTestId('account-recovery-open').click();
 		await expect(page.getByTestId('account-recovery-screen')).toBeVisible();
+		await expect(page.getByTestId('recovery-back')).toBeVisible();
 		await page.getByTestId('recovery-hex').fill(kit);
 		await page.getByTestId('recovery-submit').click();
 		await expect(page.getByTestId('account-passphrase-screen')).toBeVisible();
 		await page.reload();
 		await expect(page.getByTestId('account-recovery-screen')).toBeVisible();
+		await expect(page.getByTestId('recovery-back')).toHaveCount(0);
 		await expect(page.getByTestId('account-passphrase-screen')).toHaveCount(0);
 		await expect(page.getByTestId('app-shell')).toHaveCount(0);
 		await page.getByTestId('recovery-hex').fill(kit);
@@ -139,6 +141,32 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('unlock-passphrase').fill('new-account-pass');
 		await page.getByTestId('unlock-submit').click();
 		await expect(page.getByTestId('app-shell')).toBeVisible();
+	});
+
+	test('190 Back from recovery returns to Unlock', async ({ page }) => {
+		await page.goto('/');
+		await goToNav(page, 'more');
+		await page.getByTestId('google-sign-in').click();
+		await page.getByTestId('account-pass').fill('account-pass');
+		await page.getByTestId('account-pass-confirm').fill('account-pass');
+		await page.getByTestId('account-pass-submit').click();
+		await page.getByTestId('hex-kit-stored').check();
+		await page.getByTestId('hex-kit-confirm').click();
+		await expect(page.getByTestId('app-shell')).toBeVisible();
+		await page.getByTestId('header-lock').click();
+		await page.getByTestId('unlock-passphrase').fill('wrong-pass');
+		await page.getByTestId('unlock-submit').click();
+		await expect(page.getByTestId('unlock-field-error-passphrase')).toBeVisible();
+		await page.getByTestId('unlock-submit').click();
+		await expect(page.getByTestId('unlock-field-error-passphrase')).toBeVisible();
+		await page.getByTestId('unlock-submit').click();
+		await expect(page.getByTestId('lockout-wait')).toBeVisible();
+		await page.getByTestId('account-recovery-open').click();
+		await expect(page.getByTestId('account-recovery-screen')).toBeVisible();
+		await page.getByTestId('recovery-back').click();
+		await expect(page.getByTestId('account-unlock-screen')).toBeVisible();
+		await expect(page.getByTestId('account-recovery-open')).toBeVisible();
+		await expect(page.getByTestId('lockout-wait')).toBeVisible();
 	});
 
 	test('186 sidebar shows fake Google name and initials', async ({ page }) => {
@@ -173,6 +201,8 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('hex-kit-confirm').click();
 		await expect(page.getByTestId('app-shell')).toBeVisible();
 		await goToNav(page, 'more');
+		await expect(page.getByText('Old passphrase', { exact: true })).toBeVisible();
+		await expect(page.getByText('New passphrase', { exact: true })).toBeVisible();
 		await page.getByTestId('change-account-current').fill('wrong-pass');
 		await page.getByTestId('change-account-pass').fill('new-account-pass');
 		await page.getByTestId('change-account-pass-confirm').fill('new-account-pass');
@@ -181,8 +211,10 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('change-account-current').fill('account-pass');
 		await page.getByTestId('change-account-pass').fill('account-pass');
 		await page.getByTestId('change-account-pass-confirm').fill('account-pass');
-		await page.getByTestId('change-account-submit').click();
-		await expect(page.getByTestId('change-account-error')).toHaveText(/must be different/i);
+		await expect(page.getByTestId('change-account-requirements')).toContainText(
+			/must be different/i
+		);
+		await expect(page.getByTestId('change-account-submit')).toBeDisabled();
 		await page.getByTestId('change-account-pass').fill('new-account-pass');
 		await page.getByTestId('change-account-pass-confirm').fill('new-account-pass');
 		await page.getByTestId('change-account-submit').click();
@@ -193,5 +225,33 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('unlock-passphrase').fill('new-account-pass');
 		await page.getByTestId('unlock-submit').click();
 		await expect(page.getByTestId('app-shell')).toBeVisible({ timeout: 15_000 });
+	});
+
+	test('191 lock from Settings opens Unlock at home', async ({ page }) => {
+		await page.goto('/');
+		await goToNav(page, 'more');
+		await page.getByTestId('google-sign-in').click();
+		await page.getByTestId('account-pass').fill('account-pass');
+		await page.getByTestId('account-pass-confirm').fill('account-pass');
+		await page.getByTestId('account-pass-submit').click();
+		await page.getByTestId('hex-kit-stored').check();
+		await page.getByTestId('hex-kit-confirm').click();
+		await expect(page.getByTestId('app-shell')).toBeVisible();
+		await goToNav(page, 'more');
+		await expect(page.getByTestId('settings-panel')).toBeVisible();
+		await page.getByTestId('header-lock').click();
+		await expect(page.getByTestId('account-unlock-screen')).toBeVisible();
+		await expect.poll(() => new URL(page.url()).pathname).toBe('/');
+		await expect(page.getByTestId('account-unlock-screen')).toContainText(
+			'Enter your account passphrase.'
+		);
+		await expect(page.getByTestId('account-unlock-screen')).not.toContainText(
+			'optional device lock'
+		);
+		await page.getByTestId('unlock-passphrase').fill('account-pass');
+		await page.getByTestId('unlock-submit').click();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
+		expect(new URL(page.url()).pathname).toBe('/');
+		await expect(page.getByTestId('settings-panel')).toHaveCount(0);
 	});
 });

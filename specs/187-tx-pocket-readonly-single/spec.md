@@ -1,14 +1,14 @@
 # Spec 187: Read-only pocket when only Main
 
 - **ID:** 187
-- **Status:** Accepted
+- **Status:** Parked (superseded by [192](../192-hide-tx-pocket-when-only-main/spec.md))
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 
 ## Intent
 
-On income/expense Add and Edit, if the only pocket is Main, Pocket stays visible but read-only (no chevron, not a menu). Two or more pockets keep the Spec 078 dropdown.
+Supersedes Spec 078 dropdown when there is only Main. **Parked by Spec 192:** income/expense Pocket is hidden when `options.length < 2`. To bring the visible static row back, restore the read-only `tx-pocket` branch in `QuickAddSheet` `pocketPicker` (no chevron, still in the DOM).
 
 ## Scope
 

@@ -12,6 +12,7 @@
 		confirmTestId: string;
 		requirementsTestId: string;
 		confirmPlaceholder?: string;
+		mustDifferFrom?: string;
 		onInput?: () => void;
 	};
 
@@ -23,10 +24,11 @@
 		confirmTestId,
 		requirementsTestId,
 		confirmPlaceholder = 'Confirm passphrase',
+		mustDifferFrom = '',
 		onInput
 	}: Props = $props();
 
-	const live = $derived(newPassphraseLiveState(passphrase, confirm));
+	const live = $derived(newPassphraseLiveState(passphrase, confirm, mustDifferFrom));
 </script>
 
 <div class="flex flex-col gap-2">
@@ -41,7 +43,7 @@
 			oninput={() => onInput?.()}
 		/>
 		{#if live.showPassIcon}
-			{#if live.passLongEnough}
+			{#if live.passLongEnough && live.passDiffersFromOld}
 				<CheckIcon
 					class="text-income pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2"
 				/>
@@ -57,6 +59,11 @@
 			<li class={live.passLongEnough ? 'text-income' : 'text-destructive'}>
 				At least 8 characters
 			</li>
+			{#if live.showDifferRule}
+				<li class={live.passDiffersFromOld ? 'text-income' : 'text-destructive'}>
+					New passphrase must be different
+				</li>
+			{/if}
 		</ul>
 	{/if}
 	<div class="relative">
