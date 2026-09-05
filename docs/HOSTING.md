@@ -136,7 +136,7 @@ In APIs & Services → OAuth consent screen:
 
 Credentials → Create credentials → **OAuth client ID** → application type **Web application**:
 
-- Authorized JavaScript origins: `https://pocket-ledger-web-w6fanfnuqa-uc.a.run.app` only (the Iowa web URL; add it after the first web deploy if the hash differs)
+- Authorized JavaScript origins: `https://pocket-ledger-web-w6fanfnuqa-uc.a.run.app` (the Iowa web URL; add it after the first web deploy if the hash differs). For local compose, also add `http://127.0.0.1:5173` (and `http://127.0.0.1:4173` if you use the preview profile).
 - Redirect URIs: not required for the GIS **Sign in with Google** button (`renderButton`, `ux_mode: popup`). Do **not** use One Tap `google.accounts.id.prompt()` — FedCM One Tap often fails silently on Cloud Run.
 
 Copy the client id into GitHub repo variable `GOOGLE_CLIENT_ID`.
@@ -151,11 +151,14 @@ Deploys pin Cloud Run to **min 0 / max 1** instance, **256 MiB**, CPU throttling
 
 ## Local Docker
 
-Compose runs the web (and later API) so you do not need Node on the host.
+Compose runs **web and API**. Copy `.env.example` to `.env` and set `GOOGLE_CLIENT_ID` (the public GIS Web client id) so Settings shows official Sign in with Google instead of “Cloud sign-in is not configured on this build.” Do **not** set `VITE_FAKE_GOOGLE` in compose (that swaps in a shadcn button).
+
+Open **http://127.0.0.1:5173** — not `localhost` — so the origin matches `WEB_ORIGIN`. API health: `http://127.0.0.1:8080/healthz`. In-memory store (no `DATABASE_URL`).
 
 ```bash
-docker compose up --build          # Vite / Kit dev → http://localhost:5173
-docker compose --profile preview up preview   # built preview → :4173
+cp .env.example .env               # paste GOOGLE_CLIENT_ID
+docker compose up --build          # Vite → :5173, API → :8080
+WEB_ORIGIN=http://127.0.0.1:4173 docker compose --profile preview up --build api preview   # built preview → :4173
 ```
 
 `node_modules` lives in a named volume so the bind mount does not fight host/container installs.

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GSI_CLIENT_SRC, disableGoogleAutoSelect, gisButtonTheme, mountGoogleSignInButton } from './google-signin';
+import { GSI_CLIENT_SRC, disableGoogleAutoSelect, gisButtonTheme, gisButtonWidth, mountGoogleSignInButton } from './google-signin';
 
 type GisId = {
 	initialize: ReturnType<typeof vi.fn>;
@@ -35,6 +35,15 @@ function stubGis(): GisId {
 	});
 	return gis;
 }
+
+describe('gisButtonWidth', () => {
+	it('caps at 400 and falls back when the host has no layout', () => {
+		expect(gisButtonWidth(500)).toBe(400);
+		expect(gisButtonWidth(336)).toBe(336);
+		expect(gisButtonWidth(0)).toBe(400);
+		expect(gisButtonWidth(Number.NaN)).toBe(400);
+	});
+});
 
 describe('gisButtonTheme', () => {
 	it('maps light to outline and dark to outline_dark', () => {
@@ -78,14 +87,29 @@ describe('mountGoogleSignInButton', () => {
 				type: 'standard',
 				text: 'signin_with',
 				theme: 'outline',
-				size: 'medium'
+				size: 'large',
+				width: 400
 			})
 		);
 		expect(gis.renderButton).toHaveBeenCalledWith(
 			host,
-			expect.not.objectContaining({ size: 'large' })
+			expect.not.objectContaining({ size: 'medium' })
 		);
 		expect(gis.prompt).not.toHaveBeenCalled();
+	});
+
+	it('passes the laid-out host width when under 400', async () => {
+		stubDocument(true);
+		const gis = stubGis();
+		const host = { replaceChildren: vi.fn(), clientWidth: 280 } as unknown as HTMLElement;
+
+		await mountGoogleSignInButton({
+			host,
+			clientId: 'cid.apps.googleusercontent.com',
+			onCredential: vi.fn()
+		});
+
+		expect(gis.renderButton).toHaveBeenCalledWith(host, expect.objectContaining({ width: 280 }));
 	});
 
 	it('renders outline_dark when the color scheme is dark', async () => {

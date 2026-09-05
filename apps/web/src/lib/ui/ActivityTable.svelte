@@ -23,6 +23,7 @@
 		categoryName: (categoryId: string | null) => string;
 		categoryIconSlug?: (tx: LedgerTransaction) => string;
 		pocketsById?: Record<string, PocketInfo>;
+		hideAmounts?: boolean;
 		onEdit: (tx: LedgerTransaction) => void;
 	};
 
@@ -33,6 +34,7 @@
 		categoryName,
 		categoryIconSlug,
 		pocketsById,
+		hideAmounts = false,
 		onEdit
 	}: Props = $props();
 
@@ -128,6 +130,7 @@
 						secondary="category"
 						{pocketsById}
 						showPocket
+						hideAmount={hideAmounts}
 						testid={`activity-row-${section.tx.id}`}
 						onOpen={() => onEdit(section.tx)}
 					/>

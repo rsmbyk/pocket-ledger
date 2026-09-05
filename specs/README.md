@@ -104,7 +104,7 @@ Living behavior contracts for Pocket Ledger.
 | [086](086-pocket-optional-opening-goal/spec.md)        | Optional opening + goal checkboxes                           | Accepted                                                                     |
 | [087](087-remove-recurring/spec.md)                    | Remove recurring feature                                     | Accepted                                                                     |
 | [088](088-tabs-active-indicator/spec.md)               | Tabs active indicator (data-active)                          | Accepted                                                                     |
-| [089](089-show-amounts-passphrase/spec.md)             | Show money passphrase when locked                            | Accepted                                                                     |
+| [089](089-show-amounts-passphrase/spec.md)             | Show money passphrase when locked                            | Accepted — superseded by [214](214-show-money-no-passphrase/spec.md) |
 | [090](090-header-quick-lock/spec.md)                   | Header quick-lock                                            | Accepted                                                                     |
 | [091](091-pocket-helpers-goal-date-suffix/spec.md)     | Pocket helpers + goal-date suffix                            | Accepted                                                                     |
 | [092](092-pocket-label-beside-date/spec.md)            | Pocket label beside date                                     | Accepted                                                                     |
@@ -224,7 +224,10 @@ Living behavior contracts for Pocket Ledger.
 | [205](205-gis-unpersonalized-button/spec.md)             | Default GIS button, not Sign in as Name                      | Accepted — personalization not stopped; see [208](208-gis-button-no-personalize/spec.md) |
 | [206](206-main-rename-beside-literal/spec.md)             | Default pocket can take Main beside a sibling Main           | Accepted                                                                        |
 | [207](207-kit-stored-label-cursor/spec.md)               | Hex kit stored label cursor matches the checkbox             | Accepted                                                                        |
-| [208](208-gis-button-no-personalize/spec.md)             | GIS button never personalizes                                | Accepted                                                                        |
+| [208](208-gis-button-no-personalize/spec.md)             | GIS button never personalizes                                | Accepted — `size: 'medium'` superseded by [212](212-gis-official-max-size/spec.md) |
 | [209](209-gis-button-fill-width/spec.md)                 | GIS Sign in matches other Settings buttons                   | Accepted — visible chrome superseded by [210](210-gis-button-stretch/spec.md) |
-| [210](210-gis-button-stretch/spec.md)                    | Stretch the official GIS button                              | Accepted                                                                        |
+| [210](210-gis-button-stretch/spec.md)                    | Stretch the official GIS button                              | Accepted — CSS stretch superseded by [212](212-gis-official-max-size/spec.md) |
 | [211](211-stale-account-unlock/spec.md)                  | Stale account unlock after the session is gone               | Accepted                                                                        |
+| [212](212-gis-official-max-size/spec.md)                 | Official GIS at Google’s max size                            | Accepted                                                                        |
+| [213](213-hide-amounts-activity-pockets/spec.md)         | Hide amounts on Activity and Pockets list                    | Accepted                                                                        |
+| [214](214-show-money-no-passphrase/spec.md)              | Show money without a passphrase                              | Accepted                                                                        |

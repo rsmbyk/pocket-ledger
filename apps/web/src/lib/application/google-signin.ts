@@ -1,9 +1,16 @@
-/** Google Identity Services helper (Specs 119, 179, 182, 205, 208, 210). */
+/** Google Identity Services helper (Specs 119, 179, 182, 205, 212). */
 
 export const GSI_CLIENT_SRC = 'https://accounts.google.com/gsi/client';
+export const GIS_MAX_BUTTON_WIDTH = 400;
 
 export function gisButtonTheme(colorScheme: 'light' | 'dark'): 'outline' | 'outline_dark' {
 	return colorScheme === 'dark' ? 'outline_dark' : 'outline';
+}
+
+/** GIS `width` is pixels, max 400 (Spec 212). */
+export function gisButtonWidth(hostWidth: number): number {
+	if (!Number.isFinite(hostWidth) || hostWidth <= 0) return GIS_MAX_BUTTON_WIDTH;
+	return Math.min(GIS_MAX_BUTTON_WIDTH, Math.floor(hostWidth));
 }
 
 declare global {
@@ -53,7 +60,8 @@ export async function mountGoogleSignInButton(opts: {
 	gis.renderButton(opts.host, {
 		type: 'standard',
 		theme: gisButtonTheme(opts.colorScheme === 'dark' ? 'dark' : 'light'),
-		size: 'medium',
+		size: 'large',
+		width: gisButtonWidth(opts.host.clientWidth),
 		text: 'signin_with'
 	});
 }
