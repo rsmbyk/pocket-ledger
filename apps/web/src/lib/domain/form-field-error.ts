@@ -29,7 +29,7 @@ export function classifyFormFieldError(message: string): FormFieldKey {
 	if (/Goal target|goalTarget/i.test(m)) return 'goalTarget';
 	if (/Goal date/i.test(m)) return 'goalDate';
 	if (/^Date must be YYYY-MM-DD/i.test(m)) return 'occurredOn';
-	if (/Name is required/i.test(m)) return 'name';
+	if (/Name is required/i.test(m) || /A pocket named/i.test(m)) return 'name';
 	if (/Choose a category/i.test(m)) return 'category';
 	if (/Choose source and destination/i.test(m)) return 'source';
 	if (/Source and destination must be different/i.test(m)) return 'dest';

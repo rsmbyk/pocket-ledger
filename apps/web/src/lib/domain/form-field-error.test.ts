@@ -27,6 +27,7 @@ describe('classifyFormFieldError', () => {
 	it('maps opening and name', () => {
 		expect(classifyFormFieldError('Opening balance must be a whole number')).toBe('opening');
 		expect(classifyFormFieldError('Name is required')).toBe('name');
+		expect(classifyFormFieldError('A pocket named "Daily" already exists')).toBe('name');
 		expect(classifyFormFieldError('Choose a category for this type')).toBe('category');
 	});
 });
