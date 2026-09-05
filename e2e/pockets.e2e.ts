@@ -90,6 +90,16 @@ test.describe('070–077 pockets pack', () => {
 		await expect(page.getByTestId('pocket-field-error-name')).toContainText(/already exists/i);
 	});
 
+	test('201 literal Main is allowed beside the fallback', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.getByTestId('pocket-add').click();
+		await page.getByTestId('pocket-name-input').fill('Main');
+		await page.getByTestId('pocket-save').click();
+		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+		await expect(page.getByTestId('pocket-field-error-name')).toHaveCount(0);
+		await expect(page.getByTestId('pockets-panel').getByText('Main', { exact: true })).toHaveCount(2);
+	});
+
 	test('198 freeze Edit pocket description', async ({ page }) => {
 		await goToNav(page, 'pockets');
 		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
@@ -353,6 +363,8 @@ test.describe('070–077 pockets pack', () => {
 		await expect(page).toHaveURL(/\/pockets\/[^/]+\/?$/);
 		await page.getByTestId('pocket-details-edit').click();
 		await expect(page.getByTestId('pocket-delete')).toBeVisible();
+		await expect(page.getByTestId('pocket-delete')).toHaveClass(/border-destructive/);
+		await expect(page.getByTestId('pocket-delete')).toHaveClass(/bg-destructive\/10/);
 		await page.getByTestId('pocket-delete').click();
 		await page.getByTestId('pocket-delete-confirm').click();
 		await expect(page).toHaveURL(/\/pockets\/?$/);

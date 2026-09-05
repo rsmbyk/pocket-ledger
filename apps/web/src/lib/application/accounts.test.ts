@@ -54,11 +54,14 @@ describe('accounts application', () => {
 		await expect(deletePocket(main.id)).rejects.toThrow(/cannot be deleted/);
 	});
 
-	it('rejects duplicate pocket names and reserved Main (197)', async () => {
+	it('rejects duplicate pocket names; allows literal Main beside fallback (201)', async () => {
 		await ensureDefaultAccount();
 		await createPocket({ name: 'Daily' });
 		await expect(createPocket({ name: 'daily' })).rejects.toThrow(/already exists/i);
-		await expect(createPocket({ name: 'Main' })).rejects.toThrow(/already exists/i);
+		const namedMain = await createPocket({ name: 'Main' });
+		expect(namedMain.name).toBe('Main');
+		expect(namedMain.isMain).toBe(false);
+		await expect(createPocket({ name: 'main' })).rejects.toThrow(/already exists/i);
 		const main = (await getAccountsOverview()).accounts.find((a) => a.isMain)!;
 		const restored = await updatePocket({ id: main.id, name: '' });
 		expect(restored.name).toBe(DEFAULT_ACCOUNT_NAME);
