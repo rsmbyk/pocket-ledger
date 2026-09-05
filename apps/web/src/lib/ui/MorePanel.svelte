@@ -353,7 +353,11 @@
 							Sign in with Google
 						</Button>
 					{:else if cloudConfigured && googleClientId()}
-						<div bind:this={gisHost} class="gis-sign-in w-full" data-testid="google-sign-in"></div>
+						<div
+							bind:this={gisHost}
+							class="gis-sign-in scheme-light w-full overflow-hidden rounded-[4px]"
+							data-testid="google-sign-in"
+						></div>
 						{#if onDebugFakeSignUp}
 							<Button
 								type="button"
