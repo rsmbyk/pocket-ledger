@@ -1,4 +1,4 @@
-/** Google Identity Services helper (Specs 119, 179, 182, 205, 208). */
+/** Google Identity Services helper (Specs 119, 179, 182, 205, 208, 209). */
 
 export const GSI_CLIENT_SRC = 'https://accounts.google.com/gsi/client';
 
@@ -56,6 +56,16 @@ export async function mountGoogleSignInButton(opts: {
 		size: 'medium',
 		text: 'signin_with'
 	});
+}
+
+/** Activate the hidden GIS widget (209). Prefer the role=button; overlay/iframe as fallback. */
+export function clickGoogleSignInButton(host: HTMLElement): void {
+	const target =
+		host.querySelector<HTMLElement>('div[role="button"]') ??
+		host.querySelector<HTMLElement>('[id$="-overlay"]') ??
+		host.querySelector<HTMLElement>('iframe');
+	if (!target) throw new Error('Google Sign-In is not ready');
+	target.click();
 }
 
 function loadScript(src: string): Promise<void> {

@@ -18,7 +18,7 @@ Production **Sign in with Google** must open a Google account picker (GIS button
 2. GIS `callback` still yields the ID token JWT; existing `signInWithGoogleToken` / conflict / onboarding unchanged.
 3. If the GIS script fails to load, `accounts.id` is missing, or initialize/render throws: show an error on the Cloud Sync card (existing alert). Never leave a Promise pending with no UI.
 4. Fake Google (`VITE_FAKE_GOOGLE=1` / `true`): keep the current shadcn **Sign in with Google** button and `data-testid="google-sign-in"` click path.
-5. Production GIS host also uses `data-testid="google-sign-in"` (wrapper around the GIS widget).
+5. Production GIS host also uses `data-testid="google-sign-in"` (wrapper around the GIS widget). Visible chrome is the shadcn button in [209](../209-gis-button-fill-width/spec.md).
 6. HOSTING: production uses GIS button/popup, not One Tap; JS origin + Testing test users unchanged.
 
 ### Out of scope

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GSI_CLIENT_SRC, disableGoogleAutoSelect, gisButtonTheme, mountGoogleSignInButton } from './google-signin';
+import { GSI_CLIENT_SRC, clickGoogleSignInButton, disableGoogleAutoSelect, gisButtonTheme, mountGoogleSignInButton } from './google-signin';
 
 type GisId = {
 	initialize: ReturnType<typeof vi.fn>;
@@ -158,5 +158,40 @@ describe('mountGoogleSignInButton', () => {
 		const gis = stubGis();
 		disableGoogleAutoSelect();
 		expect(gis.disableAutoSelect).toHaveBeenCalled();
+	});
+});
+
+describe('clickGoogleSignInButton', () => {
+	it('clicks the GIS role=button inside the host', () => {
+		const clicked = vi.fn();
+		const inner = { click: clicked };
+		const host = {
+			querySelector: (sel: string) => (sel === 'div[role="button"]' ? inner : null)
+		} as unknown as HTMLElement;
+		clickGoogleSignInButton(host);
+		expect(clicked).toHaveBeenCalled();
+	});
+
+	it('falls back to overlay then iframe', () => {
+		const overlayClick = vi.fn();
+		const overlay = { click: overlayClick };
+		const host = {
+			querySelector: (sel: string) => (sel === '[id$="-overlay"]' ? overlay : null)
+		} as unknown as HTMLElement;
+		clickGoogleSignInButton(host);
+		expect(overlayClick).toHaveBeenCalled();
+
+		const iframeClick = vi.fn();
+		const iframe = { click: iframeClick };
+		const iframeHost = {
+			querySelector: (sel: string) => (sel === 'iframe' ? iframe : null)
+		} as unknown as HTMLElement;
+		clickGoogleSignInButton(iframeHost);
+		expect(iframeClick).toHaveBeenCalled();
+	});
+
+	it('throws when GIS has not rendered a click target', () => {
+		const host = { querySelector: () => null } as unknown as HTMLElement;
+		expect(() => clickGoogleSignInButton(host)).toThrow(/not ready/i);
 	});
 });

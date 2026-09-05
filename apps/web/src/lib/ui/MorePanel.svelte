@@ -25,7 +25,7 @@
 	import { verifyPassphrase } from '$lib/application/lock';
 	import { newPassphraseLiveState } from '$lib/application/new-passphrase-fields';
 	import { fakeGoogleEnabled, googleClientId } from '$lib/application/cloud-api';
-	import { mountGoogleSignInButton } from '$lib/application/google-signin';
+	import { clickGoogleSignInButton, mountGoogleSignInButton } from '$lib/application/google-signin';
 	import { untrack } from 'svelte';
 	import { mode } from 'mode-watcher';
 
@@ -130,6 +130,7 @@
 	let resetCloudStayOpen = $state(false);
 	let error = $state<string | null>(null);
 	let gisHost = $state<HTMLDivElement | undefined>(undefined);
+	let gisReady = $state(false);
 
 	let currencyDraft = $state(DEFAULT_DISPLAY_CURRENCY);
 	let currencySearch = $state('');
@@ -196,10 +197,14 @@
 			!signedIn &&
 			!fakeGoogleEnabled() &&
 			googleClientId().length > 0;
-		if (!el || !showGis) return;
+		if (!el || !showGis) {
+			gisReady = false;
+			return;
+		}
 		const clientId = googleClientId();
 		const onCred = untrack(() => onGoogleCredential);
 		let cancelled = false;
+		gisReady = false;
 		void mountGoogleSignInButton({
 			host: el,
 			clientId,
@@ -208,12 +213,17 @@
 				if (cancelled || !onCred) return;
 				void wrap(() => onCred(credential));
 			}
-		}).catch((err) => {
-			if (cancelled) return;
-			error = err instanceof Error ? err.message : 'Something went wrong';
-		});
+		})
+			.then(() => {
+				if (!cancelled) gisReady = true;
+			})
+			.catch((err) => {
+				if (cancelled) return;
+				error = err instanceof Error ? err.message : 'Something went wrong';
+			});
 		return () => {
 			cancelled = true;
+			gisReady = false;
 			el.replaceChildren();
 		};
 	});
@@ -346,13 +356,35 @@
 					{:else if cloudConfigured && fakeGoogleEnabled() && onGoogleSignIn}
 						<Button
 							type="button"
+							class="w-full"
 							onclick={() => void wrap(onGoogleSignIn)}
 							data-testid="google-sign-in"
 						>
 							Sign in with Google
 						</Button>
 					{:else if cloudConfigured && googleClientId()}
-						<div bind:this={gisHost} data-testid="google-sign-in"></div>
+						<Button
+							type="button"
+							class="w-full"
+							disabled={!gisReady}
+							data-testid="google-sign-in"
+							onclick={() => {
+								if (!gisHost) return;
+								try {
+									clickGoogleSignInButton(gisHost);
+								} catch (err) {
+									error = err instanceof Error ? err.message : 'Something went wrong';
+								}
+							}}
+						>
+							Sign in with Google
+						</Button>
+						<div
+							bind:this={gisHost}
+							class="pointer-events-none fixed top-0 left-0 -z-10 h-10 w-[240px] overflow-hidden opacity-0"
+							aria-hidden="true"
+							data-testid="google-sign-in-gis"
+						></div>
 						{#if onDebugFakeSignUp}
 							<Button
 								type="button"
