@@ -7,9 +7,10 @@
 	type Props = {
 		onRecover: (hex: string) => void | Promise<void>;
 		onBack?: () => void;
+		pendingReset?: boolean;
 	};
 
-	let { onRecover, onBack }: Props = $props();
+	let { onRecover, onBack, pendingReset = false }: Props = $props();
 	let hex = $state('');
 	let error = $state<string | null>(null);
 	let busy = $state(false);
@@ -35,7 +36,9 @@
 		<Card.Header>
 			<Card.Title>Reset with recovery kit</Card.Title>
 			<Card.Description>
-				Paste the kit you saved when you created this account. You will set a new passphrase next.
+				{pendingReset
+					? 'Your old passphrase is already reset. Paste the recovery kit to set a new passphrase.'
+					: 'Paste the kit you saved when you created this account. You will set a new passphrase next.'}
 			</Card.Description>
 		</Card.Header>
 		<Card.Content>

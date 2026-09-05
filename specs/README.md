@@ -209,3 +209,4 @@ Living behavior contracts for Pocket Ledger.
 | [190](190-recovery-back-to-passphrase/spec.md)           | Back from account recovery to passphrase                     | Accepted                                                                        |
 | [191](191-unlock-redirect-home/spec.md)                  | Unlock URL `/`, shorter copy, Privacy labels and field errors | Accepted                                                                        |
 | [192](192-hide-tx-pocket-when-only-main/spec.md)         | Hide tx Pocket when only Main                                | Accepted                                                                        |
+| [193](193-recovery-pending-passphrase-copy/spec.md)      | Mid-reset recovery copy                                      | Accepted                                                                        |
