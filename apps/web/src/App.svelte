@@ -106,6 +106,12 @@
 	} from '$lib/application/sync-client';
 	import { clearDataKey, getDataKey } from '$lib/data/session-key';
 	import type { AuthMe } from '$lib/application/cloud-api';
+	import {
+		bumpAuthEpoch,
+		isAuthEpochStorageEvent,
+		isUnauthorizedError,
+		shouldDropCloudSession
+	} from '$lib/application/cloud-session';
 
 	let account = $state<Account | null>(null);
 	let accounts = $state<Account[]>([]);
@@ -201,8 +207,9 @@
 			try {
 				const me = await fetchMe();
 				if (me) applyMe(me);
+				else clearCloudIdentity();
 			} catch {
-				/* signed-out if API is down */
+				/* keep current identity if API is down */
 			}
 		}
 		if (!unlocked) {
@@ -265,8 +272,15 @@
 				dekPresent = false;
 				screensaverOn = true;
 			}
+			if (document.visibilityState === 'visible') {
+				void dropCloudIfSessionGone();
+			}
+		};
+		const onAuthEpoch = (event: StorageEvent) => {
+			if (isAuthEpochStorageEvent(event.key)) leaveDeadCloudSession();
 		};
 		document.addEventListener('visibilitychange', onVis);
+		window.addEventListener('storage', onAuthEpoch);
 		let poll: number | undefined;
 		poll = window.setInterval(() => {
 			if (!signedIn || !unlocked || document.visibilityState !== 'visible') return;
@@ -278,6 +292,7 @@
 			window.removeEventListener('pointerdown', onActivity);
 			window.removeEventListener('keydown', onActivity);
 			document.removeEventListener('visibilitychange', onVis);
+			window.removeEventListener('storage', onAuthEpoch);
 			window.clearInterval(idleTimer);
 			if (poll) window.clearInterval(poll);
 		};
@@ -311,15 +326,62 @@
 		monthSummary = loaded.summary;
 	}
 
+	function clearCloudIdentity() {
+		signedIn = false;
+		userEmail = null;
+		userDisplayName = '';
+		userPictureUrl = '';
+		cloudGoogleSub = null;
+		accountOnboarding = null;
+		sessions = [];
+		recoveryKit = null;
+		accountRecoveryOpen = false;
+	}
+
+	function leaveDeadCloudSession() {
+		window.location.assign('/');
+	}
+
+	function pingSiblingTabsSignedOut() {
+		try {
+			bumpAuthEpoch(localStorage);
+		} catch {
+			/* private mode */
+		}
+	}
+
+	async function dropCloudIfSessionGone() {
+		if (!signedIn) return;
+		try {
+			const me = await fetchMe();
+			if (!shouldDropCloudSession(signedIn, me)) return;
+		} catch {
+			return;
+		}
+		leaveDeadCloudSession();
+	}
+
+	function leaveIfUnauthorized(err: unknown): boolean {
+		if (!isUnauthorizedError(err)) return false;
+		leaveDeadCloudSession();
+		return true;
+	}
+
 	async function onUnlock(passphrase: string) {
 		const lockout = await loadLockout();
 		if (isLockedOut(lockout, Date.now())) {
 			lockoutUntil = lockout.lockedUntil;
 			throw new Error('Too many guesses. Try again later.');
 		}
-		const ok = signedIn
-			? await unlockAccountWithPassphrase(passphrase)
-			: await unlockWithPassphrase(passphrase);
+		let ok: boolean;
+		try {
+			ok = signedIn
+				? await unlockAccountWithPassphrase(passphrase)
+				: await unlockWithPassphrase(passphrase);
+		} catch (err) {
+			if (leaveIfUnauthorized(err)) return;
+			throw err;
+		}
 		if (!ok) {
 			const next = recordWrongGuess(lockout, new Date());
 			await saveLockout(next);
@@ -498,7 +560,13 @@
 	<AccountRecoveryScreen
 		pendingReset={pendingPassphraseReset && !dekPresent}
 		onRecover={async (hex) => {
-			const ok = await unlockAccountWithHex(hex);
+			let ok: boolean;
+			try {
+				ok = await unlockAccountWithHex(hex);
+			} catch (err) {
+				if (leaveIfUnauthorized(err)) return;
+				throw err;
+			}
 			if (!ok) throw new Error('Recovery kit did not match');
 			await savePendingPassphraseReset(true);
 			pendingPassphraseReset = true;
@@ -644,12 +712,14 @@
 			}
 			clearDataKey();
 			await db.delete();
+			pingSiblingTabsSignedOut();
 			window.location.assign('/');
 		}}
 		onResetCloudSignOut={async () => {
 			await resetCloudAccount({ signOut: true });
 			clearDataKey();
 			await db.delete();
+			pingSiblingTabsSignedOut();
 			window.location.assign('/');
 		}}
 		onResetCloudStaySignedIn={async () => {

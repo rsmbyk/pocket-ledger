@@ -261,4 +261,98 @@ test.describe('119 cloud onboarding', () => {
 		expect(new URL(page.url()).pathname).toBe('/');
 		await expect(page.getByTestId('settings-panel')).toHaveCount(0);
 	});
+
+	test('211 live session wrong passphrase stays Incorrect passphrase', async ({ page }) => {
+		await page.goto('/');
+		await goToNav(page, 'more');
+		await page.getByTestId('google-sign-in').click();
+		await page.getByTestId('account-pass').fill('account-pass');
+		await page.getByTestId('account-pass-confirm').fill('account-pass');
+		await page.getByTestId('account-pass-submit').click();
+		await confirmHexKit(page);
+		await expect(page.getByTestId('app-shell')).toBeVisible();
+		await page.getByTestId('header-lock').click();
+		await expect(page.getByTestId('account-unlock-screen')).toBeVisible();
+		await page.getByTestId('unlock-passphrase').fill('wrong-pass');
+		await page.getByTestId('unlock-submit').click();
+		await expect(page.getByTestId('unlock-field-error-passphrase')).toHaveText(
+			'Incorrect passphrase'
+		);
+		await expect(page.getByTestId('account-unlock-screen')).toBeVisible();
+	});
+
+	test('211 cookie gone on account Unlock drops to device lock', async ({ page }) => {
+		await page.goto('/');
+		await goToNav(page, 'more');
+		await page.getByTestId('google-sign-in').click();
+		await page.getByTestId('account-pass').fill('account-pass');
+		await page.getByTestId('account-pass-confirm').fill('account-pass');
+		await page.getByTestId('account-pass-submit').click();
+		await confirmHexKit(page);
+		await expect(page.getByTestId('app-shell')).toBeVisible();
+		await page.getByTestId('header-lock').click();
+		await expect(page.getByTestId('account-unlock-screen')).toBeVisible();
+		await page.evaluate(async () => {
+			await fetch('http://127.0.0.1:8787/v1/auth/logout', {
+				method: 'POST',
+				credentials: 'include'
+			});
+		});
+		await page.getByTestId('unlock-passphrase').fill('account-pass');
+		await page.getByTestId('unlock-submit').click();
+		await expect(page.getByTestId('account-unlock-screen')).toHaveCount(0);
+		await expect(page.locator('body')).not.toContainText('unauthorized');
+		await expect(page.getByTestId('unlock-screen')).toBeVisible();
+		await expect(page.getByTestId('unlock-screen')).toContainText('Unlock this device');
+		await page.getByTestId('unlock-passphrase').fill('account-pass');
+		await page.getByTestId('unlock-submit').click();
+		await expect(page.getByTestId('app-shell')).toBeVisible();
+	});
+
+	test('211 visible tab drops stale account Unlock', async ({ page }) => {
+		await page.goto('/');
+		await goToNav(page, 'more');
+		await page.getByTestId('google-sign-in').click();
+		await page.getByTestId('account-pass').fill('account-pass');
+		await page.getByTestId('account-pass-confirm').fill('account-pass');
+		await page.getByTestId('account-pass-submit').click();
+		await confirmHexKit(page);
+		await expect(page.getByTestId('app-shell')).toBeVisible();
+		await page.getByTestId('header-lock').click();
+		await expect(page.getByTestId('account-unlock-screen')).toBeVisible();
+		await page.evaluate(async () => {
+			await fetch('http://127.0.0.1:8787/v1/auth/logout', {
+				method: 'POST',
+				credentials: 'include'
+			});
+			document.dispatchEvent(new Event('visibilitychange'));
+		});
+		await expect(page.getByTestId('account-unlock-screen')).toHaveCount(0);
+		await expect(page.locator('body')).not.toContainText('unauthorized');
+		await expect(page.getByTestId('unlock-screen')).toBeVisible();
+	});
+
+	test('211 sibling tab leaves account Unlock after sign-out', async ({ page, context }) => {
+		await page.goto('/');
+		await goToNav(page, 'more');
+		await page.getByTestId('google-sign-in').click();
+		await page.getByTestId('account-pass').fill('account-pass');
+		await page.getByTestId('account-pass-confirm').fill('account-pass');
+		await page.getByTestId('account-pass-submit').click();
+		await confirmHexKit(page);
+		await expect(page.getByTestId('app-shell')).toBeVisible();
+		const other = await context.newPage();
+		await other.goto('/');
+		await expect(other.getByTestId('account-unlock-screen')).toBeVisible();
+		await goToNav(page, 'more');
+		await page.getByTestId('cloud-sign-out').click();
+		await Promise.all([
+			page.waitForURL((url) => new URL(url).pathname === '/'),
+			page.getByTestId('cloud-sign-out-confirm').click()
+		]);
+		await expect(other.getByTestId('account-unlock-screen')).toHaveCount(0);
+		await expect(other.locator('body')).not.toContainText('unauthorized');
+		await expect(other.getByTestId('home-panel')).toBeVisible();
+		await other.close();
+	});
 });

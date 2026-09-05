@@ -195,7 +195,7 @@ Living behavior contracts for Pocket Ledger.
 | [176](176-form-submit-save/spec.md)                      | Form submit is Save                                          | Accepted                                                                        |
 | [177](177-tx-footer-row/spec.md)                         | Tx Save and Close on one row                                 | Accepted                                                                        |
 | [178](178-production-cloud-sql-google/spec.md)           | Production Cloud SQL + Google Sign-In                        | Accepted                                                                        |
-| [179](179-gis-popup-sign-in/spec.md)                     | GIS popup sign-in (not One Tap)                              | Accepted — visible chrome superseded by [209](209-gis-button-fill-width/spec.md) |
+| [179](179-gis-popup-sign-in/spec.md)                     | GIS popup sign-in (not One Tap)                              | Accepted — visible chrome superseded by [209](209-gis-button-fill-width/spec.md) then [210](210-gis-button-stretch/spec.md) |
 | [180](180-debug-reset-cloud/spec.md)                     | Debug reset cloud (temporary)                                | Accepted                                                                        |
 | [181](181-debug-fake-signup/spec.md)                     | Debug fake signup (temporary)                                | Accepted                                                                        |
 | [182](182-gis-button-theme/spec.md)                      | GIS button follows light/dark                                | Accepted                                                                        |
@@ -225,4 +225,6 @@ Living behavior contracts for Pocket Ledger.
 | [206](206-main-rename-beside-literal/spec.md)             | Default pocket can take Main beside a sibling Main           | Accepted                                                                        |
 | [207](207-kit-stored-label-cursor/spec.md)               | Hex kit stored label cursor matches the checkbox             | Accepted                                                                        |
 | [208](208-gis-button-no-personalize/spec.md)             | GIS button never personalizes                                | Accepted                                                                        |
-| [209](209-gis-button-fill-width/spec.md)                 | GIS Sign in matches other Settings buttons                   | Accepted                                                                        |
+| [209](209-gis-button-fill-width/spec.md)                 | GIS Sign in matches other Settings buttons                   | Accepted — visible chrome superseded by [210](210-gis-button-stretch/spec.md) |
+| [210](210-gis-button-stretch/spec.md)                    | Stretch the official GIS button                              | Accepted                                                                        |
+| [211](211-stale-account-unlock/spec.md)                  | Stale account unlock after the session is gone               | Accepted                                                                        |
