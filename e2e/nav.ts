@@ -177,6 +177,14 @@ export async function addPocketGoal(
 	await expect(dialog).toBeHidden();
 }
 
+/** Copy/download then ack the hex kit (202). Download avoids clipboard in CI. */
+export async function confirmHexKit(page: Page): Promise<void> {
+	await expect(page.getByTestId('hex-kit-screen')).toBeVisible();
+	await page.getByTestId('hex-kit-download').click();
+	await page.getByTestId('hex-kit-stored').check();
+	await page.getByTestId('hex-kit-confirm').click();
+}
+
 /** Open the add-category dialog from the selected kind's first group plus. */
 export async function openAddCategory(page: Page, kind: 'expense' | 'income'): Promise<void> {
 	await selectCategoriesKind(page, kind);

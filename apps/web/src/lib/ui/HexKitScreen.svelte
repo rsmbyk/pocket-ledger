@@ -66,6 +66,7 @@
 					type="checkbox"
 					class="size-5 accent-primary md:size-4"
 					bind:checked={stored}
+					disabled={(!copied && !downloaded) || busy}
 					data-testid="hex-kit-stored"
 				/>
 				I stored this kit somewhere I can find it
