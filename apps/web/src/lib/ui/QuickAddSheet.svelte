@@ -642,8 +642,12 @@
 	selectedId: string,
 	onSelect: (id: string) => void,
 	testid: string,
-	errorKey: FormFieldKey | null = null
+	errorKey: FormFieldKey | null = null,
+	hideWhenSingle = false
 )}
+	{#if hideWhenSingle && options.length < 2}
+		<!-- Spec 192: income/expense Pocket is omitted when only Main exists. -->
+	{:else}
 	{@const selected = accounts.find((a) => a.id === selectedId)}
 	<div class="space-y-2">
 		<Label>{labelText}</Label>
@@ -695,6 +699,7 @@
 			{@render fieldErrorAlert(errorKey, `tx-field-error-${errorKey}`)}
 		{/if}
 	</div>
+	{/if}
 {/snippet}
 
 {#snippet txForm()}
@@ -882,7 +887,8 @@
 					if (fieldError?.key === 'pocket') clearFieldError();
 				},
 				'tx-pocket',
-				'pocket'
+				'pocket',
+				true
 			)}
 
 			<div class="space-y-2">

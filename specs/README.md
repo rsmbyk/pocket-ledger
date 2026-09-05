@@ -203,7 +203,9 @@ Living behavior contracts for Pocket Ledger.
 | [184](184-form-modal-unsaved-leave/spec.md)              | Form modal unsaved-leave; Save draft only on Add tx          | Accepted                                                                        |
 | [185](185-account-recovery-after-fails/spec.md)          | Account recovery after 3 failed unlocks                      | Accepted                                                                        |
 | [186](186-sidebar-google-profile/spec.md)                | Sidebar Google profile picture, name, email                  | Accepted                                                                        |
-| [187](187-tx-pocket-readonly-single/spec.md)             | Pocket field read-only when only Main                        | Accepted                                                                        |
+| [187](187-tx-pocket-readonly-single/spec.md)             | Pocket field read-only when only Main                        | Parked (→ 192)                                                                  |
 | [188](188-change-account-passphrase/spec.md)             | Signed-in change account passphrase                          | Accepted                                                                        |
 | [189](189-save-draft-emphasis/spec.md)                   | Save draft is the primary discard action                     | Accepted                                                                        |
 | [190](190-recovery-back-to-passphrase/spec.md)           | Back from account recovery to passphrase                     | Accepted                                                                        |
+| [191](191-unlock-redirect-home/spec.md)                  | Unlock URL `/`, shorter copy, Privacy labels and field errors | Accepted                                                                        |
+| [192](192-hide-tx-pocket-when-only-main/spec.md)         | Hide tx Pocket when only Main                                | Accepted                                                                        |
