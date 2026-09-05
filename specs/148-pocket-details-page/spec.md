@@ -23,7 +23,7 @@ Give each pocket a **details dashboard** at `/pockets/:id`: a stack of infograph
    3. **Opening** — muted **Opening balance** kicker (same chrome as the Balance label) + amount + as-of date. **Only when `openingEnabled`.**
    4. **Goals** — muted **Goal** kicker (same chrome as the Balance label). Content: current / target; when a date is set, **`DD MMM YYYY (time remaining)`** (e.g. `01 May 2026 (2 months left)`); percent right-aligned above the progress bar. **Only when `goalEnabled`.** No Clear on details. List card chrome (072) is unchanged except spec 149 (no list Clear).
    5. **Month summary** — reuse `MonthSummary.svelte`, **scoped to this pocket**. Independent month cursor from Home (default current month, clamped to this pocket’s bounds).
-   6. **Latest transactions** — Home Recent clone: cap **10**, header **Add Transaction**, footer **See more in Transactions** (always visible, including empty).
+   6. **Latest transactions** — Home Recent clone: cap **10**, header **Add Transaction**, footer **See more in Transactions** (hidden when empty — [194](../194-hide-see-more-when-empty/spec.md)).
 5. **Latest 10** — Active txs only (140: voided hidden). A transfer matches if this pocket is source **or** dest (075). Order: `sortTransactions` (occurredOn desc, createdAt desc, id). Row click opens the existing tx sheet. `showPocket` on so transfers still show source → dest.
 6. **Add Transaction** — Opens QuickAdd with this pocket pre-filled (`preferredAccountId` = details id) while details is showing.
 7. **See more** — Sets live Transactions **applied + draft** filters to defaults with `pocketIds: [id]`, date range to **default current month** (141/142), writes that payload to the activity list session (102), then `goto('/transactions')`. Leftover type/category/search/voided/custom range are wiped. The 10-row card is all-time; Transactions after See more is month-scoped — that mismatch is intentional.
@@ -170,7 +170,7 @@ A helper (name may vary) returns `{ filters: { ...DEFAULT_ACTIVITY_FILTERS, pock
 - **When** the user activates See more
 - **Then** Transactions is shown with Pocket filter Vacation (and no leftover type/category/search)
 - **And** the date range is the default current month
-- **And** `pocket-details-see-more` is visible even when the latest list is empty
+- **And** `pocket-details-see-more` is hidden when the latest list is empty ([194](../194-hide-see-more-when-empty/spec.md))
 
 ### Scenario: Add Transaction pre-fills this pocket
 

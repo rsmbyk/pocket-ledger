@@ -7,11 +7,9 @@ test.describe('066 recent see more', () => {
 		await expect(page.getByTestId('home-panel')).toBeVisible();
 	});
 
-	test('shows control when empty and navigates to Transactions', async ({ page }) => {
+	test('hides control when empty (194)', async ({ page }) => {
 		await expect(page.getByTestId('recent-empty')).toBeVisible();
-		await expect(page.getByTestId('recent-see-more')).toHaveText('See more in Transactions');
-		await page.getByTestId('recent-see-more').click();
-		await expect(page.getByTestId('activity-panel')).toBeVisible();
+		await expect(page.getByTestId('recent-see-more')).toHaveCount(0);
 	});
 
 	test('shows control when Recent has rows', async ({ page }) => {

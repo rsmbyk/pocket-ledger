@@ -81,7 +81,7 @@ Living behavior contracts for Pocket Ledger.
 | [063](063-activity-list-rows/spec.md)                  | Activity list rows like Recent                               | Accepted                                                                     |
 | [064](064-activity-sort-sheet/spec.md)                 | Activity Sort sheet + icon Filters                           | Accepted                                                                     |
 | [065](065-activity-active-toolbar-icons/spec.md)       | Active Sort/Filters icon chrome                              | Accepted                                                                     |
-| [066](066-recent-see-more/spec.md)                     | Recent see more → Activity                                   | Accepted                                                                     |
+| [066](066-recent-see-more/spec.md)                     | Recent see more → Activity                                   | Accepted — empty footer superseded by [194](194-hide-see-more-when-empty/spec.md) |
 | [067](067-remove-category-sort/spec.md)                | Remove Categories sort                                       | Accepted                                                                     |
 | [068](068-activity-date-groups/spec.md)                | Activity date groups + note secondary                        | Accepted                                                                     |
 | [069](069-activity-chunked-reveal/spec.md)             | Activity chunked reveal (whole days)                         | Accepted                                                                     |
@@ -164,7 +164,7 @@ Living behavior contracts for Pocket Ledger.
 | [145](145-remove-amount-filter/spec.md)                  | Remove Filters Amount compare                                | Accepted                                                                        |
 | [146](146-reorder-reset-both-discard-confirm/spec.md)    | Reorder Reset both kinds + Discard confirm                   | Accepted                                                                        |
 | [147](147-categories-reorder-whole-row-drag/spec.md)     | Categories reorder whole-row drag                            | Accepted                                                                        |
-| [148](148-pocket-details-page/spec.md)                   | Pocket details page                                          | Accepted — list pencil superseded by [149](149-pockets-list-card-states/spec.md) |
+| [148](148-pocket-details-page/spec.md)                   | Pocket details page                                          | Accepted — list pencil superseded by [149](149-pockets-list-card-states/spec.md); empty See more by [194](194-hide-see-more-when-empty/spec.md) |
 | [149](149-pockets-list-card-states/spec.md)              | Pockets list card states                                     | Accepted — grip-to-name alignment superseded by [151](151-pocket-grip-column/spec.md) |
 | [150](150-rename-category-modal/spec.md)                 | Category rename modal + kind dialog titles                   | Accepted                                                                        |
 | [151](151-pocket-grip-column/spec.md)                    | Pocket grip column                                           | Accepted                                                                        |
@@ -209,3 +209,4 @@ Living behavior contracts for Pocket Ledger.
 | [190](190-recovery-back-to-passphrase/spec.md)           | Back from account recovery to passphrase                     | Accepted                                                                        |
 | [191](191-unlock-redirect-home/spec.md)                  | Unlock URL `/`, shorter copy, Privacy labels and field errors | Accepted                                                                        |
 | [192](192-hide-tx-pocket-when-only-main/spec.md)         | Hide tx Pocket when only Main                                | Accepted                                                                        |
+| [194](194-hide-see-more-when-empty/spec.md)              | Hide See more when Recent is empty                           | Accepted                                                                        |
