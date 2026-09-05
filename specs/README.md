@@ -227,3 +227,4 @@ Living behavior contracts for Pocket Ledger.
 | [208](208-gis-button-no-personalize/spec.md)             | GIS button never personalizes                                | Accepted                                                                        |
 | [209](209-gis-button-fill-width/spec.md)                 | GIS Sign in matches other Settings buttons                   | Accepted — visible chrome superseded by [210](210-gis-button-stretch/spec.md) |
 | [210](210-gis-button-stretch/spec.md)                    | Stretch the official GIS button                              | Accepted                                                                        |
+| [211](211-stale-account-unlock/spec.md)                  | Stale account unlock after the session is gone               | Accepted                                                                        |
