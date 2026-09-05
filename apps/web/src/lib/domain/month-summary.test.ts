@@ -131,11 +131,11 @@ describe('month-summary', () => {
 		expect(summary.endingMinor).toBe(150_000);
 	});
 
-	it('orders categories by sortOrder with Admin Fee before Uncategorized', () => {
+	it('orders categories by amount with Admin Fee before Uncategorized (195)', () => {
 		const rows = [
 			tx({ type: 'expense', amountMinor: 5_000, occurredOn: '2026-07-02', categoryId: 'b' }),
 			tx({ type: 'expense', amountMinor: 50_000, occurredOn: '2026-07-02', categoryId: 'a' }),
-			tx({ type: 'expense', amountMinor: 1_000, occurredOn: '2026-07-02', categoryId: null }),
+			tx({ type: 'expense', amountMinor: 80_000, occurredOn: '2026-07-02', categoryId: null }),
 			tx({
 				type: 'transfer',
 				amountMinor: 10_000,
@@ -150,12 +150,12 @@ describe('month-summary', () => {
 			b: { name: 'Beta', sortOrder: 0 }
 		});
 		expect(summary.expenseByCategory.map((r) => r.label)).toEqual([
-			'Beta',
 			'Alpha',
+			'Beta',
 			'Admin Fee',
 			'Uncategorized'
 		]);
-		expect(summary.expenseMinor).toBe(5_000 + 50_000 + 1_000 + 250);
+		expect(summary.expenseMinor).toBe(5_000 + 50_000 + 80_000 + 250);
 	});
 
 	it('counts transfer fees as expense and reduces opening by prior fees', () => {

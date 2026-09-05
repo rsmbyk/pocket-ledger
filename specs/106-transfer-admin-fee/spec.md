@@ -1,7 +1,7 @@
 # Spec 106: Transfer admin fee
 
 - **ID:** 106
-- **Status:** Accepted
+- **Status:** Accepted — month breakdown amount order superseded by [195](../195-month-chart-sort-by-amount/spec.md)
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)
