@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GSI_CLIENT_SRC, disableGoogleAutoSelect, gisButtonTheme, gisButtonWidth, mountGoogleSignInButton } from './google-signin';
+import {
+	GSI_CLIENT_SRC,
+	disableGoogleAutoSelect,
+	gisButtonTheme,
+	gisButtonWidth,
+	gisRenderButtonOptions,
+	mountGoogleSignInButton
+} from './google-signin';
 
 type GisId = {
 	initialize: ReturnType<typeof vi.fn>;
@@ -37,8 +44,8 @@ function stubGis(): GisId {
 }
 
 describe('gisButtonWidth', () => {
-	it('caps at 400 and falls back when the host has no layout', () => {
-		expect(gisButtonWidth(500)).toBe(400);
+	it('uses the host width and falls back when the host has no layout', () => {
+		expect(gisButtonWidth(672)).toBe(672);
 		expect(gisButtonWidth(336)).toBe(336);
 		expect(gisButtonWidth(0)).toBe(400);
 		expect(gisButtonWidth(Number.NaN)).toBe(400);
@@ -49,6 +56,21 @@ describe('gisButtonTheme', () => {
 	it('maps light to outline and dark to outline_dark', () => {
 		expect(gisButtonTheme('light')).toBe('outline');
 		expect(gisButtonTheme('dark')).toBe('outline_dark');
+	});
+});
+
+describe('gisRenderButtonOptions', () => {
+	it('uses shipped knobs, English locale, and host width', () => {
+		expect(gisRenderButtonOptions({ colorScheme: 'dark', hostWidth: 672 })).toEqual({
+			type: 'standard',
+			theme: 'outline_dark',
+			size: 'large',
+			text: 'signin_with',
+			shape: 'rectangular',
+			logo_alignment: 'left',
+			width: 672,
+			locale: 'en'
+		});
 	});
 });
 
@@ -88,7 +110,8 @@ describe('mountGoogleSignInButton', () => {
 				text: 'signin_with',
 				theme: 'outline',
 				size: 'large',
-				width: 400
+				width: 400,
+				locale: 'en'
 			})
 		);
 		expect(gis.renderButton).toHaveBeenCalledWith(
@@ -98,10 +121,28 @@ describe('mountGoogleSignInButton', () => {
 		expect(gis.prompt).not.toHaveBeenCalled();
 	});
 
-	it('passes the laid-out host width when under 400', async () => {
+	it('loads gsi/client with hl=en and does not reuse a script without it', async () => {
+		const { created, doc } = stubDocument(false);
+		const gis = stubGis();
+		const host = { replaceChildren: vi.fn() } as unknown as HTMLElement;
+
+		const pending = mountGoogleSignInButton({
+			host,
+			clientId: 'cid.apps.googleusercontent.com',
+			onCredential: vi.fn()
+		});
+		expect(doc.querySelector).toHaveBeenCalledWith(`script[src="${GSI_CLIENT_SRC}"]`);
+		expect(GSI_CLIENT_SRC).toBe('https://accounts.google.com/gsi/client?hl=en');
+		expect(created.src).toBe(GSI_CLIENT_SRC);
+		created.onload?.();
+		await pending;
+		expect(gis.renderButton).toHaveBeenCalled();
+	});
+
+	it('passes the laid-out host width including over 400', async () => {
 		stubDocument(true);
 		const gis = stubGis();
-		const host = { replaceChildren: vi.fn(), clientWidth: 280 } as unknown as HTMLElement;
+		const host = { replaceChildren: vi.fn(), clientWidth: 672 } as unknown as HTMLElement;
 
 		await mountGoogleSignInButton({
 			host,
@@ -109,7 +150,7 @@ describe('mountGoogleSignInButton', () => {
 			onCredential: vi.fn()
 		});
 
-		expect(gis.renderButton).toHaveBeenCalledWith(host, expect.objectContaining({ width: 280 }));
+		expect(gis.renderButton).toHaveBeenCalledWith(host, expect.objectContaining({ width: 672 }));
 	});
 
 	it('renders outline_dark when the color scheme is dark', async () => {
@@ -126,7 +167,7 @@ describe('mountGoogleSignInButton', () => {
 
 		expect(gis.renderButton).toHaveBeenCalledWith(
 			host,
-			expect.objectContaining({ theme: 'outline_dark' })
+			expect.objectContaining({ theme: 'outline_dark', locale: 'en' })
 		);
 	});
 

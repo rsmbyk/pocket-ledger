@@ -1,7 +1,7 @@
 # Spec 212: Official GIS at Google’s max size
 
 - **ID:** 212
-- **Status:** Accepted
+- **Status:** Accepted — `width` 400 cap superseded by [217](../217-gis-card-width/spec.md)
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

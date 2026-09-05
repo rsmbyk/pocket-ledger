@@ -228,6 +228,9 @@ Living behavior contracts for Pocket Ledger.
 | [209](209-gis-button-fill-width/spec.md)                 | GIS Sign in matches other Settings buttons                   | Accepted — visible chrome superseded by [210](210-gis-button-stretch/spec.md) |
 | [210](210-gis-button-stretch/spec.md)                    | Stretch the official GIS button                              | Accepted — CSS stretch superseded by [212](212-gis-official-max-size/spec.md) |
 | [211](211-stale-account-unlock/spec.md)                  | Stale account unlock after the session is gone               | Accepted                                                                        |
-| [212](212-gis-official-max-size/spec.md)                 | Official GIS at Google’s max size                            | Accepted                                                                        |
+| [212](212-gis-official-max-size/spec.md)                 | Official GIS at Google’s max size                            | Accepted — 400 cap superseded by [217](217-gis-card-width/spec.md)              |
 | [213](213-hide-amounts-activity-pockets/spec.md)         | Hide amounts on Activity and Pockets list                    | Accepted                                                                        |
 | [214](214-show-money-no-passphrase/spec.md)              | Show money without a passphrase                              | Accepted                                                                        |
+| [215](215-gis-english-iframe-halo/spec.md)               | Official GIS English + Chrome iframe halo                    | Accepted                                                                        |
+| [216](216-gis-debug-configurator/spec.md)                | Testing-only GIS configurator                                | Accepted — playground removed; stretch locked in [217](217-gis-card-width/spec.md) |
+| [217](217-gis-card-width/spec.md)                        | Official GIS at card width                                   | Accepted                                                                        |

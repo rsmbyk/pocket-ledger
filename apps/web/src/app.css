@@ -215,3 +215,15 @@
 .panel-emphasize {
 	animation: panel-emphasize-pulse 0.4s ease;
 }
+
+/* Spec 215: Chrome dark color-scheme paints a white canvas around GIS. */
+.gis-sign-in iframe {
+	color-scheme: light;
+}
+
+/* Spec 217: widen the official button row, not the G mark. */
+.gis-sign-in > div,
+.gis-sign-in [role='button'] {
+	width: 100% !important;
+	max-width: none !important;
+}
