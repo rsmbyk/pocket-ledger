@@ -18,7 +18,7 @@ Replace the hash router with SvelteKit path URLs while keeping the PWA so signed
 2. Routes: `/`, `/activity`, `/pockets`, `/categories`, `/more` (same panels as today)
 3. Remove hash-router as the navigation source (`src/lib/shared/router.ts` or equivalent)
 4. Keep service worker / PWA; signed-out offline after first load still works
-5. Unknown paths fall back to the shell (SPA) the same way unknown hashes fell back to home
+5. Unknown paths fall back to the shell (SPA). Address-bar parent walking is [204](../204-nearest-parent-url/spec.md)
 6. Hash bookmarks (`#/activity`) are **not** preserved
 7. Update Playwright base URLs / locators that assumed hashes
 8. Optionally move the app to `apps/web` (npm workspace) if that is the cleanest Kit layout; otherwise Spec 118 must move it before Cloud Run Docker
@@ -55,6 +55,7 @@ Replace the hash router with SvelteKit path URLs while keeping the PWA so signed
 - **Given** a visit to `/not-a-panel`
 - **When** the SPA fallback runs
 - **Then** the user gets the home shell (same idea as unknown hash → home), not a raw 404 document without the app
+- **And** the address bar becomes `/` ([204](../204-nearest-parent-url/spec.md))
 
 ### Scenario: Old hash URL is not a supported bookmark
 

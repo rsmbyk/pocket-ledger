@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GSI_CLIENT_SRC, gisButtonTheme, mountGoogleSignInButton } from './google-signin';
+import { GSI_CLIENT_SRC, disableGoogleAutoSelect, gisButtonTheme, mountGoogleSignInButton } from './google-signin';
 
 type GisId = {
 	initialize: ReturnType<typeof vi.fn>;
 	renderButton: ReturnType<typeof vi.fn>;
 	prompt: ReturnType<typeof vi.fn>;
+	disableAutoSelect: ReturnType<typeof vi.fn>;
 };
 
 function stubDocument(existingScript: boolean) {
@@ -26,7 +27,8 @@ function stubGis(): GisId {
 	const gis: GisId = {
 		initialize: vi.fn(),
 		renderButton: vi.fn(),
-		prompt: vi.fn()
+		prompt: vi.fn(),
+		disableAutoSelect: vi.fn()
 	};
 	vi.stubGlobal('window', {
 		google: { accounts: { id: gis } }
@@ -62,8 +64,13 @@ describe('mountGoogleSignInButton', () => {
 		expect(gis.initialize).toHaveBeenCalledWith(
 			expect.objectContaining({
 				client_id: 'cid.apps.googleusercontent.com',
-				ux_mode: 'popup'
+				ux_mode: 'popup',
+				auto_select: false
 			})
+		);
+		expect(gis.disableAutoSelect).toHaveBeenCalled();
+		expect(gis.disableAutoSelect.mock.invocationCallOrder[0]).toBeLessThan(
+			gis.renderButton.mock.invocationCallOrder[0]!
 		);
 		expect(gis.renderButton).toHaveBeenCalledWith(
 			host,
@@ -131,5 +138,16 @@ describe('mountGoogleSignInButton', () => {
 		expect(doc.createElement).toHaveBeenCalled();
 		created.onerror?.();
 		await expect(pending).rejects.toThrow(/could not load google sign-in/i);
+	});
+
+	it('disableGoogleAutoSelect noops when GIS is missing', () => {
+		vi.stubGlobal('window', {});
+		expect(() => disableGoogleAutoSelect()).not.toThrow();
+	});
+
+	it('disableGoogleAutoSelect calls GIS when loaded', () => {
+		const gis = stubGis();
+		disableGoogleAutoSelect();
+		expect(gis.disableAutoSelect).toHaveBeenCalled();
 	});
 });

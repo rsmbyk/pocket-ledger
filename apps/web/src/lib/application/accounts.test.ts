@@ -63,6 +63,11 @@ describe('accounts application', () => {
 		expect(namedMain.isMain).toBe(false);
 		await expect(createPocket({ name: 'main' })).rejects.toThrow(/already exists/i);
 		const main = (await getAccountsOverview()).accounts.find((a) => a.isMain)!;
+		const household = await updatePocket({ id: main.id, name: 'Household' });
+		expect(household.name).toBe('Household');
+		const restoredNamed = await updatePocket({ id: main.id, name: 'Main' });
+		expect(restoredNamed.name).toBe(DEFAULT_ACCOUNT_NAME);
+		await updatePocket({ id: main.id, name: 'Household' });
 		const restored = await updatePocket({ id: main.id, name: '' });
 		expect(restored.name).toBe(DEFAULT_ACCOUNT_NAME);
 	});

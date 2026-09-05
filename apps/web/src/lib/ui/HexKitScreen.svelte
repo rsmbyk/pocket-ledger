@@ -61,10 +61,10 @@
 					{downloaded ? 'Downloaded' : 'Download'}
 				</Button>
 			</div>
-			<label class="flex items-center gap-2 text-sm">
+			<label class="flex cursor-pointer items-center gap-2 text-sm has-[:disabled]:cursor-not-allowed">
 				<input
 					type="checkbox"
-					class="size-5 accent-primary md:size-4"
+					class="size-5 cursor-pointer accent-primary disabled:cursor-not-allowed md:size-4"
 					bind:checked={stored}
 					disabled={(!copied && !downloaded) || busy}
 					data-testid="hex-kit-stored"

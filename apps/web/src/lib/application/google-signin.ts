@@ -1,4 +1,4 @@
-/** Google Identity Services helper (Specs 119, 179, 182). */
+/** Google Identity Services helper (Specs 119, 179, 182, 205). */
 
 export const GSI_CLIENT_SRC = 'https://accounts.google.com/gsi/client';
 
@@ -15,13 +15,20 @@ declare global {
 						client_id: string;
 						callback: (res: { credential: string }) => void;
 						ux_mode?: 'popup' | 'redirect';
+						auto_select?: boolean;
 					}) => void;
 					renderButton: (parent: HTMLElement, opts: Record<string, string | number>) => void;
 					prompt: () => void;
+					disableAutoSelect: () => void;
 				};
 			};
 		};
 	}
+}
+
+/** Stop GIS from personalizing the button to "Sign in as Name" (205). */
+export function disableGoogleAutoSelect(): void {
+	window.google?.accounts.id.disableAutoSelect?.();
 }
 
 export async function mountGoogleSignInButton(opts: {
@@ -38,8 +45,10 @@ export async function mountGoogleSignInButton(opts: {
 	gis.initialize({
 		client_id: opts.clientId,
 		ux_mode: 'popup',
+		auto_select: false,
 		callback: (res) => opts.onCredential(res.credential)
 	});
+	disableGoogleAutoSelect();
 	opts.host.replaceChildren();
 	gis.renderButton(opts.host, {
 		type: 'standard',

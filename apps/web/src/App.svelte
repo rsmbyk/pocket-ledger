@@ -51,6 +51,8 @@
 		type MonthSummary
 	} from '$lib/domain/month-summary';
 	import { parseThemePreference, THEME_STORAGE_KEY, type ThemePreference } from '$lib/shared/theme';
+	import { isGatePath, nearestValidPath } from '$lib/shared/router';
+	import { disableGoogleAutoSelect } from '$lib/application/google-signin';
 	import AccountPassphraseScreen from '$lib/ui/AccountPassphraseScreen.svelte';
 	import AccountRecoveryScreen from '$lib/ui/AccountRecoveryScreen.svelte';
 	import HexKitScreen from '$lib/ui/HexKitScreen.svelte';
@@ -397,13 +399,18 @@
 	function syncGatePath() {
 		if (!ready || screensaverOn) return;
 		const target = gatePath();
-		const path = page.url.pathname.replace(/\/$/, '') || '/';
+		const path = page.url.pathname.replace(/\/+$/, '') || '/';
 		if (target) {
 			if (path !== target) void goto(target, { replaceState: true });
 			return;
 		}
-		const gatePaths = new Set(['/unlock', '/onboarding', '/onboarding/kit', '/recovery', '/reset']);
-		if (gatePaths.has(path)) void goto('/', { replaceState: true });
+		const nearest = nearestValidPath(path);
+		if (isGatePath(nearest)) {
+			if (path !== '/') void goto('/', { replaceState: true });
+			return;
+		}
+		if (/^\/pockets\/[^/]+$/.test(nearest)) return;
+		if (path !== nearest) void goto(nearest, { replaceState: true });
 	}
 
 	$effect(() => {
@@ -629,6 +636,7 @@
 		{onDebugFakeSignUp}
 		debugFakeUser={shouldWipeCloudOnSignOut(cloudGoogleSub)}
 		onSignOut={async () => {
+			disableGoogleAutoSelect();
 			if (shouldWipeCloudOnSignOut(cloudGoogleSub)) {
 				await resetCloudAccount({ signOut: true });
 			} else {

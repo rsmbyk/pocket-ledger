@@ -14,7 +14,7 @@
 
 `normalizePocketNameInput` / `assertUniquePocketName`, create/update pocket, Name field error. Landmark icon still from `isMain`.
 
-Supersedes Spec 197 reserved-Main rule only. Unique custom names stay.
+Supersedes Spec 197 reserved-Main rule only. Unique custom names stay. Default pocket taking Main beside a sibling Main: [206](../206-main-rename-beside-literal/spec.md).
 
 ## Acceptance scenarios
 

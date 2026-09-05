@@ -49,14 +49,25 @@ test.describe('148 pocket details', () => {
 		await expect(page).toHaveURL(/\/pockets\/?$/);
 	});
 
-	test('unknown id bounces to the list; extra segments fall through to Home', async ({ page }) => {
+	test('unknown id bounces to the list; extra segments stay on details (204)', async ({ page }) => {
 		await page.goto('/pockets/not-a-real-id');
 		await expect(page.getByTestId('pockets-panel')).toBeVisible();
 		await expect(page).toHaveURL(/\/pockets\/?$/);
 		await expect(page.getByTestId('home-panel')).toHaveCount(0);
 
+		await createVacation(page);
+		const vacation = page.locator('[data-testid^="pocket-row-"]').filter({ hasText: 'Vacation' });
+		await vacation.click();
+		await expect(page.getByTestId('pocket-details-panel')).toBeVisible();
+		const detailsPath = new URL(page.url()).pathname.replace(/\/+$/, '');
+		await page.goto(`${detailsPath}/extra`);
+		await expect(page.getByTestId('pocket-details-panel')).toBeVisible();
+		await expect(page).toHaveURL(new RegExp(`${detailsPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/?$`));
+
 		await page.goto('/pockets/any-id/extra');
-		await expect(page.getByTestId('home-panel')).toBeVisible();
+		await expect(page.getByTestId('pockets-panel')).toBeVisible();
+		await expect(page).toHaveURL(/\/pockets\/?$/);
+		await expect(page.getByTestId('home-panel')).toHaveCount(0);
 	});
 
 	test('identity, balance, hidden opening/goal, toolbar edit', async ({ page }) => {

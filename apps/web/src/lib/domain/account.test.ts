@@ -38,6 +38,9 @@ describe('pocket names (197)', () => {
 		const literal = pocket({ id: 'x', name: 'Main', isMain: false });
 		expect(() => assertUniquePocketName('main', [main, literal])).toThrow(/already exists/i);
 		expect(() => assertUniquePocketName('Main', [main, literal], 'm')).not.toThrow();
+		const household = pocket({ id: 'm', name: 'Household', isMain: true });
+		expect(() => assertUniquePocketName('Main', [household, literal], 'm')).not.toThrow();
+		expect(() => assertUniquePocketName('', [household, literal], 'm')).not.toThrow();
 	});
 });
 

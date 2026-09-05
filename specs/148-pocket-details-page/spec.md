@@ -14,7 +14,7 @@ Give each pocket a **details dashboard** at `/pockets/:id`: a stack of infograph
 
 ### In scope
 
-1. **Path** — `/pockets/:id` is a real details view. `parsePath` still returns `pockets` (nav **Pockets** stays highlighted). A single extra path segment is the pocket id. Two or more extra segments stay unknown → Home (117). Trailing slash on `/pockets/:id/` is the same details view.
+1. **Path** — `/pockets/:id` is a real details view. `parsePath` still returns `pockets` (nav **Pockets** stays highlighted). A single extra path segment is the pocket id. Extra segments under a real id stay on details ([204](../204-nearest-parent-url/spec.md)); unknown id still replace-navigates to `/pockets`. Trailing slash on `/pockets/:id/` is the same details view.
 2. **List hit target** — Activating the pocket **card** (name, balance, goal chrome, description, empty padding) navigates to `/pockets/{id}`. Prefer a real link (`href`) so middle-click / keyboard work. **The drag handle does not navigate** (`stopPropagation` / sit outside the link). List pencil / delete / clear-goal were removed in spec 149.
 3. **Toolbar** — On details: Back (`pocket-details-back`) + `page-title` is the pocket name with Main `Landmark` icon when `isMain`. Back goes to `/pockets` via `goto` (not `history.back()`). Edit (`pocket-details-edit`) opens the **same** `pocket-form-dialog` as create/edit elsewhere. Hide-amounts eye uses the Home control and storage key (048 / 089) and hides money on this page too. Clicking nav **Pockets** from details opens the list (`/pockets`).
 4. **Card stack** (single-column Home stage, `max-w-3xl`), in this order:
@@ -44,7 +44,7 @@ Give each pocket a **details dashboard** at `/pockets/:id`: a stack of infograph
 
 - `parsePath('/pockets')` → `pockets`, no id
 - `parsePath('/pockets/{id}')` → `pockets` (id via `parsePocketId` or equivalent)
-- `parsePath('/pockets/a/b')` → `home` (unknown, 117)
+- Extra segments `/pockets/{id}/…` nearest-parent to `/pockets/{id}` ([204](../204-nearest-parent-url/spec.md))
 - `routeToPath('pockets')` remains `/pockets`
 - Id format is not validated in the router; missing ledger row → bounce to list
 
@@ -103,11 +103,12 @@ A helper (name may vary) returns `{ filters: { ...DEFAULT_ACTIVITY_FILTERS, pock
 - **Then** they end on `/pockets` with `pockets-panel` visible
 - **And** `home-panel` is not shown
 
-### Scenario: Extra path segments still fall through to Home
+### Scenario: Extra path segments stay on details (204)
 
-- **Given** an unlocked ledger
+- **Given** a pocket at `/pockets/{id}`
 - **When** the user visits `/pockets/{id}/extra`
-- **Then** `home-panel` is visible (117 unknown path)
+- **Then** details stay at `/pockets/{id}`
+- **And** extra segments under an unknown id bounce to `/pockets` (148 unknown id + 204)
 
 ### Scenario: Descriptions and balance
 
