@@ -1,18 +1,43 @@
 # Local development / preview. Production target is Cloud Run (Spec 118).
+#   cp .env.example .env   # set GOOGLE_CLIENT_ID for official GIS
 #   docker compose up --build
 #
 # Project name is fixed so Docker Desktop shows "pocket-ledger"
 # even when the checkout folder is a worktree (e.g. duz0).
-# Dev:     http://localhost:5173
-# Preview: docker compose --profile preview up preview
+# Open http://127.0.0.1:5173 (not localhost) so CORS matches WEB_ORIGIN.
+# API health: http://127.0.0.1:8080/healthz
+# Preview: WEB_ORIGIN=http://127.0.0.1:4173 docker compose --profile preview up --build api preview
 
 name: pocket-ledger
 
 services:
+  api:
+    build: .
+    ports:
+      - '127.0.0.1:8080:8080'
+    environment:
+      PORT: '8080'
+      COOKIE_SECURE: '0'
+      AUTH_ALLOW_FAKE: '1'
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://127.0.0.1:5173}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    command:
+      - sh
+      - -c
+      - npm ci && npm run dev -w @pocket-ledger/api
+
   dev:
     build: .
     ports:
-      - '5173:5173'
+      - '127.0.0.1:5173:5173'
+    environment:
+      VITE_API_URL: http://127.0.0.1:8080
+      VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    depends_on:
+      - api
     volumes:
       - .:/app
       - node_modules:/app/node_modules
@@ -26,7 +51,12 @@ services:
     profiles: ['preview']
     build: .
     ports:
-      - '4173:4173'
+      - '127.0.0.1:4173:4173'
+    environment:
+      VITE_API_URL: http://127.0.0.1:8080
+      VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    depends_on:
+      - api
     volumes:
       - .:/app
       - node_modules:/app/node_modules

@@ -10,6 +10,6 @@ RUN npm ci
 
 COPY . .
 
-EXPOSE 5173 4173
+EXPOSE 5173 4173 8080
 
 CMD ["npm", "run", "dev", "-w", "@pocket-ledger/web", "--", "--host", "0.0.0.0", "--port", "5173"]

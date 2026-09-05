@@ -26,10 +26,11 @@ npm run dev
 With Docker (from `/home/rsmbyk/projects/pocket-ledger`):
 
 ```bash
+cp .env.example .env   # set GOOGLE_CLIENT_ID for official Sign in with Google
 docker compose up --build
 ```
 
-Then open http://localhost:5173 — see [docs/HOSTING.md](docs/HOSTING.md).
+Then open **http://127.0.0.1:5173** (not `localhost`) — web + API. See [docs/HOSTING.md](docs/HOSTING.md).
 
 ```bash
 npm run check
