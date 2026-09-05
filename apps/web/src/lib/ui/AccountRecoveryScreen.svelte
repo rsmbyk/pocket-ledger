@@ -6,9 +6,10 @@
 
 	type Props = {
 		onRecover: (hex: string) => void | Promise<void>;
+		onBack?: () => void;
 	};
 
-	let { onRecover }: Props = $props();
+	let { onRecover, onBack }: Props = $props();
 	let hex = $state('');
 	let error = $state<string | null>(null);
 	let busy = $state(false);
@@ -64,6 +65,17 @@
 					{busy ? 'Checking…' : 'Continue'}
 				</Button>
 			</form>
+			{#if onBack}
+				<Button
+					type="button"
+					variant="outline"
+					class="mt-4 w-full"
+					data-testid="recovery-back"
+					onclick={onBack}
+				>
+					Back
+				</Button>
+			{/if}
 		</Card.Content>
 	</Card.Root>
 </div>

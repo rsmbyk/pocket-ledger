@@ -206,3 +206,4 @@ Living behavior contracts for Pocket Ledger.
 | [187](187-tx-pocket-readonly-single/spec.md)             | Pocket field read-only when only Main                        | Accepted                                                                        |
 | [188](188-change-account-passphrase/spec.md)             | Signed-in change account passphrase                          | Accepted                                                                        |
 | [189](189-save-draft-emphasis/spec.md)                   | Save draft is the primary discard action                     | Accepted                                                                        |
+| [190](190-recovery-back-to-passphrase/spec.md)           | Back from account recovery to passphrase                     | Accepted                                                                        |

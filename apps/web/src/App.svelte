@@ -461,6 +461,11 @@
 			dekPresent = true;
 			accountOnboarding = 'needs-passphrase';
 		}}
+		onBack={
+			accountRecoveryOpen && !pendingPassphraseReset
+				? () => (accountRecoveryOpen = false)
+				: undefined
+		}
 	/>
 {:else if signedIn && accountOnboarding === 'needs-passphrase'}
 	<AccountPassphraseScreen
