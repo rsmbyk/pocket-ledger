@@ -14,6 +14,8 @@ The official Google button stays the default **Sign in with Google** control. It
 
 GIS `initialize` / `renderButton` in `google-signin.ts`, and `disableAutoSelect` after Sign out in `App.svelte`. Fake Google shadcn button unchanged. No One Tap `prompt()`. No Playwright GIS iframe asserts (179).
 
+Does not stop the personalized **Sign in as XXX** chip; that is [208](../208-gis-button-no-personalize/spec.md).
+
 ## Acceptance scenarios
 
 ### Scenario: Mount disables auto-select
