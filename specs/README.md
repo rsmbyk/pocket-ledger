@@ -133,7 +133,7 @@ Living behavior contracts for Pocket Ledger.
 | [114](114-mobile-checkbox-scale/spec.md)               | Mobile checkbox scale                                        | Accepted                                                                     |
 | [115](115-docs-unlock-local-first-cloud/spec.md)       | Docs unlock — local-first + optional cloud                   | Accepted                                                                     |
 | [116](116-github-actions-ci/spec.md)                   | Restore GitHub Actions CI                                    | Accepted                                                                     |
-| [117](117-sveltekit-path-urls-pwa/spec.md)             | SvelteKit path URLs + PWA                                    | Accepted                                                                     |
+| [117](117-sveltekit-path-urls-pwa/spec.md)             | SvelteKit path URLs + PWA                                    | Accepted — unknown-path URL superseded by [204](204-nearest-parent-url/spec.md) |
 | [118](118-gcp-cloud-run-web/spec.md)                   | Cloud Run web + path-filtered Actions; retire Cloudflare     | Accepted                                                                     |
 | [119](119-google-sign-in-account-lock/spec.md)         | Google Sign-In, account passphrase, hex kit, session manager | Accepted                                                                     |
 | [120](120-local-dek-wrapping-encrypted-backup/spec.md) | Always-on local DEK wrapping; encrypted local-only backup    | Accepted                                                                     |
@@ -164,7 +164,7 @@ Living behavior contracts for Pocket Ledger.
 | [145](145-remove-amount-filter/spec.md)                  | Remove Filters Amount compare                                | Accepted                                                                        |
 | [146](146-reorder-reset-both-discard-confirm/spec.md)    | Reorder Reset both kinds + Discard confirm                   | Accepted                                                                        |
 | [147](147-categories-reorder-whole-row-drag/spec.md)     | Categories reorder whole-row drag                            | Accepted                                                                        |
-| [148](148-pocket-details-page/spec.md)                   | Pocket details page                                          | Accepted — list pencil superseded by [149](149-pockets-list-card-states/spec.md); empty See more by [194](194-hide-see-more-when-empty/spec.md) |
+| [148](148-pocket-details-page/spec.md)                   | Pocket details page                                          | Accepted — list pencil superseded by [149](149-pockets-list-card-states/spec.md); empty See more by [194](194-hide-see-more-when-empty/spec.md); extra-segment Home by [204](204-nearest-parent-url/spec.md) |
 | [149](149-pockets-list-card-states/spec.md)              | Pockets list card states                                     | Accepted — grip-to-name alignment superseded by [151](151-pocket-grip-column/spec.md) |
 | [150](150-rename-category-modal/spec.md)                 | Category rename modal + kind dialog titles                   | Accepted                                                                        |
 | [151](151-pocket-grip-column/spec.md)                    | Pocket grip column                                           | Accepted                                                                        |
@@ -217,6 +217,10 @@ Living behavior contracts for Pocket Ledger.
 | [198](198-pocket-edit-description-frozen/spec.md)        | Freeze Edit pocket description                               | Accepted                                                                        |
 | [199](199-timeout-drop-minutes-label/spec.md)            | Drop Minutes label under Timeout                             | Accepted                                                                        |
 | [200](200-pocket-delete-danger-button/spec.md)           | Delete pocket uses outlined danger                           | Accepted                                                                        |
-| [201](201-main-name-not-reserved/spec.md)                | Main is a fallback, not a reserved name                      | Accepted                                                                        |
+| [201](201-main-name-not-reserved/spec.md)                | Main is a fallback, not a reserved name                      | Accepted — default taking Main beside sibling: [206](206-main-rename-beside-literal/spec.md) |
 | [202](202-kit-stored-after-copy-download/spec.md)        | Kit stored checkbox after Copy or Download                   | Accepted                                                                        |
 | [203](203-auth-gate-urls/spec.md)                        | Path URLs for lock, onboarding, recovery, reset              | Accepted                                                                        |
+| [204](204-nearest-parent-url/spec.md)                    | Invalid URL falls back to nearest valid parent               | Accepted                                                                        |
+| [205](205-gis-unpersonalized-button/spec.md)             | Default GIS button, not Sign in as Name                      | Accepted                                                                        |
+| [206](206-main-rename-beside-literal/spec.md)             | Default pocket can take Main beside a sibling Main           | Accepted                                                                        |
+| [207](207-kit-stored-label-cursor/spec.md)               | Hex kit stored label cursor matches the checkbox             | Accepted                                                                        |

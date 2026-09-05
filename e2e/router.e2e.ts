@@ -28,8 +28,17 @@ test.describe('117 path router', () => {
 		await expect(page.getByTestId('settings-panel')).toBeVisible();
 	});
 
-	test('unknown path falls back to the home shell', async ({ page }) => {
+	test('unknown path replace-navigates to home (204)', async ({ page }) => {
 		await page.goto('/not-a-panel');
 		await expect(page.getByTestId('home-panel')).toBeVisible();
+		await expect(page).toHaveURL(/https?:\/\/[^/]+\/?$/);
+	});
+
+	test('extra segment under Transactions replace-navigates (204)', async ({ page }) => {
+		await page.goto('/transactions/nope');
+		await expect(page).toHaveURL(/\/transactions\/?$/);
+		await expect(
+			page.getByTestId('activity-list').or(page.getByTestId('activity-empty'))
+		).toBeVisible();
 	});
 });

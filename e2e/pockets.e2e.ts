@@ -100,6 +100,32 @@ test.describe('070–077 pockets pack', () => {
 		await expect(page.getByTestId('pockets-panel').getByText('Main', { exact: true })).toHaveCount(2);
 	});
 
+	test('206 default pocket can take Main beside a sibling Main', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
+		await openPocketEditFromList(page, mainRow);
+		const dialog = page.getByTestId('pocket-form-dialog');
+		await dialog.getByTestId('pocket-name-input').fill('Household');
+		await dialog.getByTestId('pocket-save').click();
+		await expect(dialog).toBeHidden();
+		await page.getByTestId('pocket-details-back').click();
+
+		await page.getByTestId('pocket-add').click();
+		await page.getByTestId('pocket-name-input').fill('Main');
+		await page.getByTestId('pocket-save').click();
+		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+
+		const householdRow = page.locator('[data-testid^="pocket-row-"]').filter({ hasText: 'Household' });
+		await openPocketEditFromList(page, householdRow);
+		const edit = page.getByTestId('pocket-form-dialog');
+		await edit.getByTestId('pocket-name-input').fill('Main');
+		await edit.getByTestId('pocket-save').click();
+		await expect(page.getByTestId('pocket-field-error-name')).toHaveCount(0);
+		await expect(edit).toBeHidden();
+		await page.getByTestId('pocket-details-back').click();
+		await expect(page.getByTestId('pockets-panel').getByText('Main', { exact: true })).toHaveCount(2);
+	});
+
 	test('198 freeze Edit pocket description', async ({ page }) => {
 		await goToNav(page, 'pockets');
 		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();

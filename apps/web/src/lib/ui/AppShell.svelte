@@ -14,7 +14,7 @@
 	import type { CreatePocketInput, UpdatePocketInput } from '$lib/application/accounts';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { isAppRoute, isLegacyActivityPath, isLegacyMorePath, parsePath, parsePocketId, routeToPath, type AppRoute } from '$lib/shared/router';
+	import { isAppRoute, isGatePath, nearestValidPath, parsePath, parsePocketId, routeToPath, type AppRoute } from '$lib/shared/router';
 
 	type Props = {
 		account: Account | null;
@@ -204,22 +204,12 @@
 	}
 
 	$effect(() => {
-		if (isLegacyActivityPath(page.url.pathname)) {
-			void goto('/transactions', { replaceState: true });
-		}
-	});
-
-	$effect(() => {
-		if (isLegacyMorePath(page.url.pathname)) {
-			void goto('/settings', { replaceState: true });
-		}
-	});
-
-	$effect(() => {
 		if (!ready) return;
-		if (pocketId && !detailsPocket) {
-			void goto('/pockets', { replaceState: true });
-		}
+		const path = page.url.pathname.replace(/\/+$/, '') || '/';
+		const nearest = nearestValidPath(path);
+		if (isGatePath(nearest)) return;
+		const desired = pocketId && !detailsPocket ? '/pockets' : nearest;
+		if (path !== desired) void goto(desired, { replaceState: true });
 	});
 
 	const lockViewport = $derived(route === 'categories' || route === 'transactions');

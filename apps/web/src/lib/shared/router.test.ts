@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+	isGatePath,
 	isLegacyActivityPath,
 	isLegacyMorePath,
+	nearestValidPath,
 	parsePath,
 	parsePocketId,
 	pocketDetailsPath,
@@ -13,6 +15,7 @@ describe('path router', () => {
 		expect(parsePath('')).toBe('home');
 		expect(parsePath('/')).toBe('home');
 		expect(parsePath('/home')).toBe('home');
+		expect(nearestValidPath('/home')).toBe('/');
 	});
 
 	it('parses known panels', () => {
@@ -24,11 +27,19 @@ describe('path router', () => {
 		expect(parsePath('/more')).toBe('settings');
 	});
 
-	it('falls back for unknown paths', () => {
+	it('walks extra segments to the nearest valid parent (204)', () => {
+		expect(nearestValidPath('/not-a-route')).toBe('/');
 		expect(parsePath('/not-a-route')).toBe('home');
-		expect(parsePath('/activity/extra')).toBe('home');
-		expect(parsePath('/transactions/extra')).toBe('home');
-		expect(parsePath('/pockets/a/b')).toBe('home');
+		expect(nearestValidPath('/transactions/extra')).toBe('/transactions');
+		expect(parsePath('/transactions/extra')).toBe('transactions');
+		expect(nearestValidPath('/activity/extra')).toBe('/transactions');
+		expect(parsePath('/activity/extra')).toBe('transactions');
+		expect(nearestValidPath('/pockets/vac-1/extra')).toBe('/pockets/vac-1');
+		expect(parsePath('/pockets/vac-1/extra')).toBe('pockets');
+		expect(parsePocketId('/pockets/vac-1/extra')).toBe('vac-1');
+		expect(nearestValidPath('/onboarding/kit/x')).toBe('/onboarding/kit');
+		expect(isGatePath('/onboarding/kit/x')).toBe(true);
+		expect(parsePath('/onboarding/kit/x')).toBe('home');
 	});
 
 	it('treats /pockets/:id as the Pockets panel (148)', () => {
@@ -38,7 +49,7 @@ describe('path router', () => {
 		expect(parsePocketId('/pockets/')).toBeNull();
 		expect(parsePocketId('/pockets/vac-1')).toBe('vac-1');
 		expect(parsePocketId('/pockets/vac-1/')).toBe('vac-1');
-		expect(parsePocketId('/pockets/a/b')).toBeNull();
+		expect(parsePocketId('/pockets/a/b')).toBe('a');
 		expect(parsePocketId('/transactions')).toBeNull();
 		expect(pocketDetailsPath('vac-1')).toBe('/pockets/vac-1');
 	});
@@ -55,11 +66,13 @@ describe('path router', () => {
 		expect(isLegacyActivityPath('/activity')).toBe(true);
 		expect(isLegacyActivityPath('/activity/')).toBe(true);
 		expect(isLegacyActivityPath('/transactions')).toBe(false);
+		expect(nearestValidPath('/activity')).toBe('/transactions');
 	});
 
 	it('detects the legacy More path for replace-navigation', () => {
 		expect(isLegacyMorePath('/more')).toBe(true);
 		expect(isLegacyMorePath('/more/')).toBe(true);
 		expect(isLegacyMorePath('/settings')).toBe(false);
+		expect(nearestValidPath('/more')).toBe('/settings');
 	});
 });
