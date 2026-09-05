@@ -74,7 +74,16 @@ describe('mountGoogleSignInButton', () => {
 		);
 		expect(gis.renderButton).toHaveBeenCalledWith(
 			host,
-			expect.objectContaining({ type: 'standard', text: 'signin_with', theme: 'outline' })
+			expect.objectContaining({
+				type: 'standard',
+				text: 'signin_with',
+				theme: 'outline',
+				size: 'medium'
+			})
+		);
+		expect(gis.renderButton).toHaveBeenCalledWith(
+			host,
+			expect.not.objectContaining({ size: 'large' })
 		);
 		expect(gis.prompt).not.toHaveBeenCalled();
 	});

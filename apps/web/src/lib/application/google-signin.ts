@@ -1,4 +1,4 @@
-/** Google Identity Services helper (Specs 119, 179, 182, 205). */
+/** Google Identity Services helper (Specs 119, 179, 182, 205, 208). */
 
 export const GSI_CLIENT_SRC = 'https://accounts.google.com/gsi/client';
 
@@ -53,7 +53,7 @@ export async function mountGoogleSignInButton(opts: {
 	gis.renderButton(opts.host, {
 		type: 'standard',
 		theme: gisButtonTheme(opts.colorScheme === 'dark' ? 'dark' : 'light'),
-		size: 'large',
+		size: 'medium',
 		text: 'signin_with'
 	});
 }

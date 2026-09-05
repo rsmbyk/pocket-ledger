@@ -221,6 +221,7 @@ Living behavior contracts for Pocket Ledger.
 | [202](202-kit-stored-after-copy-download/spec.md)        | Kit stored checkbox after Copy or Download                   | Accepted                                                                        |
 | [203](203-auth-gate-urls/spec.md)                        | Path URLs for lock, onboarding, recovery, reset              | Accepted                                                                        |
 | [204](204-nearest-parent-url/spec.md)                    | Invalid URL falls back to nearest valid parent               | Accepted                                                                        |
-| [205](205-gis-unpersonalized-button/spec.md)             | Default GIS button, not Sign in as Name                      | Accepted                                                                        |
+| [205](205-gis-unpersonalized-button/spec.md)             | Default GIS button, not Sign in as Name                      | Accepted — personalization not stopped; see [208](208-gis-button-no-personalize/spec.md) |
 | [206](206-main-rename-beside-literal/spec.md)             | Default pocket can take Main beside a sibling Main           | Accepted                                                                        |
 | [207](207-kit-stored-label-cursor/spec.md)               | Hex kit stored label cursor matches the checkbox             | Accepted                                                                        |
+| [208](208-gis-button-no-personalize/spec.md)             | GIS button never personalizes                                | Accepted                                                                        |
