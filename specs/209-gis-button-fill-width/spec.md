@@ -14,7 +14,7 @@ Production **Sign in with Google** uses the same full-width `h-9` shadcn button 
 
 Visible button chrome in `MorePanel`. Hidden GIS `renderButton` + click helper in `google-signin.ts`. Keep 179 popup, 182 theme remount, 205 auto-select, 208 `size: 'medium'`. Fake Google path unchanged. No One Tap `prompt()`. No Playwright GIS iframe asserts.
 
-`data-testid="google-sign-in"` moves to the visible shadcn button (supersedes Spec 179 item 5 host wrapper).
+`data-testid="google-sign-in"` moves to the visible shadcn button (supersedes Spec 179 item 5 host wrapper). Visible chrome superseded by [210](../210-gis-button-stretch/spec.md).
 
 ## Acceptance scenarios
 
