@@ -313,15 +313,17 @@
 					{/each}
 				</ul>
 			{/if}
-			<Button
-				type="button"
-				variant="ghost"
-				class="text-muted-foreground hover:text-foreground mt-1 w-full justify-center text-sm"
-				data-testid="pocket-details-see-more"
-				onclick={onSeeMore}
-			>
-				See more in Transactions
-			</Button>
+			{#if latest.length > 0}
+				<Button
+					type="button"
+					variant="ghost"
+					class="text-muted-foreground hover:text-foreground mt-1 w-full justify-center text-sm"
+					data-testid="pocket-details-see-more"
+					onclick={onSeeMore}
+				>
+					See more in Transactions
+				</Button>
+			{/if}
 		</Card.Content>
 	</Card.Root>
 </div>

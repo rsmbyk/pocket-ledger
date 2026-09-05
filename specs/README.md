@@ -58,7 +58,7 @@ Living behavior contracts for Pocket Ledger.
 | [040](040-activity-add-categories-dnd.md)              | Activity Add + Categories DnD polish                         | Accepted                                                                     |
 | [041](041-modal-platform.md)                           | Modal platform (lifecycle, emphasize, confirms)              | Accepted                                                                     |
 | [042](042-dates-and-toasts.md)                         | Dates YY Mon DD, DateField, toasts                           | Accepted                                                                     |
-| [043](043-dates-uncategorized-month-order.md)          | Dates DD MMM YYYY, Uncategorized marker, month order         | Accepted                                                                     |
+| [043](043-dates-uncategorized-month-order.md)          | Dates DD MMM YYYY, Uncategorized marker, month order         | Accepted — chart order superseded by [195](195-month-chart-sort-by-amount/spec.md) |
 | [044](044-tx-sheet-chrome-dismiss.md)                  | Transaction sheet chrome and outside dismiss                 | Accepted                                                                     |
 | [045](045-home-activity-filters.md)                    | Home polish and Activity filters overhaul                    | Accepted                                                                     |
 | [046](046-categories-density-no-toasts.md)             | Categories density and remove toasts                         | Accepted                                                                     |
@@ -81,7 +81,7 @@ Living behavior contracts for Pocket Ledger.
 | [063](063-activity-list-rows/spec.md)                  | Activity list rows like Recent                               | Accepted                                                                     |
 | [064](064-activity-sort-sheet/spec.md)                 | Activity Sort sheet + icon Filters                           | Accepted                                                                     |
 | [065](065-activity-active-toolbar-icons/spec.md)       | Active Sort/Filters icon chrome                              | Accepted                                                                     |
-| [066](066-recent-see-more/spec.md)                     | Recent see more → Activity                                   | Accepted                                                                     |
+| [066](066-recent-see-more/spec.md)                     | Recent see more → Activity                                   | Accepted — empty footer superseded by [194](194-hide-see-more-when-empty/spec.md) |
 | [067](067-remove-category-sort/spec.md)                | Remove Categories sort                                       | Accepted                                                                     |
 | [068](068-activity-date-groups/spec.md)                | Activity date groups + note secondary                        | Accepted                                                                     |
 | [069](069-activity-chunked-reveal/spec.md)             | Activity chunked reveal (whole days)                         | Accepted                                                                     |
@@ -122,7 +122,7 @@ Living behavior contracts for Pocket Ledger.
 | [103](103-soft-delete-void-only-categories/spec.md)    | Soft-delete void-only categories                             | Accepted                                                                     |
 | [104](104-create-form-draft-discard/spec.md)           | Create-form draft on discard (session)                       | Accepted                                                                     |
 | [105](105-pocket-amount-field-format/spec.md)          | Pocket amount field format                                   | Accepted                                                                     |
-| [106](106-transfer-admin-fee/spec.md)                  | Transfer admin fee                                           | Accepted                                                                     |
+| [106](106-transfer-admin-fee/spec.md)                  | Transfer admin fee                                           | Accepted — breakdown amount order superseded by [195](195-month-chart-sort-by-amount/spec.md) |
 | [107](107-filter-category-picker/spec.md)              | Filter category dropdown + type coupling                     | Accepted                                                                     |
 | [108](108-pocket-description-one-line/spec.md)         | Pocket description one line                                  | Accepted                                                                     |
 | [109](109-month-summary-bounds/spec.md)                | Month summary range bounds                                   | Accepted                                                                     |
@@ -164,7 +164,7 @@ Living behavior contracts for Pocket Ledger.
 | [145](145-remove-amount-filter/spec.md)                  | Remove Filters Amount compare                                | Accepted                                                                        |
 | [146](146-reorder-reset-both-discard-confirm/spec.md)    | Reorder Reset both kinds + Discard confirm                   | Accepted                                                                        |
 | [147](147-categories-reorder-whole-row-drag/spec.md)     | Categories reorder whole-row drag                            | Accepted                                                                        |
-| [148](148-pocket-details-page/spec.md)                   | Pocket details page                                          | Accepted — list pencil superseded by [149](149-pockets-list-card-states/spec.md) |
+| [148](148-pocket-details-page/spec.md)                   | Pocket details page                                          | Accepted — list pencil superseded by [149](149-pockets-list-card-states/spec.md); empty See more by [194](194-hide-see-more-when-empty/spec.md) |
 | [149](149-pockets-list-card-states/spec.md)              | Pockets list card states                                     | Accepted — grip-to-name alignment superseded by [151](151-pocket-grip-column/spec.md) |
 | [150](150-rename-category-modal/spec.md)                 | Category rename modal + kind dialog titles                   | Accepted                                                                        |
 | [151](151-pocket-grip-column/spec.md)                    | Pocket grip column                                           | Accepted                                                                        |
@@ -209,3 +209,10 @@ Living behavior contracts for Pocket Ledger.
 | [190](190-recovery-back-to-passphrase/spec.md)           | Back from account recovery to passphrase                     | Accepted                                                                        |
 | [191](191-unlock-redirect-home/spec.md)                  | Unlock URL `/`, shorter copy, Privacy labels and field errors | Accepted                                                                        |
 | [192](192-hide-tx-pocket-when-only-main/spec.md)         | Hide tx Pocket when only Main                                | Accepted                                                                        |
+| [193](193-recovery-pending-passphrase-copy/spec.md)      | Mid-reset recovery copy                                      | Accepted                                                                        |
+| [194](194-hide-see-more-when-empty/spec.md)              | Hide See more when Recent is empty                           | Accepted                                                                        |
+| [195](195-month-chart-sort-by-amount/spec.md)            | Month charts sort by amount                                  | Accepted                                                                        |
+| [196](196-tx-type-tab-not-dirty/spec.md)                 | Add tx type tabs are not dirty                               | Accepted                                                                        |
+| [197](197-unique-pocket-names/spec.md)                   | Unique pocket names; Main is the default label               | Accepted                                                                        |
+| [198](198-pocket-edit-description-frozen/spec.md)        | Freeze Edit pocket description                               | Accepted                                                                        |
+| [199](199-timeout-drop-minutes-label/spec.md)            | Drop Minutes label under Timeout                             | Accepted                                                                        |

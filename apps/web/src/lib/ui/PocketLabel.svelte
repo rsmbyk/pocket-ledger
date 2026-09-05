@@ -1,5 +1,6 @@
 <script lang="ts">
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
+	import { pocketDisplayName } from '$lib/domain/account';
 	import { cn } from '$lib/utils.js';
 
 	type Props = {
@@ -13,6 +14,7 @@
 	};
 
 	let { name, isMain, class: className = '', optical = false, iconTestid }: Props = $props();
+	const label = $derived(pocketDisplayName({ name, isMain }));
 </script>
 
 <span class={cn('inline-flex min-w-0 items-center gap-1.5', className)}>
@@ -23,5 +25,5 @@
 			data-testid={iconTestid}
 		/>
 	{/if}
-	<span class="truncate">{name}</span>
+	<span class="truncate">{label}</span>
 </span>

@@ -8,9 +8,11 @@ import {
 import { db } from '$lib/data/db';
 import {
 	assignNonMainSortOrders,
+	assertUniquePocketName,
 	DEFAULT_ACCOUNT_NAME,
 	listPocketsOrdered,
 	normalizeAccount,
+	normalizePocketNameInput,
 	type Account
 } from '$lib/domain/account';
 import { ensureSeedCategories } from '$lib/application/transactions';
@@ -103,8 +105,9 @@ export type CreatePocketInput = {
 
 export async function createPocket(input: CreatePocketInput): Promise<Account> {
 	await ensureDefaultAccount();
-	const name = input.name.trim();
-	if (!name) throw new Error('Name is required');
+	const accounts = await listAccounts();
+	const name = normalizePocketNameInput(input.name, false);
+	assertUniquePocketName(name, accounts);
 	const createdAt = new Date().toISOString();
 	const creationDate = createdAt.slice(0, 10);
 	const openingEnabled = input.openingEnabled === true;
@@ -121,7 +124,6 @@ export async function createPocket(input: CreatePocketInput): Promise<Account> {
 			throw new Error('Opening balance must be zero or greater');
 		}
 	}
-	const accounts = await listAccounts();
 	const nonMainCount = accounts.filter((a) => !a.isMain).length;
 	const account = normalizeAccount(
 		{
@@ -157,8 +159,9 @@ export type UpdatePocketInput = {
 export async function updatePocket(input: UpdatePocketInput): Promise<Account> {
 	const existing = await getAccount(input.id);
 	if (!existing) throw new Error('Pocket not found');
-	const name = input.name.trim();
-	if (!name) throw new Error('Name is required');
+	const accounts = await listAccounts();
+	const name = normalizePocketNameInput(input.name, existing.isMain);
+	assertUniquePocketName(name, accounts, existing.id);
 
 	const openingEnabled =
 		input.openingEnabled !== undefined ? input.openingEnabled : existing.openingEnabled;

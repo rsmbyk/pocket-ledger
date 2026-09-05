@@ -111,7 +111,6 @@ export type TxFormBaseline = {
 /** True when create form has any non-default user input vs initial baseline. */
 export function isCreateTxDirty(current: TxFormBaseline, baseline: TxFormBaseline): boolean {
 	return (
-		current.type !== baseline.type ||
 		current.amountDigits !== baseline.amountDigits ||
 		current.categoryId !== baseline.categoryId ||
 		current.note !== baseline.note ||

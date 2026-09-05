@@ -29,6 +29,49 @@ export type Account = {
 export const DEFAULT_ACCOUNT_NAME = 'Main';
 export const DEFAULT_CURRENCY_LABEL = 'IDR';
 
+/** True when the default pocket is using the Main fallback, not a custom name. */
+export function isUnsetMainName(pocket: Pick<Account, 'name' | 'isMain'>): boolean {
+	if (!pocket.isMain) return false;
+	const n = pocket.name.trim().replace(/\s+/g, ' ');
+	return n === '' || n.toLowerCase() === DEFAULT_ACCOUNT_NAME.toLowerCase();
+}
+
+/** Label shown in lists and copy (Main when the default pocket is unnamed). */
+export function pocketDisplayName(pocket: Pick<Account, 'name' | 'isMain'>): string {
+	if (isUnsetMainName(pocket)) return DEFAULT_ACCOUNT_NAME;
+	const n = pocket.name.trim().replace(/\s+/g, ' ');
+	return n || (pocket.isMain ? DEFAULT_ACCOUNT_NAME : n);
+}
+
+/** Trim / collapse spaces; empty Main edit stores the default; Main is reserved for others. */
+export function normalizePocketNameInput(raw: string, isMain: boolean): string {
+	const name = raw.trim().replace(/\s+/g, ' ');
+	if (isMain && (name === '' || name.toLowerCase() === DEFAULT_ACCOUNT_NAME.toLowerCase())) {
+		return DEFAULT_ACCOUNT_NAME;
+	}
+	if (!name) throw new Error('Name is required');
+	if (name.toLowerCase() === DEFAULT_ACCOUNT_NAME.toLowerCase()) {
+		throw new Error(`A pocket named "${DEFAULT_ACCOUNT_NAME}" already exists`);
+	}
+	return name;
+}
+
+/** Case-insensitive unique display names; `exceptId` is the pocket being renamed. */
+export function assertUniquePocketName(
+	name: string,
+	existing: Array<Pick<Account, 'id' | 'name' | 'isMain'>>,
+	exceptId?: string
+): void {
+	const needle = name.toLowerCase();
+	const clash = existing.find((p) => {
+		if (exceptId && p.id === exceptId) return false;
+		return pocketDisplayName(p).toLowerCase() === needle;
+	});
+	if (clash) {
+		throw new Error(`A pocket named "${name}" already exists`);
+	}
+}
+
 export type AccountLike = Partial<Account> &
 	Pick<Account, 'id' | 'name' | 'currencyLabel' | 'createdAt'>;
 

@@ -52,6 +52,7 @@ test.describe('154–159 Settings hub', () => {
 	test('156 idle Save persists; Cancel restores draft', async ({ page }) => {
 		await goToNav(page, 'settings');
 		await expect(page.getByTestId('idle-save')).toBeDisabled();
+		await expect(page.getByLabel('Minutes', { exact: true })).toHaveCount(0);
 		await page.getByTestId('idle-minutes').click();
 		await page.getByTestId('idle-minutes-10').click();
 		await expect(page.getByTestId('idle-save')).toBeEnabled();

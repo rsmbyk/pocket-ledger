@@ -1,7 +1,7 @@
 # Spec 066: Recent see more → Activity
 
 - **ID:** 066
-- **Status:** Accepted
+- **Status:** Accepted — empty footer visibility superseded by [194](../194-hide-see-more-when-empty/spec.md)
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)
@@ -35,7 +35,7 @@ Add an always-visible control on the Home Recent card that navigates to Activity
 
 - **Given** Home with no transactions
 - **When** Recent renders
-- **Then** `recent-see-more` is visible with text “See more in Activity”
+- **Then** `recent-see-more` is hidden — superseded by [194](../194-hide-see-more-when-empty/spec.md)
 
 ### Scenario: Visible with transactions
 

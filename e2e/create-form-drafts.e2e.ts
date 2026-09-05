@@ -44,6 +44,21 @@ test.describe('Create-form draft on discard (104 / 184)', () => {
 		await expect(sheet).toBeHidden();
 	});
 
+	test('196 type tabs are not dirty', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.getByTestId('pocket-add').click();
+		await page.getByTestId('pocket-name-input').fill('Vacation');
+		await page.getByTestId('pocket-save').click();
+		await goToNav(page, 'home');
+		await openAdd(page);
+		const sheet = page.getByTestId('tx-dialog');
+		await sheet.getByTestId('tx-mode-transfer').click();
+		await sheet.getByTestId('tx-type-income').click();
+		await sheet.getByTestId('tx-close').click();
+		await expect(page.getByTestId('tx-discard-confirm')).toHaveCount(0);
+		await expect(sheet).toBeHidden();
+	});
+
 	test('tx create: successful save clears draft', async ({ page }) => {
 		await ensureCategory(page, 'Food', 'expense');
 		await openAdd(page);

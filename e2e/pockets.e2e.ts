@@ -69,6 +69,41 @@ test.describe('070–077 pockets pack', () => {
 		await expect(page.getByTestId('pocket-main-icon')).toBeVisible();
 	});
 
+	test('197 unique names; Main field empty', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
+		await openPocketEditFromList(page, mainRow);
+		const dialog = page.getByTestId('pocket-form-dialog');
+		await expect(dialog.getByTestId('pocket-name-input')).toHaveValue('');
+		await expect(dialog.getByPlaceholder('Main')).toBeVisible();
+		await dialog.getByRole('button', { name: 'Cancel' }).click();
+		await expect(dialog).toBeHidden();
+		await page.getByTestId('pocket-details-back').click();
+
+		await page.getByTestId('pocket-add').click();
+		await page.getByTestId('pocket-name-input').fill('Vacation');
+		await page.getByTestId('pocket-save').click();
+		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+		await page.getByTestId('pocket-add').click();
+		await page.getByTestId('pocket-name-input').fill('vacation');
+		await page.getByTestId('pocket-save').click();
+		await expect(page.getByTestId('pocket-field-error-name')).toContainText(/already exists/i);
+	});
+
+	test('198 freeze Edit pocket description', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		const mainRow = page.locator('[data-testid^="pocket-row-"]').first();
+		await openPocketEditFromList(page, mainRow);
+		const dialog = page.getByTestId('pocket-form-dialog');
+		await expect(dialog.getByText('Update details for Main.')).toBeVisible();
+		await dialog.getByTestId('pocket-name-input').fill('Household');
+		await expect(dialog.getByText('Update details for Main.')).toBeVisible();
+		await dialog.getByRole('button', { name: 'Cancel' }).click();
+		await expect(page.getByTestId('pocket-discard-confirm')).toBeVisible();
+		await page.getByTestId('pocket-discard-confirm').click();
+		await expect(dialog).toBeHidden();
+	});
+
 	test('Transfer tab with two pockets creates transfer', async ({ page }) => {
 		await goToNav(page, 'pockets');
 		await page.getByTestId('pocket-add').click();

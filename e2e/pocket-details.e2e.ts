@@ -75,7 +75,7 @@ test.describe('148 pocket details', () => {
 		await expect(page.getByTestId('pocket-details-goals-card')).toBeVisible();
 		await expect(page.getByTestId('pocket-details-goals-empty')).toBeVisible();
 		await expect(page.getByTestId('month-summary')).toBeVisible();
-		await expect(page.getByTestId('pocket-details-see-more')).toBeVisible();
+		await expect(page.getByTestId('pocket-details-see-more')).toHaveCount(0);
 
 		await page.getByTestId('pocket-details-edit').click();
 		await expect(page.getByTestId('pocket-form-dialog')).toBeVisible();

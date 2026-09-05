@@ -14,6 +14,7 @@
 	import PocketLabel from '$lib/ui/PocketLabel.svelte';
 	import GoalProgressChrome from '$lib/ui/GoalProgressChrome.svelte';
 	import type { Account } from '$lib/domain/account';
+	import { DEFAULT_ACCOUNT_NAME, isUnsetMainName, pocketDisplayName } from '$lib/domain/account';
 	import {
 		pocketDeleteBlockers,
 		type CreatePocketInput,
@@ -97,6 +98,7 @@
 	let formOpeningAsOf = $state(todayOccurredOn());
 	let formError = $state<{ key: FormFieldKey; message: string } | null>(null);
 	let formBaseline = $state<FormBaseline | null>(null);
+	let formTitleName = $state('');
 	let discardConfirmOpen = $state(false);
 	let deleteConfirmOpen = $state(false);
 	let deleteBlockedOpen = $state(false);
@@ -111,6 +113,7 @@
 		formMode === 'edit' && formPocketId ? (pockets.find((p) => p.id === formPocketId) ?? null) : null
 	);
 	const showDelete = $derived(Boolean(formPocket && !formPocket.isMain));
+	const formNameRequired = $derived(formMode === 'create' || Boolean(formPocket && !formPocket.isMain));
 
 	const formDirty = $derived.by(() => {
 		if (formMode === 'create') {
@@ -125,6 +128,7 @@
 			formOpeningAsOf !== formBaseline.openingAsOf
 		);
 	});
+	const canSavePocket = $derived(formDirty && (!formNameRequired || formName.trim() !== ''));
 
 	const formOpeningDisplay = $derived(formatAmountDigitsDisplay(formOpeningRaw));
 
@@ -174,6 +178,7 @@
 		formOpeningRaw = '0';
 		formOpeningAsOf = todayOccurredOn();
 		formError = null;
+		formTitleName = '';
 		formBaseline = snapshotForm();
 		formOpen = true;
 	}
@@ -181,12 +186,13 @@
 	function openEdit(p: Account) {
 		formMode = 'edit';
 		formPocketId = p.id;
-		formName = p.name;
+		formName = isUnsetMainName(p) ? '' : p.name;
 		formNotes = p.notes;
 		formOpeningEnabled = p.openingEnabled;
 		formOpeningRaw = String(Math.max(0, p.openingBalanceMinor));
 		formOpeningAsOf = p.openingAsOf;
 		formError = null;
+		formTitleName = pocketDisplayName(p);
 		formBaseline = snapshotForm();
 		formOpen = true;
 	}
@@ -229,7 +235,7 @@
 	}
 
 	async function submitForm() {
-		if (!formDirty || !formName.trim()) return;
+		if (!canSavePocket) return;
 		busy = true;
 		formError = null;
 		try {
@@ -322,14 +328,14 @@
 	<a
 		href={href}
 		class="absolute inset-0 z-0"
-		aria-label={`Open ${p.name}`}
+		aria-label={`Open ${pocketDisplayName(p)}`}
 	></a>
 	<div class="pointer-events-none relative z-10 flex items-stretch gap-2 px-4 py-3">
 		{#if draggable}
 			<span
 				use:dragHandle
 				class="dnd-handle text-muted-foreground hover:text-foreground pointer-events-auto -my-3 flex shrink-0 cursor-grab items-center self-stretch rounded-sm p-1 active:cursor-grabbing"
-				aria-label={`Drag to reorder ${p.name}`}
+				aria-label={`Drag to reorder ${pocketDisplayName(p)}`}
 			>
 				<GripVerticalIcon class="size-4" aria-hidden="true" />
 			</span>
@@ -430,7 +436,7 @@
 			<Dialog.Description>
 				{formMode === 'create'
 					? 'Create a pocket to track money separately.'
-					: `Update details for ${formName || 'this pocket'}.`}
+					: `Update details for ${formTitleName || 'this pocket'}.`}
 			</Dialog.Description>
 		</Dialog.Header>
 		<form
@@ -445,7 +451,8 @@
 				<Input
 					id="pocket-name"
 					bind:value={formName}
-					required
+					required={formNameRequired}
+					placeholder={formPocket?.isMain ? DEFAULT_ACCOUNT_NAME : undefined}
 					data-testid="pocket-name-input"
 					aria-invalid={formError?.key === 'name' ? true : undefined}
 					oninput={() => {
@@ -594,7 +601,7 @@
 				>
 					Cancel
 				</Button>
-				<Button type="submit" disabled={busy || !formDirty} data-testid="pocket-save">
+				<Button type="submit" disabled={busy || !canSavePocket} data-testid="pocket-save">
 					Save
 				</Button>
 			</div>

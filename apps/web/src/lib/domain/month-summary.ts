@@ -166,6 +166,16 @@ function categoryTotals(
 			return { categoryId, label, amountMinor: amount, sortOrder };
 		})
 		.sort((a, b) => {
+			const aPin = a.sortOrder >= ADMIN_FEE_SORT;
+			const bPin = b.sortOrder >= ADMIN_FEE_SORT;
+			if (aPin !== bPin) return aPin ? 1 : -1;
+			if (aPin && bPin) {
+				const byOrder = a.sortOrder - b.sortOrder;
+				if (byOrder !== 0) return byOrder;
+				return a.label.localeCompare(b.label);
+			}
+			const byAmount = b.amountMinor - a.amountMinor;
+			if (byAmount !== 0) return byAmount;
 			const byOrder = a.sortOrder - b.sortOrder;
 			if (byOrder !== 0) return byOrder;
 			return a.label.localeCompare(b.label);

@@ -1,7 +1,7 @@
 # Spec 043: Dates DD MMM YYYY, Uncategorized marker, month chart order
 
 - **ID:** 043
-- **Status:** Accepted
+- **Status:** Accepted — month chart order superseded by [195](195-month-chart-sort-by-amount/spec.md)
 - **Owner:** Ronald / Vex
 
 ## Intent

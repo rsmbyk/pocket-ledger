@@ -120,12 +120,19 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('account-recovery-open').click();
 		await expect(page.getByTestId('account-recovery-screen')).toBeVisible();
 		await expect(page.getByTestId('recovery-back')).toBeVisible();
+		await expect(page.getByTestId('account-recovery-screen')).toContainText(
+			'Paste the kit you saved when you created this account.'
+		);
+		await expect(page.getByTestId('account-recovery-screen')).not.toContainText('already reset');
 		await page.getByTestId('recovery-hex').fill(kit);
 		await page.getByTestId('recovery-submit').click();
 		await expect(page.getByTestId('account-passphrase-screen')).toBeVisible();
 		await page.reload();
 		await expect(page.getByTestId('account-recovery-screen')).toBeVisible();
 		await expect(page.getByTestId('recovery-back')).toHaveCount(0);
+		await expect(page.getByTestId('account-recovery-screen')).toContainText(
+			'Your old passphrase is already reset. Paste the recovery kit to set a new passphrase.'
+		);
 		await expect(page.getByTestId('account-passphrase-screen')).toHaveCount(0);
 		await expect(page.getByTestId('app-shell')).toHaveCount(0);
 		await page.getByTestId('recovery-hex').fill(kit);
@@ -163,6 +170,7 @@ test.describe('119 cloud onboarding', () => {
 		await expect(page.getByTestId('lockout-wait')).toBeVisible();
 		await page.getByTestId('account-recovery-open').click();
 		await expect(page.getByTestId('account-recovery-screen')).toBeVisible();
+		await expect(page.getByTestId('account-recovery-screen')).not.toContainText('already reset');
 		await page.getByTestId('recovery-back').click();
 		await expect(page.getByTestId('account-unlock-screen')).toBeVisible();
 		await expect(page.getByTestId('account-recovery-open')).toBeVisible();

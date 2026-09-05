@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
 	assignNonMainSortOrders,
+	assertUniquePocketName,
 	inferOpeningEnabled,
+	isUnsetMainName,
 	listPocketsOrdered,
 	normalizeAccount,
+	normalizePocketNameInput,
+	pocketDisplayName,
 	type Account
 } from './account';
 
@@ -14,6 +18,24 @@ function pocket(partial: Partial<Account> & Pick<Account, 'id' | 'name'>): Accou
 		...partial
 	});
 }
+
+describe('pocket names (197)', () => {
+	it('treats Main as unset on the default pocket', () => {
+		const main = pocket({ id: 'm', name: 'Main', isMain: true });
+		expect(isUnsetMainName(main)).toBe(true);
+		expect(pocketDisplayName(main)).toBe('Main');
+		expect(normalizePocketNameInput('', true)).toBe('Main');
+		expect(normalizePocketNameInput('Household', true)).toBe('Household');
+	});
+
+	it('rejects duplicate and reserved Main names', () => {
+		const main = pocket({ id: 'm', name: 'Main', isMain: true });
+		const daily = pocket({ id: 'd', name: 'Daily' });
+		expect(() => assertUniquePocketName('daily', [main, daily])).toThrow(/already exists/i);
+		expect(() => normalizePocketNameInput('Main', false)).toThrow(/already exists/i);
+		expect(() => assertUniquePocketName('Household', [main, daily], 'm')).not.toThrow();
+	});
+});
 
 describe('listPocketsOrdered', () => {
 	it('puts Main first regardless of sortOrder or name', () => {

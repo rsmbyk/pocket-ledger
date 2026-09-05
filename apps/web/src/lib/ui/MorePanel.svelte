@@ -10,7 +10,6 @@
 	import { Popover } from 'bits-ui';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
-	import { Label } from '$lib/components/ui/label/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
@@ -460,13 +459,13 @@
 			<Card.Content class="flex flex-col gap-4 px-0">
 				<div class="flex flex-col gap-2">
 					{@render sectionHeading('Timeout')}
-					<Label for="idle-minutes">Minutes</Label>
 					<Popover.Root bind:open={idleMinutesOpen}>
 						<Popover.Trigger
 							id="idle-minutes"
 							type="button"
 							class="border-input bg-background flex h-11 w-full items-center justify-between rounded-md border px-3 text-sm md:h-9"
 							data-testid="idle-minutes"
+							aria-label="Timeout"
 						>
 							<span class="truncate">{idleDraftMinutes} minutes</span>
 							<ChevronDownIcon class="text-muted-foreground size-4 shrink-0" />

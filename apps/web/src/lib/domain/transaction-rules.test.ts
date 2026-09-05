@@ -73,6 +73,7 @@ describe('transaction-rules', () => {
 		};
 		expect(isCreateTxDirty({ ...base, amountDigits: '100' }, base)).toBe(true);
 		expect(isCreateTxDirty(base, base)).toBe(false);
+		expect(isCreateTxDirty({ ...base, type: 'income' }, base)).toBe(false);
 		expect(
 			isEditTxDirty(
 				{ amountDigits: '100', categoryId: 'a', note: '', occurredOn: '2026-07-16' },

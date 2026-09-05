@@ -479,6 +479,7 @@
 	<UnlockScreen variant="device" lockedUntil={lockoutUntil} {onUnlock} />
 {:else if signedIn && (accountRecoveryOpen || (pendingPassphraseReset && !dekPresent))}
 	<AccountRecoveryScreen
+		pendingReset={pendingPassphraseReset && !dekPresent}
 		onRecover={async (hex) => {
 			const ok = await unlockAccountWithHex(hex);
 			if (!ok) throw new Error('Recovery kit did not match');
