@@ -3,7 +3,7 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import { flip } from 'svelte/animate';
 	import { dragHandle, dragHandleZone, type DndEvent } from 'svelte-dnd-action';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import * as InputGroup from '$lib/components/ui/input-group/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
@@ -566,7 +566,7 @@
 					<Popover.Root bind:open={deleteBlockedOpen}>
 						<Popover.Trigger
 							type="button"
-							class="ring-offset-background focus-visible:ring-ring inline-flex h-9 w-full items-center justify-center rounded-md bg-destructive px-4 text-sm font-medium text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-2 focus-visible:outline-none"
+							class={cn(buttonVariants({ variant: 'destructive' }), 'w-full')}
 							data-testid="pocket-delete"
 							onclick={(e) => {
 								e.preventDefault();

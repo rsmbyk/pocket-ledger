@@ -1,14 +1,14 @@
 # Spec 197: Unique pocket names; Main is the default label
 
 - **ID:** 197
-- **Status:** Accepted
+- **Status:** Accepted — reserved Main superseded by [201](../201-main-name-not-reserved/spec.md)
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 
 ## Intent
 
-Pocket names are unique (case-insensitive, trim, collapse spaces). **Main** is the default label for the default pocket when no custom name is set — not a name typed into the field. Non-Main pockets cannot be named Main.
+Pocket names are unique (case-insensitive, trim, collapse spaces). **Main** is the default label for the default pocket when no custom name is set — not a name typed into the field. Reserved-Main for other pockets is superseded by [201](../201-main-name-not-reserved/spec.md).
 
 ## Scope
 

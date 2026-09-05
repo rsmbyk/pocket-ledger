@@ -126,7 +126,7 @@ Let a user opt into cloud with Google only, force a finished account-passphrase 
 - **Given** a new account that has just set a passphrase
 - **When** they are on the hex kit step
 - **Then** they can copy **or** download the grouped hex
-- **And** they must check that they stored it before continuing
+- **And** they must check that they stored it before continuing (checkbox enabled only after Copy or Download — [202](../202-kit-stored-after-copy-download/spec.md))
 - **And** the recovery wrap is not on the server until that confirm
 
 ## Traceability

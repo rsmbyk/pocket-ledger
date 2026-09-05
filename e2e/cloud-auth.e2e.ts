@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { goToNav } from './nav';
+import { confirmHexKit, goToNav } from './nav';
 
 test.describe('119 cloud onboarding', () => {
 	test('signed-out users are not forced through Google', async ({ page }) => {
@@ -25,13 +25,15 @@ test.describe('119 cloud onboarding', () => {
 		await goToNav(page, 'more');
 		await page.getByTestId('google-sign-in').click();
 		await expect(page.getByTestId('account-passphrase-screen')).toBeVisible();
+		await expect.poll(() => new URL(page.url()).pathname).toBe('/onboarding');
 		await page.getByTestId('account-pass').fill('account-pass');
 		await page.getByTestId('account-pass-confirm').fill('account-pass');
 		await page.getByTestId('account-pass-submit').click();
 		await expect(page.getByTestId('hex-kit-screen')).toBeVisible();
+		await expect.poll(() => new URL(page.url()).pathname).toBe('/onboarding/kit');
 		await expect(page.getByTestId('hex-kit-confirm')).toBeDisabled();
-		await page.getByTestId('hex-kit-stored').check();
-		await page.getByTestId('hex-kit-confirm').click();
+		await expect(page.getByTestId('hex-kit-stored')).toBeDisabled();
+		await confirmHexKit(page);
 		await expect(page.getByTestId('app-shell')).toBeVisible();
 		await goToNav(page, 'more');
 		await expect(page.getByTestId('export-backup')).toHaveCount(0);
@@ -44,6 +46,7 @@ test.describe('119 cloud onboarding', () => {
 		await goToNav(page, 'more');
 		await page.getByTestId('google-sign-in').click();
 		await expect(page.getByTestId('account-passphrase-screen')).toBeVisible();
+		await expect.poll(() => new URL(page.url()).pathname).toBe('/onboarding');
 		await expect(page.getByTestId('account-pass-submit')).toBeDisabled();
 		await expect(page.getByTestId('account-pass-requirements')).toHaveCount(0);
 		await page.getByTestId('account-pass').fill('short');
@@ -62,8 +65,7 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('account-pass').fill('account-pass');
 		await page.getByTestId('account-pass-confirm').fill('account-pass');
 		await page.getByTestId('account-pass-submit').click();
-		await page.getByTestId('hex-kit-stored').check();
-		await page.getByTestId('hex-kit-confirm').click();
+		await confirmHexKit(page);
 		await expect(page.getByTestId('app-shell')).toBeVisible();
 		await goToNav(page, 'more');
 		await page.getByTestId('debug-reset-cloud-stay').click();
@@ -79,8 +81,7 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('account-pass').fill('account-pass');
 		await page.getByTestId('account-pass-confirm').fill('account-pass');
 		await page.getByTestId('account-pass-submit').click();
-		await page.getByTestId('hex-kit-stored').check();
-		await page.getByTestId('hex-kit-confirm').click();
+		await confirmHexKit(page);
 		await expect(page.getByTestId('app-shell')).toBeVisible();
 		await goToNav(page, 'more');
 		await page.getByTestId('debug-reset-cloud-sign-out').click();
@@ -102,8 +103,7 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('account-pass-submit').click();
 		await expect(page.getByTestId('hex-kit-screen')).toBeVisible();
 		const kit = (await page.getByTestId('hex-kit-value').innerText()).trim();
-		await page.getByTestId('hex-kit-stored').check();
-		await page.getByTestId('hex-kit-confirm').click();
+		await confirmHexKit(page);
 		await expect(page.getByTestId('app-shell')).toBeVisible();
 		await expect(page.getByTestId('hex-unlock-form')).toHaveCount(0);
 		await page.getByTestId('header-lock').click();
@@ -119,6 +119,7 @@ test.describe('119 cloud onboarding', () => {
 		await expect(page.getByTestId('unlock-passphrase')).toHaveCount(0);
 		await page.getByTestId('account-recovery-open').click();
 		await expect(page.getByTestId('account-recovery-screen')).toBeVisible();
+		await expect.poll(() => new URL(page.url()).pathname).toBe('/recovery');
 		await expect(page.getByTestId('recovery-back')).toBeVisible();
 		await expect(page.getByTestId('account-recovery-screen')).toContainText(
 			'Paste the kit you saved when you created this account.'
@@ -127,8 +128,10 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('recovery-hex').fill(kit);
 		await page.getByTestId('recovery-submit').click();
 		await expect(page.getByTestId('account-passphrase-screen')).toBeVisible();
+		await expect.poll(() => new URL(page.url()).pathname).toBe('/reset');
 		await page.reload();
 		await expect(page.getByTestId('account-recovery-screen')).toBeVisible();
+		await expect.poll(() => new URL(page.url()).pathname).toBe('/recovery');
 		await expect(page.getByTestId('recovery-back')).toHaveCount(0);
 		await expect(page.getByTestId('account-recovery-screen')).toContainText(
 			'Your old passphrase is already reset. Paste the recovery kit to set a new passphrase.'
@@ -157,8 +160,7 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('account-pass').fill('account-pass');
 		await page.getByTestId('account-pass-confirm').fill('account-pass');
 		await page.getByTestId('account-pass-submit').click();
-		await page.getByTestId('hex-kit-stored').check();
-		await page.getByTestId('hex-kit-confirm').click();
+		await confirmHexKit(page);
 		await expect(page.getByTestId('app-shell')).toBeVisible();
 		await page.getByTestId('header-lock').click();
 		await page.getByTestId('unlock-passphrase').fill('wrong-pass');
@@ -184,8 +186,7 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('account-pass').fill('account-pass');
 		await page.getByTestId('account-pass-confirm').fill('account-pass');
 		await page.getByTestId('account-pass-submit').click();
-		await page.getByTestId('hex-kit-stored').check();
-		await page.getByTestId('hex-kit-confirm').click();
+		await confirmHexKit(page);
 		await expect(page.getByTestId('app-shell')).toBeVisible();
 		let account = page.getByTestId('sidebar-account');
 		if (!(await account.isVisible().catch(() => false))) {
@@ -205,8 +206,7 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('account-pass').fill('account-pass');
 		await page.getByTestId('account-pass-confirm').fill('account-pass');
 		await page.getByTestId('account-pass-submit').click();
-		await page.getByTestId('hex-kit-stored').check();
-		await page.getByTestId('hex-kit-confirm').click();
+		await confirmHexKit(page);
 		await expect(page.getByTestId('app-shell')).toBeVisible();
 		await goToNav(page, 'more');
 		await expect(page.getByText('Old passphrase', { exact: true })).toBeVisible();
@@ -242,14 +242,13 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('account-pass').fill('account-pass');
 		await page.getByTestId('account-pass-confirm').fill('account-pass');
 		await page.getByTestId('account-pass-submit').click();
-		await page.getByTestId('hex-kit-stored').check();
-		await page.getByTestId('hex-kit-confirm').click();
+		await confirmHexKit(page);
 		await expect(page.getByTestId('app-shell')).toBeVisible();
 		await goToNav(page, 'more');
 		await expect(page.getByTestId('settings-panel')).toBeVisible();
 		await page.getByTestId('header-lock').click();
 		await expect(page.getByTestId('account-unlock-screen')).toBeVisible();
-		await expect.poll(() => new URL(page.url()).pathname).toBe('/');
+		await expect.poll(() => new URL(page.url()).pathname).toBe('/unlock');
 		await expect(page.getByTestId('account-unlock-screen')).toContainText(
 			'Enter your account passphrase.'
 		);

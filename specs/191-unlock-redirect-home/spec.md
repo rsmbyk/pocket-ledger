@@ -1,7 +1,7 @@
 # Spec 191: Unlock `/`, shorter copy, Privacy labels and field errors
 
 - **ID:** 191
-- **Status:** Accepted
+- **Status:** Accepted — gate URLs superseded by [203](../203-auth-gate-urls/spec.md)
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

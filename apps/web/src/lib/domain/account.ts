@@ -43,28 +43,28 @@ export function pocketDisplayName(pocket: Pick<Account, 'name' | 'isMain'>): str
 	return n || (pocket.isMain ? DEFAULT_ACCOUNT_NAME : n);
 }
 
-/** Trim / collapse spaces; empty Main edit stores the default; Main is reserved for others. */
+/** Trim / collapse spaces; empty Main edit stores the default fallback. */
 export function normalizePocketNameInput(raw: string, isMain: boolean): string {
 	const name = raw.trim().replace(/\s+/g, ' ');
 	if (isMain && (name === '' || name.toLowerCase() === DEFAULT_ACCOUNT_NAME.toLowerCase())) {
 		return DEFAULT_ACCOUNT_NAME;
 	}
 	if (!name) throw new Error('Name is required');
-	if (name.toLowerCase() === DEFAULT_ACCOUNT_NAME.toLowerCase()) {
-		throw new Error(`A pocket named "${DEFAULT_ACCOUNT_NAME}" already exists`);
-	}
 	return name;
 }
 
-/** Case-insensitive unique display names; `exceptId` is the pocket being renamed. */
+/** Case-insensitive unique custom names; unset Main fallback does not occupy "Main". */
 export function assertUniquePocketName(
 	name: string,
 	existing: Array<Pick<Account, 'id' | 'name' | 'isMain'>>,
 	exceptId?: string
 ): void {
+	const except = existing.find((p) => p.id === exceptId);
+	if (except?.isMain && isUnsetMainName({ name, isMain: true })) return;
 	const needle = name.toLowerCase();
 	const clash = existing.find((p) => {
 		if (exceptId && p.id === exceptId) return false;
+		if (isUnsetMainName(p)) return false;
 		return pocketDisplayName(p).toLowerCase() === needle;
 	});
 	if (clash) {

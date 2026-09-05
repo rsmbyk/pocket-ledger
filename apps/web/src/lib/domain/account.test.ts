@@ -28,12 +28,16 @@ describe('pocket names (197)', () => {
 		expect(normalizePocketNameInput('Household', true)).toBe('Household');
 	});
 
-	it('rejects duplicate and reserved Main names', () => {
+	it('allows literal Main beside the unset default fallback (201)', () => {
 		const main = pocket({ id: 'm', name: 'Main', isMain: true });
 		const daily = pocket({ id: 'd', name: 'Daily' });
 		expect(() => assertUniquePocketName('daily', [main, daily])).toThrow(/already exists/i);
-		expect(() => normalizePocketNameInput('Main', false)).toThrow(/already exists/i);
+		expect(normalizePocketNameInput('Main', false)).toBe('Main');
+		expect(() => assertUniquePocketName('Main', [main, daily])).not.toThrow();
 		expect(() => assertUniquePocketName('Household', [main, daily], 'm')).not.toThrow();
+		const literal = pocket({ id: 'x', name: 'Main', isMain: false });
+		expect(() => assertUniquePocketName('main', [main, literal])).toThrow(/already exists/i);
+		expect(() => assertUniquePocketName('Main', [main, literal], 'm')).not.toThrow();
 	});
 });
 
