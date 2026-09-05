@@ -379,21 +379,31 @@
 		if (account && unlocked) await refreshLedger(account);
 	}
 
-	function unlockOrRecoveryShowing(): boolean {
-		if (!ready || screensaverOn) return false;
-		if (lockEnabled && !unlocked && !signedIn) return true;
-		if (signedIn && (accountRecoveryOpen || (pendingPassphraseReset && !dekPresent))) return true;
-		if (signedIn && accountOnboarding === 'needs-passphrase') return false;
-		if (signedIn && accountOnboarding === 'needs-kit' && recoveryKit) return false;
-		if (signedIn && accountOnboarding === 'complete' && !unlocked) return true;
-		if (lockEnabled && !unlocked) return true;
-		return false;
+	function gatePath(): string | null {
+		if (!ready || screensaverOn) return null;
+		if (lockEnabled && !unlocked && !signedIn) return '/unlock';
+		if (signedIn && (accountRecoveryOpen || (pendingPassphraseReset && !dekPresent))) {
+			return '/recovery';
+		}
+		if (signedIn && accountOnboarding === 'needs-passphrase') {
+			return pendingPassphraseReset ? '/reset' : '/onboarding';
+		}
+		if (signedIn && accountOnboarding === 'needs-kit' && recoveryKit) return '/onboarding/kit';
+		if (signedIn && accountOnboarding === 'complete' && !unlocked) return '/unlock';
+		if (lockEnabled && !unlocked) return '/unlock';
+		return null;
 	}
 
-	function redirectUnlockToHome() {
-		if (!unlockOrRecoveryShowing()) return;
-		if (page.url.pathname === '/') return;
-		void goto('/', { replaceState: true });
+	function syncGatePath() {
+		if (!ready || screensaverOn) return;
+		const target = gatePath();
+		const path = page.url.pathname.replace(/\/$/, '') || '/';
+		if (target) {
+			if (path !== target) void goto(target, { replaceState: true });
+			return;
+		}
+		const gatePaths = new Set(['/unlock', '/onboarding', '/onboarding/kit', '/recovery', '/reset']);
+		if (gatePaths.has(path)) void goto('/', { replaceState: true });
 	}
 
 	$effect(() => {
@@ -402,11 +412,11 @@
 	});
 
 	$effect(() => {
-		redirectUnlockToHome();
+		syncGatePath();
 	});
 
 	afterNavigate(() => {
-		redirectUnlockToHome();
+		syncGatePath();
 	});
 
 	async function finishGoogle(idToken: string, discardLocal = false) {

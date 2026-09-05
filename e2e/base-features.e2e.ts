@@ -51,7 +51,7 @@ test.describe('003–008 base features', () => {
 		await expect(page.getByTestId('header-lock')).toBeVisible();
 		await page.getByTestId('header-lock').click();
 		await expect(page.getByTestId('unlock-screen')).toBeVisible();
-		await expect.poll(() => new URL(page.url()).pathname).toBe('/');
+		await expect.poll(() => new URL(page.url()).pathname).toBe('/unlock');
 		await page.getByTestId('unlock-passphrase').fill('secret-pass');
 		await page.getByTestId('unlock-submit').click();
 		await expect(page.getByTestId('app-shell')).toBeVisible();
@@ -67,7 +67,7 @@ test.describe('003–008 base features', () => {
 
 		await page.reload();
 		await expect(page.getByTestId('unlock-screen')).toBeVisible();
-		await expect.poll(() => new URL(page.url()).pathname).toBe('/');
+		await expect.poll(() => new URL(page.url()).pathname).toBe('/unlock');
 		await page.getByTestId('unlock-passphrase').fill('secret-pass');
 		await page.getByTestId('unlock-submit').click();
 		await expect(page.getByTestId('app-shell')).toBeVisible();

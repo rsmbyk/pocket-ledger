@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { goToNav, openAdd } from './nav';
+import { confirmHexKit, goToNav, openAdd } from './nav';
 
 test.describe('121 sync conflict', () => {
 	test('409 closes the editor', async ({ page }) => {
@@ -11,8 +11,7 @@ test.describe('121 sync conflict', () => {
 		await page.getByTestId('account-pass-confirm').fill('account-pass');
 		await page.getByTestId('account-pass-submit').click();
 		await expect(page.getByTestId('hex-kit-screen')).toBeVisible();
-		await page.getByTestId('hex-kit-stored').check();
-		await page.getByTestId('hex-kit-confirm').click();
+		await confirmHexKit(page);
 		await expect(page.getByTestId('app-shell')).toBeVisible();
 		await goToNav(page, 'home');
 		await expect(page.getByTestId('home-panel')).toBeVisible();
