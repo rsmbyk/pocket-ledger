@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { afterNavigate, goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { ModeWatcher, mode, setMode, userPrefersMode } from 'mode-watcher';
 	import AppShell from '$lib/ui/AppShell.svelte';
 	import UnlockScreen from '$lib/ui/UnlockScreen.svelte';
@@ -377,9 +379,34 @@
 		if (account && unlocked) await refreshLedger(account);
 	}
 
+	function unlockOrRecoveryShowing(): boolean {
+		if (!ready || screensaverOn) return false;
+		if (lockEnabled && !unlocked && !signedIn) return true;
+		if (signedIn && (accountRecoveryOpen || (pendingPassphraseReset && !dekPresent))) return true;
+		if (signedIn && accountOnboarding === 'needs-passphrase') return false;
+		if (signedIn && accountOnboarding === 'needs-kit' && recoveryKit) return false;
+		if (signedIn && accountOnboarding === 'complete' && !unlocked) return true;
+		if (lockEnabled && !unlocked) return true;
+		return false;
+	}
+
+	function redirectUnlockToHome() {
+		if (!unlockOrRecoveryShowing()) return;
+		if (page.url.pathname === '/') return;
+		void goto('/', { replaceState: true });
+	}
+
 	$effect(() => {
 		themePreference = parseThemePreference(userPrefersMode.current);
 		void mode.current;
+	});
+
+	$effect(() => {
+		redirectUnlockToHome();
+	});
+
+	afterNavigate(() => {
+		redirectUnlockToHome();
 	});
 
 	async function finishGoogle(idToken: string, discardLocal = false) {

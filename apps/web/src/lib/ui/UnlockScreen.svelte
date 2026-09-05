@@ -64,7 +64,7 @@
 			</Card.Title>
 			<Card.Description>
 				{variant === 'account'
-					? 'Enter your account passphrase. This is not the optional device lock.'
+					? 'Enter your account passphrase.'
 					: 'Enter the passphrase that encrypts this browser’s copy of the ledger.'}
 			</Card.Description>
 		</Card.Header>

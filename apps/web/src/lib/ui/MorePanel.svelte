@@ -1,6 +1,7 @@
 <script lang="ts">
 	import HardDriveIcon from '@lucide/svelte/icons/hard-drive';
 	import LockIcon from '@lucide/svelte/icons/lock';
+	import XIcon from '@lucide/svelte/icons/x';
 	import CloudIcon from '@lucide/svelte/icons/cloud';
 	import BanknoteIcon from '@lucide/svelte/icons/banknote';
 	import MoonIcon from '@lucide/svelte/icons/moon';
@@ -169,7 +170,13 @@
 	const canEnableLock = $derived(newPassphraseLiveState(lockPass, lockPassConfirm).canSubmit);
 	const canChangeAccount = $derived(
 		Boolean(accountCurrentPass.trim()) &&
-			newPassphraseLiveState(accountNewPass, accountNewConfirm).canSubmit
+			newPassphraseLiveState(accountNewPass, accountNewConfirm, accountCurrentPass).canSubmit
+	);
+	const accountCurrentInvalid = $derived(
+		Boolean(accountPassError && /incorrect passphrase/i.test(accountPassError))
+	);
+	const accountUnchangedError = $derived(
+		Boolean(accountPassError && /must be different/i.test(accountPassError))
 	);
 
 	async function wrap(action: () => void | Promise<void>) {
@@ -620,7 +627,7 @@
 					</form>
 				{:else}
 					<form
-						class="flex flex-col gap-2"
+						class="flex flex-col gap-4"
 						onsubmit={(e) => {
 							e.preventDefault();
 							if (!canChangeAccount || !onChangeAccountPassphrase || accountPassBusy) return;
@@ -645,28 +652,49 @@
 							While signed in, the account passphrase stays on. You can change it here, not remove
 							it.
 						</p>
-						<Input
-							type="password"
-							placeholder="Current passphrase"
-							bind:value={accountCurrentPass}
-							autocomplete="current-password"
-							data-testid="change-account-current"
-							oninput={() => (accountPassError = null)}
-						/>
-						<NewPassphraseFields
-							bind:passphrase={accountNewPass}
-							bind:confirm={accountNewConfirm}
-							passphrasePlaceholder="New passphrase (min 8)"
-							passphraseTestId="change-account-pass"
-							confirmTestId="change-account-pass-confirm"
-							requirementsTestId="change-account-requirements"
-							onInput={() => (accountPassError = null)}
-						/>
-						{#if accountPassError}
-							<p class="text-destructive text-sm" role="alert" data-testid="change-account-error">
-								{accountPassError}
-							</p>
-						{/if}
+						<div class="flex flex-col gap-2">
+							{@render sectionHeading('Old passphrase')}
+							<div class="relative">
+								<Input
+									type="password"
+									placeholder="Current passphrase"
+									class="pr-10"
+									bind:value={accountCurrentPass}
+									autocomplete="current-password"
+									data-testid="change-account-current"
+									aria-invalid={accountCurrentInvalid ? true : undefined}
+									oninput={() => (accountPassError = null)}
+								/>
+								{#if accountCurrentInvalid}
+									<XIcon
+										class="text-destructive pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2"
+									/>
+								{/if}
+							</div>
+							{#if accountCurrentInvalid}
+								<p class="text-destructive text-sm" role="alert" data-testid="change-account-error">
+									{accountPassError}
+								</p>
+							{/if}
+						</div>
+						<div class="flex flex-col gap-2">
+							{@render sectionHeading('New passphrase')}
+							<NewPassphraseFields
+								bind:passphrase={accountNewPass}
+								bind:confirm={accountNewConfirm}
+								mustDifferFrom={accountCurrentPass}
+								passphrasePlaceholder="New passphrase (min 8)"
+								passphraseTestId="change-account-pass"
+								confirmTestId="change-account-pass-confirm"
+								requirementsTestId="change-account-requirements"
+								onInput={() => (accountPassError = null)}
+							/>
+							{#if accountUnchangedError}
+								<p class="text-destructive text-sm" role="alert">{accountPassError}</p>
+							{:else if accountPassError && !accountCurrentInvalid}
+								<p class="text-destructive text-sm" role="alert">{accountPassError}</p>
+							{/if}
+						</div>
 						<Button
 							type="submit"
 							class="w-full"
