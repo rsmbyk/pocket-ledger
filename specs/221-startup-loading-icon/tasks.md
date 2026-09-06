@@ -7,8 +7,8 @@
 ## Checklist
 
 - [x] Spec Accepted
-- [ ] Red: `StartupLoading.svelte.test.ts` — icon + “Loading”; no Starting up copy
-- [ ] Green: `StartupLoading.svelte` on App and AppShell `!ready`
-- [ ] Playwright: `e2e/scaffold.e2e.ts` — after boot, Starting up copy is gone
-- [ ] Index in `specs/README.md`
-- [ ] Commit linking Spec 221
+- [x] Red: `StartupLoading.svelte.test.ts` — icon + “Loading”; no Starting up copy
+- [x] Green: `StartupLoading.svelte` on App and AppShell `!ready`
+- [x] Playwright: `e2e/scaffold.e2e.ts` — after boot, Starting up copy is gone
+- [x] Index in `specs/README.md`
+- [x] Commit linking Spec 221
