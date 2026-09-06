@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { parseIdleSettings, screensaverPrompt } from './idle';
 
 describe('idle screensaver', () => {
-	it('defaults to 30 minutes and leave-tab on', () => {
-		expect(parseIdleSettings(undefined, undefined)).toEqual({ minutes: 30, leaveTab: true });
+	it('defaults to 30 minutes and leave-tab off', () => {
+		expect(parseIdleSettings(undefined, undefined)).toEqual({ minutes: 30, leaveTab: false });
+	});
+
+	it('keeps an explicit leave-tab on', () => {
+		expect(parseIdleSettings(undefined, 'true')).toEqual({ minutes: 30, leaveTab: true });
 	});
 
 	it('uses continue vs unlock copy from lock mode', () => {

@@ -31,7 +31,7 @@ Let a user opt into cloud with Google only, force a finished account-passphrase 
 15. Device-lock skippable warning (exact copy in domain rules) — distinct from account lock
 16. Device typed-passphrase wrong-guess ladder (not WebAuthn, not account passphrase)
 17. Optional WebAuthn third box: this device only; cold visit and idle prefer WebAuthn (`userVerification: required`) then passphrase
-18. Screensaver / idle overlay always: drop DEK; copy `Click to continue` vs `Click to unlock`; idle 5/10/15/30 min (default 30); leave-tab default on
+18. Screensaver / idle overlay always: drop DEK; copy `Click to continue` vs `Click to unlock`; idle 5/10/15/30 min (default 30); leave-tab default on — superseded by [219](../219-leave-tab-default-off/spec.md) (default off)
 19. Hex kit: 32 random bytes, grouped hex, case-insensitive; copy **or** download + checkbox
 
 ### Out of scope

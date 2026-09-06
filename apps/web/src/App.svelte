@@ -84,7 +84,7 @@
 		unlockAccountWithPassphrase,
 		uploadRecoveryWrap
 	} from '$lib/application/account-lock';
-	import { parseIdleSettings } from '$lib/application/idle';
+	import { DEFAULT_LEAVE_TAB, parseIdleSettings } from '$lib/application/idle';
 	import { getDisplayCurrency, saveDisplayCurrency } from '$lib/application/display-currency';
 	import { enrollWebAuthn } from '$lib/application/webauthn';
 	import {
@@ -149,7 +149,7 @@
 	let dekPresent = $state(false);
 	let screensaverOn = $state(false);
 	let idleMinutes = $state(30);
-	let leaveTab = $state(true);
+	let leaveTab = $state(DEFAULT_LEAVE_TAB);
 	let displayCurrency = $state('IDR');
 	let sessions = $state<CloudSession[]>([]);
 	let conflictOpen = $state(false);

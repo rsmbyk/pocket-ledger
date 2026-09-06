@@ -7,7 +7,7 @@
 
 ## What
 
-Move idle minutes + leave-tab out of Privacy onto **Idle Screensaver**. Draft + Save / Cancel / Default (30 min, leave-tab on). Dropdown always shows the stored minutes, including 30. Persist only on Save (no live-apply).
+Move idle minutes + leave-tab out of Privacy onto **Idle Screensaver**. Draft + Save / Cancel / Default (30 min, leave-tab on — Default pair is 30 + off after [219](../219-leave-tab-default-off/spec.md)). Dropdown always shows the stored minutes, including 30. Persist only on Save (no live-apply).
 
 ## Why
 

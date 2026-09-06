@@ -18,6 +18,7 @@
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
+	import { DEFAULT_LEAVE_TAB } from '$lib/application/idle';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
@@ -189,7 +190,7 @@
 		userPictureUrl = '',
 		sessions = [],
 		idleMinutes = 30,
-		leaveTab = true,
+		leaveTab = DEFAULT_LEAVE_TAB,
 		displayCurrency = 'IDR',
 		onGoogleSignIn,
 		onGoogleCredential,

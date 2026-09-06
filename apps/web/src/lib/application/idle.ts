@@ -1,8 +1,8 @@
-/** Screensaver copy and idle choices (Spec 119). */
+/** Screensaver copy and idle choices (Specs 119, 219). */
 
 export const IDLE_MINUTES = [5, 10, 15, 30] as const;
 export const DEFAULT_IDLE_MINUTES = 30;
-export const DEFAULT_LEAVE_TAB = true;
+export const DEFAULT_LEAVE_TAB = false;
 
 export type IdleSettings = {
 	minutes: (typeof IDLE_MINUTES)[number];
