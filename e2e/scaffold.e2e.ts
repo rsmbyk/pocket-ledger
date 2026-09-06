@@ -9,6 +9,14 @@ test.describe('000 scaffold', () => {
 		await expect(page.getByTestId('recent-add')).toBeVisible();
 	});
 
+	test('startup splash leaves no Starting up copy', async ({ page }) => {
+		await page.goto('/');
+		await expect(page.getByTestId('home-panel')).toBeVisible();
+		await expect(page.getByText('Starting up')).toHaveCount(0);
+		await expect(page.getByText('Preparing your local ledger')).toHaveCount(0);
+		await expect(page.getByTestId('startup-loading')).toHaveCount(0);
+	});
+
 	test('theme cycle can switch to dark mode', async ({ page }) => {
 		await page.goto('/');
 		const theme = page.getByTestId('theme-cycle');

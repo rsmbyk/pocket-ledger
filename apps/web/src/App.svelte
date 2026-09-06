@@ -62,6 +62,7 @@
 	import HexKitScreen from '$lib/ui/HexKitScreen.svelte';
 	import ScreensaverOverlay from '$lib/ui/ScreensaverOverlay.svelte';
 	import LocalConflictDialog from '$lib/ui/LocalConflictDialog.svelte';
+	import StartupLoading from '$lib/ui/StartupLoading.svelte';
 	import {
 		cloudConfigured,
 		fetchMe,
@@ -562,9 +563,7 @@
 />
 
 {#if !ready}
-	<div class="text-muted-foreground flex min-h-svh items-center justify-center text-sm">
-		Starting up…
-	</div>
+	<StartupLoading />
 {:else if screensaverOn}
 	<ScreensaverOverlay
 		{signedIn}
