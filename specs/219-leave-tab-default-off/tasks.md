@@ -11,4 +11,4 @@
 - [x] `DEFAULT_LEAVE_TAB = false`; App / shell defaults follow the constant
 - [x] Playwright `e2e/settings.e2e.ts` — checkbox unchecked; hide does not lock until saved on
 - [x] PRODUCT + 119 / 156 / README supersede notes
-- [ ] Commit linking Spec 219
+- [x] Commit linking Spec 219

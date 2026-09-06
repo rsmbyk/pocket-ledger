@@ -63,8 +63,10 @@ test.describe('154–159 Settings hub', () => {
 		await page.getByTestId('idle-minutes').click();
 		await page.getByTestId('idle-minutes-10').click();
 		await page.getByTestId('idle-save').click();
+		await expect(page.getByTestId('idle-save')).toBeDisabled();
+		await expect(page.getByTestId('idle-minutes')).toHaveText('10 minutes');
 		await page.reload();
-		await goToNav(page, 'settings');
+		await expect(page.getByTestId('settings-panel')).toBeVisible();
 		await expect(page.getByTestId('idle-minutes')).toHaveText('10 minutes');
 		await expect(page.getByTestId('idle-leave-tab')).not.toBeChecked();
 	});
