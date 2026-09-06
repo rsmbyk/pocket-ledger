@@ -148,6 +148,8 @@
 	const typeTab = $derived<'income' | 'expense' | 'transfer'>(
 		mode === 'transfer' || isTransferEdit ? 'transfer' : type
 	);
+	/** Locked edit/voided type tab: keep selected look; `disabled` only blocks clicks/hover. */
+	const lockedTypeTabClass = 'flex-1 disabled:opacity-100';
 
 	const transferSourceOptions = $derived(accounts);
 	const transferDestOptions = $derived(accounts);
@@ -723,7 +725,10 @@
 							value="income"
 							disabled
 							data-testid="tx-type-income"
-							class="flex-1 data-active:bg-income/20 data-active:text-income dark:data-active:border-income/50 dark:data-active:bg-income/30"
+							class={cn(
+								lockedTypeTabClass,
+								'data-active:bg-income/20 data-active:text-income dark:data-active:border-income/50 dark:data-active:bg-income/30'
+							)}
 						>
 							Income
 						</Tabs.Trigger>
@@ -732,12 +737,20 @@
 							value="expense"
 							disabled
 							data-testid="tx-type-expense"
-							class="flex-1 data-active:bg-destructive/20 data-active:text-destructive dark:data-active:border-destructive/50 dark:data-active:bg-destructive/35"
+							class={cn(
+								lockedTypeTabClass,
+								'data-active:bg-destructive/20 data-active:text-destructive dark:data-active:border-destructive/50 dark:data-active:bg-destructive/35'
+							)}
 						>
 							Expense
 						</Tabs.Trigger>
 					{:else}
-						<Tabs.Trigger value="transfer" disabled data-testid="tx-mode-transfer" class="flex-1">
+						<Tabs.Trigger
+							value="transfer"
+							disabled
+							data-testid="tx-mode-transfer"
+							class={lockedTypeTabClass}
+						>
 							Transfer
 						</Tabs.Trigger>
 					{/if}
