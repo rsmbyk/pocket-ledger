@@ -39,6 +39,7 @@
 			'border-input bg-background ring-offset-background focus-within:ring-ring flex h-11 w-full items-center gap-2 rounded-md border px-3 text-sm shadow-xs focus-within:ring-2 md:h-9',
 			disabled && 'cursor-not-allowed opacity-50 shadow-none'
 		)}
+		data-slot="date-field-chrome"
 	>
 		<div class="pointer-events-none flex min-w-0 flex-1 items-center gap-2 text-left">
 			<CalendarIcon class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
@@ -55,18 +56,22 @@
 		{/if}
 	</div>
 	<!--
-		Native date input is the hit target (opacity 0 overlay). showPicker() on an
+		Native date input is the hit target (opacity 0 overlay). UA styles give
+		type=date an intrinsic width (~the date text); w-full overrides that so
+		Android taps on icon/padding still hit the control. showPicker() on an
 		sr-only input is a silent no-op on iOS Safari; a real tap on type=date works.
 	-->
 	<input
 		{id}
 		type="date"
 		class={cn(
-			'absolute inset-y-0 left-0 z-[1] cursor-pointer opacity-0',
+			'absolute top-0 left-0 z-[1] h-full cursor-pointer opacity-0',
+			trailing ? 'w-[calc(100%-2.5rem)]' : 'w-full min-w-full',
 			'[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0',
 			'[&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full',
 			'[&::-webkit-calendar-picker-indicator]:cursor-pointer',
-			trailing ? 'right-10' : 'right-0',
+			'[&::-webkit-datetime-edit]:box-border [&::-webkit-datetime-edit]:h-full [&::-webkit-datetime-edit]:w-full',
+			'[&::-webkit-datetime-edit-fields-wrapper]:h-full [&::-webkit-datetime-edit-fields-wrapper]:w-full',
 			disabled && 'cursor-not-allowed'
 		)}
 		{disabled}

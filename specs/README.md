@@ -236,3 +236,4 @@ Living behavior contracts for Pocket Ledger.
 | [217](217-gis-card-width/spec.md)                        | Official GIS at card width                                   | Accepted                                                                        |
 | [218](218-gis-mobile-redirect/spec.md)                   | GIS redirect on mobile and installed PWA                     | Accepted                                                                        |
 | [219](219-leave-tab-default-off/spec.md)                 | Leave-tab lock defaults off                                  | Accepted                                                                        |
+| [220](220-datefield-full-hit-target/spec.md)             | DateField opens from the full chrome                         | Accepted                                                                        |
