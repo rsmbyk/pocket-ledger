@@ -14,11 +14,10 @@ An enabled DateField opens the native date picker when the user activates **any*
 
 ### In scope
 
-1. Shared `DateField` overlay fills the chrome (minus the trailing-snippet gutter when present).
-2. A tap/click on the chrome that misses the native widget still presents the picker (`showPicker` in that gesture).
-3. Trailing snippet (pocket goal “Has date”) stays the hit target for its own control.
-4. `MonthField` uses the same full-chrome overlay (even if unused today).
-5. Surfaces inherit the fix: transaction occurred-on, Pockets opening/goal dates.
+1. Shared `DateField` overlay fills the chrome (minus the trailing-snippet gutter when present) so a tap on the icon or empty padding hits the native `type="date"` control.
+2. Trailing snippet (pocket goal “Has date”) stays the hit target for its own control.
+3. `MonthField` uses the same full-chrome overlay (even if unused today).
+4. Surfaces inherit the fix: transaction occurred-on, Pockets opening/goal dates.
 
 ### Out of scope
 
@@ -39,12 +38,7 @@ An enabled DateField opens the native date picker when the user activates **any*
 - **Given** Add or Edit transaction is open on a mobile-sized viewport
 - **When** the user activates the Date field on the calendar icon or empty chrome (not only the formatted text)
 - **Then** the native date picker is presented (or `showPicker` runs in that gesture)
-
-### Scenario: Overlay matches the chrome
-
-- **Given** an enabled DateField without a trailing snippet
-- **When** the field is painted
-- **Then** the native `type="date"` overlay’s box is at least 85% of the field width and height
+- **And** the overlay input’s box is at least 85% of the field width and height
 
 ### Scenario: Trailing control still works
 

@@ -8,6 +8,6 @@
 
 - [x] Spec Accepted
 - [x] Red: `e2e/date-field.e2e.ts` — overlay fills chrome; icon-side / far-chrome click calls `showPicker`
-- [x] Green: `DateField.svelte` full-width overlay + chrome `showPicker` fallback; same overlay on `MonthField.svelte`
+- [x] Green: `DateField.svelte` / `MonthField.svelte` full-width overlay (no chrome click handler)
 - [x] Index in `specs/README.md`
 - [x] Commit linking Spec 220

@@ -10,4 +10,4 @@ On Android (and other small-screen Chromium), tapping a DateField does nothing u
 
 ## Approach
 
-Force the overlay to `width: 100%` (gutter when a trailing snippet exists), stretch the WebKit datetime-edit/indicator over that box, and call `showPicker()` if a tap hits the visible chrome instead of the native widget. Same overlay pattern on unused `MonthField`.
+Force the overlay to `width: 100%` (gutter when a trailing snippet exists) so it is not the UA date-text width, and stretch the WebKit datetime-edit/indicator over that box. Same overlay pattern on unused `MonthField`.

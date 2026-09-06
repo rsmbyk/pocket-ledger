@@ -31,22 +31,6 @@
 	}: Props = $props();
 
 	const display = $derived(value ? formatOccurredOnDisplay(value) : '');
-
-	let inputEl = $state<HTMLInputElement | undefined>();
-
-	function openPicker() {
-		if (!inputEl || inputEl.disabled) return;
-		try {
-			inputEl.showPicker();
-		} catch {
-			// NotAllowedError / unsupported (iOS no-op is fine — overlay tap still works).
-		}
-	}
-
-	function onChromeClick(e: MouseEvent) {
-		if ((e.target as HTMLElement | null)?.closest('[data-slot="date-field-trailing"]')) return;
-		openPicker();
-	}
 </script>
 
 <div class={cn('relative', className)} data-testid={testid}>
@@ -56,7 +40,6 @@
 			disabled && 'cursor-not-allowed opacity-50 shadow-none'
 		)}
 		data-slot="date-field-chrome"
-		onclick={onChromeClick}
 	>
 		<div class="pointer-events-none flex min-w-0 flex-1 items-center gap-2 text-left">
 			<CalendarIcon class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
@@ -79,7 +62,6 @@
 		sr-only input is a silent no-op on iOS Safari; a real tap on type=date works.
 	-->
 	<input
-		bind:this={inputEl}
 		{id}
 		type="date"
 		class={cn(
@@ -96,7 +78,15 @@
 		{value}
 		min={min}
 		aria-label={ariaLabel}
-		onclick={openPicker}
+		onclick={(e) => {
+			const el = e.currentTarget as HTMLInputElement;
+			if (el.disabled) return;
+			try {
+				el.showPicker();
+			} catch {
+				// NotAllowedError / unsupported (iOS no-op is fine — overlay tap still works).
+			}
+		}}
 		onchange={(e) => {
 			onValueChange((e.currentTarget as HTMLInputElement).value);
 		}}
