@@ -17,6 +17,7 @@
 	import type { Account } from '$lib/domain/account';
 	import type { CategoryRow } from '$lib/data/db';
 	import { latestPocketTransactions } from '$lib/domain/activity-filters';
+	import { STOCK_CUSTOM_ICON, STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
 	import {
 		goalProgressPercent,
 		isActive,
@@ -115,6 +116,11 @@
 	function categoryName(categoryId: string | null): string {
 		if (!categoryId) return 'Uncategorized';
 		return categoriesById[categoryId]?.name ?? 'Category';
+	}
+
+	function categoryIconSlug(tx: LedgerTransaction): string {
+		if (tx.categoryId == null) return STOCK_UNCATEGORIZED_ICON;
+		return categoriesById[tx.categoryId]?.icon || STOCK_CUSTOM_ICON;
 	}
 
 	function onPrevMonth() {
@@ -301,6 +307,7 @@
 								{tx}
 								{currencyLabel}
 								categoryLabel={categoryName(tx.categoryId)}
+								categoryIconSlug={categoryIconSlug(tx)}
 								uncategorized={tx.categoryId == null}
 								hideAmount={hideAmounts}
 								secondary="date"

@@ -8,7 +8,7 @@
 
 ## Intent
 
-On Transactions list rows, the **note** is the primary line and the **category** (with catalog icon) is the muted secondary line. Home Recent is unchanged.
+On Transactions list rows, the **note** is the primary line and the **category** (with catalog icon) is the muted secondary line. Home Recent left-column order is [222](../222-recent-note-category-stack/spec.md).
 
 ## Scope
 
@@ -25,7 +25,7 @@ On Transactions list rows, the **note** is the primary line and the **category**
 
 ### Out of scope
 
-- Home Recent (076: category primary, note then date)
+- Home Recent left-column order — superseded by [222](../222-recent-note-category-stack/spec.md)
 - Changing pocket under amount (077 / 096)
 - Filter chrome
 
@@ -57,16 +57,16 @@ On Transactions list rows, the **note** is the primary line and the **category**
 - **Then** primary is `pay yourself first`
 - **And** secondary is the transfer arrows icon and `Transfer`
 
-### Scenario: Home Recent unchanged
+### Scenario: Home Recent (superseded)
 
 - **Given** the same tx on Home Recent
 - **When** Recent renders
-- **Then** category remains the primary line (076)
+- **Then** note/category order follows [222](../222-recent-note-category-stack/spec.md) (this spec no longer requires category-first)
 
 ## Traceability
 
 - Vitest: optional if a pure left-column helper is extracted
-- Playwright: `e2e/activity-filters.e2e.ts` or list e2e — note before category; icon present; Recent still category-first
+- Playwright: `e2e/activity-filters.e2e.ts` or list e2e — note before category; icon present. Recent order is [222](../222-recent-note-category-stack/spec.md).
 - Implementation: `TransactionListRow.svelte`; `ActivityTable.svelte` (pass icon slug)
 - Related: 063, 076, 123
 

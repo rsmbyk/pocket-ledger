@@ -78,6 +78,44 @@ test.describe('012 polish / 014 void / 030', () => {
 		expect(pointerEvents).toBe('none');
 	});
 
+	test('222 with note: note primary, category muted, date present', async ({ page }) => {
+		await openAdd(page);
+		const sheet = page.getByRole('dialog');
+		await sheet.getByTestId('tx-type-expense').click();
+		await sheet.getByLabel(/amount/i).fill('1');
+		await selectTxCategory(page, 'Food', sheet);
+		await sheet.getByRole('textbox', { name: 'Note' }).fill('nites');
+		await sheet.getByTestId('tx-save').click();
+
+		const row = page.getByTestId('recent-list').locator('[data-testid^="recent-row-"]').first();
+		const note = row.getByTestId(/-note$/);
+		const category = row.getByTestId(/-category$/);
+		const date = row.getByTestId(/-date$/);
+		await expect(note).toHaveText('nites');
+		await expect(note).toHaveClass(/font-medium/);
+		await expect(category).toContainText('Food');
+		await expect(date).toBeVisible();
+		const noteBox = await note.boundingBox();
+		const categoryBox = await category.boundingBox();
+		const dateBox = await date.boundingBox();
+		expect(noteBox?.y).toBeLessThan(categoryBox?.y ?? Infinity);
+		expect(categoryBox?.y).toBeLessThan(dateBox?.y ?? Infinity);
+	});
+
+	test('222 empty note: category primary, no note testid, date present', async ({ page }) => {
+		await openAdd(page);
+		const sheet = page.getByRole('dialog');
+		await sheet.getByTestId('tx-type-expense').click();
+		await sheet.getByLabel(/amount/i).fill('15000');
+		await selectTxCategory(page, 'Food', sheet);
+		await sheet.getByTestId('tx-save').click();
+
+		const row = page.getByTestId('recent-list').locator('[data-testid^="recent-row-"]').first();
+		await expect(row.getByTestId(/-note$/)).toHaveCount(0);
+		await expect(row).toContainText('Food');
+		await expect(row.getByTestId(/-date$/)).toBeVisible();
+	});
+
 	test('voided transaction opens read-only', async ({ page }) => {
 		await openAdd(page);
 		const sheet = page.getByRole('dialog');

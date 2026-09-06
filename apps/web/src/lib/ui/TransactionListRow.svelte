@@ -22,7 +22,7 @@
 		uncategorized?: boolean;
 		hideAmount?: boolean;
 		/**
-		 * `date` — Home Recent (076): category primary, note then date.
+		 * `date` — Home Recent (222): note primary, category+icon, then date.
 		 * `category` — Transactions (136): note primary, category+icon secondary.
 		 * `none` — no secondary line at all (tighter single-line row).
 		 */
@@ -140,7 +140,17 @@
 	onclick={onOpen}
 >
 	<div class="min-w-0 flex-1">
-		{#if secondary === 'category'}
+		{#if secondary === 'none'}
+			<p class="font-medium">
+				{#if isTransfer}
+					{@render transferTitle()}
+				{:else if uncategorized}
+					<UncategorizedLabel />
+				{:else}
+					{categoryLabel}
+				{/if}
+			</p>
+		{:else}
 			<p class="truncate font-medium" data-testid={note ? `${testid}-note` : undefined}>
 				{#if note}
 					{note}
@@ -162,22 +172,7 @@
 					{/if}
 				</p>
 			{/if}
-		{:else}
-			<p class="font-medium">
-				{#if isTransfer}
-					{@render transferTitle()}
-				{:else if uncategorized}
-					<UncategorizedLabel />
-				{:else}
-					{categoryLabel}
-				{/if}
-			</p>
 			{#if secondary === 'date'}
-				{#if note}
-					<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-note`}>
-						{note}
-					</p>
-				{/if}
 				<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-date`}>
 					{dateLabel}
 				</p>

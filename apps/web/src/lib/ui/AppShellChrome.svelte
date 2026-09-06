@@ -785,6 +785,7 @@
 											{tx}
 											{currencyLabel}
 											categoryLabel={categoryName(tx.categoryId)}
+											categoryIconSlug={categoryIconSlug(tx)}
 											uncategorized={tx.categoryId == null}
 											hideAmount={hideHomeAmounts}
 											secondary="date"

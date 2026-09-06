@@ -238,3 +238,4 @@ Living behavior contracts for Pocket Ledger.
 | [219](219-leave-tab-default-off/spec.md)                 | Leave-tab lock defaults off                                  | Accepted                                                                        |
 | [220](220-datefield-full-hit-target/spec.md)             | DateField opens from the full chrome                         | Accepted                                                                        |
 | [221](221-startup-loading-icon/spec.md)                  | Startup is a loading icon                                    | Accepted                                                                        |
+| [222](222-recent-note-category-stack/spec.md)            | Recent note/category stack matches Transactions              | Accepted                                                                        |
