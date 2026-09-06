@@ -1,9 +1,10 @@
 import { render } from 'vitest-browser-svelte';
 import { expect, test } from 'vitest';
+import '../../app.css';
 import ScreensaverOverlay from './ScreensaverOverlay.svelte';
 
-function cssColor(el: Element, prop: 'background-color' | 'appearance' | 'color-scheme'): string {
-	return getComputedStyle(el).getPropertyValue(prop);
+function css(el: Element, prop: string): string {
+	return getComputedStyle(el).getPropertyValue(prop).trim();
 }
 
 function isTransparent(color: string): boolean {
@@ -23,13 +24,16 @@ test('screensaver prompt and icon sit on a transparent content box', async () =>
 
 	const node = overlay.element();
 	expect(node.tagName).toBe('BUTTON');
-	expect(cssColor(node, 'appearance')).toBe('none');
-	expect(cssColor(node, 'color-scheme')).toBe('light');
+	expect(node.classList.contains('screensaver-overlay')).toBe(true);
+	expect(css(node, 'appearance') === 'none' || css(node, '-webkit-appearance') === 'none').toBe(
+		true
+	);
+	expect(css(node, 'color-scheme')).toBe('light');
 
 	const icon = node.querySelector('[aria-hidden="true"]');
 	const label = [...node.querySelectorAll('span')].find((el) => el !== icon);
 	expect(icon).not.toBeNull();
 	expect(label).toBeTruthy();
-	expect(isTransparent(cssColor(icon!, 'background-color'))).toBe(true);
-	expect(isTransparent(cssColor(label!, 'background-color'))).toBe(true);
+	expect(isTransparent(css(icon!, 'background-color'))).toBe(true);
+	expect(isTransparent(css(label!, 'background-color'))).toBe(true);
 });

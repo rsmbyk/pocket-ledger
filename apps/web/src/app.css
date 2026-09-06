@@ -221,6 +221,19 @@
 	color-scheme: light;
 }
 
+/* Chrome Android dark color-scheme paints a different canvas around native button labels. */
+.screensaver-overlay {
+	appearance: none;
+	-webkit-appearance: none;
+	color-scheme: light;
+	isolation: isolate;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.screensaver-overlay > * {
+	background-color: transparent;
+}
+
 /* Spec 217: widen the official button row, not the G mark. */
 .gis-sign-in > div,
 .gis-sign-in [role='button'] {

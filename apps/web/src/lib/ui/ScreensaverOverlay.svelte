@@ -11,13 +11,12 @@
 	const label = $derived(screensaverPrompt({ signedIn, lockEnabled }));
 </script>
 
-<!-- Chrome Android dark color-scheme paints a different canvas around native button labels. -->
 <button
 	type="button"
-	class="fixed inset-0 z-80 flex appearance-none flex-col items-center justify-center gap-3 border-0 bg-black/90 p-0 text-white shadow-none scheme-light [-webkit-tap-highlight-color:transparent]"
+	class="screensaver-overlay fixed inset-0 z-80 flex flex-col items-center justify-center gap-3 border-0 bg-black/90 p-0 text-white shadow-none"
 	data-testid="screensaver"
 	onclick={() => void onContinue()}
 >
-	<span class="bg-transparent text-4xl" aria-hidden="true">◆</span>
-	<span class="bg-transparent text-sm tracking-wide">{label}</span>
+	<span class="text-4xl" aria-hidden="true">◆</span>
+	<span class="text-sm tracking-wide">{label}</span>
 </button>
