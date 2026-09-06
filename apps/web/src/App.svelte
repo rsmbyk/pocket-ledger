@@ -52,7 +52,11 @@
 	} from '$lib/domain/month-summary';
 	import { parseThemePreference, THEME_STORAGE_KEY, type ThemePreference } from '$lib/shared/theme';
 	import { isGatePath, nearestValidPath } from '$lib/shared/router';
-	import { disableGoogleAutoSelect } from '$lib/application/google-signin';
+	import {
+		consumeGisRedirectHash,
+		disableGoogleAutoSelect,
+		takeGisNonce
+	} from '$lib/application/google-signin';
 	import AccountPassphraseScreen from '$lib/ui/AccountPassphraseScreen.svelte';
 	import AccountRecoveryScreen from '$lib/ui/AccountRecoveryScreen.svelte';
 	import HexKitScreen from '$lib/ui/HexKitScreen.svelte';
@@ -130,6 +134,7 @@
 	let unlocked = $state(true);
 	let ready = $state(false);
 	let error = $state<string | null>(null);
+	let cloudError = $state<string | null>(null);
 	let themePreference = $state<ThemePreference>('system');
 	let signedIn = $state(false);
 	let userEmail = $state<string | null>(null);
@@ -242,9 +247,28 @@
 
 	onMount(() => {
 		themePreference = parseThemePreference(userPrefersMode.current);
+		const gisRedirect = consumeGisRedirectHash(window.location.hash, {
+			expectedNonce: takeGisNonce(),
+			strip: () => {
+				history.replaceState(
+					history.state,
+					'',
+					`${window.location.pathname}${window.location.search}`
+				);
+			}
+		});
 		void (async () => {
 			try {
 				await bootstrap();
+				if (gisRedirect.kind === 'credential') {
+					try {
+						await onGoogleCredential(gisRedirect.credential);
+					} catch (err) {
+						cloudError = err instanceof Error ? err.message : 'Something went wrong';
+					}
+				} else if (gisRedirect.kind === 'error') {
+					cloudError = 'Google Sign-In failed. Try again.';
+				}
 				ready = true;
 			} catch (err) {
 				error = err instanceof Error ? err.message : 'Failed to open local database';
@@ -701,6 +725,7 @@
 		{displayCurrency}
 		{onGoogleSignIn}
 		{onGoogleCredential}
+		{cloudError}
 		{onDebugFakeSignUp}
 		debugFakeUser={shouldWipeCloudOnSignOut(cloudGoogleSub)}
 		onSignOut={async () => {

@@ -24,7 +24,7 @@
 	import { inspectEncryptedBackup, type BackupInspectSummary } from '$lib/application/backup';
 	import { verifyPassphrase } from '$lib/application/lock';
 	import { newPassphraseLiveState } from '$lib/application/new-passphrase-fields';
-	import { fakeGoogleEnabled, googleClientId } from '$lib/application/cloud-api';
+	import { apiBase, fakeGoogleEnabled, googleClientId } from '$lib/application/cloud-api';
 	import { mountGoogleSignInButton } from '$lib/application/google-signin';
 	import { untrack } from 'svelte';
 	import { mode } from 'mode-watcher';
@@ -54,6 +54,7 @@
 		onChangeAccountPassphrase?: (oldPass: string, nextPass: string) => void | Promise<void>;
 		onGoogleSignIn?: () => void | Promise<void>;
 		onGoogleCredential?: (idToken: string) => void | Promise<void>;
+		cloudError?: string | null;
 		onDebugFakeSignUp?: () => void | Promise<void>;
 		debugFakeUser?: boolean;
 		onSignOut?: () => void | Promise<void>;
@@ -83,6 +84,7 @@
 		onChangeAccountPassphrase,
 		onGoogleSignIn,
 		onGoogleCredential,
+		cloudError = null,
 		onDebugFakeSignUp,
 		debugFakeUser = false,
 		onSignOut,
@@ -130,6 +132,7 @@
 	let resetCloudStayOpen = $state(false);
 	let error = $state<string | null>(null);
 	let gisHost = $state<HTMLDivElement | undefined>(undefined);
+	const alertMessage = $derived(error ?? cloudError);
 
 	let currencyDraft = $state(DEFAULT_DISPLAY_CURRENCY);
 	let currencySearch = $state('');
@@ -204,6 +207,7 @@
 			host: el,
 			clientId,
 			colorScheme,
+			apiBase: apiBase(),
 			onCredential: (credential) => {
 				if (cancelled || !onCred) return;
 				void wrap(() => onCred(credential));
@@ -256,8 +260,8 @@
 {/snippet}
 
 <div class="space-y-4" data-testid="settings-panel">
-	{#if error}
-		<p class="text-destructive text-sm" role="alert">{error}</p>
+	{#if alertMessage}
+		<p class="text-destructive text-sm" role="alert">{alertMessage}</p>
 	{/if}
 	<div class="flex flex-col gap-4" data-testid="settings-sections">
 		<Card.Root class="p-(--card-spacing)" data-testid="settings-section-cloud">

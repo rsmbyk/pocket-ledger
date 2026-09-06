@@ -70,6 +70,20 @@ export function createApp(deps) {
 		});
 	});
 
+	app.post('/v1/auth/gis-callback', async (c) => {
+		const settings = `${webOrigin.replace(/\/$/, '')}/settings`;
+		const fail = () => c.redirect(`${settings}#pl_gis_error=1`, 302);
+		const body = await c.req.parseBody().catch(() => ({}));
+		const credential = String(body.credential ?? '');
+		const csrfBody = String(body.g_csrf_token ?? '');
+		const csrfCookie = getCookie(c, 'g_csrf_token') ?? '';
+		if (!credential || !csrfBody) return fail();
+		if (csrfCookie && csrfCookie !== csrfBody) return fail();
+		const identity = await verifyGoogle(credential);
+		if (!identity) return fail();
+		return c.redirect(`${settings}#pl_gis=${encodeURIComponent(credential)}`, 302);
+	});
+
 	app.post('/v1/auth/logout', async (c) => {
 		const session = await requireSession(c, store);
 		if (session.ok === false) return session.res;

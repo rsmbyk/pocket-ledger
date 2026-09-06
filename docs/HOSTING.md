@@ -137,7 +137,7 @@ In APIs & Services → OAuth consent screen:
 Credentials → Create credentials → **OAuth client ID** → application type **Web application**:
 
 - Authorized JavaScript origins: `https://pocket-ledger-web-w6fanfnuqa-uc.a.run.app` (the Iowa web URL; add it after the first web deploy if the hash differs). For local compose, also add `http://127.0.0.1:5173` (and `http://127.0.0.1:4173` if you use the preview profile).
-- Redirect URIs: not required for the GIS **Sign in with Google** button (`renderButton`, `ux_mode: popup`). Do **not** use One Tap `google.accounts.id.prompt()` — FedCM One Tap often fails silently on Cloud Run.
+- Redirect URIs (Spec 218 mobile / installed PWA): `https://pocket-ledger-api-w6fanfnuqa-uc.a.run.app/v1/auth/gis-callback`. For local compose, also add `http://127.0.0.1:8080/v1/auth/gis-callback`. Desktop tabs still use `renderButton` + `ux_mode: popup` (no extra web-origin redirect URI). Do **not** use One Tap `google.accounts.id.prompt()` — FedCM One Tap often fails silently on Cloud Run.
 
 Copy the client id into GitHub repo variable `GOOGLE_CLIENT_ID`.
 

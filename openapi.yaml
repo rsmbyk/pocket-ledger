@@ -29,6 +29,20 @@ paths:
         '200': { description: Session issued }
         '401': { description: Invalid token }
         '409': { description: Cloud already has data and local is dirty }
+  /v1/auth/gis-callback:
+    post:
+      summary: GIS redirect bounce — verify ID token and 302 to Settings hash (no session)
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                credential: { type: string }
+                g_csrf_token: { type: string }
+      responses:
+        '302': { description: Redirect to web /settings with #pl_gis or #pl_gis_error }
   /v1/auth/logout:
     post:
       summary: Revoke this session cookie
