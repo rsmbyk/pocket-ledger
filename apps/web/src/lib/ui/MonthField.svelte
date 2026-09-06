@@ -24,6 +24,17 @@
 	}: Props = $props();
 
 	const display = $derived(isValidMonthKey(value) ? formatMonthLabel(value) : '');
+
+	let inputEl = $state<HTMLInputElement | undefined>();
+
+	function openPicker() {
+		if (!inputEl || inputEl.disabled) return;
+		try {
+			inputEl.showPicker();
+		} catch {
+			// NotAllowedError / unsupported
+		}
+	}
 </script>
 
 <div class={cn('relative', className)} data-testid={testid}>
@@ -32,6 +43,8 @@
 			'border-input bg-background ring-offset-background focus-within:ring-ring flex h-11 w-full items-center gap-2 rounded-md border px-3 text-sm shadow-xs focus-within:ring-2 md:h-9',
 			disabled && 'cursor-not-allowed opacity-50 shadow-none'
 		)}
+		data-slot="month-field-chrome"
+		onclick={openPicker}
 	>
 		<div class="pointer-events-none flex min-w-0 flex-1 items-center gap-2 text-left">
 			<CalendarIcon class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
@@ -43,27 +56,22 @@
 		</div>
 	</div>
 	<input
+		bind:this={inputEl}
 		{id}
 		type="month"
 		class={cn(
-			'absolute inset-0 z-[1] cursor-pointer opacity-0',
+			'absolute inset-0 z-[1] h-full w-full min-w-full cursor-pointer opacity-0',
 			'[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0',
 			'[&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full',
 			'[&::-webkit-calendar-picker-indicator]:cursor-pointer',
+			'[&::-webkit-datetime-edit]:box-border [&::-webkit-datetime-edit]:h-full [&::-webkit-datetime-edit]:w-full',
+			'[&::-webkit-datetime-edit-fields-wrapper]:h-full [&::-webkit-datetime-edit-fields-wrapper]:w-full',
 			disabled && 'cursor-not-allowed'
 		)}
 		{disabled}
 		{value}
 		aria-label={ariaLabel}
-		onclick={(e) => {
-			const el = e.currentTarget as HTMLInputElement;
-			if (el.disabled) return;
-			try {
-				el.showPicker();
-			} catch {
-				// NotAllowedError / unsupported
-			}
-		}}
+		onclick={openPicker}
 		onchange={(e) => {
 			onValueChange((e.currentTarget as HTMLInputElement).value);
 		}}

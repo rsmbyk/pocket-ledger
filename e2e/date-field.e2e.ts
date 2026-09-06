@@ -1,7 +1,28 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { openAdd } from './nav';
 
-test.describe('100 DateField mobile picker', () => {
+async function spyShowPicker(native: Locator): Promise<void> {
+	await native.evaluate((el) => {
+		const input = el as HTMLInputElement;
+		(window as unknown as { __plShowPicker?: number }).__plShowPicker = 0;
+		const orig = input.showPicker.bind(input);
+		input.showPicker = () => {
+			const w = window as unknown as { __plShowPicker?: number };
+			w.__plShowPicker = (w.__plShowPicker ?? 0) + 1;
+			try {
+				orig();
+			} catch {
+				// NotAllowedError in some automation environments
+			}
+		};
+	});
+}
+
+async function showPickerCount(page: Page): Promise<number> {
+	return page.evaluate(() => (window as unknown as { __plShowPicker?: number }).__plShowPicker ?? 0);
+}
+
+test.describe('100 / 220 DateField mobile picker', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await page.goto('/');
@@ -39,26 +60,38 @@ test.describe('100 DateField mobile picker', () => {
 		const field = page.getByTestId('tx-occurred-on');
 		const native = field.locator('input[type="date"]');
 
-		await native.evaluate((el) => {
-			const input = el as HTMLInputElement;
-			(window as unknown as { __plShowPicker?: number }).__plShowPicker = 0;
-			const orig = input.showPicker.bind(input);
-			input.showPicker = () => {
-				const w = window as unknown as { __plShowPicker?: number };
-				w.__plShowPicker = (w.__plShowPicker ?? 0) + 1;
-				try {
-					orig();
-				} catch {
-					// NotAllowedError in some automation environments
-				}
-			};
-		});
-
+		await spyShowPicker(native);
 		await native.evaluate((el) => {
 			(el as HTMLInputElement).click();
 		});
-		expect(await page.evaluate(() => (window as unknown as { __plShowPicker?: number }).__plShowPicker)).toBeGreaterThan(
-			0
-		);
+		expect(await showPickerCount(page)).toBeGreaterThan(0);
+	});
+
+	test('overlay fills the chrome, not only the date text', async ({ page }) => {
+		await openAdd(page);
+		const field = page.getByTestId('tx-occurred-on');
+		const native = field.locator('input[type="date"]');
+
+		const fieldBox = await field.boundingBox();
+		const nativeBox = await native.boundingBox();
+		expect(fieldBox).toBeTruthy();
+		expect(nativeBox).toBeTruthy();
+		expect(nativeBox!.width).toBeGreaterThan(fieldBox!.width * 0.85);
+		expect(nativeBox!.height).toBeGreaterThan(fieldBox!.height * 0.85);
+	});
+
+	test('clicking the icon side or far chrome calls showPicker', async ({ page }) => {
+		await openAdd(page);
+		const field = page.getByTestId('tx-occurred-on');
+		const native = field.locator('input[type="date"]');
+		const box = await field.boundingBox();
+		expect(box).toBeTruthy();
+
+		await spyShowPicker(native);
+		await field.click({ position: { x: 12, y: box!.height / 2 } });
+		expect(await showPickerCount(page)).toBeGreaterThan(0);
+
+		await field.click({ position: { x: box!.width - 16, y: box!.height / 2 } });
+		expect(await showPickerCount(page)).toBeGreaterThan(1);
 	});
 });
