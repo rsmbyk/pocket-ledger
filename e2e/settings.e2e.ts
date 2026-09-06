@@ -52,6 +52,8 @@ test.describe('154–159 Settings hub', () => {
 	test('156 idle Save persists; Cancel restores draft', async ({ page }) => {
 		await goToNav(page, 'settings');
 		await expect(page.getByTestId('idle-save')).toBeDisabled();
+		await expect(page.getByTestId('idle-default')).toBeDisabled();
+		await expect(page.getByTestId('idle-leave-tab')).not.toBeChecked();
 		await expect(page.getByLabel('Minutes', { exact: true })).toHaveCount(0);
 		await page.getByTestId('idle-minutes').click();
 		await page.getByTestId('idle-minutes-10').click();
@@ -61,9 +63,39 @@ test.describe('154–159 Settings hub', () => {
 		await page.getByTestId('idle-minutes').click();
 		await page.getByTestId('idle-minutes-10').click();
 		await page.getByTestId('idle-save').click();
-		await page.reload();
-		await goToNav(page, 'settings');
+		await expect(page.getByTestId('idle-save')).toBeDisabled();
 		await expect(page.getByTestId('idle-minutes')).toHaveText('10 minutes');
+		await page.reload();
+		await expect(page.getByTestId('settings-panel')).toBeVisible();
+		await expect(page.getByTestId('idle-minutes')).toHaveText('10 minutes');
+		await expect(page.getByTestId('idle-leave-tab')).not.toBeChecked();
+	});
+
+	test('219 hide tab does not lock until leave-tab is saved on', async ({ page }) => {
+		await expect(page.getByTestId('home-panel')).toBeVisible();
+		await page.evaluate(() => {
+			Object.defineProperty(document, 'visibilityState', {
+				configurable: true,
+				get: () => 'hidden'
+			});
+			document.dispatchEvent(new Event('visibilitychange'));
+		});
+		await expect(page.getByTestId('screensaver')).toHaveCount(0);
+		await expect(page.getByTestId('home-panel')).toBeVisible();
+
+		await goToNav(page, 'settings');
+		await page.getByTestId('idle-leave-tab').check();
+		await page.getByTestId('idle-save').click();
+		await expect(page.getByTestId('idle-save')).toBeDisabled();
+
+		await page.evaluate(() => {
+			Object.defineProperty(document, 'visibilityState', {
+				configurable: true,
+				get: () => 'hidden'
+			});
+			document.dispatchEvent(new Event('visibilitychange'));
+		});
+		await expect(page.getByTestId('screensaver')).toBeVisible();
 	});
 
 	test('157 enable lock stays disabled until passphrase matches', async ({ page }) => {

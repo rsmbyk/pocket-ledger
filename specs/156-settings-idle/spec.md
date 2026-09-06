@@ -1,7 +1,7 @@
 # Spec 156: Settings idle screensaver
 
 - **ID:** 156
-- **Status:** Accepted
+- **Status:** Accepted — Default leave-tab pair superseded by [219](../219-leave-tab-default-off/spec.md)
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)
@@ -19,7 +19,7 @@ Idle timeout and leave-tab lock are a Settings card of their own, edited as a dr
 3. **Draft footer** — Save / Cancel / Default (`idle-save`, `idle-cancel`, `idle-default`):
    - Save applies minutes + leave-tab (disabled when draft equals stored).
    - Cancel restores both from stored (disabled when already stored).
-   - Default sets draft to **30 minutes** and leave-tab **on** (disabled when draft already is that pair). Does not persist until Save.
+   - Default sets draft to **30 minutes** and leave-tab **on** (disabled when draft already is that pair). Does not persist until Save. — superseded by [219](../219-leave-tab-default-off/spec.md): Default is 30 + leave-tab **off**.
 4. **No live-apply** — Changing the select or checkbox does not write settings until Save. Screensaver / leave-tab behavior keeps using the last **saved** values until Save.
 
 ### Out of scope
@@ -30,7 +30,7 @@ Idle timeout and leave-tab lock are a Settings card of their own, edited as a dr
 
 ## Domain rules
 
-- `parseIdleSettings` unchanged for missing keys (30 + leave-tab on).
+- `parseIdleSettings` unchanged for missing keys (30 + leave-tab on). — superseded by [219](../219-leave-tab-default-off/spec.md) (30 + leave-tab off).
 - Draft is UI state; `SETTINGS_IDLE_MINUTES` / `SETTINGS_IDLE_LEAVE_TAB` update only on Save.
 - Signed-in: those keys still sync (121).
 
@@ -56,7 +56,7 @@ Idle timeout and leave-tab lock are a Settings card of their own, edited as a dr
 
 - **Given** stored 10 minutes, leave-tab off
 - **When** the user activates Default
-- **Then** the draft is 30 and leave-tab on
+- **Then** the draft is 30 and leave-tab on — superseded by [219](../219-leave-tab-default-off/spec.md) (30 + off)
 - **And** stored values are still 10 / off until Save
 
 ### Scenario: Not in Privacy

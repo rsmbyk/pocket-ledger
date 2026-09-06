@@ -18,7 +18,7 @@
 - [x] Account passphrase replaces device passphrase (notify); cannot remove
 - [x] Device skip warning (exact copy); distinct UIs
 - [x] Device wrong-guess ladder (typed only)
-- [x] Screensaver / idle: drop DEK; continue vs unlock copy; 5/10/15/30 default 30; leave-tab default on
+- [x] Screensaver / idle: drop DEK; continue vs unlock copy; 5/10/15/30 default 30; leave-tab default on — default off in [219](../219-leave-tab-default-off/spec.md)
 - [x] Optional WebAuthn this-device third box (cold + idle)
 - [x] Playwright onboarding + cannot skip
 - [x] `specs/README.md` 119 Accepted when landing

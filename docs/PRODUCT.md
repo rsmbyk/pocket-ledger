@@ -117,7 +117,7 @@ Always (signed out and signed in). Overlay: black, slight transparency, icon + s
 - Signed out, passphrase on: `Click to unlock` → WebAuthn then device passphrase.
 - Signed in: always `Click to unlock` → WebAuthn then account passphrase.
 
-**Idle after:** 5 / 10 / 15 / **30** min (default 30). **When I leave this tab:** default **on**.
+**Idle after:** 5 / 10 / 15 / **30** min (default 30). **When I leave this tab:** default **off**.
 
 ## Backup (signed-out only)
 

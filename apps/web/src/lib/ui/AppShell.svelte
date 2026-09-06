@@ -15,6 +15,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { isAppRoute, isGatePath, nearestValidPath, parsePath, parsePocketId, routeToPath, type AppRoute } from '$lib/shared/router';
+	import { DEFAULT_LEAVE_TAB } from '$lib/application/idle';
 
 	type Props = {
 		account: Account | null;
@@ -123,7 +124,7 @@
 		userPictureUrl = '',
 		sessions = [],
 		idleMinutes = 30,
-		leaveTab = true,
+		leaveTab = DEFAULT_LEAVE_TAB,
 		displayCurrency = 'IDR',
 		onGoogleSignIn,
 		onGoogleCredential,
