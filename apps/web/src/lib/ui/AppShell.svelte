@@ -16,6 +16,7 @@
 	import { page } from '$app/state';
 	import { isAppRoute, isGatePath, nearestValidPath, parsePath, parsePocketId, routeToPath, type AppRoute } from '$lib/shared/router';
 	import { DEFAULT_LEAVE_TAB } from '$lib/application/idle';
+	import StartupLoading from '$lib/ui/StartupLoading.svelte';
 
 	type Props = {
 		account: Account | null;
@@ -235,14 +236,7 @@
 			</Card.Root>
 		</main>
 	{:else if !ready}
-		<main class="mx-auto w-full max-w-3xl px-6 py-8">
-			<Card.Root>
-				<Card.Header>
-					<Card.Title>Starting up</Card.Title>
-					<Card.Description>Preparing your local ledger…</Card.Description>
-				</Card.Header>
-			</Card.Root>
-		</main>
+		<StartupLoading />
 	{:else}
 		<Sidebar.Provider class={lockViewport ? 'h-svh min-h-0 overflow-hidden' : 'min-h-svh'}>
 			<AppShellChrome

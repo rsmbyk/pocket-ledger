@@ -237,3 +237,4 @@ Living behavior contracts for Pocket Ledger.
 | [218](218-gis-mobile-redirect/spec.md)                   | GIS redirect on mobile and installed PWA                     | Accepted                                                                        |
 | [219](219-leave-tab-default-off/spec.md)                 | Leave-tab lock defaults off                                  | Accepted                                                                        |
 | [220](220-datefield-full-hit-target/spec.md)             | DateField opens from the full chrome                         | Accepted                                                                        |
+| [221](221-startup-loading-icon/spec.md)                  | Startup is a loading icon                                    | Accepted                                                                        |
