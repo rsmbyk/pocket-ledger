@@ -221,17 +221,22 @@
 	color-scheme: light;
 }
 
-/* Chrome Android dark color-scheme paints a different canvas around native button labels. */
+/* Chrome Android composites text boxes against a different backdrop than a translucent overlay. */
 .screensaver-overlay {
 	appearance: none;
 	-webkit-appearance: none;
 	color-scheme: light;
 	isolation: isolate;
+	background-color: #000;
 	-webkit-tap-highlight-color: transparent;
 }
 
 .screensaver-overlay > * {
 	background-color: transparent;
+}
+
+html:has(.screensaver-overlay) {
+	overflow: hidden;
 }
 
 /* Spec 217: widen the official button row, not the G mark. */

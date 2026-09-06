@@ -13,7 +13,7 @@
 
 <button
 	type="button"
-	class="screensaver-overlay fixed inset-0 z-80 flex flex-col items-center justify-center gap-3 border-0 bg-black/90 p-0 text-white shadow-none"
+	class="screensaver-overlay fixed inset-0 z-80 flex flex-col items-center justify-center gap-3 overflow-hidden border-0 bg-black p-0 text-white shadow-none"
 	data-testid="screensaver"
 	onclick={() => void onContinue()}
 >

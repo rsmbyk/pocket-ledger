@@ -29,6 +29,7 @@ test('screensaver prompt and icon sit on a transparent content box', async () =>
 		true
 	);
 	expect(css(node, 'color-scheme')).toBe('light');
+	expect(css(node, 'background-color')).toBe('rgb(0, 0, 0)');
 
 	const icon = node.querySelector('[aria-hidden="true"]');
 	const label = [...node.querySelectorAll('span')].find((el) => el !== icon);
