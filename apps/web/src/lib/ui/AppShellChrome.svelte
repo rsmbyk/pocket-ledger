@@ -131,6 +131,7 @@
 		displayCurrency?: string;
 		onGoogleSignIn?: () => void | Promise<void>;
 		onGoogleCredential?: (idToken: string) => void | Promise<void>;
+		cloudError?: string | null;
 		onDebugFakeSignUp?: () => void | Promise<void>;
 		debugFakeUser?: boolean;
 		onSignOut?: () => void | Promise<void>;
@@ -192,6 +193,7 @@
 		displayCurrency = 'IDR',
 		onGoogleSignIn,
 		onGoogleCredential,
+		cloudError = null,
 		onDebugFakeSignUp,
 		debugFakeUser = false,
 		onSignOut,
@@ -1053,6 +1055,7 @@
 				{onChangeAccountPassphrase}
 				{onGoogleSignIn}
 				{onGoogleCredential}
+				{cloudError}
 				{onDebugFakeSignUp}
 				{debugFakeUser}
 				{onSignOut}

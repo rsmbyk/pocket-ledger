@@ -1,6 +1,6 @@
 # Plan 218: GIS redirect on mobile and installed PWA
 
-- **Status:** Draft
+- **Status:** Accepted
 - **Spec:** [./spec.md](./spec.md)
 - **Tasks:** [./tasks.md](./tasks.md)
 - **Related:** Specs 179 popup, 119 session, 178 production GIS

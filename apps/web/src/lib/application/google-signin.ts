@@ -1,8 +1,98 @@
-/** Google Identity Services helper (Specs 119, 179, 182, 205, 212, 215, 217). */
+/** Google Identity Services helper (Specs 119, 179, 182, 205, 212, 215, 217, 218). */
 
 export const GSI_CLIENT_SRC = 'https://accounts.google.com/gsi/client?hl=en';
 /** Fallback `renderButton` width when the host has no layout yet (Spec 217). */
 export const GIS_MAX_BUTTON_WIDTH = 400;
+export const GIS_CALLBACK_PATH = '/v1/auth/gis-callback';
+export const GIS_NONCE_KEY = 'pl_gis_nonce';
+
+export function gisLoginUri(apiBase: string): string {
+	return `${apiBase.replace(/\/$/, '')}${GIS_CALLBACK_PATH}`;
+}
+
+/** Android, iOS, Client Hints mobile, or an installed PWA (Spec 218). */
+export function gisNeedsRedirectUx(input?: {
+	userAgent?: string;
+	mobile?: boolean;
+	standalone?: boolean;
+}): boolean {
+	if (input?.standalone === true) return true;
+	if (input?.mobile === true) return true;
+	if (input?.mobile === false && input.standalone === false) {
+		return /Android|iPhone|iPad|iPod/i.test(input.userAgent ?? '');
+	}
+	if (typeof navigator !== 'undefined') {
+		const uaData = (
+			navigator as Navigator & { userAgentData?: { mobile?: boolean } }
+		).userAgentData;
+		if (uaData?.mobile === true) return true;
+		const standalone = input?.standalone ?? displayModeStandalone();
+		if (standalone) return true;
+		const ua = input?.userAgent ?? navigator.userAgent;
+		return /Android|iPhone|iPad|iPod/i.test(ua);
+	}
+	return /Android|iPhone|iPad|iPod/i.test(input?.userAgent ?? '');
+}
+
+function displayModeStandalone(): boolean {
+	try {
+		return Boolean(window.matchMedia?.('(display-mode: standalone)')?.matches);
+	} catch {
+		return false;
+	}
+}
+
+export function createGisNonce(): string {
+	const bytes = crypto.getRandomValues(new Uint8Array(16));
+	return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+export function persistGisNonce(nonce: string, storage: Storage = sessionStorage): void {
+	storage.setItem(GIS_NONCE_KEY, nonce);
+}
+
+export function takeGisNonce(storage: Storage = sessionStorage): string | null {
+	const nonce = storage.getItem(GIS_NONCE_KEY);
+	storage.removeItem(GIS_NONCE_KEY);
+	return nonce;
+}
+
+export function jwtNonce(jwt: string): string | null {
+	const part = jwt.split('.')[1];
+	if (!part) return null;
+	try {
+		const b64 = part.replace(/-/g, '+').replace(/_/g, '/');
+		const pad = b64.padEnd(b64.length + ((4 - (b64.length % 4)) % 4), '=');
+		const payload = JSON.parse(atob(pad)) as { nonce?: unknown };
+		return typeof payload.nonce === 'string' && payload.nonce.length > 0 ? payload.nonce : null;
+	} catch {
+		return null;
+	}
+}
+
+export type GisRedirectHash =
+	| { kind: 'credential'; credential: string }
+	| { kind: 'error' }
+	| { kind: 'none' };
+
+export function consumeGisRedirectHash(
+	hash: string,
+	deps?: { expectedNonce?: string | null; strip?: () => void }
+): GisRedirectHash {
+	const raw = hash.startsWith('#') ? hash.slice(1) : hash;
+	const params = new URLSearchParams(raw);
+	if (params.has('pl_gis_error')) {
+		deps?.strip?.();
+		return { kind: 'error' };
+	}
+	const credential = params.get('pl_gis');
+	if (!credential) return { kind: 'none' };
+	deps?.strip?.();
+	if (!deps?.expectedNonce || jwtNonce(credential) !== deps.expectedNonce) {
+		return { kind: 'error' };
+	}
+	return { kind: 'credential', credential };
+}
 
 export function gisButtonTheme(colorScheme: 'light' | 'dark'): 'outline' | 'outline_dark' {
 	return colorScheme === 'dark' ? 'outline_dark' : 'outline';
@@ -40,6 +130,8 @@ declare global {
 						client_id: string;
 						callback: (res: { credential: string }) => void;
 						ux_mode?: 'popup' | 'redirect';
+						login_uri?: string;
+						nonce?: string;
 						auto_select?: boolean;
 					}) => void;
 					renderButton: (parent: HTMLElement, opts: Record<string, string | number>) => void;
@@ -60,6 +152,10 @@ export async function mountGoogleSignInButton(opts: {
 	host: HTMLElement;
 	clientId: string;
 	colorScheme?: 'light' | 'dark';
+	apiBase?: string;
+	redirectUx?: boolean;
+	nonce?: string;
+	persistNonce?: (nonce: string) => void;
 	onCredential: (credential: string) => void;
 }): Promise<void> {
 	await loadScript(GSI_CLIENT_SRC);
@@ -67,10 +163,20 @@ export async function mountGoogleSignInButton(opts: {
 	if (!gis?.initialize || !gis.renderButton) {
 		throw new Error('Google Sign-In failed to load');
 	}
+	const redirect = opts.redirectUx ?? gisNeedsRedirectUx();
+	const apiBase = (opts.apiBase ?? '').trim();
+	if (redirect && !apiBase) {
+		throw new Error('Google Sign-In redirect is not configured');
+	}
+	const nonce = redirect ? (opts.nonce ?? createGisNonce()) : undefined;
+	if (redirect && nonce) {
+		(opts.persistNonce ?? persistGisNonce)(nonce);
+	}
 	gis.initialize({
 		client_id: opts.clientId,
-		ux_mode: 'popup',
+		ux_mode: redirect ? 'redirect' : 'popup',
 		auto_select: false,
+		...(redirect && apiBase ? { login_uri: gisLoginUri(apiBase), nonce } : {}),
 		callback: (res) => opts.onCredential(res.credential)
 	});
 	disableGoogleAutoSelect();

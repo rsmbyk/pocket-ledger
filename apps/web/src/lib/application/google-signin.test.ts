@@ -1,10 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
 	GSI_CLIENT_SRC,
+	consumeGisRedirectHash,
 	disableGoogleAutoSelect,
 	gisButtonTheme,
 	gisButtonWidth,
+	gisLoginUri,
+	gisNeedsRedirectUx,
 	gisRenderButtonOptions,
+	jwtNonce,
 	mountGoogleSignInButton
 } from './google-signin';
 
@@ -56,6 +60,93 @@ describe('gisButtonTheme', () => {
 	it('maps light to outline and dark to outline_dark', () => {
 		expect(gisButtonTheme('light')).toBe('outline');
 		expect(gisButtonTheme('dark')).toBe('outline_dark');
+	});
+});
+
+function jwtWithNonce(nonce: string): string {
+	const header = Buffer.from(JSON.stringify({ alg: 'none' })).toString('base64url');
+	const payload = Buffer.from(JSON.stringify({ nonce })).toString('base64url');
+	return `${header}.${payload}.sig`;
+}
+
+describe('gisNeedsRedirectUx', () => {
+	it('keeps desktop browser tabs on popup', () => {
+		expect(
+			gisNeedsRedirectUx({
+				userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/128.0.0.0',
+				mobile: false,
+				standalone: false
+			})
+		).toBe(false);
+	});
+
+	it('uses redirect on Android, iOS, and standalone PWA', () => {
+		expect(
+			gisNeedsRedirectUx({
+				userAgent: 'Mozilla/5.0 (Linux; Android 15; Pixel) Chrome/128.0.0.0 Mobile',
+				standalone: false
+			})
+		).toBe(true);
+		expect(
+			gisNeedsRedirectUx({
+				userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)',
+				standalone: false
+			})
+		).toBe(true);
+		expect(
+			gisNeedsRedirectUx({
+				userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+				mobile: false,
+				standalone: true
+			})
+		).toBe(true);
+		expect(gisNeedsRedirectUx({ mobile: true, userAgent: 'Chrome', standalone: false })).toBe(true);
+	});
+});
+
+describe('gisLoginUri', () => {
+	it('points at the API GIS callback', () => {
+		expect(gisLoginUri('https://api.example')).toBe('https://api.example/v1/auth/gis-callback');
+		expect(gisLoginUri('https://api.example/')).toBe('https://api.example/v1/auth/gis-callback');
+	});
+});
+
+describe('consumeGisRedirectHash', () => {
+	it('returns the JWT when the nonce matches and strips the hash', () => {
+		const jwt = jwtWithNonce('abc');
+		const strip = vi.fn();
+		expect(
+			consumeGisRedirectHash(`#pl_gis=${encodeURIComponent(jwt)}`, {
+				expectedNonce: 'abc',
+				strip
+			})
+		).toEqual({ kind: 'credential', credential: jwt });
+		expect(strip).toHaveBeenCalledOnce();
+	});
+
+	it('returns error for pl_gis_error or a nonce mismatch', () => {
+		const strip = vi.fn();
+		expect(consumeGisRedirectHash('#pl_gis_error=1', { strip })).toEqual({ kind: 'error' });
+		expect(
+			consumeGisRedirectHash(`#pl_gis=${encodeURIComponent(jwtWithNonce('nope'))}`, {
+				expectedNonce: 'abc',
+				strip
+			})
+		).toEqual({ kind: 'error' });
+		expect(strip).toHaveBeenCalledTimes(2);
+	});
+
+	it('returns none when the hash is unrelated', () => {
+		const strip = vi.fn();
+		expect(consumeGisRedirectHash('#foo=1', { strip })).toEqual({ kind: 'none' });
+		expect(strip).not.toHaveBeenCalled();
+	});
+});
+
+describe('jwtNonce', () => {
+	it('reads a nonce from a JWT payload', () => {
+		expect(jwtNonce(jwtWithNonce('n-1'))).toBe('n-1');
+		expect(jwtNonce('not-a-jwt')).toBeNull();
 	});
 });
 
@@ -169,6 +260,49 @@ describe('mountGoogleSignInButton', () => {
 			host,
 			expect.objectContaining({ theme: 'outline_dark', locale: 'en' })
 		);
+	});
+
+	it('initializes redirect UX with login_uri and nonce on mobile', async () => {
+		stubDocument(true);
+		const gis = stubGis();
+		const persistNonce = vi.fn();
+		const host = { replaceChildren: vi.fn() } as unknown as HTMLElement;
+
+		await mountGoogleSignInButton({
+			host,
+			clientId: 'cid.apps.googleusercontent.com',
+			onCredential: vi.fn(),
+			redirectUx: true,
+			apiBase: 'https://api.example',
+			nonce: 'fixed-nonce',
+			persistNonce
+		});
+
+		expect(gis.initialize).toHaveBeenCalledWith(
+			expect.objectContaining({
+				ux_mode: 'redirect',
+				login_uri: 'https://api.example/v1/auth/gis-callback',
+				nonce: 'fixed-nonce',
+				auto_select: false
+			})
+		);
+		expect(persistNonce).toHaveBeenCalledWith('fixed-nonce');
+		expect(gis.prompt).not.toHaveBeenCalled();
+	});
+
+	it('rejects redirect UX when apiBase is missing', async () => {
+		stubDocument(true);
+		stubGis();
+		const host = { replaceChildren: vi.fn() } as unknown as HTMLElement;
+
+		await expect(
+			mountGoogleSignInButton({
+				host,
+				clientId: 'cid.apps.googleusercontent.com',
+				onCredential: vi.fn(),
+				redirectUx: true
+			})
+		).rejects.toThrow(/redirect is not configured/i);
 	});
 
 	it('forwards the GIS credential JWT to onCredential', async () => {

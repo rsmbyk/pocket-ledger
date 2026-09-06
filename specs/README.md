@@ -234,4 +234,4 @@ Living behavior contracts for Pocket Ledger.
 | [215](215-gis-english-iframe-halo/spec.md)               | Official GIS English + Chrome iframe halo                    | Accepted                                                                        |
 | [216](216-gis-debug-configurator/spec.md)                | Testing-only GIS configurator                                | Accepted — playground removed; stretch locked in [217](217-gis-card-width/spec.md) |
 | [217](217-gis-card-width/spec.md)                        | Official GIS at card width                                   | Accepted                                                                        |
-| [218](218-gis-mobile-redirect/spec.md)                   | GIS redirect on mobile and installed PWA                     | Draft                                                                           |
+| [218](218-gis-mobile-redirect/spec.md)                   | GIS redirect on mobile and installed PWA                     | Accepted                                                                        |

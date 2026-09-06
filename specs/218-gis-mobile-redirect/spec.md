@@ -1,7 +1,7 @@
 # Spec 218: GIS redirect on mobile and installed PWA
 
 - **ID:** 218
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)
@@ -34,7 +34,8 @@ Production **Sign in with Google** on Chrome Android (and other mobile / install
 - Redirect is for coarse mobile user-agents (`Android`, `iPhone`, `iPad`, `iPod`) or `navigator.userAgentData.mobile`, and for `display-mode: standalone`. Desktop Chrome/Firefox/Safari tabs stay popup.
 - The API bounce must not create a session. Conflict detection still needs the client’s `localHasData`.
 - Put the JWT in the **hash**, not a query string. `history.replaceState` (or equivalent) removes it before further navigation. Do not log the token.
-- Verify `g_csrf_token` body vs cookie before trusting `credential`. Failed verify or CSRF → error hash, no JWT.
+- Redirect `initialize` sends a `nonce` stored in `sessionStorage`. Consuming `#pl_gis=` requires that nonce to match the JWT. A random hash does not sign the user in.
+- Verify `g_csrf_token` body vs cookie when the cookie is present (same-site). Cross-origin bounce may omit the cookie; the JWT is still verified. Failed verify or CSRF mismatch → error hash, no JWT.
 - Fake Google and Playwright stay on the shadcn button. No real GIS redirect in e2e.
 - Operator still never sees passphrase, hex, or raw DEK.
 - Silent stay-signed-out is still OK when the user cancels Google and no credential is issued.

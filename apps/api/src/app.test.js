@@ -307,3 +307,59 @@ describe('debug reset cloud', () => {
 		expect((await me.json()).onboarding).toBe('needs-passphrase');
 	});
 });
+
+describe('gis redirect callback', () => {
+	it('redirects to settings hash without a session cookie', async () => {
+		const { app } = appWith();
+		const res = await app.request('/v1/auth/gis-callback', {
+			method: 'POST',
+			headers: {
+				'content-type': 'application/x-www-form-urlencoded',
+				cookie: 'g_csrf_token=csrf-1'
+			},
+			body: 'credential=fake.sub1.a%40b.com&g_csrf_token=csrf-1'
+		});
+		expect(res.status).toBe(302);
+		expect(res.headers.get('location')).toBe(
+			'http://127.0.0.1:4173/settings#pl_gis=fake.sub1.a%40b.com'
+		);
+		expect(res.headers.get('set-cookie') ?? '').not.toMatch(/pl_session=/);
+		const me = await app.request('/v1/me');
+		expect(me.status).toBe(401);
+	});
+
+	it('allows a valid token when the CSRF cookie is omitted', async () => {
+		const { app } = appWith();
+		const res = await app.request('/v1/auth/gis-callback', {
+			method: 'POST',
+			headers: { 'content-type': 'application/x-www-form-urlencoded' },
+			body: 'credential=fake.sub1.a%40b.com&g_csrf_token=csrf-1'
+		});
+		expect(res.status).toBe(302);
+		expect(res.headers.get('location')).toContain('#pl_gis=');
+	});
+
+	it('redirects to the error hash when CSRF mismatches or the token is invalid', async () => {
+		const { app } = appWith();
+		const csrf = await app.request('/v1/auth/gis-callback', {
+			method: 'POST',
+			headers: {
+				'content-type': 'application/x-www-form-urlencoded',
+				cookie: 'g_csrf_token=one'
+			},
+			body: 'credential=fake.sub1.a%40b.com&g_csrf_token=two'
+		});
+		expect(csrf.status).toBe(302);
+		expect(csrf.headers.get('location')).toBe('http://127.0.0.1:4173/settings#pl_gis_error=1');
+
+		const bad = await app.request('/v1/auth/gis-callback', {
+			method: 'POST',
+			headers: {
+				'content-type': 'application/x-www-form-urlencoded',
+				cookie: 'g_csrf_token=csrf-1'
+			},
+			body: 'credential=nope&g_csrf_token=csrf-1'
+		});
+		expect(bad.headers.get('location')).toBe('http://127.0.0.1:4173/settings#pl_gis_error=1');
+	});
+});
