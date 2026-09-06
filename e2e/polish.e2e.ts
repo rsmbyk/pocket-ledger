@@ -63,6 +63,19 @@ test.describe('012 polish / 014 void / 030', () => {
 
 		await page.getByTestId('recent-list').locator('[data-testid^="recent-row-"]').first().click();
 		await expect(page.getByRole('heading', { name: 'Edit transaction' })).toBeVisible();
+
+		const typeTab = page.getByTestId('tx-type-expense');
+		await expect(typeTab).toBeVisible();
+		await expect(typeTab).toBeDisabled();
+		await expect(typeTab).toHaveAttribute('data-state', 'active');
+		await expect(page.getByTestId('tx-type-income')).toHaveCount(0);
+		await expect(page.getByTestId('tx-mode-transfer')).toHaveCount(0);
+		const { opacity, pointerEvents } = await typeTab.evaluate((el) => {
+			const style = getComputedStyle(el);
+			return { opacity: style.opacity, pointerEvents: style.pointerEvents };
+		});
+		expect(Number(opacity)).toBe(1);
+		expect(pointerEvents).toBe('none');
 	});
 
 	test('voided transaction opens read-only', async ({ page }) => {

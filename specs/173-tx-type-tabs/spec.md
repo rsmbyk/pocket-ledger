@@ -19,7 +19,7 @@ Add-transaction type chrome is a single `Tabs.List` (`variant="default"`, Spec 0
 3. Active Income keeps income tint; active Expense keeps destructive tint; Transfer uses default raised tab (neutral). Inactive muted.
 4. **Create + one pocket:** Transfer omitted (073). Tabs are **Income | Expense** only.
 5. **Default create type** stays **expense** (039).
-6. **Edit and voided:** replace the centered type badge with `tx-mode-tabs` containing **exactly one** selected trigger (`tx-type-income` / `tx-type-expense` / `tx-mode-transfer`). Same tints as the selected create tab. No other types. Drop `tx-type-badge-transfer`. Display-only — no type change.
+6. **Edit and voided:** replace the centered type badge with `tx-mode-tabs` containing **exactly one** selected trigger (`tx-type-income` / `tx-type-expense` / `tx-mode-transfer`). Same tints as the selected create tab (active/selected look, not the muted disabled look). No other types. Drop `tx-type-badge-transfer`. Display-only — not clickable, no pointer cursor — no type change.
 
 ### Out of scope
 
@@ -68,6 +68,8 @@ Add-transaction type chrome is a single `Tabs.List` (`variant="default"`, Spec 0
 - **Given** edit of an income
 - **When** the sheet opens
 - **Then** type chrome is a tab list with a single Income tab (selected)
+- **And** the tab uses the active selected look (full opacity, income tint), not the muted disabled look
+- **And** it is not clickable and does not show a pointer cursor
 - **And** there is no Expense/Transfer trigger and no pill badge
 
 ### Scenario: Edit or voided transfer is one tab
@@ -75,11 +77,14 @@ Add-transaction type chrome is a single `Tabs.List` (`variant="default"`, Spec 0
 - **Given** edit of a transfer (or a voided row)
 - **When** the sheet opens
 - **Then** a single Transfer tab, same list chrome as create
+- **And** the tab uses the active selected look (full opacity), not the muted disabled look
+- **And** it is not clickable and does not show a pointer cursor
 
 ## Traceability
 
 - Vitest: none required (chrome mapping only; no new money rules)
 - Playwright: `e2e/pockets.e2e.ts` — create still reaches Transfer via `tx-mode-transfer`; no `tx-mode-normal`; three (or two) triggers; edit income/transfer single-tab
+- Playwright: `e2e/polish.e2e.ts` — edit expense single tab is disabled + `data-state=active` at full opacity, with `pointer-events: none`
 - Playwright: `e2e/transfer-admin-fee.e2e.ts` — still clicks `tx-mode-transfer`
 - Implementation: `apps/web/src/lib/ui/QuickAddSheet.svelte`
 
