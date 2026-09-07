@@ -63,6 +63,43 @@ test.describe('013 desktop layout', () => {
 		await expect(rail.getByTestId('nav-add')).toHaveCount(0);
 	});
 
+	test('226 desktop collapse leaves an icon rail under the toolbar', async ({ page }) => {
+		await page.setViewportSize({ width: 1280, height: 800 });
+		await page.goto('/');
+		const rail = page.getByTestId('app-drawer-rail');
+		await expect(rail.getByText('Pocket Ledger')).toBeVisible();
+		const logo = rail.locator('img[src="/favicon.svg"]');
+		const expandedBox = await logo.boundingBox();
+		expect(expandedBox?.height ?? 0).toBeGreaterThan(40);
+
+		await page.getByTestId('open-menu').click();
+		await expect(rail.getByText('Pocket Ledger')).toBeHidden();
+		await expect(rail.getByTestId('nav-home')).toBeVisible();
+		// Width animates 300ms after data-collapsible=icon; the wordmark hides immediately.
+		await expect.poll(async () => (await rail.boundingBox())?.width ?? 0).toBeLessThan(120);
+		expect((await rail.boundingBox())?.width ?? 0).toBeGreaterThan(40);
+
+		const header = rail.locator('[data-slot="sidebar-header"]');
+		const toolbar = page.locator('header').first();
+		const headerBox = await header.boundingBox();
+		const toolbarBox = await toolbar.boundingBox();
+		expect(headerBox && toolbarBox).toBeTruthy();
+		expect(Math.abs((headerBox?.height ?? 0) - (toolbarBox?.height ?? 0))).toBeLessThan(8);
+
+		await page.reload();
+		await expect(page.getByTestId('home-panel')).toBeVisible();
+		await expect(page.getByTestId('app-drawer-rail').getByText('Pocket Ledger')).toBeHidden();
+	});
+
+	test('226 below-md menu is still an overlay drawer', async ({ page }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await page.goto('/');
+		await expect(page.getByTestId('app-drawer-rail')).toBeHidden();
+		await page.getByTestId('open-menu').click();
+		await expect(page.getByTestId('app-drawer-sheet')).toBeVisible();
+		await expect(page.getByTestId('app-drawer-sheet').getByText('Pocket Ledger')).toBeVisible();
+	});
+
 	test('mobile drawer sheet matches flat nav rules', async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await page.goto('/');

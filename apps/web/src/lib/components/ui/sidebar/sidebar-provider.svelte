@@ -10,9 +10,18 @@
 	} from './constants.js';
 	import { setSidebar } from './context.svelte.js';
 
+	function readSidebarCookie(): boolean {
+		if (typeof document === 'undefined') return true;
+		const match = document.cookie
+			.split('; ')
+			.find((row) => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`));
+		if (!match) return true;
+		return match.split('=')[1] === 'true';
+	}
+
 	let {
 		ref = $bindable(null),
-		open = $bindable(true),
+		open = $bindable(readSidebarCookie()),
 		onOpenChange = () => {},
 		class: className,
 		style,

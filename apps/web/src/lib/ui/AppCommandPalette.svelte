@@ -3,6 +3,7 @@
 	import HomeIcon from '@lucide/svelte/icons/house';
 	import ListIcon from '@lucide/svelte/icons/list';
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
+	import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days';
 	import TagsIcon from '@lucide/svelte/icons/tags';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -50,13 +51,17 @@
 				<HomeIcon />
 				Home
 			</Command.Item>
+			<Command.Item onSelect={() => run(() => onNavigate('pockets'))} data-testid="cmd-pockets">
+				<LandmarkIcon />
+				Pockets
+			</Command.Item>
 			<Command.Item onSelect={() => run(() => onNavigate('transactions'))} data-testid="cmd-transactions">
 				<ListIcon />
 				Transactions
 			</Command.Item>
-			<Command.Item onSelect={() => run(() => onNavigate('pockets'))} data-testid="cmd-pockets">
-				<LandmarkIcon />
-				Pockets
+			<Command.Item onSelect={() => run(() => onNavigate('plans'))} data-testid="cmd-plans">
+				<CalendarDaysIcon />
+				Plans
 			</Command.Item>
 			<Command.Item
 				onSelect={() => run(() => onNavigate('categories'))}

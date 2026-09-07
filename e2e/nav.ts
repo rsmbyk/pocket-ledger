@@ -31,7 +31,7 @@ export async function longPress(locator: Locator, holdMs = 600): Promise<void> {
 /** Navigate via the app drawer (desktop rail) or overlay sheet (mobile). */
 export async function goToNav(
 	page: Page,
-	dest: 'home' | 'transactions' | 'pockets' | 'categories' | 'more' | 'settings'
+	dest: 'home' | 'transactions' | 'pockets' | 'plans' | 'categories' | 'more' | 'settings'
 ): Promise<void> {
 	const rail = page.getByTestId('app-drawer-rail');
 	const sheet = page.getByTestId('app-drawer-sheet');
@@ -81,6 +81,16 @@ export async function openAdd(page: Page): Promise<void> {
 export async function selectTxCategory(page: Page, name: string, root?: Locator): Promise<void> {
 	const scope = root ?? page;
 	await scope.getByTestId('tx-category').click();
+	const search = page.getByTestId('category-picker-search');
+	await search.waitFor({ state: 'visible', timeout: 5_000 });
+	await search.fill(name);
+	await page.getByRole('option', { name, exact: true }).click();
+}
+
+/** Pick a category from the Plan sheet CategoryPicker. */
+export async function selectPlanCategory(page: Page, name: string, root?: Locator): Promise<void> {
+	const scope = root ?? page;
+	await scope.getByTestId('plan-category').click();
 	const search = page.getByTestId('category-picker-search');
 	await search.waitFor({ state: 'visible', timeout: 5_000 });
 	await search.fill(name);

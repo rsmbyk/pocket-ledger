@@ -78,6 +78,28 @@ Simple ledger row, double-entry-ready:
 
 Live Dexie rows (spec 152): `id`, `accountId`, optional `description`, `targetMinor`, optional `targetOn`, `createdAt`, `cancelledAt` (Dropped), `deletedAt` (hidden). Never hard-deleted. Account `goalEnabled` / `goalTargetMinor` / `goalTargetOn` migrate once into a row.
 
+## plans
+
+Confirm-before-ledger reminders (specs 223–224). Not money until accept-mode Save. Dexie `plans`; sync `kind: 'plan'`. Drop / Once-complete / Once-skip are gravestones (`deleted=true`), not goal-style `cancelledAt`.
+
+| Field             | Notes                                                                                          |
+| ----------------- | ---------------------------------------------------------------------------------------------- |
+| id                | UUID                                                                                           |
+| description       | Trim; empty = no title on list rows. Sealed with the DEK.                                      |
+| type              | `income` \| `expense` \| `transfer`                                                            |
+| amountMinor       | Positive integer; same meaning as transactions                                                 |
+| feeMinor          | Non-negative; `0` for income                                                                   |
+| categoryId        | Nullable; always null for transfers                                                            |
+| accountId         | Source pocket                                                                                  |
+| counterAccountId  | Destination pocket for transfers; null otherwise                                               |
+| note              | Sealed with the DEK                                                                            |
+| dueOn             | Date key `YYYY-MM-DD`                                                                          |
+| createdAt         | ISO timestamp                                                                                  |
+| frequency         | `once` \| `weekly` \| `monthly`                                                                |
+| monthDay          | 1–31 when monthly; null otherwise. Clamp is per target month; do not persist the clamped day.  |
+
+Backup JSON includes `plans`; a missing key on import is an empty list. Reset clears the table. Money views ignore Plans.
+
 ## settings
 
 Key/value. Display currency is `displayCurrency` (ISO 4217, default IDR). Idle: `idle.minutes`, `idle.leaveTab`. Reserved lock wrap keys stay as today.

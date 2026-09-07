@@ -24,7 +24,7 @@ describe('resetLocalData', () => {
 		await db.open();
 	});
 
-	it('always wipes txs goals snapshots and categories; recreates Main', async () => {
+	it('always wipes txs goals plans snapshots and categories; recreates Main', async () => {
 		const account = await ensureDefaultAccount();
 		const food = (await listCategories()).find((c) => c.id === 'stock:expense:food')!;
 		await addTransaction({
@@ -39,6 +39,13 @@ describe('resetLocalData', () => {
 			targetRaw: '100000',
 			targetOn: '2099-12-31'
 		});
+		const { createPlan } = await import('./plans');
+		await createPlan({
+			accountId: account.id,
+			type: 'expense',
+			amountRaw: '5000',
+			dueOn: '2099-12-31'
+		});
 		await putNetWorthSnapshot({
 			id: crypto.randomUUID(),
 			capturedOn: '2026-07-14',
@@ -50,6 +57,7 @@ describe('resetLocalData', () => {
 
 		expect(await listRecentTransactions((await ensureDefaultAccount()).id)).toHaveLength(0);
 		expect(await listGoals()).toHaveLength(0);
+		expect(await db.plans.count()).toBe(0);
 		expect(await listNetWorthSnapshots()).toHaveLength(0);
 		expect(await db.categories.count()).toBe(0);
 		expect(await listCategories()).toHaveLength(139);

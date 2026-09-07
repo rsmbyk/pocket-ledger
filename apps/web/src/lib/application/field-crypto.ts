@@ -1,6 +1,7 @@
 import { getDataKey } from '$lib/data/session-key';
 import { db } from '$lib/data/db';
 import type { PocketGoal } from '$lib/domain/goals';
+import type { LedgerPlan } from '$lib/domain/plan';
 
 export const CIPHER_PREFIX = 'enc:v1:';
 
@@ -57,9 +58,10 @@ export async function openField(
 
 /** Seal every sensitive field currently stored in plaintext. */
 export async function sealAllSensitiveFields(key: CryptoKey): Promise<void> {
-	const [transactions, goals, categories, categoryGroups] = await Promise.all([
+	const [transactions, goals, plans, categories, categoryGroups] = await Promise.all([
 		db.transactions.toArray(),
 		db.goals.toArray(),
+		db.plans.toArray(),
 		db.categories.toArray(),
 		db.categoryGroups.toArray()
 	]);
@@ -78,6 +80,13 @@ export async function sealAllSensitiveFields(key: CryptoKey): Promise<void> {
 			};
 		})
 	);
+	const nextPlans = await Promise.all(
+		plans.map(async (plan) => ({
+			...plan,
+			description: await sealField(plan.description ?? '', key),
+			note: await sealField(plan.note ?? '', key)
+		}))
+	);
 	const nextCats = await Promise.all(
 		categories.map(async (cat) => ({ ...cat, name: await sealField(cat.name, key) }))
 	);
@@ -89,11 +98,13 @@ export async function sealAllSensitiveFields(key: CryptoKey): Promise<void> {
 		'rw',
 		db.transactions,
 		db.goals,
+		db.plans,
 		db.categories,
 		db.categoryGroups,
 		async () => {
 			await db.transactions.bulkPut(nextTx);
 			await db.goals.bulkPut(nextGoals);
+			await db.plans.bulkPut(nextPlans);
 			await db.categories.bulkPut(nextCats);
 			await db.categoryGroups.bulkPut(nextGroups);
 		}
@@ -102,9 +113,10 @@ export async function sealAllSensitiveFields(key: CryptoKey): Promise<void> {
 
 /** Open every sealed sensitive field back to plaintext. */
 export async function openAllSensitiveFields(key: CryptoKey): Promise<void> {
-	const [transactions, goals, categories, categoryGroups] = await Promise.all([
+	const [transactions, goals, plans, categories, categoryGroups] = await Promise.all([
 		db.transactions.toArray(),
 		db.goals.toArray(),
+		db.plans.toArray(),
 		db.categories.toArray(),
 		db.categoryGroups.toArray()
 	]);
@@ -122,6 +134,13 @@ export async function openAllSensitiveFields(key: CryptoKey): Promise<void> {
 			};
 		})
 	);
+	const nextPlans = await Promise.all(
+		(plans as LedgerPlan[]).map(async (plan) => ({
+			...plan,
+			description: await openField(plan.description ?? '', key),
+			note: await openField(plan.note ?? '', key)
+		}))
+	);
 	const nextCats = await Promise.all(
 		categories.map(async (cat) => ({ ...cat, name: await openField(cat.name, key) }))
 	);
@@ -133,11 +152,13 @@ export async function openAllSensitiveFields(key: CryptoKey): Promise<void> {
 		'rw',
 		db.transactions,
 		db.goals,
+		db.plans,
 		db.categories,
 		db.categoryGroups,
 		async () => {
 			await db.transactions.bulkPut(nextTx);
 			await db.goals.bulkPut(nextGoals);
+			await db.plans.bulkPut(nextPlans);
 			await db.categories.bulkPut(nextCats);
 			await db.categoryGroups.bulkPut(nextGroups);
 		}

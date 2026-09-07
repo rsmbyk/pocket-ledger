@@ -1024,7 +1024,7 @@
 				data-testid="tx-close"
 				onclick={() => handleOpenChange(false)}
 			>
-				Close
+				Cancel
 			</Button>
 			{#if !isVoidedView}
 				<Button type="submit" class="w-full" disabled={saveDisabled} data-testid="tx-save">

@@ -4,6 +4,7 @@
 	import HomeIcon from '@lucide/svelte/icons/house';
 	import ListIcon from '@lucide/svelte/icons/list';
 	import LandmarkIcon from '@lucide/svelte/icons/landmark';
+	import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days';
 	import TagsIcon from '@lucide/svelte/icons/tags';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -33,11 +34,14 @@
 	import PocketLabel from '$lib/ui/PocketLabel.svelte';
 	import ActivityTable from '$lib/ui/ActivityTable.svelte';
 	import TransactionListRow from '$lib/ui/TransactionListRow.svelte';
+	import PlanListRow from '$lib/ui/PlanListRow.svelte';
 	import TransactionRangePicker from '$lib/ui/TransactionRangePicker.svelte';
 	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import type { Account } from '$lib/domain/account';
 	import type { PocketGoal } from '$lib/domain/goals';
+	import type { LedgerPlan } from '$lib/domain/plan';
+	import { isDueInHomeWindow } from '$lib/domain/plan';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
 	import type { OverlayGroup } from '$lib/domain/category-overlay';
@@ -68,6 +72,8 @@
 	import {
 		type TransactionDateRange
 	} from '$lib/domain/transaction-date-range';
+	import { todayOccurredOn } from '$lib/domain/transaction-rules';
+	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
 	import { STOCK_CUSTOM_ICON, STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
 	import { shouldIgnoreDismissForFloatingMenu, shouldIgnoreDismissForNativePicker } from '$lib/ui/native-picker-dismiss';
 	import { readHideAmounts, writeHideAmounts } from '$lib/shared/hide-amounts';
@@ -76,6 +82,19 @@
 		writeActivityListSession,
 		activitySessionForPocket
 	} from '$lib/shared/activity-list-session';
+	import {
+		countPlanAdvancedFilters,
+		DEFAULT_PLAN_FILTERS,
+		filterPlans,
+		isDefaultPlanFilters,
+		normalizePlanFilters,
+		planFiltersEqual,
+		planListSections,
+		sortPlansForList,
+		type PlanFilterCriteria
+	} from '$lib/domain/plan-filters';
+	import { readPlansListSession, writePlansListSession } from '$lib/shared/plans-list-session';
+	import type { PlanSheetMode } from '$lib/ui/PlanSheet.svelte';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import CategoryPicker from '$lib/ui/CategoryPicker.svelte';
@@ -84,6 +103,7 @@
 		account: Account | null;
 		accounts: Account[];
 		goals?: PocketGoal[];
+		plans?: LedgerPlan[];
 		balanceMinor: number;
 		transactions: LedgerTransaction[];
 		categoriesById: Record<string, CategoryRow>;
@@ -146,6 +166,8 @@
 		onNavigate: (route: AppRoute) => void;
 		onOpenAdd: () => void;
 		onOpenEdit: (tx: LedgerTransaction) => void;
+		onOpenAddPlan?: (accountId?: string) => void;
+		onOpenPlan?: (plan: LedgerPlan, mode: PlanSheetMode) => void;
 		/** Applied Transactions pocket ids for Add default (exactly one → that pocket). */
 		onActivityPocketFilterChange?: (pocketIds: string[]) => void;
 	};
@@ -154,6 +176,7 @@
 		account,
 		accounts,
 		goals = [],
+		plans = [],
 		balanceMinor,
 		transactions,
 		categoriesById,
@@ -208,6 +231,8 @@
 		onNavigate,
 		onOpenAdd,
 		onOpenEdit,
+		onOpenAddPlan,
+		onOpenPlan,
 		onActivityPocketFilterChange
 	}: Props = $props();
 
@@ -238,6 +263,13 @@
 	let pendingNav = $state<AppRoute | null>(null);
 	let leaveCategoriesOpen = $state(false);
 	let detailsEditRequest = $state<Account | null>(null);
+
+	const initialPlansSession = readPlansListSession();
+	let plansApplied = $state<PlanFilterCriteria>(normalizePlanFilters(initialPlansSession));
+	let plansDraft = $state<PlanFilterCriteria>(normalizePlanFilters(initialPlansSession));
+	let plansFiltersOpen = $state(false);
+	let plansDiscardWarnOpen = $state(false);
+	let plansFiltersSheetRef = $state<HTMLElement | null>(null);
 
 	const categoryKinds = $derived(
 		Object.fromEntries(Object.values(categoriesById).map((c) => [c.id, c.kind]))
@@ -293,7 +325,9 @@
 			? 'mx-auto flex max-h-[100svh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
 			: 'w-full gap-0 p-0 sm:max-w-sm'
 	);
-	const activityStageWide = $derived(route === 'transactions' && xlWide.current);
+	const activityStageWide = $derived(
+		(route === 'transactions' || route === 'plans') && xlWide.current
+	);
 
 	const advancedFilterCount = $derived(countAdvancedFilters(applied));
 	const hasAdvancedFilters = $derived(advancedFilterCount > 0);
@@ -304,6 +338,95 @@
 	);
 	const canApplyDraft = $derived(draftDirty);
 	const canClearDraft = $derived(!isDefaultActivityFilters({ ...draft, search: '' }));
+
+	const homePlans = $derived(
+		sortPlansForList(
+			plans.filter((p) => isDueInHomeWindow(p.dueOn, todayOccurredOn())),
+			accounts
+		)
+	);
+	const plansAdvancedCount = $derived(countPlanAdvancedFilters(plansApplied));
+	const hasPlanAdvancedFilters = $derived(plansAdvancedCount > 0);
+	const plansDraftDirty = $derived(
+		!planFiltersEqual(
+			{ ...plansDraft, search: '' },
+			{ ...plansApplied, search: '' }
+		)
+	);
+	const canApplyPlanDraft = $derived(plansDraftDirty);
+	const canClearPlanDraft = $derived(!isDefaultPlanFilters({ ...plansDraft, search: '' }));
+	const filteredPlans = $derived(
+		sortPlansForList(filterPlans(plans, plansApplied), accounts)
+	);
+	const planSections = $derived(planListSections(filteredPlans));
+
+	function clonePlanFilters(criteria: PlanFilterCriteria): PlanFilterCriteria {
+		return normalizePlanFilters(criteria);
+	}
+
+	function persistPlansListSession() {
+		writePlansListSession(plansApplied);
+	}
+
+	function openPlanFilters() {
+		plansDraft = clonePlanFilters(plansApplied);
+		plansFiltersOpen = true;
+	}
+
+	function applyPlanFilters() {
+		plansApplied = { ...clonePlanFilters(plansDraft), search: plansApplied.search };
+		persistPlansListSession();
+		if (!xlWide.current) plansFiltersOpen = false;
+	}
+
+	function requestClosePlanFilters() {
+		if (plansDraftDirty) {
+			plansDiscardWarnOpen = true;
+			return;
+		}
+		plansFiltersOpen = false;
+	}
+
+	function onPlanFiltersOpenChange(open: boolean) {
+		if (open) {
+			plansDraft = clonePlanFilters(plansApplied);
+			plansFiltersOpen = true;
+			return;
+		}
+		if (plansDraftDirty) {
+			plansDiscardWarnOpen = true;
+			return;
+		}
+		plansFiltersOpen = false;
+	}
+
+	function confirmDiscardPlanFilters() {
+		plansDraft = clonePlanFilters(plansApplied);
+		plansFiltersOpen = false;
+		plansDiscardWarnOpen = false;
+	}
+
+	function clearPlanDraftFilters() {
+		plansDraft = { ...DEFAULT_PLAN_FILTERS, search: plansApplied.search };
+	}
+
+	function updateAppliedPlanSearch(next: string) {
+		plansApplied = { ...plansApplied, search: next };
+		persistPlansListSession();
+	}
+
+	function openPlanRow(plan: LedgerPlan, from: 'home' | 'pocket' | 'plans') {
+		if (!onOpenPlan) return;
+		if (from === 'plans') {
+			onOpenPlan(plan, 'edit');
+			return;
+		}
+		if (from === 'home') {
+			onOpenPlan(plan, 'accept');
+			return;
+		}
+		onOpenPlan(plan, isDueInHomeWindow(plan.dueOn, todayOccurredOn()) ? 'accept' : 'edit');
+	}
 
 	const filteredTransactions = $derived(
 		filterTransactions(transactions, {
@@ -326,8 +449,9 @@
 		icon: typeof HomeIcon;
 	}[] = [
 		{ id: 'home', label: 'Home', icon: HomeIcon },
-		{ id: 'transactions', label: 'Transactions', icon: ListIcon },
 		{ id: 'pockets', label: 'Pockets', icon: LandmarkIcon },
+		{ id: 'transactions', label: 'Transactions', icon: ListIcon },
+		{ id: 'plans', label: 'Plans', icon: CalendarDaysIcon },
 		{ id: 'categories', label: 'Categories', icon: TagsIcon },
 		{ id: 'settings', label: 'Settings', icon: SettingsIcon }
 	];
@@ -495,16 +619,31 @@
 		draft = cloneFilters(applied);
 	});
 
+	$effect(() => {
+		if (route !== 'plans' || !xlWide.current) return;
+		plansDraft = clonePlanFilters(plansApplied);
+	});
+
 	onMount(() => {
 		onActivityPocketFilterChange?.([...applied.pocketIds]);
 	});
 </script>
 
-<Sidebar.Root collapsible="offcanvas">
-	<Sidebar.Header class="p-4">
-		<div class="flex flex-col items-center gap-2 text-center">
-			<img src="/favicon.svg" alt="" width="36" height="36" class="size-9 rounded-lg" />
-			<p class="text-sm font-semibold">Pocket Ledger</p>
+<Sidebar.Root collapsible="icon">
+	<Sidebar.Header
+		class="p-6 group-data-[collapsible=icon]:min-h-14 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
+	>
+		<div
+			class="flex flex-col items-center gap-3 text-center group-data-[collapsible=icon]:h-14 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
+		>
+			<img
+				src="/favicon.svg"
+				alt=""
+				width="48"
+				height="48"
+				class="size-12 rounded-lg transition-[width,height] duration-300 ease-in-out group-data-[collapsible=icon]:size-8"
+			/>
+			<p class="text-base font-semibold group-data-[collapsible=icon]:hidden">Pocket Ledger</p>
 		</div>
 	</Sidebar.Header>
 
@@ -518,6 +657,7 @@
 							<Sidebar.MenuButton
 								size="lg"
 								isActive={route === item.id}
+								tooltipContent={item.label}
 								class="text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
 								data-testid={`nav-${item.id}`}
 								aria-current={route === item.id ? 'page' : undefined}
@@ -554,7 +694,7 @@
 						{profileInitials(userDisplayName, userEmail)}
 					{/if}
 				</span>
-				<span class="min-w-0 flex-1">
+				<span class="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
 					<span class="block truncate font-medium">{userDisplayName || userEmail}</span>
 					<span class="text-muted-foreground block truncate text-xs">{userEmail}</span>
 				</span>
@@ -564,7 +704,7 @@
 </Sidebar.Root>
 
 <Sidebar.Inset
-	class={route === 'categories' || route === 'transactions'
+	class={route === 'categories' || route === 'transactions' || route === 'plans'
 		? 'h-svh min-h-0 overflow-hidden'
 		: undefined}
 >
@@ -611,7 +751,7 @@
 				<PencilIcon class="size-4" />
 			</Button>
 		{/if}
-		{#if route === 'home' || route === 'transactions' || route === 'pockets'}
+		{#if route === 'home' || route === 'transactions' || route === 'pockets' || route === 'plans'}
 			<Button
 				type="button"
 				variant="ghost"
@@ -707,13 +847,72 @@
 		</div>
 	{/if}
 
+	{#if route === 'plans'}
+		<div class="bg-background shrink-0 border-b px-4 py-3 md:px-6" data-testid="plans-chrome">
+			<div class="flex flex-col gap-3">
+				<div class="flex items-center gap-2">
+					<div class="relative min-w-0 flex-1" data-testid="plans-filters">
+						<SearchIcon
+							class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+							aria-hidden="true"
+						/>
+						<Input
+							id="plans-filter-search"
+							type="search"
+							placeholder="Description, note, or amount"
+							class="h-9 pl-9"
+							value={plansApplied.search ?? ''}
+							data-testid="plans-filter-search"
+							oninput={(e) => updateAppliedPlanSearch(e.currentTarget.value)}
+						/>
+					</div>
+					{#if !xlWide.current}
+						<Button
+							type="button"
+							variant="outline"
+							size="icon"
+							class={['relative shrink-0', hasPlanAdvancedFilters && toolbarActiveChrome]}
+							aria-label="Filters"
+							aria-pressed={hasPlanAdvancedFilters}
+							data-testid="plans-filters-open"
+							data-active={hasPlanAdvancedFilters ? 'true' : undefined}
+							onclick={openPlanFilters}
+						>
+							<SlidersHorizontalIcon class="size-4" />
+							{#if hasPlanAdvancedFilters}
+								<span
+									class="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 inline-flex size-5 items-center justify-center rounded-full text-[10px] font-medium tabular-nums"
+									data-testid="plans-filters-badge"
+								>
+									{plansAdvancedCount}
+								</span>
+							{/if}
+						</Button>
+					{/if}
+				</div>
+				<div class="flex justify-end">
+					<Button
+						type="button"
+						size="sm"
+						disabled={!account}
+						onclick={() => onOpenAddPlan?.()}
+						data-testid="plans-add"
+					>
+						<PlusIcon class="size-4" />
+						Add Plan
+					</Button>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<div
 		class={[
 			'mx-auto flex w-full flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8 max-w-3xl',
 			'data-[stage=wide]:max-w-none!',
 			route === 'categories' &&
 				'min-h-0 flex-1 overflow-hidden px-0! pt-0! pb-0! md:px-0! md:pt-0! md:pb-0!',
-			route === 'transactions' && 'min-h-0 flex-1 overflow-y-auto'
+			(route === 'transactions' || route === 'plans') && 'min-h-0 flex-1 overflow-y-auto'
 		]}
 		data-stage={route === 'categories' || activityStageWide ? 'wide' : 'narrow'}
 		data-testid="app-stage"
@@ -735,6 +934,34 @@
 						{homeMoney(balanceMinor)}
 					</p>
 				</section>
+
+				{#if homePlans.length > 0}
+					<Card.Root class="gap-0 py-0" data-testid="home-plans-card">
+						<Card.Header class="flex flex-row items-center justify-between gap-2 space-y-0 px-4 py-3">
+							<Card.Title class="inline-flex items-center gap-1.5 text-base">
+								<CalendarDaysIcon class="size-4" aria-hidden="true" />
+								Plans
+							</Card.Title>
+						</Card.Header>
+						<Card.Content class="px-2 pb-2">
+							<ul class="divide-border divide-y" data-testid="home-plans-list">
+								{#each homePlans as plan (plan.id)}
+									<li>
+										<PlanListRow
+											{plan}
+											{currencyLabel}
+											{categoriesById}
+											pockets={accounts}
+											hideAmount={hideHomeAmounts}
+											testid={`home-plan-row-${plan.id}`}
+											onOpen={() => openPlanRow(plan, 'home')}
+										/>
+									</li>
+								{/each}
+							</ul>
+						</Card.Content>
+					</Card.Root>
+				{/if}
 
 				{#if monthSummary}
 					<MonthSummaryCard
@@ -929,7 +1156,7 @@
 								data-testid="activity-filters-close"
 								onclick={requestCloseFilters}
 							>
-								Close
+								Cancel
 							</Button>
 						{/if}
 						<Button
@@ -998,6 +1225,204 @@
 					</aside>
 				{/if}
 			</div>
+		{:else if route === 'plans'}
+			<div
+				data-testid="plans-panel"
+				class={xlWide.current ? 'flex min-h-0 gap-4' : 'min-h-0 space-y-3'}
+			>
+				{#snippet planFilterFormFields()}
+					<div class="space-y-1">
+						<Label for="plans-filter-type">Type</Label>
+						<FilterCheckSelect
+							id="plans-filter-type"
+							testid="plans-filter-type"
+							ariaLabel="Type"
+							values={[...plansDraft.types]}
+							onValuesChange={(next) => {
+								plansDraft = {
+									...plansDraft,
+									types: next.filter(
+										(t): t is ActivityTxType =>
+											t === 'income' || t === 'expense' || t === 'transfer'
+									)
+								};
+							}}
+							items={[
+								{ id: 'income', label: 'Income', testid: 'plans-filter-type-income' },
+								{ id: 'expense', label: 'Expense', testid: 'plans-filter-type-expense' },
+								{ id: 'transfer', label: 'Transfer', testid: 'plans-filter-type-transfer' }
+							]}
+						/>
+					</div>
+					<div class="space-y-1">
+						<Label for="plans-filter-pocket">Pocket</Label>
+						<FilterCheckSelect
+							id="plans-filter-pocket"
+							testid="plans-filter-pocket"
+							ariaLabel="Pocket"
+							values={[...plansDraft.pocketIds]}
+							onValuesChange={(next) => (plansDraft = { ...plansDraft, pocketIds: next })}
+							items={accounts.map((pocket) => ({
+								id: pocket.id,
+								label: pocket.name,
+								testid: `plans-filter-pocket-option-${pocket.id}`
+							}))}
+						>
+							{#snippet item(row)}
+								{@const pocket = accounts.find((a) => a.id === row.id)}
+								{#if pocket}
+									<PocketLabel name={pocket.name} isMain={pocket.isMain} optical />
+								{:else}
+									{row.label}
+								{/if}
+							{/snippet}
+						</FilterCheckSelect>
+					</div>
+				{/snippet}
+
+				{#snippet planFilterPanel()}
+					{@const persistent = xlWide.current}
+					<div
+						class={[
+							'border-border flex flex-row items-center gap-2 border-b px-4 py-3 text-left',
+							persistent ? 'justify-end' : 'justify-between'
+						]}
+					>
+						{#if !persistent}
+							<p class="inline-flex items-center gap-2 text-base font-semibold">
+								<SlidersHorizontalIcon class="size-4" aria-hidden="true" />
+								Filters
+							</p>
+						{/if}
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							disabled={!canClearPlanDraft}
+							data-testid="plans-filters-clear"
+							onclick={clearPlanDraftFilters}
+						>
+							<RotateCcwIcon class="size-4" />
+							Clear
+						</Button>
+					</div>
+					<div class="grid gap-3 overflow-y-auto px-4 py-4">
+						{@render planFilterFormFields()}
+					</div>
+					<div class="border-border flex flex-row gap-2 border-t px-4 py-3">
+						{#if !persistent}
+							<Button
+								type="button"
+								variant="outline"
+								class="flex-1"
+								data-testid="plans-filters-close"
+								onclick={requestClosePlanFilters}
+							>
+								Cancel
+							</Button>
+						{/if}
+						<Button
+							type="button"
+							class={persistent ? 'w-full' : 'flex-1'}
+							disabled={!canApplyPlanDraft}
+							data-testid="plans-filters-apply"
+							onclick={applyPlanFilters}
+						>
+							Apply
+						</Button>
+					</div>
+				{/snippet}
+
+				<div class="min-w-0 min-h-0 flex-1 space-y-3">
+					{#if !xlWide.current}
+						<Sheet.Root open={plansFiltersOpen} onOpenChange={onPlanFiltersOpenChange}>
+							<Sheet.Content
+								bind:ref={plansFiltersSheetRef}
+								side={filtersSheetSide}
+								class={filtersSheetClass}
+								data-testid="plans-filters-sheet"
+								showCloseButton={false}
+								interactOutsideBehavior="close"
+								escapeKeydownBehavior="close"
+							>
+								<Sheet.Title class="sr-only">Filters</Sheet.Title>
+								{@render planFilterPanel()}
+							</Sheet.Content>
+						</Sheet.Root>
+					{/if}
+
+					<ConfirmDialog
+						open={plansDiscardWarnOpen}
+						title="Discard filter changes?"
+						description="Your filter changes have not been applied and will be lost."
+						confirmLabel="Discard"
+						cancelLabel="Keep editing"
+						destructive
+						confirmTestId="plans-filters-discard-confirm"
+						onOpenChange={(open) => (plansDiscardWarnOpen = open)}
+						onConfirm={confirmDiscardPlanFilters}
+					/>
+
+					{#if plans.length === 0}
+						<EmptyState
+							testid="plans-empty"
+							title="No plans yet"
+							description="Reminders you add will show up here."
+						>
+							{#snippet icon()}
+								<CalendarDaysIcon class="size-5" />
+							{/snippet}
+						</EmptyState>
+					{:else if filteredPlans.length === 0}
+						<EmptyState
+							testid="plans-empty-filtered"
+							title="No matching plans"
+							description="Try clearing filters or search."
+						>
+							{#snippet icon()}
+								<SearchIcon class="size-5" />
+							{/snippet}
+						</EmptyState>
+					{:else}
+						<ul
+							class="border-border divide-border divide-y overflow-hidden rounded-lg border"
+							data-testid="plans-list"
+						>
+							{#each planSections as section (section.kind === 'header' ? `h-${section.dueOn}` : section.plan.id)}
+								{#if section.kind === 'header'}
+									<li
+										class="bg-muted/40 text-muted-foreground px-3 py-1.5 text-xs font-medium"
+										data-testid={`plans-date-group-${section.dueOn}`}
+									>
+										{formatOccurredOnDisplay(section.dueOn)}
+									</li>
+								{:else}
+									<li>
+										<PlanListRow
+											plan={section.plan}
+											{currencyLabel}
+											{categoriesById}
+											pockets={accounts}
+											hideAmount={hideHomeAmounts}
+											testid={`plans-row-${section.plan.id}`}
+											onOpen={() => openPlanRow(section.plan, 'plans')}
+										/>
+									</li>
+								{/if}
+							{/each}
+						</ul>
+					{/if}
+				</div>
+
+				{#if xlWide.current}
+					<aside
+						data-testid="plans-filters-drawer"
+						class="border-border bg-card flex w-72 shrink-0 flex-col border-l"
+					>
+						{@render planFilterPanel()}
+					</aside>
+				{/if}
+			</div>
 		{:else if route === 'pockets'}
 			{#if detailsPocket}
 				<PocketDetailsPanel
@@ -1008,8 +1433,11 @@
 					{categoriesById}
 					pockets={accounts}
 					{goals}
+					{plans}
 					hideAmounts={hideHomeAmounts}
 					onAdd={openAdd}
+					onAddPlan={() => onOpenAddPlan?.(detailsPocket.id)}
+					onOpenPlan={(plan) => openPlanRow(plan, 'pocket')}
 					onSeeMore={() => seeMoreForPocket(detailsPocket.id)}
 					onOpenTx={onOpenEdit}
 					onRefresh={onRefreshLedger}

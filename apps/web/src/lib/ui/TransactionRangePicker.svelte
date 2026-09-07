@@ -299,7 +299,7 @@
 					data-testid="activity-range-close"
 					onclick={closeDiscard}
 				>
-					Close
+					Cancel
 				</Button>
 				<Button
 					type="button"

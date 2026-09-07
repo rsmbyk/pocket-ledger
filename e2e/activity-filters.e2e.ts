@@ -124,6 +124,7 @@ test.describe('017 / 045 activity filters', () => {
 
 		await page.getByTestId('activity-filters-open').click();
 		await setFilterTypes(page, ['expense']);
+		await expect(page.getByTestId('activity-filters-close')).toHaveText('Cancel');
 		await page.getByTestId('activity-filters-close').click();
 		await expect(page.getByRole('heading', { name: 'Discard filter changes?' })).toBeVisible();
 		await expect(page.getByTestId('confirm-dialog-danger-header')).toHaveCount(0);
@@ -239,6 +240,7 @@ test.describe('017 / 045 activity filters', () => {
 		await expect(page.getByTestId('activity-range-start')).toBeVisible();
 		await expect(page.getByTestId('activity-range-end')).toBeVisible();
 		await expect(page.locator('[data-testid^="activity-range-day-"]').first()).toBeVisible();
+		await expect(page.getByTestId('activity-range-close')).toHaveText('Cancel');
 		await page.getByTestId('activity-range-close').click();
 		await expect(trigger).toContainText('August 2026');
 

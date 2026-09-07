@@ -1,9 +1,16 @@
 /** Primary shell panels addressable via path URLs. */
-export type AppRoute = 'home' | 'transactions' | 'pockets' | 'categories' | 'settings';
+export type AppRoute = 'home' | 'transactions' | 'pockets' | 'plans' | 'categories' | 'settings';
 
-const ROUTES: readonly AppRoute[] = ['home', 'transactions', 'pockets', 'categories', 'settings'];
+const ROUTES: readonly AppRoute[] = [
+	'home',
+	'transactions',
+	'pockets',
+	'plans',
+	'categories',
+	'settings'
+];
 
-const SHELL_PATHS = new Set(['/transactions', '/pockets', '/categories', '/settings']);
+const SHELL_PATHS = new Set(['/transactions', '/pockets', '/plans', '/categories', '/settings']);
 
 /** Full-screen account / device gates (spec 203). */
 export const GATE_PATHS = [
@@ -79,6 +86,7 @@ export function parsePath(pathname: string): AppRoute {
 	if (nearest === '/') return 'home';
 	if (nearest === '/transactions') return 'transactions';
 	if (nearest === '/pockets' || nearest.startsWith('/pockets/')) return 'pockets';
+	if (nearest === '/plans') return 'plans';
 	if (nearest === '/categories') return 'categories';
 	if (nearest === '/settings') return 'settings';
 	return 'home';

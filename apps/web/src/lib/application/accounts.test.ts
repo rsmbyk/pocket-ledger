@@ -155,4 +155,17 @@ describe('accounts application', () => {
 		expect(leftover.length).toBeGreaterThan(0);
 		expect(leftover.every((g) => g.deletedAt != null)).toBe(true);
 	});
+
+	it('refuses to delete a pocket with an active plan', async () => {
+		await ensureDefaultAccount();
+		const vac = await createPocket({ name: 'Vacation' });
+		const { createPlan } = await import('./plans');
+		await createPlan({
+			accountId: vac.id,
+			type: 'expense',
+			amountRaw: '1000',
+			dueOn: todayOccurredOn()
+		});
+		await expect(deletePocket(vac.id)).rejects.toThrow(/active plans/i);
+	});
 });

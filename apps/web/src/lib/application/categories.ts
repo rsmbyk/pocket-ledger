@@ -332,10 +332,12 @@ export async function overlayPrefs(): Promise<OverlayPrefs> {
 	return loadPrefs();
 }
 
-/** True when any non-voided transaction references this category. */
+/** True when any non-voided transaction or active Plan references this category. */
 export async function isCategoryInUse(id: string): Promise<boolean> {
 	const txCount = await db.transactions.filter((t) => t.categoryId === id && !isVoided(t)).count();
-	return txCount > 0;
+	if (txCount > 0) return true;
+	const planCount = await db.plans.filter((p) => p.categoryId === id).count();
+	return planCount > 0;
 }
 
 /** @deprecated Category order is catalog-then-custom (spec 123). */

@@ -239,3 +239,7 @@ Living behavior contracts for Pocket Ledger.
 | [220](220-datefield-full-hit-target/spec.md)             | DateField opens from the full chrome                         | Accepted                                                                        |
 | [221](221-startup-loading-icon/spec.md)                  | Startup is a loading icon                                    | Accepted                                                                        |
 | [222](222-recent-note-category-stack/spec.md)            | Recent note/category stack matches Transactions              | Accepted                                                                        |
+| [223](223-plans/spec.md)                                | Plans (one-shot, confirm-before-ledger)                      | Accepted                                                                        |
+| [224](224-repeating-plans/spec.md)                      | Repeating Plans (Weekly / Monthly)                           | Accepted                                                                        |
+| [225](225-form-close-to-cancel/spec.md)                 | Form Close → Cancel                                          | Accepted                                                                        |
+| [226](226-sidebar-icon-rail/spec.md)                    | Sidebar icon rail on large screens                           | Accepted                                                                        |
