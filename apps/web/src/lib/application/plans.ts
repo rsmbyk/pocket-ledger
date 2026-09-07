@@ -20,6 +20,7 @@ import { pushSealedEntity } from '$lib/application/sync-client';
 import { addTransaction, addTransfer, getCategoriesForType } from '$lib/application/transactions';
 import { listAllCategories } from '$lib/application/categories';
 import type { LedgerTransaction } from '$lib/domain/transaction';
+import { ADMIN_FEE_CATEGORY_ID } from '$lib/domain/activity-filters';
 
 export const SYNC_KIND_PLAN = 'plan';
 
@@ -88,6 +89,10 @@ async function resolveCategoryId(
 ): Promise<string | null> {
 	const trimmed = (raw ?? '').trim();
 	if (!trimmed) return null;
+	if (trimmed === ADMIN_FEE_CATEGORY_ID) {
+		if (type !== 'expense') throw new Error('Choose a category for this type');
+		return ADMIN_FEE_CATEGORY_ID;
+	}
 	const categories = await getCategoriesForType(type);
 	const visible = categories.find((c) => c.id === trimmed);
 	if (visible) return visible.id;

@@ -68,7 +68,7 @@ Simple ledger row, double-entry-ready:
 | type             | `income` \| `expense` \| `transfer`                                                                               |
 | amountMinor      | Positive integer; sign from type / transfer direction (transfer = amount sent = dest receives)                    |
 | feeMinor         | Non-negative integer; transfer or expense admin fee (Specs 106 / 174); always `0` for income; missing on read/restore → `0` |
-| categoryId       | Nullable; always null for transfers (fee uses synthetic Admin Fee bucket, not categoryId)                         |
+| categoryId       | Nullable; `__admin_fee__` allowed on expense (237); always null for transfers (fee uses synthetic Admin Fee bucket) |
 | note             |                                                                                                                   |
 | occurredOn       | Date key `YYYY-MM-DD`                                                                                             |
 | createdAt        |                                                                                                                   |

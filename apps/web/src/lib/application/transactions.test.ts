@@ -66,6 +66,28 @@ describe('transactions application', () => {
 		expect(await getAccountBalance(account.id)).toBe(-2500);
 	});
 
+	it('persists Admin Fee sentinel on expense and rejects it on income (237)', async () => {
+		const account = await ensureDefaultAccount();
+		const tx = await addTransaction({
+			accountId: account.id,
+			type: 'expense',
+			amountRaw: '5000',
+			categoryId: '__admin_fee__'
+		});
+		expect(tx.categoryId).toBe('__admin_fee__');
+		expect(tx.feeMinor).toBe(0);
+		expect(await getAccountBalance(account.id)).toBe(-5000);
+
+		await expect(
+			addTransaction({
+				accountId: account.id,
+				type: 'income',
+				amountRaw: '5000',
+				categoryId: '__admin_fee__'
+			})
+		).rejects.toThrow(/category/i);
+	});
+
 	it('persists expense fee and ignores fee on income (174)', async () => {
 		const account = await ensureDefaultAccount();
 		const expense = await addTransaction({

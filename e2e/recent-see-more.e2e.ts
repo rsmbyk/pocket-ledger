@@ -27,4 +27,18 @@ test.describe('066 recent see more', () => {
 		await page.getByTestId('recent-see-more').click();
 		await expect(page.getByTestId('activity-panel')).toBeVisible();
 	});
+
+	test('Home Recent caps at 10 (236)', async ({ page }) => {
+		for (let i = 0; i < 11; i++) {
+			await openAdd(page);
+			const dialog = page.getByRole('dialog');
+			await dialog.getByTestId('tx-type-expense').click();
+			await dialog.getByLabel(/amount/i).fill(String(1000 + i));
+			await dialog.getByRole('button', { name: 'Save' }).click();
+			await expect(dialog).toBeHidden();
+		}
+		await goToNav(page, 'home');
+		await expect(page.getByTestId('recent-list').locator(':scope > li')).toHaveCount(10);
+		await expect(page.getByTestId('recent-see-more')).toBeVisible();
+	});
 });

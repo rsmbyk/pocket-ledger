@@ -251,3 +251,7 @@ Living behavior contracts for Pocket Ledger.
 | [232](232-dialog-sticky-chrome/spec.md)                 | Dialog max-height + sticky header/footer                     | Accepted                                                                        |
 | [233](233-plan-due-not-past/spec.md)                    | Plan Due cannot pick a past date                             | Accepted                                                                        |
 | [234](234-xl-filter-card-column/spec.md)                | Xl list + filter card columns                                | Accepted                                                                        |
+| [235](235-pocket-details-layout/spec.md)                | Pocket details xl three columns                              | Accepted                                                                        |
+| [236](236-home-recent-ten/spec.md)                      | Home Recent shows 10                                         | Accepted                                                                        |
+| [237](237-pick-admin-fee-category/spec.md)              | Pick Admin Fee on expense Category                           | Accepted                                                                        |
+| [238](238-home-two-columns/spec.md)                     | Home xl two columns                                          | Accepted                                                                        |

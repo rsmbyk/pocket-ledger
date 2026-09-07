@@ -14,6 +14,16 @@ test.describe('013 desktop layout', () => {
 		await expect(page.getByTestId('month-summary')).toBeVisible();
 		await expect(page.getByTestId('recent-card')).toBeVisible();
 		await expect(page.getByTestId('nav-home')).toHaveAttribute('aria-current', 'page');
+		await expect(page.getByTestId('home-col-summary')).toBeVisible();
+		await expect(page.getByTestId('home-col-lists')).toBeVisible();
+		const summary = await page.getByTestId('home-col-summary').boundingBox();
+		const lists = await page.getByTestId('home-col-lists').boundingBox();
+		expect(summary && lists).toBeTruthy();
+		expect(summary!.x).toBeLessThan(lists!.x);
+		expect(Math.abs(summary!.width - lists!.width)).toBeLessThan(8);
+		await expect(page.getByTestId('home-col-summary').getByTestId('balance-hero')).toBeVisible();
+		await expect(page.getByTestId('home-col-summary').getByTestId('month-summary')).toBeVisible();
+		await expect(page.getByTestId('home-col-lists').getByTestId('recent-card')).toBeVisible();
 		await expect(page.getByTestId('toolbar-add')).toHaveCount(0);
 		await expect(page.getByTestId('open-command')).toHaveCount(0);
 		await expect(page.getByTestId('stage-context')).toHaveCount(0);
@@ -31,6 +41,13 @@ test.describe('013 desktop layout', () => {
 
 		await expect(page.getByTestId('app-drawer-rail')).toBeHidden();
 		await expect(page.getByTestId('open-menu')).toBeVisible();
+		await expect(page.getByTestId('home-col-summary')).toHaveCount(0);
+		const balance = await page.getByTestId('balance-hero').boundingBox();
+		const month = await page.getByTestId('month-summary').boundingBox();
+		const recent = await page.getByTestId('recent-card').boundingBox();
+		expect(balance && month && recent).toBeTruthy();
+		expect(balance!.y).toBeLessThan(month!.y);
+		expect(month!.y).toBeLessThan(recent!.y);
 		await expect(page.getByRole('button', { name: 'Add transaction' })).toHaveCount(0);
 
 		await openAdd(page);
@@ -151,14 +168,17 @@ test.describe('013 desktop layout', () => {
 	test('categories uses the full inset width', async ({ page }) => {
 		await page.setViewportSize({ width: 1280, height: 800 });
 		await page.goto('/');
-		await expect(page.getByTestId('home-panel')).toBeVisible();
-		const homeWidth = await page.getByTestId('app-stage').evaluate((el) => el.getBoundingClientRect().width);
+		await goToNav(page, 'pockets');
+		await expect(page.getByTestId('pockets-panel')).toBeVisible();
+		const pocketsWidth = await page
+			.getByTestId('app-stage')
+			.evaluate((el) => el.getBoundingClientRect().width);
 		await goToNav(page, 'categories');
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
 		const categoriesWidth = await page
 			.getByTestId('app-stage')
 			.evaluate((el) => el.getBoundingClientRect().width);
-		expect(categoriesWidth).toBeGreaterThan(homeWidth + 40);
+		expect(categoriesWidth).toBeGreaterThan(pocketsWidth + 40);
 	});
 
 	test('categories stays viewport-tall instead of lengthening the document', async ({ page }) => {
