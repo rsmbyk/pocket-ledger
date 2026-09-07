@@ -520,20 +520,22 @@
 
 {#snippet planForm()}
 	<form
-		class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4"
+		class="flex min-h-0 flex-1 flex-col"
 		data-testid={isAccept ? 'plan-accept-form' : 'plan-edit-form'}
 		onsubmit={(e) => {
 			e.preventDefault();
 			void (isAccept ? saveAccept() : saveEdit());
 		}}
 	>
+		<div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
 		<div class="space-y-2">
-			<Label>Description</Label>
 			{#if isAccept}
-				<p class="text-sm font-medium" data-testid="plan-description">
+				<p class="text-muted-foreground text-sm">Description</p>
+				<p class="text-base font-medium" data-testid="plan-description">
 					{description.trim() || '—'}
 				</p>
 			{:else}
+				<Label>Description</Label>
 				<Input
 					name="description"
 					placeholder="Optional"
@@ -545,10 +547,10 @@
 			{/if}
 		</div>
 
-		{#if isAccept}
+		{#if isAccept && storedFrequency !== 'once'}
 			<div class="space-y-2">
-				<Label>Repeat</Label>
-				<p class="text-sm" data-testid="plan-repeat">
+				<p class="text-muted-foreground text-sm">Repeat</p>
+				<p class="text-base font-medium" data-testid="plan-repeat">
 					{repeatOptionLabel(storedFrequency, editing?.dueOn ?? dueOn)}
 				</p>
 			</div>
@@ -631,6 +633,7 @@
 				disabled={saving}
 				aria-label={dateLabel}
 				testid="plan-due"
+				min={isAccept ? undefined : todayOccurredOn()}
 			/>
 			{@render fieldErrorAlert('occurredOn', 'plan-field-error-due')}
 		</div>
@@ -690,8 +693,14 @@
 				</Button>
 			</div>
 		{/if}
+		</div>
 
-		<div class={cn('gap-2 pt-2', showSaveForNext ? 'grid grid-cols-1 sm:grid-cols-3' : 'grid grid-cols-2')}>
+		<div
+			class={cn(
+				'border-border shrink-0 gap-2 border-t px-4 py-3',
+				showSaveForNext ? 'grid grid-cols-1 sm:grid-cols-3' : 'grid grid-cols-2'
+			)}
+		>
 			<Button
 				type="button"
 				variant="outline"
@@ -707,7 +716,7 @@
 					type="button"
 					variant="outline"
 					class="w-full"
-					disabled={saveDisabled}
+					disabled={saveDisabled || !isDirty}
 					data-testid="plan-save-for-next"
 					onclick={() => void onSaveForNext()}
 				>
@@ -724,7 +733,7 @@
 {#if desktop.current}
 	<Dialog.Root {open} onOpenChange={handleOpenChange}>
 		<Dialog.Content
-			class="flex max-h-[100svh] flex-col gap-0 overflow-hidden p-0"
+			class="flex max-h-[calc(100svh-2rem)] flex-col gap-0 overflow-hidden p-0"
 			data-testid="plan-dialog"
 			showCloseButton={false}
 			interactOutsideBehavior="close"
@@ -742,7 +751,7 @@
 	<Sheet.Root {open} onOpenChange={handleOpenChange}>
 		<Sheet.Content
 			side="bottom"
-			class="mx-auto flex max-h-[100svh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+			class="mx-auto flex max-h-[calc(100svh-2rem)] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
 			data-testid="plan-sheet"
 			showCloseButton={false}
 			interactOutsideBehavior="close"

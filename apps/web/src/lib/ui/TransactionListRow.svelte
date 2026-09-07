@@ -136,92 +136,95 @@
 <button
 	type="button"
 	class={[
-		'hover:bg-muted/60 flex w-full items-center gap-3 rounded-md px-2 text-left text-sm transition-colors',
+		'hover:bg-muted/60 flex w-full rounded-md px-2 text-left text-sm transition-colors',
+		header ? 'flex-col items-stretch gap-1' : 'items-center gap-3',
 		hasSecondaryLine ? 'py-2.5' : 'py-2',
 		voided && 'text-muted-foreground opacity-70'
 	]}
 	data-testid={testid}
 	onclick={onOpen}
 >
-	<div class="min-w-0 flex-1">
-		{#if header}
-			<div class="mb-1 min-w-0">
-				{@render header()}
-			</div>
-		{/if}
-		{#if secondary === 'none'}
-			<p class="font-medium">
-				{#if isTransfer}
-					{@render transferTitle()}
-				{:else if uncategorized}
-					<UncategorizedLabel />
-				{:else}
-					{categoryLabel}
-				{/if}
-			</p>
-		{:else}
-			<p class="truncate font-medium" data-testid={note ? `${testid}-note` : undefined}>
-				{#if note}
-					{note}
-				{:else if isTransfer}
-					{@render transferTitle()}
-				{:else}
-					{@render categoryTitle()}
-				{/if}
-			</p>
-			{#if note}
-				<p
-					class="text-muted-foreground flex min-w-0 items-center gap-1.5 truncate text-xs"
-					data-testid={`${testid}-category`}
-				>
+	{#if header}
+		<div class="min-w-0" data-testid={`${testid}-lead`}>
+			{@render header()}
+		</div>
+	{/if}
+	<div class={['flex min-w-0 items-center gap-3', header ? 'w-full' : 'min-w-0 flex-1']}>
+		<div class="min-w-0 flex-1" data-testid={header ? `${testid}-tx-info` : undefined}>
+			{#if secondary === 'none'}
+				<p class="font-medium">
 					{#if isTransfer}
+						{@render transferTitle()}
+					{:else if uncategorized}
+						<UncategorizedLabel />
+					{:else}
+						{categoryLabel}
+					{/if}
+				</p>
+			{:else}
+				<p class="truncate font-medium" data-testid={note ? `${testid}-note` : undefined}>
+					{#if note}
+						{note}
+					{:else if isTransfer}
 						{@render transferTitle()}
 					{:else}
 						{@render categoryTitle()}
 					{/if}
 				</p>
+				{#if note}
+					<p
+						class="text-muted-foreground flex min-w-0 items-center gap-1.5 truncate text-xs"
+						data-testid={`${testid}-category`}
+					>
+						{#if isTransfer}
+							{@render transferTitle()}
+						{:else}
+							{@render categoryTitle()}
+						{/if}
+					</p>
+				{/if}
+				{#if secondary === 'date'}
+					<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-date`}>
+						{dateLabel}
+					</p>
+				{/if}
 			{/if}
-			{#if secondary === 'date'}
-				<p class="text-muted-foreground truncate text-xs" data-testid={`${testid}-date`}>
-					{dateLabel}
+		</div>
+		<div class="flex shrink-0 flex-col items-end gap-0" data-testid={`${testid}-money`}>
+			<p
+				class={[
+					'font-medium tabular-nums',
+					hideAmount
+						? 'text-muted-foreground'
+						: [
+								voided && 'line-through',
+								!voided &&
+									(isTransfer
+										? 'text-foreground'
+										: tx.type === 'expense'
+											? 'text-destructive'
+											: 'text-income')
+							]
+				]}
+			>
+				{#if hideAmount}
+					••••
+				{:else}
+					{amountText}
+				{/if}
+			</p>
+			{#if showFee && !hideAmount}
+				<p
+					class={['text-muted-foreground text-xs tabular-nums', voided && 'line-through']}
+					data-testid={isTransfer ? `${testid}-transfer-fee` : `${testid}-fee`}
+				>
+					{feeText}
 				</p>
 			{/if}
-		{/if}
-	</div>
-	<div class="flex shrink-0 flex-col items-end gap-0">
-		<p
-			class={[
-				'font-medium tabular-nums',
-				hideAmount
-					? 'text-muted-foreground'
-					: [
-							voided && 'line-through',
-							!voided &&
-								(isTransfer
-									? 'text-foreground'
-									: tx.type === 'expense'
-										? 'text-destructive'
-										: 'text-income')
-						]
-			]}
-		>
-			{#if hideAmount}
-				••••
-			{:else}
-				{amountText}
+			{#if showPocket}
+				{@render pocketChrome()}
 			{/if}
-		</p>
-		{#if showFee && !hideAmount}
-			<p
-				class={['text-muted-foreground text-xs tabular-nums', voided && 'line-through']}
-				data-testid={isTransfer ? `${testid}-transfer-fee` : `${testid}-fee`}
-			>
-				{feeText}
-			</p>
-		{/if}
-		{#if showPocket}
-			{@render pocketChrome()}
-		{/if}
+		</div>
+		<ChevronRightIcon class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
 	</div>
-	<ChevronRightIcon class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
 </button>

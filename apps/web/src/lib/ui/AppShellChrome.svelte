@@ -658,13 +658,14 @@
 								size="lg"
 								isActive={route === item.id}
 								tooltipContent={item.label}
+								aria-label={item.label}
 								class="text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
 								data-testid={`nav-${item.id}`}
 								aria-current={route === item.id ? 'page' : undefined}
 								onclick={() => navigate(item.id)}
 							>
 								<Icon />
-								<span>{item.label}</span>
+								<span class="group-data-[collapsible=icon]:sr-only">{item.label}</span>
 							</Sidebar.MenuButton>
 						</Sidebar.MenuItem>
 					{/each}
@@ -673,10 +674,10 @@
 		</Sidebar.Group>
 	</Sidebar.Content>
 	{#if signedIn && userEmail}
-		<Sidebar.Footer class="p-2">
+		<Sidebar.Footer class="p-2 group-data-[collapsible=icon]:px-0">
 			<button
 				type="button"
-				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm"
+				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
 				data-testid="sidebar-account"
 			>
 				<span

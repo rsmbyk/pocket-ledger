@@ -79,6 +79,16 @@ test.describe('013 desktop layout', () => {
 		await expect.poll(async () => (await rail.boundingBox())?.width ?? 0).toBeLessThan(120);
 		expect((await rail.boundingBox())?.width ?? 0).toBeGreaterThan(40);
 
+		const homeBtn = rail.getByTestId('nav-home');
+		await expect(homeBtn).toHaveAccessibleName('Home');
+		await expect(homeBtn.locator('span')).toHaveClass(/sr-only/);
+		await expect.poll(async () => {
+			const r = await rail.boundingBox();
+			const i = await homeBtn.locator('svg').boundingBox();
+			if (!r || !i) return 99;
+			return Math.abs(r.x + r.width / 2 - (i.x + i.width / 2));
+		}).toBeLessThan(12);
+
 		const header = rail.locator('[data-slot="sidebar-header"]');
 		const toolbar = page.locator('header').first();
 		const headerBox = await header.boundingBox();
@@ -91,7 +101,22 @@ test.describe('013 desktop layout', () => {
 		await expect(page.getByTestId('app-drawer-rail').getByText('Pocket Ledger')).toBeHidden();
 	});
 
-	test('226 below-md menu is still an overlay drawer', async ({ page }) => {
+	test('227 sm viewport uses the icon rail not an overlay', async ({ page }) => {
+		await page.setViewportSize({ width: 751, height: 826 });
+		await page.goto('/');
+		await expect(page.getByTestId('home-panel')).toBeVisible();
+		const rail = page.getByTestId('app-drawer-rail');
+		await expect(rail).toBeVisible();
+		await expect(page.getByTestId('app-drawer-sheet')).toBeHidden();
+
+		await page.getByTestId('open-menu').click();
+		await expect(page.getByTestId('app-drawer-sheet')).toHaveCount(0);
+		await expect(page.locator('[data-slot="sheet-overlay"]')).toHaveCount(0);
+		await expect(rail.getByText('Pocket Ledger')).toBeHidden();
+		await expect(rail.getByTestId('nav-home')).toBeVisible();
+	});
+
+	test('226 below-sm menu is still an overlay drawer', async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await page.goto('/');
 		await expect(page.getByTestId('app-drawer-rail')).toBeHidden();
