@@ -3,6 +3,7 @@ import {
 	confirmVoid,
 	ensureCategory,
 	expectXlFilterCardColumn,
+	expectXlFilterCardTitleAndPadding,
 	goToNav,
 	openAdd,
 	selectActivityFilterCategory,
@@ -298,6 +299,10 @@ test.describe('049 / 058 activity filters xl drawer', () => {
 			chrome: 'activity-chrome',
 			drawer: 'activity-filters-drawer',
 			panel: 'activity-panel'
+		});
+		await expectXlFilterCardTitleAndPadding(page, {
+			drawer: 'activity-filters-drawer',
+			title: 'activity-filters-title'
 		});
 		await page.getByTestId('activity-list').evaluate((el) => {
 			const scroller = el.parentElement;

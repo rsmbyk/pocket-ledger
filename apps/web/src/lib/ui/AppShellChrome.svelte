@@ -1198,8 +1198,15 @@
 							class="flex w-72 shrink-0 flex-col gap-0 py-0"
 						>
 							<Card.Header
-								class="border-border flex flex-row items-center justify-end border-b px-4 py-3"
+								class="border-border flex flex-row items-center justify-between gap-2 space-y-0 border-b px-4 py-3 [.border-b]:pb-3"
 							>
+								<Card.Title
+									class="inline-flex items-center gap-2 text-base font-semibold"
+									data-testid="activity-filters-title"
+								>
+									<SlidersHorizontalIcon class="size-4" aria-hidden="true" />
+									Filters
+								</Card.Title>
 								<Button
 									type="button"
 									variant="outline"
@@ -1215,7 +1222,7 @@
 							<Card.Content class="grid gap-3 px-4 py-4">
 								{@render filterFormFields()}
 							</Card.Content>
-							<Card.Footer class="border-border border-t px-4 py-3">
+							<Card.Footer class="border-border border-t px-4 py-3 [.border-t]:pt-3">
 								<Button
 									type="button"
 									class="w-full"
@@ -1398,8 +1405,15 @@
 							class="flex w-72 shrink-0 flex-col gap-0 py-0"
 						>
 							<Card.Header
-								class="border-border flex flex-row items-center justify-end border-b px-4 py-3"
+								class="border-border flex flex-row items-center justify-between gap-2 space-y-0 border-b px-4 py-3 [.border-b]:pb-3"
 							>
+								<Card.Title
+									class="inline-flex items-center gap-2 text-base font-semibold"
+									data-testid="plans-filters-title"
+								>
+									<SlidersHorizontalIcon class="size-4" aria-hidden="true" />
+									Filters
+								</Card.Title>
 								<Button
 									type="button"
 									variant="outline"
@@ -1415,7 +1429,7 @@
 							<Card.Content class="grid gap-3 px-4 py-4">
 								{@render planFilterFormFields()}
 							</Card.Content>
-							<Card.Footer class="border-border border-t px-4 py-3">
+							<Card.Footer class="border-border border-t px-4 py-3 [.border-t]:pt-3">
 								<Button
 									type="button"
 									class="w-full"

@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { ensureCategory, expectXlFilterCardColumn, goToNav, selectPlanCategory } from './nav';
+import { ensureCategory, expectXlFilterCardColumn, expectXlFilterCardTitleAndPadding, goToNav, selectPlanCategory } from './nav';
 
 function planForm(page: Page): Locator {
 	return page.getByTestId('plan-dialog').or(page.getByTestId('plan-sheet'));
@@ -267,6 +267,10 @@ test.describe('223 / 224 Plans', () => {
 			chrome: 'plans-chrome',
 			drawer: 'plans-filters-drawer',
 			panel: 'plans-panel'
+		});
+		await expectXlFilterCardTitleAndPadding(page, {
+			drawer: 'plans-filters-drawer',
+			title: 'plans-filters-title'
 		});
 	});
 

@@ -217,6 +217,29 @@ export async function expectXlFilterCardColumn(
 	expect(drawerBox.height).toBeLessThan(panelBox.height - 8);
 }
 
+/** Spec 240: xl filter card title + even header/footer padding. */
+export async function expectXlFilterCardTitleAndPadding(
+	page: Page,
+	opts: { drawer: string; title: string }
+): Promise<void> {
+	const drawer = page.getByTestId(opts.drawer);
+	const title = page.getByTestId(opts.title);
+	await expect(title).toHaveText('Filters');
+	await expect(title.locator('svg')).toBeVisible();
+
+	const headerPad = await drawer.locator('[data-slot="card-header"]').evaluate((el) => {
+		const s = getComputedStyle(el);
+		return { top: Number.parseFloat(s.paddingTop), bottom: Number.parseFloat(s.paddingBottom) };
+	});
+	expect(Math.abs(headerPad.top - headerPad.bottom)).toBeLessThanOrEqual(1);
+
+	const footerPad = await drawer.locator('[data-slot="card-footer"]').evaluate((el) => {
+		const s = getComputedStyle(el);
+		return { top: Number.parseFloat(s.paddingTop), bottom: Number.parseFloat(s.paddingBottom) };
+	});
+	expect(Math.abs(footerPad.top - footerPad.bottom)).toBeLessThanOrEqual(1);
+}
+
 /** Open the add-category dialog from the selected kind's first group plus. */
 export async function openAddCategory(page: Page, kind: 'expense' | 'income'): Promise<void> {
 	await selectCategoriesKind(page, kind);
