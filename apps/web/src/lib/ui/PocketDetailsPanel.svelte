@@ -174,7 +174,7 @@
 		return 'bg-muted text-muted-foreground';
 	}
 
-	const colClass = 'flex min-h-0 min-w-0 flex-col gap-4 overflow-y-auto';
+	const colClass = 'min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain p-3';
 </script>
 
 {#snippet identityCards()}
@@ -409,16 +409,22 @@
 {/snippet}
 
 {#if xlWide.current}
-	<div class="grid min-h-0 flex-1 grid-cols-3 gap-4" data-testid="pocket-details-panel">
+	<div class="flex min-h-0 flex-1 gap-4 overflow-hidden" data-testid="pocket-details-panel">
 		<div class={colClass} data-testid="pocket-details-col-identity">
-			{@render identityCards()}
+			<div class="flex flex-col gap-4">
+				{@render identityCards()}
+			</div>
 		</div>
 		<div class={colClass} data-testid="pocket-details-col-activity">
-			{@render activityCards()}
+			<div class="flex flex-col gap-4">
+				{@render activityCards()}
+			</div>
 		</div>
 		<div class={colClass} data-testid="pocket-details-col-lists">
-			{@render plansCard()}
-			{@render goalsCard()}
+			<div class="flex flex-col gap-4">
+				{@render plansCard()}
+				{@render goalsCard()}
+			</div>
 		</div>
 	</div>
 {:else}
