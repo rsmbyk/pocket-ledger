@@ -1081,16 +1081,26 @@
 
 			{#if xlWide.current}
 				<div
-					class="grid min-h-0 flex-1 grid-cols-2 gap-4"
+					class="flex min-h-0 flex-1 gap-4 overflow-hidden"
 					data-testid="home-panel"
 				>
-					<div class="flex min-h-0 min-w-0 flex-col gap-4 overflow-y-auto" data-testid="home-col-summary">
-						{@render homeBalance()}
-						{@render homeMonth()}
+					<div
+						class="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain p-3"
+						data-testid="home-col-summary"
+					>
+						<div class="flex flex-col gap-4">
+							{@render homeBalance()}
+							{@render homeMonth()}
+						</div>
 					</div>
-					<div class="flex min-h-0 min-w-0 flex-col gap-4 overflow-y-auto" data-testid="home-col-lists">
-						{@render homePlansCard()}
-						{@render homeRecent()}
+					<div
+						class="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain p-3"
+						data-testid="home-col-lists"
+					>
+						<div class="flex flex-col gap-4">
+							{@render homePlansCard()}
+							{@render homeRecent()}
+						</div>
 					</div>
 				</div>
 			{:else}

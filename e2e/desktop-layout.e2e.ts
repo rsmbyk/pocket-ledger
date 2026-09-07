@@ -33,6 +33,48 @@ test.describe('013 desktop layout', () => {
 		await expect(page.getByRole('heading', { name: 'Add transaction' })).toBeVisible();
 	});
 
+	test('xl Home lists column scrolls and cards sit inset (239)', async ({ page }) => {
+		await page.setViewportSize({ width: 1280, height: 640 });
+		await page.goto('/');
+		await expect(page.getByTestId('home-panel')).toBeVisible();
+
+		for (let i = 0; i < 11; i++) {
+			await openAdd(page);
+			const dialog = page.getByTestId('tx-dialog');
+			await dialog.getByTestId('tx-type-expense').click();
+			await dialog.getByLabel(/amount/i).fill(String(1000 + i));
+			await dialog.getByTestId('tx-save').click();
+			await expect(dialog).toBeHidden();
+		}
+
+		await goToNav(page, 'home');
+		const lists = page.getByTestId('home-col-lists');
+		const summary = page.getByTestId('home-col-summary');
+		await expect(lists.getByTestId('recent-card')).toBeVisible();
+
+		const before = await lists.evaluate((el) => ({
+			scrollHeight: el.scrollHeight,
+			clientHeight: el.clientHeight,
+			scrollTop: el.scrollTop,
+			paddingTop: Number.parseFloat(getComputedStyle(el).paddingTop)
+		}));
+		expect(before.scrollHeight).toBeGreaterThan(before.clientHeight);
+		expect(before.paddingTop).toBeGreaterThan(0);
+		expect(before.scrollTop).toBe(0);
+
+		const colBox = await lists.boundingBox();
+		const cardBox = await lists.getByTestId('recent-card').boundingBox();
+		expect(colBox && cardBox).toBeTruthy();
+		expect(cardBox!.x).toBeGreaterThan(colBox!.x + 4);
+
+		await lists.evaluate((el) => {
+			el.scrollTop = 80;
+		});
+		expect(await lists.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+		expect(await summary.evaluate((el) => el.scrollTop)).toBe(0);
+		await expect(page.getByTestId('page-title')).toBeVisible();
+	});
+
 	test('narrow viewport uses overlay drawer and bottom sheet', async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await page.goto('/');
