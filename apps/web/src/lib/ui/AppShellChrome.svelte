@@ -709,6 +709,7 @@
 		? 'h-svh min-h-0 overflow-hidden'
 		: undefined}
 >
+	<div class="flex min-h-0 flex-1 flex-col">
 	<header
 		class="bg-background sticky top-0 z-10 flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b px-4 py-2 md:px-6"
 	>
@@ -783,9 +784,11 @@
 		<ThemeMenu preference={themePreference} onPreferenceChange={onThemePreferenceChange} />
 	</header>
 
-	{#if route === 'transactions'}
+	{#snippet activityChrome()}
 		<div
-			class="bg-background shrink-0 border-b px-4 py-3 md:px-6"
+			class={xlWide.current
+				? 'shrink-0'
+				: 'bg-background shrink-0 border-b px-4 py-3 md:px-6'}
 			data-testid="activity-chrome"
 		>
 			<div class="flex flex-col gap-3">
@@ -846,10 +849,19 @@
 				</div>
 			</div>
 		</div>
+	{/snippet}
+
+	{#if route === 'transactions' && !xlWide.current}
+		{@render activityChrome()}
 	{/if}
 
-	{#if route === 'plans'}
-		<div class="bg-background shrink-0 border-b px-4 py-3 md:px-6" data-testid="plans-chrome">
+	{#snippet plansChrome()}
+		<div
+			class={xlWide.current
+				? 'shrink-0'
+				: 'bg-background shrink-0 border-b px-4 py-3 md:px-6'}
+			data-testid="plans-chrome"
+		>
 			<div class="flex flex-col gap-3">
 				<div class="flex items-center gap-2">
 					<div class="relative min-w-0 flex-1" data-testid="plans-filters">
@@ -905,6 +917,10 @@
 				</div>
 			</div>
 		</div>
+	{/snippet}
+
+	{#if route === 'plans' && !xlWide.current}
+		{@render plansChrome()}
 	{/if}
 
 	<div
@@ -913,7 +929,10 @@
 			'data-[stage=wide]:max-w-none!',
 			route === 'categories' &&
 				'min-h-0 flex-1 overflow-hidden px-0! pt-0! pb-0! md:px-0! md:pt-0! md:pb-0!',
-			(route === 'transactions' || route === 'plans') && 'min-h-0 flex-1 overflow-y-auto'
+			(route === 'transactions' || route === 'plans') &&
+				(xlWide.current
+					? 'min-h-0 flex-1 overflow-hidden'
+					: 'min-h-0 flex-1 overflow-y-auto')
 		]}
 		data-stage={route === 'categories' || activityStageWide ? 'wide' : 'narrow'}
 		data-testid="app-stage"
@@ -1043,7 +1062,7 @@
 		{:else if route === 'transactions'}
 			<div
 				data-testid="activity-panel"
-				class={xlWide.current ? 'flex min-h-0 gap-4' : 'min-h-0 space-y-3'}
+				class={xlWide.current ? 'flex min-h-0 flex-1 items-start gap-4' : 'min-h-0 space-y-3'}
 			>
 				{#snippet filterFormFields()}
 					<div class="space-y-1">
@@ -1121,35 +1140,65 @@
 
 				{#snippet filterPanel()}
 					{@const persistent = xlWide.current}
-					<div
-						class={[
-							'border-border flex flex-row items-center gap-2 border-b px-4 py-3 text-left',
-							persistent ? 'justify-end' : 'justify-between'
-						]}
-					>
-						{#if !persistent}
+					{#if persistent}
+						<Card.Root
+							data-testid="activity-filters-drawer"
+							class="flex w-72 shrink-0 flex-col gap-0 py-0"
+						>
+							<Card.Header
+								class="border-border flex flex-row items-center justify-end border-b px-4 py-3"
+							>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									disabled={!canClearDraft}
+									data-testid="activity-filters-clear"
+									onclick={clearDraftFilters}
+								>
+									<RotateCcwIcon class="size-4" />
+									Clear
+								</Button>
+							</Card.Header>
+							<Card.Content class="grid gap-3 px-4 py-4">
+								{@render filterFormFields()}
+							</Card.Content>
+							<Card.Footer class="border-border border-t px-4 py-3">
+								<Button
+									type="button"
+									class="w-full"
+									disabled={!canApplyDraft}
+									data-testid="activity-filters-apply"
+									onclick={applyFilters}
+								>
+									Apply
+								</Button>
+							</Card.Footer>
+						</Card.Root>
+					{:else}
+						<div
+							class="border-border flex flex-row items-center justify-between gap-2 border-b px-4 py-3 text-left"
+						>
 							<p class="inline-flex items-center gap-2 text-base font-semibold">
 								<SlidersHorizontalIcon class="size-4" aria-hidden="true" />
 								Filters
 							</p>
-						{/if}
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							disabled={!canClearDraft}
-							data-testid="activity-filters-clear"
-							onclick={clearDraftFilters}
-						>
-							<RotateCcwIcon class="size-4" />
-							Clear
-						</Button>
-					</div>
-					<div class="grid gap-3 overflow-y-auto px-4 py-4">
-						{@render filterFormFields()}
-					</div>
-					<div class="border-border flex flex-row gap-2 border-t px-4 py-3">
-						{#if !persistent}
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								disabled={!canClearDraft}
+								data-testid="activity-filters-clear"
+								onclick={clearDraftFilters}
+							>
+								<RotateCcwIcon class="size-4" />
+								Clear
+							</Button>
+						</div>
+						<div class="grid gap-3 overflow-y-auto px-4 py-4">
+							{@render filterFormFields()}
+						</div>
+						<div class="border-border flex flex-row gap-2 border-t px-4 py-3">
 							<Button
 								type="button"
 								variant="outline"
@@ -1159,20 +1208,32 @@
 							>
 								Cancel
 							</Button>
-						{/if}
-						<Button
-							type="button"
-							class={persistent ? 'w-full' : 'flex-1'}
-							disabled={!canApplyDraft}
-							data-testid="activity-filters-apply"
-							onclick={applyFilters}
-						>
-							Apply
-						</Button>
-					</div>
+							<Button
+								type="button"
+								class="flex-1"
+								disabled={!canApplyDraft}
+								data-testid="activity-filters-apply"
+								onclick={applyFilters}
+							>
+								Apply
+							</Button>
+						</div>
+					{/if}
 				{/snippet}
 
-				<div class="min-w-0 min-h-0 flex-1 space-y-3">
+				<div
+					class={xlWide.current
+						? 'flex min-h-0 min-w-0 flex-1 flex-col gap-4 self-stretch overflow-hidden'
+						: 'min-h-0 min-w-0 flex-1 space-y-3'}
+				>
+					{#if xlWide.current}
+						{@render activityChrome()}
+					{/if}
+					<div
+						class={xlWide.current
+							? 'min-h-0 min-w-0 flex-1 space-y-3 overflow-y-auto'
+							: 'contents'}
+					>
 					{#if !xlWide.current}
 						<Sheet.Root open={filtersOpen} onOpenChange={onFiltersOpenChange}>
 							<Sheet.Content
@@ -1215,21 +1276,17 @@
 						hideAmounts={hideHomeAmounts}
 						onEdit={onOpenEdit}
 					/>
+					</div>
 				</div>
 
 				{#if xlWide.current}
-					<aside
-						data-testid="activity-filters-drawer"
-						class="border-border bg-card flex w-72 shrink-0 flex-col border-l"
-					>
-						{@render filterPanel()}
-					</aside>
+					{@render filterPanel()}
 				{/if}
 			</div>
 		{:else if route === 'plans'}
 			<div
 				data-testid="plans-panel"
-				class={xlWide.current ? 'flex min-h-0 gap-4' : 'min-h-0 space-y-3'}
+				class={xlWide.current ? 'flex min-h-0 flex-1 items-start gap-4' : 'min-h-0 space-y-3'}
 			>
 				{#snippet planFilterFormFields()}
 					<div class="space-y-1">
@@ -1283,35 +1340,65 @@
 
 				{#snippet planFilterPanel()}
 					{@const persistent = xlWide.current}
-					<div
-						class={[
-							'border-border flex flex-row items-center gap-2 border-b px-4 py-3 text-left',
-							persistent ? 'justify-end' : 'justify-between'
-						]}
-					>
-						{#if !persistent}
+					{#if persistent}
+						<Card.Root
+							data-testid="plans-filters-drawer"
+							class="flex w-72 shrink-0 flex-col gap-0 py-0"
+						>
+							<Card.Header
+								class="border-border flex flex-row items-center justify-end border-b px-4 py-3"
+							>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									disabled={!canClearPlanDraft}
+									data-testid="plans-filters-clear"
+									onclick={clearPlanDraftFilters}
+								>
+									<RotateCcwIcon class="size-4" />
+									Clear
+								</Button>
+							</Card.Header>
+							<Card.Content class="grid gap-3 px-4 py-4">
+								{@render planFilterFormFields()}
+							</Card.Content>
+							<Card.Footer class="border-border border-t px-4 py-3">
+								<Button
+									type="button"
+									class="w-full"
+									disabled={!canApplyPlanDraft}
+									data-testid="plans-filters-apply"
+									onclick={applyPlanFilters}
+								>
+									Apply
+								</Button>
+							</Card.Footer>
+						</Card.Root>
+					{:else}
+						<div
+							class="border-border flex flex-row items-center justify-between gap-2 border-b px-4 py-3 text-left"
+						>
 							<p class="inline-flex items-center gap-2 text-base font-semibold">
 								<SlidersHorizontalIcon class="size-4" aria-hidden="true" />
 								Filters
 							</p>
-						{/if}
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							disabled={!canClearPlanDraft}
-							data-testid="plans-filters-clear"
-							onclick={clearPlanDraftFilters}
-						>
-							<RotateCcwIcon class="size-4" />
-							Clear
-						</Button>
-					</div>
-					<div class="grid gap-3 overflow-y-auto px-4 py-4">
-						{@render planFilterFormFields()}
-					</div>
-					<div class="border-border flex flex-row gap-2 border-t px-4 py-3">
-						{#if !persistent}
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								disabled={!canClearPlanDraft}
+								data-testid="plans-filters-clear"
+								onclick={clearPlanDraftFilters}
+							>
+								<RotateCcwIcon class="size-4" />
+								Clear
+							</Button>
+						</div>
+						<div class="grid gap-3 overflow-y-auto px-4 py-4">
+							{@render planFilterFormFields()}
+						</div>
+						<div class="border-border flex flex-row gap-2 border-t px-4 py-3">
 							<Button
 								type="button"
 								variant="outline"
@@ -1321,20 +1408,32 @@
 							>
 								Cancel
 							</Button>
-						{/if}
-						<Button
-							type="button"
-							class={persistent ? 'w-full' : 'flex-1'}
-							disabled={!canApplyPlanDraft}
-							data-testid="plans-filters-apply"
-							onclick={applyPlanFilters}
-						>
-							Apply
-						</Button>
-					</div>
+							<Button
+								type="button"
+								class="flex-1"
+								disabled={!canApplyPlanDraft}
+								data-testid="plans-filters-apply"
+								onclick={applyPlanFilters}
+							>
+								Apply
+							</Button>
+						</div>
+					{/if}
 				{/snippet}
 
-				<div class="min-w-0 min-h-0 flex-1 space-y-3">
+				<div
+					class={xlWide.current
+						? 'flex min-h-0 min-w-0 flex-1 flex-col gap-4 self-stretch overflow-hidden'
+						: 'min-h-0 min-w-0 flex-1 space-y-3'}
+				>
+					{#if xlWide.current}
+						{@render plansChrome()}
+					{/if}
+					<div
+						class={xlWide.current
+							? 'min-h-0 min-w-0 flex-1 space-y-3 overflow-y-auto'
+							: 'contents'}
+					>
 					{#if !xlWide.current}
 						<Sheet.Root open={plansFiltersOpen} onOpenChange={onPlanFiltersOpenChange}>
 							<Sheet.Content
@@ -1413,15 +1512,11 @@
 							{/each}
 						</ul>
 					{/if}
+					</div>
 				</div>
 
 				{#if xlWide.current}
-					<aside
-						data-testid="plans-filters-drawer"
-						class="border-border bg-card flex w-72 shrink-0 flex-col border-l"
-					>
-						{@render planFilterPanel()}
-					</aside>
+					{@render planFilterPanel()}
 				{/if}
 			</div>
 		{:else if route === 'pockets'}
@@ -1499,6 +1594,7 @@
 				{webauthnEnrolled}
 			/>
 		{/if}
+	</div>
 	</div>
 </Sidebar.Inset>
 

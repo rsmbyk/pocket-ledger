@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { ensureCategory, goToNav, selectPlanCategory } from './nav';
+import { ensureCategory, expectXlFilterCardColumn, goToNav, selectPlanCategory } from './nav';
 
 function planForm(page: Page): Locator {
 	return page.getByTestId('plan-dialog').or(page.getByTestId('plan-sheet'));
@@ -255,6 +255,19 @@ test.describe('223 / 224 Plans', () => {
 		const again = planForm(page);
 		await expect(again.getByTestId('plan-amount')).toHaveValue(/1,?000,?000/);
 		await again.getByTestId('plan-close').click();
+	});
+
+	test('234 xl filters are a content-sized card beside chrome', async ({ page }) => {
+		await goToNav(page, 'plans');
+		await expect(page.getByTestId('plans-panel')).toBeVisible();
+		await expect(page.getByTestId('plans-filters-open')).toHaveCount(0);
+		await expect(page.getByTestId('plans-filters-sheet')).toHaveCount(0);
+		await expect(page.getByTestId('plans-filters-close')).toHaveCount(0);
+		await expectXlFilterCardColumn(page, {
+			chrome: 'plans-chrome',
+			drawer: 'plans-filters-drawer',
+			panel: 'plans-panel'
+		});
 	});
 
 	test('Plans filters are type and pocket only', async ({ page }) => {

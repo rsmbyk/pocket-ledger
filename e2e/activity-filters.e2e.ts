@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import {
 	confirmVoid,
 	ensureCategory,
+	expectXlFilterCardColumn,
 	goToNav,
 	openAdd,
 	selectActivityFilterCategory,
@@ -293,6 +294,20 @@ test.describe('049 / 058 activity filters xl drawer', () => {
 		await expect(page.getByTestId('activity-filter-amount')).toHaveCount(0);
 		await expect(page.getByTestId('activity-sort-open')).toHaveCount(0);
 		await expect(page.getByTestId('activity-filter-start')).toHaveCount(0);
+		await expectXlFilterCardColumn(page, {
+			chrome: 'activity-chrome',
+			drawer: 'activity-filters-drawer',
+			panel: 'activity-panel'
+		});
+		await page.getByTestId('activity-list').evaluate((el) => {
+			const scroller = el.parentElement;
+			if (scroller) scroller.scrollTop = 400;
+		});
+		await expect(page.getByTestId('activity-chrome')).toBeInViewport();
+		await expect(page.getByTestId('activity-range-trigger')).toBeInViewport();
+		await expect(page.getByTestId('activity-filter-search')).toBeInViewport();
+		await expect(page.getByTestId('activity-add')).toBeInViewport();
+		await expect(page.getByTestId('activity-filters-drawer')).toBeInViewport();
 		await setFilterTypes(page, ['expense']);
 		await page.getByTestId('activity-filters-apply').click();
 		await expect(page.getByTestId('activity-filters-drawer')).toBeVisible();
