@@ -75,9 +75,9 @@ test.describe('013 desktop layout', () => {
 		await page.getByTestId('open-menu').click();
 		await expect(rail.getByText('Pocket Ledger')).toBeHidden();
 		await expect(rail.getByTestId('nav-home')).toBeVisible();
-		const railBox = await rail.boundingBox();
-		expect(railBox?.width ?? 0).toBeGreaterThan(40);
-		expect(railBox?.width ?? 0).toBeLessThan(120);
+		// Width animates 300ms after data-collapsible=icon; the wordmark hides immediately.
+		await expect.poll(async () => (await rail.boundingBox())?.width ?? 0).toBeLessThan(120);
+		expect((await rail.boundingBox())?.width ?? 0).toBeGreaterThan(40);
 
 		const header = rail.locator('[data-slot="sidebar-header"]');
 		const toolbar = page.locator('header').first();
