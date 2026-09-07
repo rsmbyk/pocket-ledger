@@ -973,6 +973,7 @@
 					}}
 					{categories}
 					groups={categoryGroups}
+					showAdminFee={typeTab === 'expense'}
 					showUncategorized
 					emptyMeans="uncategorized"
 					disabled={isVoidedView || saving}

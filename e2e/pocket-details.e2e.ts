@@ -139,4 +139,61 @@ test.describe('148 pocket details', () => {
 		await expect(page.getByTestId('activity-panel')).toBeVisible();
 		await expect(page.getByTestId('activity-filter-pocket')).toContainText('Vacation');
 	});
+
+	test('narrow stack puts opening above plans (235)', async ({ page }) => {
+		await page.setViewportSize({ width: 800, height: 900 });
+		await createVacation(page);
+		await openVacationDetails(page);
+		await page.getByTestId('pocket-details-edit').click();
+		await page.getByTestId('pocket-opening-enabled').check();
+		await page.getByTestId('pocket-opening-input').fill('50000');
+		await page.getByTestId('pocket-save').click();
+		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+
+		await expect(page.getByTestId('pocket-details-col-identity')).toHaveCount(0);
+		const opening = await page.getByTestId('pocket-details-opening').boundingBox();
+		const plans = await page.getByTestId('pocket-details-plans-card').boundingBox();
+		const goals = await page.getByTestId('pocket-details-goals-card').boundingBox();
+		const month = await page.getByTestId('month-summary').boundingBox();
+		const recent = await page.getByTestId('pocket-details-recent-card').boundingBox();
+		expect(opening && plans && goals && month && recent).toBeTruthy();
+		expect(opening!.y).toBeLessThan(plans!.y);
+		expect(plans!.y).toBeLessThan(goals!.y);
+		expect(goals!.y).toBeLessThan(month!.y);
+		expect(month!.y).toBeLessThan(recent!.y);
+	});
+
+	test('xl uses three equal columns (235)', async ({ page }) => {
+		await page.setViewportSize({ width: 1400, height: 900 });
+		await createVacation(page);
+		await openVacationDetails(page);
+		await page.getByTestId('pocket-details-edit').click();
+		await page.getByTestId('pocket-opening-enabled').check();
+		await page.getByTestId('pocket-opening-input').fill('50000');
+		await page.getByTestId('pocket-save').click();
+		await expect(page.getByTestId('pocket-form-dialog')).toBeHidden();
+
+		const identity = page.getByTestId('pocket-details-col-identity');
+		const activity = page.getByTestId('pocket-details-col-activity');
+		const lists = page.getByTestId('pocket-details-col-lists');
+		await expect(identity).toBeVisible();
+		await expect(activity).toBeVisible();
+		await expect(lists).toBeVisible();
+
+		const idBox = await identity.boundingBox();
+		const actBox = await activity.boundingBox();
+		const listBox = await lists.boundingBox();
+		expect(idBox && actBox && listBox).toBeTruthy();
+		expect(idBox!.x).toBeLessThan(actBox!.x);
+		expect(actBox!.x).toBeLessThan(listBox!.x);
+		expect(Math.abs(idBox!.width - actBox!.width)).toBeLessThan(8);
+		expect(Math.abs(actBox!.width - listBox!.width)).toBeLessThan(8);
+
+		await expect(identity.getByTestId('pocket-details-balance-hero')).toBeVisible();
+		await expect(identity.getByTestId('pocket-details-opening')).toBeVisible();
+		await expect(activity.getByTestId('month-summary')).toBeVisible();
+		await expect(activity.getByTestId('pocket-details-recent-card')).toBeVisible();
+		await expect(lists.getByTestId('pocket-details-plans-card')).toBeVisible();
+		await expect(lists.getByTestId('pocket-details-goals-card')).toBeVisible();
+	});
 });

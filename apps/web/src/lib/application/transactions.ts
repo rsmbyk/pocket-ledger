@@ -21,6 +21,7 @@ import {
 	type AddableTransactionType
 } from '$lib/domain/transaction-rules';
 import { openField, sealField } from '$lib/application/field-crypto';
+import { ADMIN_FEE_CATEGORY_ID } from '$lib/domain/activity-filters';
 import { derivePocketBalance, sumAllPocketBalances } from '$lib/domain/pocket-balance';
 import {
 	assertTypeImmutable,
@@ -203,6 +204,10 @@ async function resolveCategoryId(
 ): Promise<string | null> {
 	const trimmed = (raw ?? '').trim();
 	if (!trimmed) return null;
+	if (trimmed === ADMIN_FEE_CATEGORY_ID) {
+		if (type !== 'expense') throw new Error('Choose a category for this type');
+		return ADMIN_FEE_CATEGORY_ID;
+	}
 	const categories = await getCategoriesForType(type);
 	const visible = categories.find((c) => c.id === trimmed);
 	if (visible) return visible.id;

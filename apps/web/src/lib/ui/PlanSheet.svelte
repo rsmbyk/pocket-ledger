@@ -35,6 +35,7 @@
 	import { getCategoriesForType } from '$lib/application/transactions';
 	import { listResolvedGroups } from '$lib/application/categories';
 	import type { OverlayGroup } from '$lib/domain/category-overlay';
+	import { ADMIN_FEE_CATEGORY_ID } from '$lib/domain/activity-filters';
 	import { applyGroupedAmountInput } from '$lib/ui/amount-field-caret';
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import DateField from '$lib/ui/DateField.svelte';
@@ -205,6 +206,7 @@
 
 	function onTypeTabChange(next: string) {
 		if (next !== 'income' && next !== 'expense' && next !== 'transfer') return;
+		if (next !== 'expense' && categoryId === ADMIN_FEE_CATEGORY_ID) categoryId = '';
 		if (isAccept) {
 			typeTab = next;
 			if (next !== 'transfer') void loadCategories(next);
@@ -613,6 +615,7 @@
 					}}
 					{categories}
 					groups={categoryGroups}
+					showAdminFee={typeTab === 'expense'}
 					showUncategorized
 					emptyMeans="uncategorized"
 					disabled={saving}

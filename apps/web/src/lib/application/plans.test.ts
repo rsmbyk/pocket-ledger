@@ -53,6 +53,19 @@ describe('plans application', () => {
 		expect(await db.transactions.count()).toBe(0);
 	});
 
+	it('creates an expense plan with Admin Fee category (237)', async () => {
+		const account = await ensureDefaultAccount();
+		const dueOn = addCalendarDays(todayOccurredOn(), 3);
+		const created = await createPlan({
+			accountId: account.id,
+			type: 'expense',
+			amountRaw: '5000',
+			categoryId: '__admin_fee__',
+			dueOn
+		});
+		expect(created.categoryId).toBe('__admin_fee__');
+	});
+
 	it('accept Save posts a tx and gravestones a Once plan', async () => {
 		const account = await ensureDefaultAccount();
 		const dueOn = todayOccurredOn();

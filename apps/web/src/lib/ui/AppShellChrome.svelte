@@ -54,6 +54,8 @@
 	import { profileInitials } from '$lib/application/google-profile';
 	import {
 		DEFAULT_ACTIVITY_FILTERS,
+		ADMIN_FEE_CATEGORY_ID,
+		ADMIN_FEE_LABEL,
 		activityFiltersEqual,
 		categoryKindsForTypes,
 		countAdvancedFilters,
@@ -74,7 +76,7 @@
 	} from '$lib/domain/transaction-date-range';
 	import { todayOccurredOn } from '$lib/domain/transaction-rules';
 	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
-	import { STOCK_CUSTOM_ICON, STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
+	import { STOCK_ADMIN_FEE_ICON, STOCK_CUSTOM_ICON, STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
 	import { shouldIgnoreDismissForFloatingMenu, shouldIgnoreDismissForNativePicker } from '$lib/ui/native-picker-dismiss';
 	import { readHideAmounts, writeHideAmounts } from '$lib/shared/hide-amounts';
 	import {
@@ -244,7 +246,7 @@
 	const xlWide = new MediaQuery('min-width: 1280px');
 
 	const currencyLabel = $derived(displayCurrency);
-	const recent = $derived(transactions.slice(0, 5));
+	const recent = $derived(transactions.slice(0, 10));
 
 	let hideHomeAmounts = $state(readHideAmounts());
 
@@ -327,6 +329,9 @@
 	);
 	const activityStageWide = $derived(
 		(route === 'transactions' || route === 'plans') && xlWide.current
+	);
+	const dashboardStageWide = $derived(
+		xlWide.current && (route === 'home' || Boolean(detailsPocket))
 	);
 
 	const advancedFilterCount = $derived(countAdvancedFilters(applied));
@@ -462,11 +467,13 @@
 
 	function categoryName(categoryId: string | null): string {
 		if (!categoryId) return 'Uncategorized';
+		if (categoryId === ADMIN_FEE_CATEGORY_ID) return ADMIN_FEE_LABEL;
 		return categoriesById[categoryId]?.name ?? 'Category';
 	}
 
 	function categoryIconSlug(tx: LedgerTransaction): string {
 		if (tx.categoryId == null) return STOCK_UNCATEGORIZED_ICON;
+		if (tx.categoryId === ADMIN_FEE_CATEGORY_ID) return STOCK_ADMIN_FEE_ICON;
 		return categoriesById[tx.categoryId]?.icon || STOCK_CUSTOM_ICON;
 	}
 
@@ -705,7 +712,10 @@
 </Sidebar.Root>
 
 <Sidebar.Inset
-	class={route === 'categories' || route === 'transactions' || route === 'plans'
+	class={route === 'categories' ||
+	route === 'transactions' ||
+	route === 'plans' ||
+	dashboardStageWide
 		? 'h-svh min-h-0 overflow-hidden'
 		: undefined}
 >
@@ -929,16 +939,19 @@
 			'data-[stage=wide]:max-w-none!',
 			route === 'categories' &&
 				'min-h-0 flex-1 overflow-hidden px-0! pt-0! pb-0! md:px-0! md:pt-0! md:pb-0!',
-			(route === 'transactions' || route === 'plans') &&
+			((route === 'transactions' || route === 'plans') &&
 				(xlWide.current
 					? 'min-h-0 flex-1 overflow-hidden'
-					: 'min-h-0 flex-1 overflow-y-auto')
+					: 'min-h-0 flex-1 overflow-y-auto')) ||
+				(dashboardStageWide && 'min-h-0 flex-1 overflow-hidden')
 		]}
-		data-stage={route === 'categories' || activityStageWide ? 'wide' : 'narrow'}
+		data-stage={route === 'categories' || activityStageWide || dashboardStageWide
+			? 'wide'
+			: 'narrow'}
 		data-testid="app-stage"
 	>
 		{#if route === 'home'}
-			<div class="space-y-4" data-testid="home-panel">
+			{#snippet homeBalance()}
 				<section
 					class="border-border/80 bg-card flex flex-col gap-1 rounded-xl border px-4 py-3 shadow-[var(--elev-card)]"
 					data-testid="balance-hero"
@@ -954,7 +967,9 @@
 						{homeMoney(balanceMinor)}
 					</p>
 				</section>
+			{/snippet}
 
+			{#snippet homePlansCard()}
 				{#if homePlans.length > 0}
 					<Card.Root class="gap-0 py-0" data-testid="home-plans-card">
 						<Card.Header class="flex flex-row items-center justify-between gap-2 space-y-0 px-4 py-3">
@@ -982,7 +997,9 @@
 						</Card.Content>
 					</Card.Root>
 				{/if}
+			{/snippet}
 
+			{#snippet homeMonth()}
 				{#if monthSummary}
 					<MonthSummaryCard
 						summary={monthSummary}
@@ -994,7 +1011,9 @@
 						onNextMonth={() => void onNextMonth()}
 					/>
 				{/if}
+			{/snippet}
 
+			{#snippet homeRecent()}
 				<Card.Root class="gap-0 py-0" data-testid="recent-card">
 					<Card.Header class="flex flex-row items-center justify-between gap-2 space-y-0 px-4 py-3">
 						<Card.Title class="inline-flex items-center gap-1.5 text-base">
@@ -1058,7 +1077,30 @@
 						{/if}
 					</Card.Content>
 				</Card.Root>
-			</div>
+			{/snippet}
+
+			{#if xlWide.current}
+				<div
+					class="grid min-h-0 flex-1 grid-cols-2 gap-4"
+					data-testid="home-panel"
+				>
+					<div class="flex min-h-0 min-w-0 flex-col gap-4 overflow-y-auto" data-testid="home-col-summary">
+						{@render homeBalance()}
+						{@render homeMonth()}
+					</div>
+					<div class="flex min-h-0 min-w-0 flex-col gap-4 overflow-y-auto" data-testid="home-col-lists">
+						{@render homePlansCard()}
+						{@render homeRecent()}
+					</div>
+				</div>
+			{:else}
+				<div class="space-y-4" data-testid="home-panel">
+					{@render homeBalance()}
+					{@render homePlansCard()}
+					{@render homeMonth()}
+					{@render homeRecent()}
+				</div>
+			{/if}
 		{:else if route === 'transactions'}
 			<div
 				data-testid="activity-panel"

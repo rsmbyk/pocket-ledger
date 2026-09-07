@@ -158,6 +158,27 @@ describe('month-summary', () => {
 		expect(summary.expenseMinor).toBe(5_000 + 50_000 + 80_000 + 250);
 	});
 
+	it('counts expense amount with Admin Fee categoryId (237)', () => {
+		const pocket = { id: 'acc', openingBalanceMinor: 0, openingAsOf: '2026-01-01' };
+		const summary = buildMonthSummary(
+			[
+				tx({
+					type: 'expense',
+					amountMinor: 5000,
+					occurredOn: '2026-07-02',
+					categoryId: '__admin_fee__'
+				})
+			],
+			'2026-07',
+			{},
+			[pocket]
+		);
+		expect(summary.expenseByCategory).toEqual([
+			{ categoryId: '__admin_fee__', label: 'Admin Fee', amountMinor: 5000 }
+		]);
+		expect(summary.expenseMinor).toBe(5000);
+	});
+
 	it('counts transfer fees as expense and reduces opening by prior fees', () => {
 		const pockets = [
 			{ id: 'main', openingBalanceMinor: 0, openingAsOf: '2026-01-01' },

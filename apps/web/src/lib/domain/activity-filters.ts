@@ -128,14 +128,14 @@ export function usedCategoryIds(transactions: LedgerTransaction[]): Set<string> 
 	const ids = new Set<string>();
 	for (const tx of transactions) {
 		const id = tx.categoryId?.trim() ?? '';
-		if (id) ids.add(id);
+		if (id && id !== ADMIN_FEE_CATEGORY_ID) ids.add(id);
 	}
 	return ids;
 }
 
 /** True when Activity should show the Category filter (Spec 132). */
 export function shouldShowActivityCategoryFilter(transactions: LedgerTransaction[]): boolean {
-	return usedCategoryIds(transactions).size > 0;
+	return usedCategoryIds(transactions).size > 0 || hasAdminFeeLedgerRow(transactions);
 }
 
 /** True when some ledger row has a null/empty categoryId (Uncategorized / transfers). */
@@ -143,11 +143,12 @@ export function hasUncategorizedLedgerRow(transactions: LedgerTransaction[]): bo
 	return transactions.some((tx) => !(tx.categoryId?.trim() ?? ''));
 }
 
-/** True when some transfer or expense has a positive admin fee. */
+/** True when some row is Admin Fee (sentinel category or a positive fee). */
 export function hasAdminFeeLedgerRow(transactions: LedgerTransaction[]): boolean {
 	return transactions.some(
 		(tx) =>
-			(tx.type === 'transfer' || tx.type === 'expense') && (tx.feeMinor ?? 0) > 0
+			tx.categoryId === ADMIN_FEE_CATEGORY_ID ||
+			((tx.type === 'transfer' || tx.type === 'expense') && (tx.feeMinor ?? 0) > 0)
 	);
 }
 
@@ -223,7 +224,8 @@ function matchesCategories(tx: LedgerTransaction, categoryIds: readonly string[]
 	return categoryIds.some((id) => {
 		if (id === ADMIN_FEE_CATEGORY_ID) {
 			return (
-				(tx.type === 'transfer' || tx.type === 'expense') && (tx.feeMinor ?? 0) > 0
+				tx.categoryId === ADMIN_FEE_CATEGORY_ID ||
+				((tx.type === 'transfer' || tx.type === 'expense') && (tx.feeMinor ?? 0) > 0)
 			);
 		}
 		if (id === UNCATEGORIZED_FILTER) return tx.categoryId == null;

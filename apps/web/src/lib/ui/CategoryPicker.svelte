@@ -292,6 +292,7 @@
 									value={ADMIN_FEE_LABEL}
 									onSelect={() => select(ADMIN_FEE_CATEGORY_ID)}
 									class={multiple ? '[&_.cn-command-item-indicator]:hidden' : undefined}
+									data-testid="category-option-admin-fee"
 								>
 									{@render check(ADMIN_FEE_CATEGORY_ID)}
 									<CategoryIcon slug={STOCK_ADMIN_FEE_ICON} />
@@ -304,6 +305,7 @@
 									onSelect={() =>
 										select(multiple || showAllOption ? UNCATEGORIZED_FILTER : '')}
 									class={multiple ? '[&_.cn-command-item-indicator]:hidden' : undefined}
+									data-testid="category-option-uncategorized"
 								>
 									{@render check(UNCATEGORIZED_FILTER)}
 									<CategoryIcon slug={STOCK_UNCATEGORIZED_ICON} />

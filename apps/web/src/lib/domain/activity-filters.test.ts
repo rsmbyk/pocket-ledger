@@ -188,6 +188,23 @@ describe('activity-filters', () => {
 		).toEqual(['exp-fee']);
 	});
 
+	it('filters Admin Fee sentinel categoryId even with no fee (237)', () => {
+		const mixed = [
+			tx({
+				type: 'expense',
+				amountMinor: 5000,
+				occurredOn: '2026-07-16',
+				note: 'atm',
+				categoryId: ADMIN_FEE_CATEGORY_ID
+			}),
+			tx({ type: 'expense', amountMinor: 9, occurredOn: '2026-07-16', note: 'food' })
+		];
+		expect(hasAdminFeeLedgerRow(mixed)).toBe(true);
+		expect(
+			filterTransactions(mixed, { categoryIds: [ADMIN_FEE_CATEGORY_ID] }).map((t) => t.note)
+		).toEqual(['atm']);
+	});
+
 	it('hides voided by default', () => {
 		const mixed = [
 			tx({ type: 'expense', amountMinor: 10_000, occurredOn: '2026-07-15', note: 'a' }),

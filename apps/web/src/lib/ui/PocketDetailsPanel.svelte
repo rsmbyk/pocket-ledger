@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { MediaQuery } from 'svelte/reactivity';
 	import AlignLeftIcon from '@lucide/svelte/icons/align-left';
 	import BanknoteIcon from '@lucide/svelte/icons/banknote';
 	import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days';
@@ -18,8 +19,8 @@
 	import GoalProgressChrome from '$lib/ui/GoalProgressChrome.svelte';
 	import type { Account } from '$lib/domain/account';
 	import type { CategoryRow } from '$lib/data/db';
-	import { latestPocketTransactions } from '$lib/domain/activity-filters';
-	import { STOCK_CUSTOM_ICON, STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
+	import { latestPocketTransactions, ADMIN_FEE_CATEGORY_ID, ADMIN_FEE_LABEL } from '$lib/domain/activity-filters';
+	import { STOCK_ADMIN_FEE_ICON, STOCK_CUSTOM_ICON, STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
 	import {
 		goalProgressPercent,
 		isActive,
@@ -88,6 +89,8 @@
 	let goalFormMode = $state<'create' | 'edit'>('create');
 	let editingGoal = $state<PocketGoal | null>(null);
 	let pastOpen = $state(false);
+	/** Matches Tailwind `xl` — three-column details (235). */
+	const xlWide = new MediaQuery('min-width: 1280px');
 
 	$effect(() => {
 		pocket.id;
@@ -132,11 +135,13 @@
 
 	function categoryName(categoryId: string | null): string {
 		if (!categoryId) return 'Uncategorized';
+		if (categoryId === ADMIN_FEE_CATEGORY_ID) return ADMIN_FEE_LABEL;
 		return categoriesById[categoryId]?.name ?? 'Category';
 	}
 
 	function categoryIconSlug(tx: LedgerTransaction): string {
 		if (tx.categoryId == null) return STOCK_UNCATEGORIZED_ICON;
+		if (tx.categoryId === ADMIN_FEE_CATEGORY_ID) return STOCK_ADMIN_FEE_ICON;
 		return categoriesById[tx.categoryId]?.icon || STOCK_CUSTOM_ICON;
 	}
 
@@ -168,9 +173,11 @@
 		if (badge === 'Missed') return 'bg-destructive/15 text-destructive';
 		return 'bg-muted text-muted-foreground';
 	}
+
+	const colClass = 'flex min-h-0 min-w-0 flex-col gap-4 overflow-y-auto';
 </script>
 
-<div class="space-y-4" data-testid="pocket-details-panel">
+{#snippet identityCards()}
 	{#if notes}
 		<section
 			class="border-border/80 bg-card flex flex-col gap-1 rounded-xl border px-4 py-3 shadow-[var(--elev-card)]"
@@ -199,6 +206,28 @@
 		</p>
 	</section>
 
+	{#if pocket.openingEnabled}
+		<section
+			class="border-border/80 bg-card flex flex-col gap-2 rounded-xl border px-4 py-3 shadow-[var(--elev-card)]"
+			data-testid="pocket-details-opening"
+		>
+			<p class="text-muted-foreground inline-flex items-center gap-1.5 text-sm">
+				<BanknoteIcon class="size-3.5" aria-hidden="true" />
+				Opening balance
+			</p>
+			<div class="flex flex-col gap-0.5">
+				<p class="text-sm font-semibold tabular-nums">
+					{money(pocket.openingBalanceMinor)}
+				</p>
+				<p class="text-muted-foreground text-sm" data-testid="pocket-details-opening-asof">
+					As of {formatOccurredOnDisplay(pocket.openingAsOf)}
+				</p>
+			</div>
+		</section>
+	{/if}
+{/snippet}
+
+{#snippet plansCard()}
 	<Card.Root class="gap-0 py-0" data-testid="pocket-details-plans-card">
 		<Card.Header class="flex flex-row items-center justify-between gap-2 space-y-0 px-4 py-3">
 			<Card.Title class="inline-flex items-center gap-1.5 text-base">
@@ -241,27 +270,9 @@
 			{/if}
 		</Card.Content>
 	</Card.Root>
+{/snippet}
 
-	{#if pocket.openingEnabled}
-		<section
-			class="border-border/80 bg-card flex flex-col gap-2 rounded-xl border px-4 py-3 shadow-[var(--elev-card)]"
-			data-testid="pocket-details-opening"
-		>
-			<p class="text-muted-foreground inline-flex items-center gap-1.5 text-sm">
-				<BanknoteIcon class="size-3.5" aria-hidden="true" />
-				Opening balance
-			</p>
-			<div class="flex flex-col gap-0.5">
-				<p class="text-sm font-semibold tabular-nums">
-					{money(pocket.openingBalanceMinor)}
-				</p>
-				<p class="text-muted-foreground text-sm" data-testid="pocket-details-opening-asof">
-					As of {formatOccurredOnDisplay(pocket.openingAsOf)}
-				</p>
-			</div>
-		</section>
-	{/if}
-
+{#snippet goalsCard()}
 	<Card.Root class="gap-0 py-0" data-testid="pocket-details-goals-card">
 		<Card.Header class="flex flex-row items-center justify-between gap-2 space-y-0 px-4 py-3">
 			<Card.Title class="inline-flex items-center gap-1.5 text-base">
@@ -325,7 +336,9 @@
 			{/if}
 		</Card.Content>
 	</Card.Root>
+{/snippet}
 
+{#snippet activityCards()}
 	<MonthSummaryCard
 		summary={summary}
 		{currencyLabel}
@@ -393,7 +406,29 @@
 			{/if}
 		</Card.Content>
 	</Card.Root>
-</div>
+{/snippet}
+
+{#if xlWide.current}
+	<div class="grid min-h-0 flex-1 grid-cols-3 gap-4" data-testid="pocket-details-panel">
+		<div class={colClass} data-testid="pocket-details-col-identity">
+			{@render identityCards()}
+		</div>
+		<div class={colClass} data-testid="pocket-details-col-activity">
+			{@render activityCards()}
+		</div>
+		<div class={colClass} data-testid="pocket-details-col-lists">
+			{@render plansCard()}
+			{@render goalsCard()}
+		</div>
+	</div>
+{:else}
+	<div class="space-y-4" data-testid="pocket-details-panel">
+		{@render identityCards()}
+		{@render plansCard()}
+		{@render goalsCard()}
+		{@render activityCards()}
+	</div>
+{/if}
 
 <PocketGoalFormDialog
 	open={goalFormOpen}

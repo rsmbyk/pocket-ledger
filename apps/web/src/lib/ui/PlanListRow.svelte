@@ -8,7 +8,8 @@
 	} from '$lib/domain/plan';
 	import type { Account } from '$lib/domain/account';
 	import type { CategoryRow } from '$lib/data/db';
-	import { STOCK_CUSTOM_ICON, STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
+	import { STOCK_ADMIN_FEE_ICON, STOCK_CUSTOM_ICON, STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
+	import { ADMIN_FEE_CATEGORY_ID, ADMIN_FEE_LABEL } from '$lib/domain/activity-filters';
 
 	type Props = {
 		plan: LedgerPlan;
@@ -39,11 +40,13 @@
 
 	function categoryName(categoryId: string | null): string {
 		if (!categoryId) return 'Uncategorized';
+		if (categoryId === ADMIN_FEE_CATEGORY_ID) return ADMIN_FEE_LABEL;
 		return categoriesById[categoryId]?.name ?? 'Category';
 	}
 
 	function categoryIconSlug(): string {
 		if (tx.categoryId == null) return STOCK_UNCATEGORIZED_ICON;
+		if (tx.categoryId === ADMIN_FEE_CATEGORY_ID) return STOCK_ADMIN_FEE_ICON;
 		return categoriesById[tx.categoryId]?.icon || STOCK_CUSTOM_ICON;
 	}
 </script>

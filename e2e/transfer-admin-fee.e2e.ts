@@ -115,7 +115,9 @@ test.describe('106 transfer admin fee', () => {
 		await again.getByTestId('tx-close').click();
 	});
 
-	test('Categories panel has no Admin Fee row; Normal picker excludes it', async ({ page }) => {
+	test('Categories panel has no Admin Fee row; expense picker offers it before Uncategorized (237)', async ({
+		page
+	}) => {
 		await goToNav(page, 'categories');
 		await expect(page.getByTestId('categories-panel')).toBeVisible();
 		await expect(page.getByTestId('categories-panel').getByText('Admin Fee')).toHaveCount(0);
@@ -125,7 +127,20 @@ test.describe('106 transfer admin fee', () => {
 		const dialog = page.getByRole('dialog');
 		await dialog.getByTestId('tx-type-expense').click();
 		await dialog.getByTestId('tx-category').click();
-		await expect(page.getByRole('menuitem', { name: 'Admin Fee' })).toHaveCount(0);
+		const admin = page.getByTestId('category-option-admin-fee');
+		const uncat = page.getByTestId('category-option-uncategorized');
+		await expect(admin).toBeVisible();
+		await expect(uncat).toBeVisible();
+		const adminBox = await admin.boundingBox();
+		const uncatBox = await uncat.boundingBox();
+		expect(adminBox && uncatBox).toBeTruthy();
+		expect(adminBox!.y).toBeLessThan(uncatBox!.y);
 		await page.keyboard.press('Escape');
+
+		await dialog.getByTestId('tx-type-income').click();
+		await dialog.getByTestId('tx-category').click();
+		await expect(page.getByTestId('category-option-admin-fee')).toHaveCount(0);
+		await page.keyboard.press('Escape');
+		await dialog.getByTestId('tx-close').click();
 	});
 });
