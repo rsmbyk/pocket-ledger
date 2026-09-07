@@ -196,4 +196,48 @@ test.describe('148 pocket details', () => {
 		await expect(lists.getByTestId('pocket-details-plans-card')).toBeVisible();
 		await expect(lists.getByTestId('pocket-details-goals-card')).toBeVisible();
 	});
+
+	test('xl activity column scrolls and cards sit inset (239)', async ({ page }) => {
+		await page.setViewportSize({ width: 1400, height: 640 });
+		await createVacation(page);
+		await openVacationDetails(page);
+
+		for (let i = 0; i < 11; i++) {
+			await page.getByTestId('pocket-details-add').click();
+			const dialog = page.getByTestId('tx-dialog');
+			await expect(dialog).toBeVisible();
+			await dialog.getByTestId('tx-type-expense').click();
+			await dialog.getByLabel(/amount/i).fill(String(1000 + i));
+			await dialog.getByTestId('tx-save').click();
+			await expect(dialog).toBeHidden();
+		}
+
+		const activity = page.getByTestId('pocket-details-col-activity');
+		const identity = page.getByTestId('pocket-details-col-identity');
+		const lists = page.getByTestId('pocket-details-col-lists');
+		await expect(activity.getByTestId('pocket-details-recent-card')).toBeVisible();
+
+		const before = await activity.evaluate((el) => ({
+			scrollHeight: el.scrollHeight,
+			clientHeight: el.clientHeight,
+			scrollTop: el.scrollTop,
+			paddingTop: Number.parseFloat(getComputedStyle(el).paddingTop)
+		}));
+		expect(before.scrollHeight).toBeGreaterThan(before.clientHeight);
+		expect(before.paddingTop).toBeGreaterThan(0);
+		expect(before.scrollTop).toBe(0);
+
+		const colBox = await activity.boundingBox();
+		const cardBox = await activity.getByTestId('pocket-details-recent-card').boundingBox();
+		expect(colBox && cardBox).toBeTruthy();
+		expect(cardBox!.x).toBeGreaterThan(colBox!.x + 4);
+
+		await activity.evaluate((el) => {
+			el.scrollTop = 80;
+		});
+		expect(await activity.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+		expect(await identity.evaluate((el) => el.scrollTop)).toBe(0);
+		expect(await lists.evaluate((el) => el.scrollTop)).toBe(0);
+		await expect(page.getByTestId('page-title')).toBeVisible();
+	});
 });

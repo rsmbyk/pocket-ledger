@@ -255,3 +255,4 @@ Living behavior contracts for Pocket Ledger.
 | [236](236-home-recent-ten/spec.md)                      | Home Recent shows 10                                         | Accepted                                                                        |
 | [237](237-pick-admin-fee-category/spec.md)              | Pick Admin Fee on expense Category                           | Accepted                                                                        |
 | [238](238-home-two-columns/spec.md)                     | Home xl two columns                                          | Accepted                                                                        |
+| [239](239-xl-column-scroll-shadow/spec.md)              | Xl column scroll + card shadows                              | Accepted                                                                        |
