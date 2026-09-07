@@ -195,6 +195,28 @@ export async function confirmHexKit(page: Page): Promise<void> {
 	await page.getByTestId('hex-kit-confirm').click();
 }
 
+/** 234: xl filter is a content-sized card beside chrome+list, not a rail under a spanning band. */
+export async function expectXlFilterCardColumn(
+	page: Page,
+	opts: { chrome: string; drawer: string; panel: string }
+): Promise<void> {
+	const chrome = page.getByTestId(opts.chrome);
+	const drawer = page.getByTestId(opts.drawer);
+	const panel = page.getByTestId(opts.panel);
+	await expect(drawer).toBeVisible();
+	await expect(drawer).toHaveAttribute('data-slot', 'card');
+	const chromeBox = await chrome.boundingBox();
+	const drawerBox = await drawer.boundingBox();
+	const panelBox = await panel.boundingBox();
+	expect(chromeBox).toBeTruthy();
+	expect(drawerBox).toBeTruthy();
+	expect(panelBox).toBeTruthy();
+	if (!chromeBox || !drawerBox || !panelBox) return;
+	expect(Math.abs(drawerBox.y - chromeBox.y)).toBeLessThan(8);
+	expect(chromeBox.x + chromeBox.width).toBeLessThanOrEqual(drawerBox.x + 2);
+	expect(drawerBox.height).toBeLessThan(panelBox.height - 8);
+}
+
 /** Open the add-category dialog from the selected kind's first group plus. */
 export async function openAddCategory(page: Page, kind: 'expense' | 'income'): Promise<void> {
 	await selectCategoriesKind(page, kind);
