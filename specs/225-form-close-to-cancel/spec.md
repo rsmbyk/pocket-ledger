@@ -1,7 +1,7 @@
 # Spec 225: Form Close → Cancel
 
 - **ID:** 225
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

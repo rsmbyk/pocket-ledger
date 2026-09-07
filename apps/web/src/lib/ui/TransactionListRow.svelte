@@ -9,6 +9,7 @@
 	import { formatMinor } from '$lib/domain/money';
 	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
 	import { STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
+	import type { Snippet } from 'svelte';
 
 	type PocketInfo = { name: string; isMain: boolean };
 
@@ -33,6 +34,8 @@
 		showPocket?: boolean;
 		testid: string;
 		onOpen: () => void;
+		/** Optional lead-in above the tx chrome (Plans row header). */
+		header?: Snippet;
 	};
 
 	let {
@@ -46,7 +49,8 @@
 		pocketsById,
 		showPocket = false,
 		testid,
-		onOpen
+		onOpen,
+		header
 	}: Props = $props();
 
 	const UNKNOWN_POCKET: PocketInfo = { name: 'Unknown', isMain: false };
@@ -140,6 +144,11 @@
 	onclick={onOpen}
 >
 	<div class="min-w-0 flex-1">
+		{#if header}
+			<div class="mb-1 min-w-0">
+				{@render header()}
+			</div>
+		{/if}
 		{#if secondary === 'none'}
 			<p class="font-medium">
 				{#if isTransfer}

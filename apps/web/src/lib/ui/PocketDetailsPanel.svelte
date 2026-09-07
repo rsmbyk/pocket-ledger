@@ -1,6 +1,7 @@
 <script lang="ts">
 	import AlignLeftIcon from '@lucide/svelte/icons/align-left';
 	import BanknoteIcon from '@lucide/svelte/icons/banknote';
+	import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days';
 	import HistoryIcon from '@lucide/svelte/icons/history';
 	import InboxIcon from '@lucide/svelte/icons/inbox';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -12,6 +13,7 @@
 	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import MonthSummaryCard from '$lib/ui/MonthSummary.svelte';
 	import TransactionListRow from '$lib/ui/TransactionListRow.svelte';
+	import PlanListRow from '$lib/ui/PlanListRow.svelte';
 	import PocketGoalFormDialog from '$lib/ui/PocketGoalFormDialog.svelte';
 	import GoalProgressChrome from '$lib/ui/GoalProgressChrome.svelte';
 	import type { Account } from '$lib/domain/account';
@@ -39,6 +41,9 @@
 	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
 	import { todayOccurredOn } from '$lib/domain/transaction-rules';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
+	import type { LedgerPlan } from '$lib/domain/plan';
+	import { planTouchesPocket } from '$lib/domain/plan';
+	import { sortPlansForList } from '$lib/domain/plan-filters';
 	import { goalEndOfDayBalance } from '$lib/domain/pocket-balance';
 	import { createPocketGoal, dropPocketGoal, updatePocketGoal } from '$lib/application/goals';
 
@@ -50,10 +55,13 @@
 		categoriesById: Record<string, CategoryRow>;
 		pockets: Account[];
 		goals: PocketGoal[];
+		plans?: LedgerPlan[];
 		hideAmounts?: boolean;
 		onAdd: () => void;
+		onAddPlan?: () => void;
 		onSeeMore: () => void;
 		onOpenTx: (tx: LedgerTransaction) => void;
+		onOpenPlan?: (plan: LedgerPlan) => void;
 		onRefresh: () => void | Promise<void>;
 	};
 
@@ -65,10 +73,13 @@
 		categoriesById,
 		pockets,
 		goals,
+		plans = [],
 		hideAmounts = false,
 		onAdd,
+		onAddPlan,
 		onSeeMore,
 		onOpenTx,
+		onOpenPlan,
 		onRefresh
 	}: Props = $props();
 
@@ -105,6 +116,12 @@
 	);
 	const today = $derived(todayOccurredOn());
 	const pocketGoals = $derived(goals.filter((g) => g.accountId === pocket.id));
+	const pocketPlans = $derived(
+		sortPlansForList(
+			plans.filter((p) => planTouchesPocket(p, pocket.id)),
+			pockets
+		)
+	);
 	const activeGoals = $derived(sortActiveGoals(pocketGoals, today));
 	const pastGoals = $derived(sortPastGoals(pocketGoals, today));
 	const notes = $derived(pocket.notes.trim());
@@ -181,6 +198,49 @@
 			{money(balance)}
 		</p>
 	</section>
+
+	<Card.Root class="gap-0 py-0" data-testid="pocket-details-plans-card">
+		<Card.Header class="flex flex-row items-center justify-between gap-2 space-y-0 px-4 py-3">
+			<Card.Title class="inline-flex items-center gap-1.5 text-base">
+				<CalendarDaysIcon class="size-4" aria-hidden="true" />
+				Plans
+			</Card.Title>
+			<Button type="button" size="sm" onclick={() => onAddPlan?.()} data-testid="pocket-details-add-plan">
+				<PlusIcon class="size-4" />
+				Add Plan
+			</Button>
+		</Card.Header>
+		<Card.Content class="px-2 pb-2">
+			{#if pocketPlans.length === 0}
+				<EmptyState
+					testid="pocket-details-plans-empty"
+					title="No plans"
+					description="Reminders for this pocket will show up here."
+					class="px-2 pb-2"
+				>
+					{#snippet icon()}
+						<CalendarDaysIcon class="size-5" />
+					{/snippet}
+				</EmptyState>
+			{:else}
+				<ul class="divide-border divide-y" data-testid="pocket-details-plans-list">
+					{#each pocketPlans as plan (plan.id)}
+						<li>
+							<PlanListRow
+								{plan}
+								{currencyLabel}
+								{categoriesById}
+								{pockets}
+								hideAmount={hideAmounts}
+								testid={`pocket-plan-row-${plan.id}`}
+								onOpen={() => onOpenPlan?.(plan)}
+							/>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</Card.Content>
+	</Card.Root>
 
 	{#if pocket.openingEnabled}
 		<section

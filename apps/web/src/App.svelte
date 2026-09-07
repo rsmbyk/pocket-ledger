@@ -21,6 +21,8 @@
 	} from '$lib/application/transactions';
 	import { loadMonthSummary } from '$lib/application/month-summary';
 	import { listGoals, migratePocketGoals } from '$lib/application/goals';
+	import { listPlans } from '$lib/application/plans';
+	import type { LedgerPlan } from '$lib/domain/plan';
 	import {
 		backupFilename,
 		buildEncryptedBackup,
@@ -121,6 +123,7 @@
 	let account = $state<Account | null>(null);
 	let accounts = $state<Account[]>([]);
 	let goals = $state<PocketGoal[]>([]);
+	let plans = $state<LedgerPlan[]>([]);
 	let isSinglePot = $state(true);
 	let balanceMinor = $state(0);
 	let transactions = $state<LedgerTransaction[]>([]);
@@ -163,17 +166,20 @@
 	let canNextMonth = $derived(monthBounds ? canShiftMonth(monthKey, 1, monthBounds) : false);
 
 	async function refreshLedger(active: Account, key: MonthKey = monthKey) {
-		const [overview, balance, recent, allCategories, monthLoad, groups, allGoals] = await Promise.all([
+		const [overview, balance, recent, allCategories, monthLoad, groups, allGoals, allPlans] =
+			await Promise.all([
 			getAccountsOverview(),
 			getAllPocketsBalance(),
 			listRecentTransactions(active.id),
 			listAllCategories(),
 			loadMonthSummary(active.id, key),
 			listResolvedGroups(),
-			listGoals()
+			listGoals(),
+			listPlans()
 		]);
 		accounts = overview.accounts;
 		goals = allGoals;
+		plans = allPlans;
 		isSinglePot = overview.isSinglePot;
 		balanceMinor = balance;
 		transactions = recent;
@@ -653,6 +659,7 @@
 		{account}
 		{accounts}
 		{goals}
+		{plans}
 		{isSinglePot}
 		{balanceMinor}
 		{transactions}

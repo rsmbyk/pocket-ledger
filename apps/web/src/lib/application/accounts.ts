@@ -206,6 +206,7 @@ export async function updatePocket(input: UpdatePocketInput): Promise<Account> {
 export const POCKET_DELETE_HAS_TRANSACTIONS =
 	'This pocket still has transactions, including voided. Voiding is not enough.';
 export const POCKET_DELETE_HAS_ACTIVE_GOALS = 'Drop all active goals first.';
+export const POCKET_DELETE_HAS_ACTIVE_PLANS = 'Drop all active plans first.';
 
 export async function pocketDeleteBlockers(id: string): Promise<string[]> {
 	const reasons: string[] = [];
@@ -216,6 +217,10 @@ export async function pocketDeleteBlockers(id: string): Promise<string[]> {
 	const today = todayOccurredOn();
 	const goals = await listGoalsForAccount(id);
 	if (goals.some((g) => isActive(g, today))) reasons.push(POCKET_DELETE_HAS_ACTIVE_GOALS);
+	const plans = await db.plans.toArray();
+	if (plans.some((p) => p.accountId === id || p.counterAccountId === id)) {
+		reasons.push(POCKET_DELETE_HAS_ACTIVE_PLANS);
+	}
 	return reasons;
 }
 

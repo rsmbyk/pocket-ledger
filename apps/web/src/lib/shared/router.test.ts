@@ -22,6 +22,7 @@ describe('path router', () => {
 		expect(parsePath('/transactions')).toBe('transactions');
 		expect(parsePath('/activity')).toBe('transactions');
 		expect(parsePath('/pockets')).toBe('pockets');
+		expect(parsePath('/plans')).toBe('plans');
 		expect(parsePath('/categories')).toBe('categories');
 		expect(parsePath('/settings')).toBe('settings');
 		expect(parsePath('/more')).toBe('settings');
@@ -36,6 +37,8 @@ describe('path router', () => {
 		expect(parsePath('/activity/extra')).toBe('transactions');
 		expect(nearestValidPath('/pockets/vac-1/extra')).toBe('/pockets/vac-1');
 		expect(parsePath('/pockets/vac-1/extra')).toBe('pockets');
+		expect(nearestValidPath('/plans/extra')).toBe('/plans');
+		expect(parsePath('/plans/extra')).toBe('plans');
 		expect(parsePocketId('/pockets/vac-1/extra')).toBe('vac-1');
 		expect(nearestValidPath('/onboarding/kit/x')).toBe('/onboarding/kit');
 		expect(isGatePath('/onboarding/kit/x')).toBe(true);
@@ -58,6 +61,7 @@ describe('path router', () => {
 		expect(routeToPath('home')).toBe('/');
 		expect(routeToPath('transactions')).toBe('/transactions');
 		expect(routeToPath('pockets')).toBe('/pockets');
+		expect(routeToPath('plans')).toBe('/plans');
 		expect(routeToPath('categories')).toBe('/categories');
 		expect(routeToPath('settings')).toBe('/settings');
 	});

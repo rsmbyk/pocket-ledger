@@ -773,6 +773,7 @@
 								<p>{importSummary.categories} categories</p>
 								<p>{importSummary.categoryGroups} category groups</p>
 								<p>{importSummary.goals} goals</p>
+								<p>{importSummary.plans} plans</p>
 								{#if importSummary.exportedAt}
 									<p>Exported {importSummary.exportedAt}</p>
 								{/if}
@@ -840,7 +841,8 @@
 		</Dialog.Header>
 		<div class="space-y-4 px-6 py-4">
 			<Dialog.Description>
-				This permanently deletes transactions, pockets, goals, and categories. Cannot be undone.
+				This permanently deletes transactions, pockets, goals, plans, and categories. Cannot be
+				undone.
 				Export a backup first if you might need the data.
 			</Dialog.Description>
 			<div class="flex flex-col gap-1">

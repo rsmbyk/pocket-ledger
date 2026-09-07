@@ -41,4 +41,15 @@ test.describe('117 path router', () => {
 			page.getByTestId('activity-list').or(page.getByTestId('activity-empty'))
 		).toBeVisible();
 	});
+
+	test('nav Plans updates the URL; extra segment walks to /plans (223)', async ({ page }) => {
+		await page.goto('/');
+		await expect(page.getByTestId('home-panel')).toBeVisible();
+		await goToNav(page, 'plans');
+		await expect(page).toHaveURL(/\/plans\/?$/);
+		await expect(page.getByTestId('plans-panel')).toBeVisible();
+		await page.goto('/plans/nope');
+		await expect(page).toHaveURL(/\/plans\/?$/);
+		await expect(page.getByTestId('plans-panel')).toBeVisible();
+	});
 });

@@ -191,4 +191,30 @@ describe('backup', () => {
 		const file = await buildEncryptedBackup('secret-pass');
 		expect(file.deviceLock).toBe(true);
 	});
+
+	it('round-trips plans and treats a missing plans key as empty', async () => {
+		const account = await ensureDefaultAccount();
+		const { createPlan, listPlans } = await import('./plans');
+		await createPlan({
+			accountId: account.id,
+			type: 'expense',
+			amountRaw: '25000',
+			description: 'Rent',
+			dueOn: '2026-09-10'
+		});
+		const backup = await buildBackup();
+		expect(backup.plans).toHaveLength(1);
+		expect(backup.plans[0]?.description).toBeTruthy();
+
+		await db.plans.clear();
+		expect(await db.plans.count()).toBe(0);
+		await restoreBackup(backup);
+		expect((await listPlans())[0]?.description).toBe('Rent');
+
+		const { plans: _omit, ...withoutPlans } = backup;
+		const parsed = parseBackupJson(JSON.stringify(withoutPlans));
+		expect(parsed.plans).toEqual([]);
+		await restoreBackup(parsed);
+		expect(await db.plans.count()).toBe(0);
+	});
 });

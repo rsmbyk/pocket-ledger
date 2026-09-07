@@ -58,6 +58,9 @@ export async function pullAndApply(): Promise<void> {
 		} else if (entity.kind === 'goal') {
 			if (entity.deleted) await db.goals.delete(entity.id);
 			else if (entity.blob) await db.goals.put(JSON.parse(entity.blob));
+		} else if (entity.kind === 'plan') {
+			if (entity.deleted) await db.plans.delete(entity.id);
+			else if (entity.blob) await db.plans.put(JSON.parse(entity.blob));
 		} else if (entity.kind === 'setting') {
 			if (entity.deleted) await db.settings.delete(entity.id);
 			else if (entity.blob) {

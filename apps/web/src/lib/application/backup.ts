@@ -4,6 +4,7 @@ import type { CategoryGroupRow, CategoryRow } from '$lib/data/db';
 import type { LedgerTransaction } from '$lib/domain/transaction';
 import { withVoidedAt } from '$lib/domain/transaction';
 import { migrateAccountGoalsToRows, normalizeStoredGoal, type Goal } from '$lib/domain/goals';
+import type { LedgerPlan } from '$lib/domain/plan';
 import type { NetWorthSnapshot } from '$lib/domain/net-worth';
 import {
 	SETTINGS_ENCRYPTION_ENABLED,
@@ -36,6 +37,7 @@ export type BackupInspectSummary = {
 	categories: number;
 	categoryGroups: number;
 	goals: number;
+	plans: number;
 };
 
 export type BackupInspectResult =
@@ -75,12 +77,14 @@ export function inspectEncryptedBackup(raw: string): BackupInspectResult {
 	const categories = asArrayLength(backup.categories);
 	const categoryGroups = asArrayLength(backup.categoryGroups);
 	const goals = asArrayLength(backup.goals);
+	const plans = asArrayLength(backup.plans);
 	if (
 		pockets == null ||
 		transactions == null ||
 		categories == null ||
 		categoryGroups == null ||
-		goals == null
+		goals == null ||
+		plans == null
 	) {
 		return { ok: false, reason: 'invalid' };
 	}
@@ -92,7 +96,8 @@ export function inspectEncryptedBackup(raw: string): BackupInspectResult {
 			transactions,
 			categories,
 			categoryGroups,
-			goals
+			goals,
+			plans
 		}
 	};
 }
@@ -105,6 +110,7 @@ export type LedgerBackup = {
 	categoryGroups: CategoryGroupRow[];
 	transactions: LedgerTransaction[];
 	goals: Goal[];
+	plans: LedgerPlan[];
 	netWorthSnapshots: NetWorthSnapshot[];
 	settings: { key: string; value: string }[];
 };
@@ -119,6 +125,7 @@ export type EncryptedBackup = WrapEnvelope & {
 	categoryGroups: CategoryGroupRow[];
 	transactions: LedgerTransaction[];
 	goals: Goal[];
+	plans: LedgerPlan[];
 	netWorthSnapshots: NetWorthSnapshot[];
 	settings: { key: string; value: string }[];
 };
@@ -134,13 +141,14 @@ const SECRET_SETTING_KEYS = new Set([
 async function collectSealedSnapshot(): Promise<
 	Omit<LedgerBackup, 'formatVersion' | 'exportedAt'>
 > {
-	const [accounts, categories, categoryGroups, transactions, goals, netWorthSnapshots, settings] =
+	const [accounts, categories, categoryGroups, transactions, goals, plans, netWorthSnapshots, settings] =
 		await Promise.all([
 			db.accounts.toArray(),
 			db.categories.toArray(),
 			db.categoryGroups.toArray(),
 			db.transactions.toArray(),
 			db.goals.toArray(),
+			db.plans.toArray(),
 			db.netWorthSnapshots.toArray(),
 			db.settings.toArray()
 		]);
@@ -157,6 +165,7 @@ async function collectSealedSnapshot(): Promise<
 		categoryGroups,
 		transactions: transactions.map((t) => withVoidedAt(t)),
 		goals,
+		plans,
 		netWorthSnapshots,
 		settings: settings.filter((s) => !SECRET_SETTING_KEYS.has(s.key))
 	};
@@ -287,6 +296,7 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 			db.categoryGroups,
 			db.transactions,
 			db.goals,
+			db.plans,
 			db.netWorthSnapshots,
 			db.settings
 		],
@@ -297,6 +307,7 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 				db.categoryGroups.clear(),
 				db.transactions.clear(),
 				db.goals.clear(),
+				db.plans.clear(),
 				db.netWorthSnapshots.clear(),
 				db.settings.clear()
 			]);
@@ -323,6 +334,7 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 				)
 			);
 			if (liveGoals.length > 0) await db.goals.bulkPut(liveGoals);
+			if (normalized.plans.length > 0) await db.plans.bulkPut(normalized.plans);
 			await db.netWorthSnapshots.bulkPut(normalized.netWorthSnapshots);
 			await db.settings.bulkPut(normalized.settings.filter((s) => !SECRET_SETTING_KEYS.has(s.key)));
 		}
@@ -361,6 +373,7 @@ function snapshotFromUnknown(parsed: object): LedgerBackup {
 		categoryGroups?: CategoryGroupRow[];
 		transactions?: LedgerTransaction[];
 		goals?: Goal[];
+		plans?: LedgerPlan[];
 		netWorthSnapshots?: NetWorthSnapshot[];
 		settings?: { key: string; value: string }[];
 		recurringRules?: unknown;
@@ -396,6 +409,27 @@ function snapshotFromUnknown(parsed: object): LedgerBackup {
 				cancelledAt: typeof raw.cancelledAt === 'string' ? raw.cancelledAt : null,
 				deletedAt: typeof raw.deletedAt === 'string' ? raw.deletedAt : null,
 				createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : new Date().toISOString()
+			};
+		}),
+		plans: (backup.plans ?? []).map((p) => {
+			const raw = p as LedgerPlan;
+			const frequency =
+				raw.frequency === 'weekly' || raw.frequency === 'monthly' ? raw.frequency : 'once';
+			return {
+				id: String(raw.id),
+				description: typeof raw.description === 'string' ? raw.description : '',
+				type: raw.type === 'income' || raw.type === 'transfer' ? raw.type : 'expense',
+				amountMinor: typeof raw.amountMinor === 'number' ? raw.amountMinor : 0,
+				feeMinor: typeof raw.feeMinor === 'number' ? raw.feeMinor : 0,
+				categoryId: typeof raw.categoryId === 'string' ? raw.categoryId : null,
+				accountId: typeof raw.accountId === 'string' ? raw.accountId : '',
+				counterAccountId: typeof raw.counterAccountId === 'string' ? raw.counterAccountId : null,
+				note: typeof raw.note === 'string' ? raw.note : '',
+				dueOn: typeof raw.dueOn === 'string' ? raw.dueOn : '',
+				createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : new Date().toISOString(),
+				frequency,
+				monthDay:
+					frequency === 'monthly' && typeof raw.monthDay === 'number' ? raw.monthDay : null
 			};
 		}),
 		netWorthSnapshots: backup.netWorthSnapshots ?? [],

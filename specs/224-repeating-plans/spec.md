@@ -1,7 +1,7 @@
 # Spec 224: Repeating Plans
 
 - **ID:** 224
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

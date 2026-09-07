@@ -2,10 +2,13 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import QuickAddSheet from '$lib/ui/QuickAddSheet.svelte';
+	import PlanSheet from '$lib/ui/PlanSheet.svelte';
+	import type { PlanSheetMode } from '$lib/ui/PlanSheet.svelte';
 	import AppShellChrome from '$lib/ui/AppShellChrome.svelte';
 	import AppCommandPalette from '$lib/ui/AppCommandPalette.svelte';
 	import type { Account } from '$lib/domain/account';
 	import type { PocketGoal } from '$lib/domain/goals';
+	import type { LedgerPlan } from '$lib/domain/plan';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
 	import type { OverlayGroup } from '$lib/domain/category-overlay';
@@ -22,6 +25,7 @@
 		account: Account | null;
 		accounts: Account[];
 		goals?: PocketGoal[];
+		plans?: LedgerPlan[];
 		isSinglePot: boolean;
 		balanceMinor: number;
 		transactions: LedgerTransaction[];
@@ -89,6 +93,7 @@
 		account,
 		accounts,
 		goals = [],
+		plans = [],
 		isSinglePot: _isSinglePot,
 		balanceMinor,
 		transactions,
@@ -147,6 +152,11 @@
 	let txSheetOpen = $state(false);
 	let commandOpen = $state(false);
 	let editing = $state<LedgerTransaction | null>(null);
+	let planSheetOpen = $state(false);
+	let planSheetMode = $state<PlanSheetMode>('create');
+	let editingPlan = $state<LedgerPlan | null>(null);
+	let planImpliedAccountId = $state('');
+	let clearPlanTimer: number | ReturnType<typeof setTimeout> | null = null;
 	let route = $derived(parsePath(page.url.pathname));
 	let pocketId = $derived(parsePocketId(page.url.pathname));
 	const detailsPocket = $derived(accounts.find((a) => a.id === pocketId) ?? null);
@@ -166,8 +176,9 @@
 
 	const navItems: { id: AppRoute; label: string }[] = [
 		{ id: 'home', label: 'Home' },
-		{ id: 'transactions', label: 'Transactions' },
 		{ id: 'pockets', label: 'Pockets' },
+		{ id: 'transactions', label: 'Transactions' },
+		{ id: 'plans', label: 'Plans' },
 		{ id: 'categories', label: 'Categories' },
 		{ id: 'settings', label: 'Settings' }
 	];
@@ -216,7 +227,31 @@
 		if (path !== desired) void goto(desired, { replaceState: true });
 	});
 
-	const lockViewport = $derived(route === 'categories' || route === 'transactions');
+	function openAddPlan(accountId?: string) {
+		if (clearPlanTimer != null) {
+			clearTimeout(clearPlanTimer);
+			clearPlanTimer = null;
+		}
+		editingPlan = null;
+		planSheetMode = 'create';
+		planImpliedAccountId = accountId ?? '';
+		planSheetOpen = true;
+	}
+
+	function openPlan(plan: LedgerPlan, nextMode: PlanSheetMode) {
+		if (clearPlanTimer != null) {
+			clearTimeout(clearPlanTimer);
+			clearPlanTimer = null;
+		}
+		editingPlan = plan;
+		planSheetMode = nextMode;
+		planImpliedAccountId = '';
+		planSheetOpen = true;
+	}
+
+	const lockViewport = $derived(
+		route === 'categories' || route === 'transactions' || route === 'plans'
+	);
 </script>
 
 <div
@@ -243,6 +278,7 @@
 				{account}
 				{accounts}
 				{goals}
+				{plans}
 				{balanceMinor}
 				{transactions}
 				{categoriesById}
@@ -297,6 +333,8 @@
 				onNavigate={navigate}
 				onOpenAdd={openAdd}
 				onOpenEdit={openEdit}
+				onOpenAddPlan={openAddPlan}
+				onOpenPlan={openPlan}
 				onActivityPocketFilterChange={(pocketIds) => (activityPocketFilterIds = pocketIds)}
 			/>
 		</Sidebar.Provider>
@@ -326,6 +364,31 @@
 		onSaved={onRefreshLedger}
 		{onPushTransaction}
 		{onSyncConflict}
+	/>
+{/if}
+
+{#if account}
+	<PlanSheet
+		open={planSheetOpen}
+		mode={planSheetMode}
+		currencyLabel={displayCurrency}
+		{accounts}
+		impliedAccountId={planImpliedAccountId || preferredAccountId || account.id}
+		editing={editingPlan}
+		onOpenChange={(next) => {
+			planSheetOpen = next;
+			if (!next) {
+				if (clearPlanTimer != null) clearTimeout(clearPlanTimer);
+				clearPlanTimer = window.setTimeout(() => {
+					editingPlan = null;
+					clearPlanTimer = null;
+				}, 320);
+			} else if (clearPlanTimer != null) {
+				clearTimeout(clearPlanTimer);
+				clearPlanTimer = null;
+			}
+		}}
+		onSaved={onRefreshLedger}
 	/>
 {/if}
 

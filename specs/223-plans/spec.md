@@ -1,7 +1,7 @@
 # Spec 223: Plans (one-shot)
 
 - **ID:** 223
-- **Status:** Draft
+- **Status:** Accepted
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

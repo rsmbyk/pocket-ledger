@@ -204,6 +204,7 @@ test.describe('070–077 pockets pack', () => {
 		await expect(sheet.getByTestId('tx-mode-transfer')).toHaveCount(0);
 		await expect(sheet.getByTestId('tx-type-income')).toBeVisible();
 		await expect(sheet.getByTestId('tx-type-expense')).toBeVisible();
+		await expect(sheet.getByTestId('tx-close')).toHaveText('Cancel');
 		const closeBox = await sheet.getByTestId('tx-close').boundingBox();
 		const saveBox = await sheet.getByTestId('tx-save').boundingBox();
 		expect(closeBox && saveBox).toBeTruthy();
