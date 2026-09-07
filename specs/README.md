@@ -243,3 +243,10 @@ Living behavior contracts for Pocket Ledger.
 | [224](224-repeating-plans/spec.md)                      | Repeating Plans (Weekly / Monthly)                           | Accepted                                                                        |
 | [225](225-form-close-to-cancel/spec.md)                 | Form Close → Cancel                                          | Accepted                                                                        |
 | [226](226-sidebar-icon-rail/spec.md)                    | Sidebar icon rail on large screens                           | Accepted                                                                        |
+| [227](227-sidebar-rail-sm/spec.md)                      | Sidebar rail at sm (640px)                                   | Accepted                                                                        |
+| [228](228-collapsed-rail-icons/spec.md)                 | Collapsed rail icon-only + centered                          | Accepted                                                                        |
+| [229](229-plan-repeat-chip-below/spec.md)               | Plan Repeat chip below description                           | Accepted                                                                        |
+| [230](230-save-for-next-dirty/spec.md)                  | Save for next disabled until dirty                           | Accepted                                                                        |
+| [231](231-accept-readonly-chrome/spec.md)               | Accept Description/Repeat chrome                             | Accepted                                                                        |
+| [232](232-dialog-sticky-chrome/spec.md)                 | Dialog max-height + sticky header/footer                     | Accepted                                                                        |
+| [233](233-plan-due-not-past/spec.md)                    | Plan Due cannot pick a past date                             | Accepted                                                                        |

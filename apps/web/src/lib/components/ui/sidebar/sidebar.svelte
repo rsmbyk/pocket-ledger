@@ -60,7 +60,7 @@
 {:else}
 	<div
 		bind:this={ref}
-		class="text-sidebar-foreground group peer hidden md:block"
+		class="text-sidebar-foreground group peer hidden sm:block"
 		data-state={sidebar.state}
 		data-collapsible={sidebar.state === 'collapsed' ? collapsible : ''}
 		data-variant={variant}
@@ -83,7 +83,7 @@
 			data-slot="sidebar-container"
 			data-testid="app-drawer-rail"
 			class={cn(
-				'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-300 ease-in-out md:flex',
+				'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-300 ease-in-out sm:flex',
 				side === 'left'
 					? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
 					: 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',

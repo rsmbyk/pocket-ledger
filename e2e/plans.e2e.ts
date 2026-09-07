@@ -128,6 +128,7 @@ test.describe('223 / 224 Plans', () => {
 		await expect(accept.getByTestId('plan-skip')).toBeVisible();
 		await expect(accept.getByTestId('plan-drop')).toHaveCount(0);
 		await expect(accept.getByTestId('plan-save-for-next')).toHaveCount(0);
+		await expect(accept.getByTestId('plan-repeat')).toHaveCount(0);
 		await accept.getByTestId('plan-save').click();
 		await expect(accept).toBeHidden({ timeout: 10_000 });
 		await expect(page.getByTestId('home-plans-card')).toHaveCount(0);
@@ -206,6 +207,18 @@ test.describe('223 / 224 Plans', () => {
 		const row = planRow(page, 'plans', 'Weekly chore');
 		await expect(row.locator('[data-testid$="-repeat"]')).toHaveText(/Weekly/);
 		await expect(row.locator('[data-testid$="-repeat"]')).not.toContainText('on Monday');
+		const descBox = await row.locator('[data-testid$="-description"]').boundingBox();
+		const chipBox = await row.locator('[data-testid$="-repeat"]').boundingBox();
+		expect(descBox && chipBox).toBeTruthy();
+		expect((chipBox?.y ?? 0) + 1).toBeGreaterThanOrEqual((descBox?.y ?? 0) + (descBox?.height ?? 0) - 2);
+		const infoBox = await row.locator('[data-testid$="-tx-info"]').boundingBox();
+		const moneyBox = await row.locator('[data-testid$="-money"]').boundingBox();
+		expect(infoBox && moneyBox).toBeTruthy();
+		if (infoBox && moneyBox) {
+			const infoMid = infoBox.y + infoBox.height / 2;
+			const moneyMid = moneyBox.y + moneyBox.height / 2;
+			expect(Math.abs(infoMid - moneyMid)).toBeLessThan(8);
+		}
 
 		await row.click();
 		const edit = planForm(page);
@@ -229,7 +242,11 @@ test.describe('223 / 224 Plans', () => {
 		}
 		const accept = planForm(page);
 		await expect(accept.getByTestId('plan-save-for-next')).toBeVisible();
+		await expect(accept.getByTestId('plan-save-for-next')).toBeDisabled();
+		await expect(accept.getByTestId('plan-repeat')).toHaveClass(/font-medium/);
+		await expect(accept.getByTestId('plan-save')).toBeEnabled();
 		await accept.getByTestId('plan-amount').fill('1100000');
+		await expect(accept.getByTestId('plan-save-for-next')).toBeEnabled();
 		await accept.getByTestId('plan-save').click();
 		await expect(accept).toBeHidden({ timeout: 10_000 });
 
@@ -252,5 +269,38 @@ test.describe('223 / 224 Plans', () => {
 		await expect(sheet.getByTestId('activity-filter-category')).toHaveCount(0);
 		await expect(sheet.getByTestId('activity-filter-show-voided')).toHaveCount(0);
 		await expect(page.getByTestId('activity-range-trigger')).toHaveCount(0);
+	});
+
+	test('232 dialog is shorter than the viewport with sticky save; 233 Due min is today', async ({
+		page
+	}) => {
+		await goToNav(page, 'plans');
+		await page.getByTestId('plans-add').click();
+		const form = planForm(page);
+		await expect(form).toBeVisible();
+		const today = ymdOffset(0);
+		await expect(form.getByTestId('plan-due').locator('input[type="date"]')).toHaveAttribute(
+			'min',
+			today
+		);
+
+		const dialog = page.getByTestId('plan-dialog');
+		const box = await dialog.boundingBox();
+		const vp = page.viewportSize();
+		expect(box && vp).toBeTruthy();
+		if (box && vp) {
+			expect(box.height).toBeLessThan(vp.height - 16);
+			expect(box.y).toBeGreaterThanOrEqual(8);
+		}
+		const heading = dialog.getByRole('heading', { name: 'Add plan' });
+		await expect(heading).toBeVisible();
+		await expect(dialog.getByTestId('plan-save')).toBeVisible();
+		const headerY = (await heading.boundingBox())?.y;
+		await dialog.locator('.overflow-y-auto').evaluate((el) => {
+			el.scrollTop = 80;
+		});
+		expect((await heading.boundingBox())?.y).toBe(headerY);
+		await expect(dialog.getByTestId('plan-save')).toBeVisible();
+		await dialog.getByTestId('plan-close').click();
 	});
 });

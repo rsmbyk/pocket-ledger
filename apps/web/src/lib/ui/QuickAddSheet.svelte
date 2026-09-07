@@ -706,12 +706,13 @@
 
 {#snippet txForm()}
 	<form
-		class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4"
+		class="flex min-h-0 flex-1 flex-col"
 		onsubmit={(e) => {
 			e.preventDefault();
 			void save();
 		}}
 	>
+		<div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
 		<Tabs.Root
 			value={typeTab}
 			onValueChange={onTypeTabChange}
@@ -1014,8 +1015,14 @@
 				{fieldAlert('form')}
 			</p>
 		{/if}
+		</div>
 
-		<div class={cn('gap-2 pt-2', isVoidedView ? 'flex flex-col' : 'grid grid-cols-2')}>
+		<div
+			class={cn(
+				'border-border shrink-0 gap-2 border-t px-4 py-3',
+				isVoidedView ? 'flex flex-col' : 'grid grid-cols-2'
+			)}
+		>
 			<Button
 				type="button"
 				variant="outline"
@@ -1038,7 +1045,7 @@
 {#if desktop.current}
 	<Dialog.Root {open} onOpenChange={handleOpenChange}>
 		<Dialog.Content
-			class="flex max-h-[100svh] flex-col gap-0 overflow-hidden p-0"
+			class="flex max-h-[calc(100svh-2rem)] flex-col gap-0 overflow-hidden p-0"
 			data-testid="tx-dialog"
 			showCloseButton={false}
 			interactOutsideBehavior="close"
@@ -1056,7 +1063,7 @@
 	<Sheet.Root {open} onOpenChange={handleOpenChange}>
 		<Sheet.Content
 			side="bottom"
-			class="mx-auto flex max-h-[100svh] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+			class="mx-auto flex max-h-[calc(100svh-2rem)] w-full max-w-lg flex-col gap-0 overflow-hidden rounded-t-2xl p-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
 			data-testid="tx-sheet"
 			showCloseButton={false}
 			interactOutsideBehavior="close"

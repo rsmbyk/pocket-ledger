@@ -63,7 +63,7 @@
 >
 	{#snippet header()}
 		{#if title || chip}
-			<div class="flex min-w-0 items-center gap-2" data-testid={`${testid}-header`}>
+			<div class="flex min-w-0 flex-col items-start gap-1" data-testid={`${testid}-header`}>
 				{#if title}
 					<p class="truncate text-sm font-semibold" data-testid={`${testid}-description`}>
 						{title}
