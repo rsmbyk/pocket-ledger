@@ -20,6 +20,16 @@ function ymdOffset(days: number): string {
 	return `${y}-${m}-${day}`;
 }
 
+function ymdOnOrAfterWeekday(weekday: number): string {
+	const d = new Date();
+	const delta = (weekday - d.getDay() + 7) % 7;
+	d.setDate(d.getDate() + delta);
+	const y = d.getFullYear();
+	const m = String(d.getMonth() + 1).padStart(2, '0');
+	const day = String(d.getDate()).padStart(2, '0');
+	return `${y}-${m}-${day}`;
+}
+
 async function addPlan(
 	page: Page,
 	opts: {
@@ -200,7 +210,7 @@ test.describe('223 / 224 Plans', () => {
 			from: 'plans',
 			description: 'Weekly chore',
 			amount: '1000000',
-			dueOn: '2026-09-07',
+			dueOn: ymdOnOrAfterWeekday(1),
 			repeat: 'weekly'
 		});
 		await goToNav(page, 'plans');
@@ -223,7 +233,7 @@ test.describe('223 / 224 Plans', () => {
 		await row.click();
 		const edit = planForm(page);
 		await expect(edit.getByTestId('plan-repeat')).toContainText('Weekly (on Monday)');
-		await edit.getByTestId('plan-due').locator('input[type="date"]').fill('2026-09-10');
+		await edit.getByTestId('plan-due').locator('input[type="date"]').fill(ymdOnOrAfterWeekday(4));
 		await expect(edit.getByTestId('plan-repeat')).toContainText('Weekly (on Thursday)');
 		await edit.getByTestId('plan-close').click();
 		const discard = page.getByTestId('plan-discard-confirm');

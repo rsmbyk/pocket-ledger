@@ -39,6 +39,11 @@ import {
 	type OverlayPrefs
 } from '$lib/domain/category-overlay';
 import { openField, sealField } from '$lib/application/field-crypto';
+import {
+	pushCategoryById,
+	pushCategoryGroupById,
+	pushSettingByKey
+} from '$lib/application/sync-client';
 
 function createId(): string {
 	return crypto.randomUUID();
@@ -99,9 +104,11 @@ async function savePrefs(prefs: OverlayPrefs): Promise<void> {
 		!prefs.groupOrderByKind.expense;
 	if (empty) {
 		await db.settings.delete(SETTINGS_CATEGORY_OVERLAY);
+		await pushSettingByKey(SETTINGS_CATEGORY_OVERLAY, true);
 		return;
 	}
 	await setSetting(SETTINGS_CATEGORY_OVERLAY, JSON.stringify(prefs));
+	await pushSettingByKey(SETTINGS_CATEGORY_OVERLAY);
 }
 
 let migrateGate: Promise<void> | null = null;
@@ -227,6 +234,7 @@ export async function createCategory(
 		source: 'custom'
 	};
 	await putCategory(category);
+	await pushCategoryById(category.id);
 	return { ...category, name };
 }
 
@@ -244,6 +252,7 @@ export async function createCategoryGroup(
 		createdAt: new Date().toISOString()
 	};
 	await putCategoryGroup(group);
+	await pushCategoryGroupById(group.id);
 	return { ...group, name };
 }
 
@@ -260,6 +269,7 @@ export async function renameCategoryGroup(
 	const raw = await db.categoryGroups.get(id);
 	if (!raw) throw new Error('Group not found');
 	await putCategoryGroup({ ...raw, name: await sealField(name) });
+	await pushCategoryGroupById(id);
 	return { ...raw, name };
 }
 
@@ -274,6 +284,7 @@ export async function renameCategory(id: string, nameRaw: string): Promise<Categ
 	const raw = await db.categories.get(id);
 	if (!raw) throw new Error('Category not found');
 	await putCategory({ ...raw, name: await sealField(name), icon: STOCK_CUSTOM_ICON });
+	await pushCategoryById(id);
 	return {
 		...toCategoryRow({
 			id: current.id,
@@ -298,6 +309,7 @@ export async function hideCategory(id: string): Promise<void> {
 	const raw = await db.categories.get(id);
 	if (!raw) throw new Error('Category not found');
 	await putCategory({ ...raw, hidden: true, deletedAt: null });
+	await pushCategoryById(id);
 }
 
 export async function showCategory(id: string): Promise<void> {
@@ -308,6 +320,7 @@ export async function showCategory(id: string): Promise<void> {
 	const raw = await db.categories.get(id);
 	if (!raw) throw new Error('Category not found');
 	await putCategory({ ...raw, hidden: false, deletedAt: null });
+	await pushCategoryById(id);
 }
 
 /** Hide (never hard-delete). Replaces Spec 103 remove. */

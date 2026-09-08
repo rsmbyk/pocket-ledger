@@ -102,9 +102,9 @@ SvelteKit **path** URLs (Spec 117 / 134 / 148 / 154 / 204 / 223): `/`, `/transac
 
 Panel chrome still lives in `AppShell`; `src/lib/shared/router.ts` maps pathnames to panel ids. Navigation uses SvelteKit `goto`.
 
-## Sync (signed-in, Spec 121)
+## Sync (signed-in, Spec 121 / 241)
 
-Unit = one encrypted entity + plain `id`, `kind`, server monotonic `rev`, `deleted`. Save sends the `rev` this device read. Newer server `rev` → **409** → close editor, discard typing, refresh. Deletes are gravestones. Wraps are one account coat-check (`wrapRev`). Pull on unlock, after save, and every 30s while visible and unlocked. No offline mutation queue. Production persists in Cloud SQL when `DATABASE_URL` is set (Spec 178); local/CI stay in-memory.
+Unit = one encrypted entity + plain `id`, `kind` (`transaction`, `account`, `category`, `categoryGroup`, `goal`, `plan`, allowlisted `setting`), server monotonic `rev`, `deleted`. Save sends the `rev` this device read. Newer server `rev` → **409** → close editor, discard typing, refresh. Deletes are gravestones. Wraps are one account coat-check (`wrapRev`). Pull on unlock then catch-up PUT of local rows with no rev; also pull after save, and every 30s while visible and unlocked. No offline mutation queue. Production persists in Cloud SQL when `DATABASE_URL` is set (Spec 178); local/CI stay in-memory.
 
 ## Testing map
 

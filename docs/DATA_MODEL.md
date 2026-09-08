@@ -18,11 +18,11 @@ Dexie database `pocket-ledger`. UI calls accounts **Pockets**; the object store 
 | goalTargetMinor     | Optional goal target; `null` = no goal                                                                                                                             |
 | goalTargetOn        | Optional deadline `YYYY-MM-DD`; `null` = target-only                                                                                                               |
 
-Backup JSON may still key this collection as `accounts`.
+Backup JSON may still key this collection as `accounts`. Signed-in sync kind is `account` (Spec 241).
 
 ## categories
 
-Stock catalog is **not** stored here (spec 123). This table holds **custom** categories only.
+Stock catalog is **not** stored here (spec 123). This table holds **custom** categories only. Signed-in sync kind is `category` (Spec 241). Stock stays in the bundle (Spec 123).
 
 | Field     | Notes                                                                                          |
 | --------- | ---------------------------------------------------------------------------------------------- |
@@ -38,7 +38,7 @@ Stock catalog is **not** stored here (spec 123). This table holds **custom** cat
 
 ## categoryGroups
 
-Custom groups only. Stock groups (`stock-group:home`, …) are in the bundle.
+Custom groups only. Stock groups (`stock-group:home`, …) are in the bundle. Signed-in sync kind is `categoryGroup` (Spec 241).
 
 | Field     | Notes                                      |
 | --------- | ------------------------------------------ |
@@ -102,4 +102,4 @@ Backup JSON includes `plans`; a missing key on import is an empty list. Reset cl
 
 ## settings
 
-Key/value. Display currency is `displayCurrency` (ISO 4217, default IDR). Idle: `idle.minutes`, `idle.leaveTab`. Reserved lock wrap keys stay as today.
+Key/value. Display currency is `displayCurrency` (ISO 4217, default IDR). Idle: `idle.minutes`, `idle.leaveTab`. Theme: `theme.preference` (Spec 241). Overlay: `category.overlayPrefs`. Reserved lock wrap keys stay device-only and are not synced.

@@ -136,8 +136,8 @@ Server stores **ciphertext**. Cannot field-merge. Unit = one encrypted entity + 
 - Save sends the `rev` this device read. Newer server `rev` → **409** → **close editor, discard typing, refresh**. No merge.
 - Deletes = **gravestones** (`deleted=true`, bump `rev`). Same 409 rule.
 - Wraps = one account coat-check (passphrase box + hex box, `wrapRev`). Change passphrase = update that record only, not every row. Same DEK.
-- Catch-up: pull on unlock, pull after successful save, **30s** poll while visible and unlocked. **No offline queue** (save fails without network).
-- Settings (theme, idle, etc.) sync as ledger data.
+- Catch-up: pull on unlock, then PUT local rows with no `syncRevs` (pockets, custom overlay, txs, plans, goals, allowlisted settings). Pull after successful save, **30s** poll while visible and unlocked. **No offline queue** (save fails without network).
+- Settings (theme, idle, currency, overlay prefs) sync as ledger data. Pockets and custom categories/groups use kinds `account` / `category` / `categoryGroup` (Spec 241).
 
 ## Session
 
