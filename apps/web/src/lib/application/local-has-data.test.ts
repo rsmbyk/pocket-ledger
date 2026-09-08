@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { db } from '$lib/data/db';
+import { db, SETTINGS_THEME_PREFERENCE } from '$lib/data/db';
 import { ensureDefaultAccount } from '$lib/application/accounts';
 import { createCategory } from '$lib/application/categories';
 import { localHasData } from './local-has-data';
@@ -25,7 +25,7 @@ describe('localHasData', () => {
 
 	it('counts theme settings as data', async () => {
 		await ensureDefaultAccount();
-		await setSetting('theme.preference', 'dark');
+		await setSetting(SETTINGS_THEME_PREFERENCE, 'dark');
 		expect(await localHasData()).toBe(true);
 	});
 });

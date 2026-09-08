@@ -373,3 +373,4 @@ export const SETTINGS_WEBAUTHN = 'lock.webauthn';
 export const SETTINGS_CATEGORY_OVERLAY = 'category.overlayPrefs';
 export const SETTINGS_CATEGORY_MIGRATED = 'category.catalogMigrated';
 export const SETTINGS_DISPLAY_CURRENCY = 'displayCurrency';
+export const SETTINGS_THEME_PREFERENCE = 'theme.preference';

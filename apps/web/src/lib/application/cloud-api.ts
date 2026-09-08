@@ -29,6 +29,9 @@ export function googleClientId(): string {
 export const DEBUG_FAKE_GOOGLE_SUB = 'pl-debug-cursor';
 export const DEBUG_FAKE_GOOGLE_TOKEN = `fake.${DEBUG_FAKE_GOOGLE_SUB}.cursor-debug@pocket-ledger.test`;
 
+/** Spec 241 testing-only: two Playwright contexts share one fake GIS token. */
+export const E2E_FAKE_TOKEN_KEY = 'pl-e2e-fake-token';
+
 export function shouldWipeCloudOnSignOut(googleSub: string | null | undefined): boolean {
 	return googleSub === DEBUG_FAKE_GOOGLE_SUB;
 }

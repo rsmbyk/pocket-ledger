@@ -67,6 +67,7 @@
 	import StartupLoading from '$lib/ui/StartupLoading.svelte';
 	import {
 		cloudConfigured,
+		fakeGoogleEnabled,
 		fetchMe,
 		listCloudSessions,
 		LocalConflictError,
@@ -76,6 +77,7 @@
 		shouldWipeCloudOnSignOut,
 		signInWithGoogleToken,
 		DEBUG_FAKE_GOOGLE_TOKEN,
+		E2E_FAKE_TOKEN_KEY,
 		type CloudSession
 	} from '$lib/application/cloud-api';
 	import { localHasData } from '$lib/application/local-has-data';
@@ -93,6 +95,7 @@
 	import {
 		SETTINGS_IDLE_LEAVE_TAB,
 		SETTINGS_IDLE_MINUTES,
+		SETTINGS_THEME_PREFERENCE,
 		SETTINGS_WEBAUTHN,
 		db
 	} from '$lib/data/db';
@@ -109,8 +112,10 @@
 	import {
 		pullAndApply,
 		pushSealedEntity,
-		pushTransactionById
+		pushTransactionById,
+		syncFromCloud
 	} from '$lib/application/sync-client';
+	import { SyncConflictError } from '$lib/application/sync';
 	import { clearDataKey, getDataKey } from '$lib/data/session-key';
 	import type { AuthMe } from '$lib/application/cloud-api';
 	import {
@@ -225,8 +230,10 @@
 			}
 		}
 		if (!unlocked) {
-			account = await ensureDefaultAccount();
-			isSinglePot = true;
+			if (!signedIn) {
+				account = await ensureDefaultAccount();
+				isSinglePot = true;
+			}
 			return;
 		}
 		if (signedIn && accountOnboarding && accountOnboarding !== 'complete') {
@@ -235,11 +242,23 @@
 		}
 		if (signedIn) {
 			try {
-				await pullAndApply();
+				await syncFromCloud();
 			} catch {
 				/* online required; keep cache */
 			}
 			sessions = await listCloudSessions().catch(() => []);
+		}
+		const idleAfterPull = parseIdleSettings(
+			await getSetting(SETTINGS_IDLE_MINUTES),
+			await getSetting(SETTINGS_IDLE_LEAVE_TAB)
+		);
+		idleMinutes = idleAfterPull.minutes;
+		leaveTab = idleAfterPull.leaveTab;
+		displayCurrency = await getDisplayCurrency();
+		const storedTheme = await getSetting(SETTINGS_THEME_PREFERENCE);
+		if (storedTheme != null) {
+			themePreference = parseThemePreference(storedTheme);
+			setMode(themePreference);
 		}
 		await migratePocketGoals();
 		const overview = await getAccountsOverview();
@@ -332,6 +351,15 @@
 	function onThemePreferenceChange(next: ThemePreference) {
 		themePreference = next;
 		setMode(next);
+		void (async () => {
+			await setSetting(SETTINGS_THEME_PREFERENCE, next);
+			if (signedIn) {
+				await pushSealedEntity('setting', SETTINGS_THEME_PREFERENCE, {
+					key: SETTINGS_THEME_PREFERENCE,
+					value: next
+				});
+			}
+		})();
 	}
 
 	async function onRefreshLedger() {
@@ -431,7 +459,7 @@
 		}
 		unlocked = true;
 		dekPresent = true;
-		if (account) await refreshLedger(account);
+		await bootstrap();
 	}
 
 	function applyMe(me: AuthMe) {
@@ -550,7 +578,16 @@
 	}
 
 	async function onGoogleSignIn() {
-		await onGoogleCredential(`fake.${crypto.randomUUID()}.e2e@example.com`);
+		let token = `fake.${crypto.randomUUID()}.e2e@example.com`;
+		if (fakeGoogleEnabled()) {
+			try {
+				const forced = sessionStorage.getItem(E2E_FAKE_TOKEN_KEY);
+				if (forced?.startsWith('fake.')) token = forced;
+			} catch {
+				/* ignore */
+			}
+		}
+		await onGoogleCredential(token);
 	}
 
 	async function onDebugFakeSignUp() {
@@ -697,15 +734,42 @@
 			dekPresent = false;
 		}}
 		onCreatePocket={async (input: CreatePocketInput) => {
-			await createPocket(input);
+			try {
+				await createPocket(input);
+			} catch (err) {
+				if (err instanceof SyncConflictError) {
+					await pullAndApply();
+					await onRefreshLedger();
+					return;
+				}
+				throw err;
+			}
 			await onRefreshLedger();
 		}}
 		onUpdatePocket={async (input: UpdatePocketInput) => {
-			await updatePocket(input);
+			try {
+				await updatePocket(input);
+			} catch (err) {
+				if (err instanceof SyncConflictError) {
+					await pullAndApply();
+					await onRefreshLedger();
+					return;
+				}
+				throw err;
+			}
 			await onRefreshLedger();
 		}}
 		onDeletePocket={async (id) => {
-			await deletePocket(id);
+			try {
+				await deletePocket(id);
+			} catch (err) {
+				if (err instanceof SyncConflictError) {
+					await pullAndApply();
+					await onRefreshLedger();
+					return;
+				}
+				throw err;
+			}
 			await onRefreshLedger();
 		}}
 		onReorderPockets={async (orderedNonMainIds) => {
@@ -781,12 +845,6 @@
 		}}
 		onSaveCurrency={async (code) => {
 			displayCurrency = await saveDisplayCurrency(code);
-			if (signedIn) {
-				await pushSealedEntity('setting', 'displayCurrency', {
-					key: 'displayCurrency',
-					value: displayCurrency
-				});
-			}
 			await onRefreshLedger();
 		}}
 		onEnrollWebAuthn={async () => {

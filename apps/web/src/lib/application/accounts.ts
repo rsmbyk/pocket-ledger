@@ -21,6 +21,7 @@ import { isActive } from '$lib/domain/goals';
 import { listGoalsForAccount } from '$lib/data/goals-repo';
 import { softDeleteGoalsForPocket } from '$lib/application/goals';
 import { getDisplayCurrency } from '$lib/application/display-currency';
+import { pushAccountById } from '$lib/application/sync-client';
 
 function createId(): string {
 	return crypto.randomUUID();
@@ -144,6 +145,7 @@ export async function createPocket(input: CreatePocketInput): Promise<Account> {
 		{ today: todayOccurredOn(), isMain: false, sortOrder: nonMainCount }
 	);
 	await putAccount(account);
+	await pushAccountById(account.id);
 	return account;
 }
 
@@ -200,6 +202,7 @@ export async function updatePocket(input: UpdatePocketInput): Promise<Account> {
 		{ today: todayOccurredOn(), isMain: existing.isMain, sortOrder: existing.sortOrder }
 	);
 	await putAccount(next);
+	await pushAccountById(next.id);
 	return next;
 }
 
@@ -233,6 +236,7 @@ export async function deletePocket(id: string): Promise<void> {
 	if (blockers.length > 0) throw new Error(blockers.join(' '));
 	await softDeleteGoalsForPocket(id);
 	await deleteAccount(id);
+	await pushAccountById(id, true);
 }
 
 /** Persist DnD order for non-Main pockets (Main stays first). */
@@ -244,6 +248,9 @@ export async function reorderPockets(orderedNonMainIds: string[]): Promise<void>
 	}
 	const updated = assignNonMainSortOrders(accounts, orderedNonMainIds);
 	for (const a of updated) {
-		if (!a.isMain) await putAccount(a);
+		if (!a.isMain) {
+			await putAccount(a);
+			await pushAccountById(a.id);
+		}
 	}
 }
