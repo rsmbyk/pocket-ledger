@@ -40,6 +40,7 @@
 	import ConfirmDialog from '$lib/ui/ConfirmDialog.svelte';
 	import type { Account } from '$lib/domain/account';
 	import type { PocketGoal } from '$lib/domain/goals';
+	import type { PocketBudget } from '$lib/domain/budgets';
 	import type { LedgerPlan } from '$lib/domain/plan';
 	import { isDueInHomeWindow } from '$lib/domain/plan';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
@@ -114,6 +115,7 @@
 		account: Account | null;
 		accounts: Account[];
 		goals?: PocketGoal[];
+		budgets?: PocketBudget[];
 		plans?: LedgerPlan[];
 		balanceMinor: number;
 		transactions: LedgerTransaction[];
@@ -190,6 +192,7 @@
 		account,
 		accounts,
 		goals = [],
+		budgets = [],
 		plans = [],
 		balanceMinor,
 		transactions,
@@ -1725,7 +1728,9 @@
 					{categoriesById}
 					pockets={accounts}
 					{goals}
+					{budgets}
 					{plans}
+					{categoryGroups}
 					hideAmounts={hideHomeAmounts}
 					onAdd={openAdd}
 					onAddPlan={() => onOpenAddPlan?.(detailsPocket.id)}

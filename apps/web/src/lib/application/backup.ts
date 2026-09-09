@@ -4,6 +4,7 @@ import type { CategoryGroupRow, CategoryRow } from '$lib/data/db';
 import type { LedgerTransaction } from '$lib/domain/transaction';
 import { withVoidedAt } from '$lib/domain/transaction';
 import { migrateAccountGoalsToRows, normalizeStoredGoal, type Goal } from '$lib/domain/goals';
+import { normalizeStoredBudget, type PocketBudget } from '$lib/domain/budgets';
 import type { LedgerPlan } from '$lib/domain/plan';
 import type { NetWorthSnapshot } from '$lib/domain/net-worth';
 import {
@@ -38,6 +39,7 @@ export type BackupInspectSummary = {
 	categoryGroups: number;
 	goals: number;
 	plans: number;
+	budgets: number;
 };
 
 export type BackupInspectResult =
@@ -78,13 +80,15 @@ export function inspectEncryptedBackup(raw: string): BackupInspectResult {
 	const categoryGroups = asArrayLength(backup.categoryGroups);
 	const goals = asArrayLength(backup.goals);
 	const plans = asArrayLength(backup.plans);
+	const budgets = asArrayLength(backup.budgets);
 	if (
 		pockets == null ||
 		transactions == null ||
 		categories == null ||
 		categoryGroups == null ||
 		goals == null ||
-		plans == null
+		plans == null ||
+		budgets == null
 	) {
 		return { ok: false, reason: 'invalid' };
 	}
@@ -97,7 +101,8 @@ export function inspectEncryptedBackup(raw: string): BackupInspectResult {
 			categories,
 			categoryGroups,
 			goals,
-			plans
+			plans,
+			budgets
 		}
 	};
 }
@@ -111,6 +116,7 @@ export type LedgerBackup = {
 	transactions: LedgerTransaction[];
 	goals: Goal[];
 	plans: LedgerPlan[];
+	budgets: PocketBudget[];
 	netWorthSnapshots: NetWorthSnapshot[];
 	settings: { key: string; value: string }[];
 };
@@ -126,6 +132,7 @@ export type EncryptedBackup = WrapEnvelope & {
 	transactions: LedgerTransaction[];
 	goals: Goal[];
 	plans: LedgerPlan[];
+	budgets: PocketBudget[];
 	netWorthSnapshots: NetWorthSnapshot[];
 	settings: { key: string; value: string }[];
 };
@@ -141,7 +148,7 @@ const SECRET_SETTING_KEYS = new Set([
 async function collectSealedSnapshot(): Promise<
 	Omit<LedgerBackup, 'formatVersion' | 'exportedAt'>
 > {
-	const [accounts, categories, categoryGroups, transactions, goals, plans, netWorthSnapshots, settings] =
+	const [accounts, categories, categoryGroups, transactions, goals, plans, budgets, netWorthSnapshots, settings] =
 		await Promise.all([
 			db.accounts.toArray(),
 			db.categories.toArray(),
@@ -149,6 +156,7 @@ async function collectSealedSnapshot(): Promise<
 			db.transactions.toArray(),
 			db.goals.toArray(),
 			db.plans.toArray(),
+			db.budgets.toArray(),
 			db.netWorthSnapshots.toArray(),
 			db.settings.toArray()
 		]);
@@ -166,6 +174,7 @@ async function collectSealedSnapshot(): Promise<
 		transactions: transactions.map((t) => withVoidedAt(t)),
 		goals,
 		plans,
+		budgets,
 		netWorthSnapshots,
 		settings: settings.filter((s) => !SECRET_SETTING_KEYS.has(s.key))
 	};
@@ -297,6 +306,7 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 			db.transactions,
 			db.goals,
 			db.plans,
+			db.budgets,
 			db.netWorthSnapshots,
 			db.settings
 		],
@@ -308,6 +318,7 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 				db.transactions.clear(),
 				db.goals.clear(),
 				db.plans.clear(),
+				db.budgets.clear(),
 				db.netWorthSnapshots.clear(),
 				db.settings.clear()
 			]);
@@ -335,6 +346,7 @@ export async function restoreBackup(backup: LedgerBackup): Promise<void> {
 			);
 			if (liveGoals.length > 0) await db.goals.bulkPut(liveGoals);
 			if (normalized.plans.length > 0) await db.plans.bulkPut(normalized.plans);
+			if (normalized.budgets.length > 0) await db.budgets.bulkPut(normalized.budgets);
 			await db.netWorthSnapshots.bulkPut(normalized.netWorthSnapshots);
 			await db.settings.bulkPut(normalized.settings.filter((s) => !SECRET_SETTING_KEYS.has(s.key)));
 		}
@@ -374,6 +386,7 @@ function snapshotFromUnknown(parsed: object): LedgerBackup {
 		transactions?: LedgerTransaction[];
 		goals?: Goal[];
 		plans?: LedgerPlan[];
+		budgets?: PocketBudget[];
 		netWorthSnapshots?: NetWorthSnapshot[];
 		settings?: { key: string; value: string }[];
 		recurringRules?: unknown;
@@ -432,6 +445,9 @@ function snapshotFromUnknown(parsed: object): LedgerBackup {
 					frequency === 'monthly' && typeof raw.monthDay === 'number' ? raw.monthDay : null
 			};
 		}),
+		budgets: (backup.budgets ?? [])
+			.map((b) => normalizeStoredBudget(b))
+			.filter((b): b is PocketBudget => b != null),
 		netWorthSnapshots: backup.netWorthSnapshots ?? [],
 		settings: (backup.settings ?? []).filter((s) => !SECRET_SETTING_KEYS.has(s.key))
 	};

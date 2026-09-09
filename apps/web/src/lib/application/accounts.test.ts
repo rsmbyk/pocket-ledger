@@ -168,4 +168,19 @@ describe('accounts application', () => {
 		});
 		await expect(deletePocket(vac.id)).rejects.toThrow(/active plans/i);
 	});
+
+	it('refuses to delete a pocket with an active budget', async () => {
+		await ensureDefaultAccount();
+		const vac = await createPocket({ name: 'Vacation' });
+		const { createPocketBudget, dropPocketBudget, listPocketBudgets } = await import('./budgets');
+		await createPocketBudget({
+			accountId: vac.id,
+			appliesTo: 'pocket',
+			limitRaw: '10000'
+		});
+		await expect(deletePocket(vac.id)).rejects.toThrow(/budgets first/i);
+		await dropPocketBudget((await listPocketBudgets(vac.id))[0]!.id);
+		expect(await pocketDeleteBlockers(vac.id)).toEqual([]);
+		await deletePocket(vac.id);
+	});
 });

@@ -2,6 +2,7 @@ import Dexie, { type EntityTable } from 'dexie';
 import { normalizeAccount, type Account } from '$lib/domain/account';
 import type { LedgerTransaction } from '$lib/domain/transaction';
 import type { Goal } from '$lib/domain/goals';
+import type { PocketBudget } from '$lib/domain/budgets';
 import type { LedgerPlan } from '$lib/domain/plan';
 import type { NetWorthSnapshot } from '$lib/domain/net-worth';
 import { assignSortOrdersByName } from '$lib/domain/category-order';
@@ -47,6 +48,7 @@ export class PocketLedgerDb extends Dexie {
 	settings!: EntityTable<SettingsRow, 'key'>;
 	goals!: EntityTable<Goal, 'id'>;
 	plans!: EntityTable<LedgerPlan, 'id'>;
+	budgets!: EntityTable<PocketBudget, 'id'>;
 	netWorthSnapshots!: EntityTable<NetWorthSnapshot, 'id'>;
 	syncRevs!: EntityTable<SyncRevRow, 'id'>;
 
@@ -350,6 +352,18 @@ export class PocketLedgerDb extends Dexie {
 			settings: 'key',
 			goals: 'id, accountId',
 			plans: 'id, accountId, dueOn, type',
+			netWorthSnapshots: 'id, capturedOn',
+			syncRevs: 'id'
+		});
+		this.version(11).stores({
+			accounts: 'id, name, sortOrder, isMain',
+			categories: 'id, kind, name, sortOrder, deletedAt, groupId, hidden',
+			categoryGroups: 'id, kind',
+			transactions: 'id, accountId, type, occurredOn, categoryId',
+			settings: 'key',
+			goals: 'id, accountId',
+			plans: 'id, accountId, dueOn, type',
+			budgets: 'id, accountId',
 			netWorthSnapshots: 'id, capturedOn',
 			syncRevs: 'id'
 		});

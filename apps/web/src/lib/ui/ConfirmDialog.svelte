@@ -21,6 +21,7 @@
 		hideCancel?: boolean;
 		confirmTestId?: string;
 		contentTestId?: string;
+		interactOutsideBehavior?: 'close' | 'ignore';
 		onOpenChange: (open: boolean) => void;
 		onConfirm: () => void | Promise<void>;
 		onSecondary?: () => void | Promise<void>;
@@ -39,6 +40,7 @@
 		hideCancel = false,
 		confirmTestId = 'confirm-dialog-confirm',
 		contentTestId = 'confirm-dialog',
+		interactOutsideBehavior = 'close',
 		onOpenChange,
 		onConfirm,
 		onSecondary
@@ -108,6 +110,7 @@
 		overlayClass="z-[60]"
 		data-testid={contentTestId}
 		showCloseButton={false}
+		{interactOutsideBehavior}
 	>
 		{#if dangerChrome}
 			<Dialog.Header

@@ -21,6 +21,7 @@
 	} from '$lib/application/transactions';
 	import { loadMonthSummary } from '$lib/application/month-summary';
 	import { listGoals, migratePocketGoals } from '$lib/application/goals';
+	import { listBudgets } from '$lib/application/budgets';
 	import { listPlans } from '$lib/application/plans';
 	import type { LedgerPlan } from '$lib/domain/plan';
 	import {
@@ -41,6 +42,7 @@
 	import { listAllCategories, listResolvedGroups } from '$lib/application/categories';
 	import type { Account } from '$lib/domain/account';
 	import type { PocketGoal } from '$lib/domain/goals';
+	import type { PocketBudget } from '$lib/domain/budgets';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
 	import type { OverlayGroup } from '$lib/domain/category-overlay';
@@ -129,6 +131,7 @@
 	let account = $state<Account | null>(null);
 	let accounts = $state<Account[]>([]);
 	let goals = $state<PocketGoal[]>([]);
+	let budgets = $state<PocketBudget[]>([]);
 	let plans = $state<LedgerPlan[]>([]);
 	let isSinglePot = $state(true);
 	let balanceMinor = $state(0);
@@ -184,7 +187,7 @@
 	);
 
 	async function refreshLedger(active: Account, key: MonthKey = monthKey) {
-		const [overview, balance, recent, allCategories, monthLoad, groups, allGoals, allPlans] =
+		const [overview, balance, recent, allCategories, monthLoad, groups, allGoals, allPlans, allBudgets] =
 			await Promise.all([
 			getAccountsOverview(),
 			getAllPocketsBalance(),
@@ -193,11 +196,13 @@
 			loadMonthSummary(active.id, key),
 			listResolvedGroups(),
 			listGoals(),
-			listPlans()
+			listPlans(),
+			listBudgets()
 		]);
 		accounts = overview.accounts;
 		goals = allGoals;
 		plans = allPlans;
+		budgets = allBudgets;
 		isSinglePot = overview.isSinglePot;
 		balanceMinor = balance;
 		transactions = recent;
@@ -741,6 +746,7 @@
 		{account}
 		{accounts}
 		{goals}
+		{budgets}
 		{plans}
 		{isSinglePot}
 		{balanceMinor}

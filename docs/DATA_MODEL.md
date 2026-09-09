@@ -78,6 +78,26 @@ Simple ledger row, double-entry-ready:
 
 Live Dexie rows (spec 152): `id`, `accountId`, optional `description`, `targetMinor`, optional `targetOn`, `createdAt`, `cancelledAt` (Dropped), `deletedAt` (hidden). Never hard-deleted. Account `goalEnabled` / `goalTargetMinor` / `goalTargetOn` migrate once into a row.
 
+## budgets
+
+Spending caps per pocket (spec 246). Dexie `budgets`; sync `kind: 'budget'`. Drop is soft-delete (`cancelledAt` + `deletedAt`). Used is derived, never stored.
+
+| Field        | Notes                                                                 |
+| ------------ | --------------------------------------------------------------------- |
+| id           | UUID                                                                  |
+| accountId    | Pocket                                                                |
+| appliesTo    | `pocket` \| `categories`                                              |
+| categoryIds  | Expense category ids; empty when pocket-wide                          |
+| limitMinor   | Positive integer                                                      |
+| hardLimit    | When true, a tx that would exceed is not created                      |
+| period       | `ongoing` \| `monthly`                                                |
+| startOn      | `YYYY-MM-DD`; monthly effective start is `max(startOn, month 01)`     |
+| createdAt    | ISO timestamp                                                         |
+| cancelledAt  | Set on Drop                                                           |
+| deletedAt    | Set on Drop                                                           |
+
+Backup JSON includes `budgets`; a missing key on import is an empty list. Reset clears the table.
+
 ## plans
 
 Confirm-before-ledger reminders (specs 223–224). Not money until accept-mode Save. Dexie `plans`; sync `kind: 'plan'`. Drop / Once-complete / Once-skip are gravestones (`deleted=true`), not goal-style `cancelledAt`.

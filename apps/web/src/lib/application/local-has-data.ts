@@ -10,7 +10,7 @@ function isSystemSetting(key: string): boolean {
 
 /** Spec 119: has-data = not a virgin default Main + default settings. */
 export async function localHasData(): Promise<boolean> {
-	const [accounts, transactions, categories, categoryGroups, settings, goals, plans] =
+	const [accounts, transactions, categories, categoryGroups, settings, goals, plans, budgets] =
 		await Promise.all([
 			db.accounts.toArray(),
 			db.transactions.toArray(),
@@ -18,13 +18,15 @@ export async function localHasData(): Promise<boolean> {
 			db.categoryGroups.toArray(),
 			db.settings.toArray(),
 			db.goals.toArray(),
-			db.plans.toArray()
+			db.plans.toArray(),
+			db.budgets.toArray()
 		]);
 	if (transactions.length > 0) return true;
 	if (categories.length > 0) return true;
 	if (categoryGroups.length > 0) return true;
 	if (goals.length > 0) return true;
 	if (plans.length > 0) return true;
+	if (budgets.length > 0) return true;
 	if (accounts.length !== 1) return true;
 	const main = accounts[0];
 	if (!main || main.name !== DEFAULT_ACCOUNT_NAME || !main.isMain) return true;

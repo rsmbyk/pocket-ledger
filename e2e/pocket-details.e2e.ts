@@ -205,12 +205,14 @@ test.describe('148 pocket details', () => {
 		await expect(page.getByTestId('pocket-details-col-identity')).toHaveCount(0);
 		const opening = await page.getByTestId('pocket-details-opening').boundingBox();
 		const plans = await page.getByTestId('pocket-details-plans-card').boundingBox();
+		const budgets = await page.getByTestId('pocket-details-budgets-card').boundingBox();
 		const goals = await page.getByTestId('pocket-details-goals-card').boundingBox();
 		const month = await page.getByTestId('month-summary').boundingBox();
 		const recent = await page.getByTestId('pocket-details-recent-card').boundingBox();
-		expect(opening && plans && goals && month && recent).toBeTruthy();
+		expect(opening && plans && budgets && goals && month && recent).toBeTruthy();
 		expect(opening!.y).toBeLessThan(plans!.y);
-		expect(plans!.y).toBeLessThan(goals!.y);
+		expect(plans!.y).toBeLessThan(budgets!.y);
+		expect(budgets!.y).toBeLessThan(goals!.y);
 		expect(goals!.y).toBeLessThan(month!.y);
 		expect(month!.y).toBeLessThan(recent!.y);
 	});
@@ -246,6 +248,7 @@ test.describe('148 pocket details', () => {
 		await expect(activity.getByTestId('month-summary')).toBeVisible();
 		await expect(activity.getByTestId('pocket-details-recent-card')).toBeVisible();
 		await expect(lists.getByTestId('pocket-details-plans-card')).toBeVisible();
+		await expect(lists.getByTestId('pocket-details-budgets-card')).toBeVisible();
 		await expect(lists.getByTestId('pocket-details-goals-card')).toBeVisible();
 	});
 
