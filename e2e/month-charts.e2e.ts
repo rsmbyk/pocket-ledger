@@ -71,6 +71,7 @@ test.describe('002 month charts', () => {
 		await expect(page.getByTestId('month-summary')).toBeVisible();
 		const before = await page.getByTestId('month-label').innerText();
 		await page.getByRole('button', { name: 'Previous month' }).click();
+		await expect(page.getByTestId('month-summary')).toBeVisible();
 		await expect(page.getByTestId('month-label')).not.toHaveText(before);
 	});
 });

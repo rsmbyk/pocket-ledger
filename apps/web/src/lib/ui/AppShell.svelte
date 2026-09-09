@@ -19,7 +19,7 @@
 	import { page } from '$app/state';
 	import { isAppRoute, isGatePath, nearestValidPath, parsePath, parsePocketId, routeToPath, type AppRoute } from '$lib/shared/router';
 	import { DEFAULT_LEAVE_TAB } from '$lib/application/idle';
-	import StartupLoading from '$lib/ui/StartupLoading.svelte';
+	import { shouldRedirectMissingPocket } from '$lib/shared/shell-loading';
 
 	type Props = {
 		account: Account | null;
@@ -85,7 +85,8 @@
 		onSaveCurrency?: (code: string) => void | Promise<void>;
 		onEnrollWebAuthn?: () => void | Promise<void>;
 		webauthnEnrolled?: boolean;
-		ready: boolean;
+		ledgerReady: boolean;
+		monthLoading?: boolean;
 		error: string | null;
 	};
 
@@ -145,7 +146,8 @@
 		onSaveCurrency,
 		onEnrollWebAuthn,
 		webauthnEnrolled = false,
-		ready,
+		ledgerReady,
+		monthLoading = false,
 		error
 	}: Props = $props();
 
@@ -219,11 +221,20 @@
 	}
 
 	$effect(() => {
-		if (!ready) return;
 		const path = page.url.pathname.replace(/\/+$/, '') || '/';
 		const nearest = nearestValidPath(path);
 		if (isGatePath(nearest)) return;
-		const desired = pocketId && !detailsPocket ? '/pockets' : nearest;
+		if (pocketId && !detailsPocket && !ledgerReady) {
+			if (path !== nearest) void goto(nearest, { replaceState: true });
+			return;
+		}
+		const desired = shouldRedirectMissingPocket({
+			pocketId,
+			pocketFound: Boolean(detailsPocket),
+			ledgerReady
+		})
+			? '/pockets'
+			: nearest;
 		if (path !== desired) void goto(desired, { replaceState: true });
 	});
 
@@ -270,8 +281,6 @@
 				</Card.Header>
 			</Card.Root>
 		</main>
-	{:else if !ready}
-		<StartupLoading />
 	{:else}
 		<Sidebar.Provider class={lockViewport ? 'h-svh min-h-0 overflow-hidden' : 'min-h-svh'}>
 			<AppShellChrome
@@ -285,6 +294,8 @@
 				{monthSummary}
 				{canPrevMonth}
 				{canNextMonth}
+				{ledgerReady}
+				{monthLoading}
 				{expenseCategories}
 				{incomeCategories}
 				{categoryGroups}
@@ -295,6 +306,7 @@
 				{route}
 				{pageTitle}
 				{detailsPocket}
+				{pocketId}
 				{onThemePreferenceChange}
 				{onPrevMonth}
 				{onNextMonth}
