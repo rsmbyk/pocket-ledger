@@ -18,6 +18,8 @@ test.describe('002 month charts', () => {
 		await expect(page.getByTestId('month-ending')).toContainText('0');
 		await expect(page.getByTestId('income-category-chart')).toContainText(/no income/i);
 		await expect(page.getByTestId('category-chart')).toContainText(/no expenses/i);
+		await expect(page.getByTestId('transfer-chart')).toHaveCount(0);
+		await expect(page.getByTestId('month-footer-transfers')).toHaveCount(0);
 	});
 
 	test('updates month totals after income and expense', async ({ page }) => {

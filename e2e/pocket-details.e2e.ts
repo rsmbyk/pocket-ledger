@@ -86,6 +86,8 @@ test.describe('148 pocket details', () => {
 		await expect(page.getByTestId('pocket-details-goals-card')).toBeVisible();
 		await expect(page.getByTestId('pocket-details-goals-empty')).toBeVisible();
 		await expect(page.getByTestId('month-summary')).toBeVisible();
+		await expect(page.getByTestId('transfer-chart')).toContainText(/no transfers/i);
+		await expect(page.getByTestId('month-footer-transfers')).toContainText('0');
 		await expect(page.getByTestId('pocket-details-see-more')).toHaveCount(0);
 
 		await page.getByTestId('pocket-details-edit').click();
@@ -127,6 +129,8 @@ test.describe('148 pocket details', () => {
 		await openVacationDetails(page);
 		await expect(page.getByTestId('month-income')).toContainText('0');
 		await expect(page.getByTestId('month-expense')).toContainText('15');
+		await expect(page.getByTestId('transfer-chart')).toContainText(/no transfers/i);
+		await expect(page.getByTestId('month-footer-transfers')).toContainText('0');
 		await expect(page.getByTestId('pocket-details-recent-list')).toBeVisible();
 
 		await page.getByTestId('pocket-details-add').click();
@@ -138,6 +142,54 @@ test.describe('148 pocket details', () => {
 		await page.getByTestId('pocket-details-see-more').click();
 		await expect(page.getByTestId('activity-panel')).toBeVisible();
 		await expect(page.getByTestId('activity-filter-pocket')).toContainText('Vacation');
+	});
+
+	test('month summary Transfer in/out matches pocket Ending (242)', async ({ page }) => {
+		await createVacation(page);
+		await goToNav(page, 'home');
+		await openAdd(page);
+		const dialog = page.getByRole('dialog');
+		await dialog.getByTestId('tx-mode-transfer').click();
+		await dialog.getByTestId('tx-transfer-source').click();
+		await page.locator('[data-testid^="tx-transfer-source-option-"]').nth(0).click();
+		await dialog.getByTestId('tx-transfer-dest').click();
+		await page.locator('[data-testid^="tx-transfer-dest-option-"]').nth(1).click();
+		await dialog.getByTestId('tx-transfer-amount').fill('10000');
+		await dialog.getByTestId('tx-transfer-fee').fill('250');
+		await dialog.getByRole('button', { name: 'Save' }).click();
+		await expect(dialog).toBeHidden({ timeout: 10_000 });
+
+		await expect(page.getByTestId('month-summary')).toBeVisible();
+		await expect(page.getByTestId('transfer-chart')).toHaveCount(0);
+		await expect(page.getByTestId('month-footer-transfers')).toHaveCount(0);
+		await expect(page.getByTestId('month-expense')).toContainText('250');
+
+		await openVacationDetails(page);
+		await expect(page.getByTestId('transfer-chart')).toContainText('Transfer in');
+		await expect(page.getByTestId('transfer-chart')).toContainText('Transfer out');
+		await expect(page.getByTestId('month-transfer-in')).toContainText('10');
+		await expect(page.getByTestId('month-transfer-out')).toContainText('0');
+		await expect(page.getByTestId('month-footer-transfers')).toHaveClass(/text-income/);
+		await expect(page.getByTestId('month-income')).toContainText('0');
+		await expect(page.getByTestId('month-expense')).toContainText('0');
+		const vacBalance = await page.getByTestId('pocket-details-balance').innerText();
+		await expect(page.getByTestId('month-ending')).toHaveText(vacBalance.trim());
+
+		await page.getByTestId('toggle-home-amounts').click();
+		await expect(page.getByTestId('month-transfer-in')).toHaveText('••••');
+		await expect(page.getByTestId('month-footer-transfers')).toHaveText('••••');
+		await page.getByTestId('toggle-home-amounts').click();
+
+		await goToNav(page, 'pockets');
+		const main = page.locator('[data-testid^="pocket-row-"]').filter({ hasText: 'Main' });
+		await main.click();
+		await expect(page.getByTestId('pocket-details-panel')).toBeVisible();
+		await expect(page.getByTestId('month-transfer-in')).toContainText('0');
+		await expect(page.getByTestId('month-transfer-out')).toContainText('10');
+		await expect(page.getByTestId('month-footer-transfers')).toHaveClass(/text-destructive/);
+		await expect(page.getByTestId('month-expense')).toContainText('250');
+		const mainBalance = await page.getByTestId('pocket-details-balance').innerText();
+		await expect(page.getByTestId('month-ending')).toHaveText(mainBalance.trim());
 	});
 
 	test('narrow stack puts opening above plans (235)', async ({ page }) => {
@@ -217,6 +269,9 @@ test.describe('148 pocket details', () => {
 		const lists = page.getByTestId('pocket-details-col-lists');
 		await expect(activity.getByTestId('pocket-details-recent-card')).toBeVisible();
 
+		await activity.evaluate((el) => {
+			el.scrollTop = 0;
+		});
 		const before = await activity.evaluate((el) => ({
 			scrollHeight: el.scrollHeight,
 			clientHeight: el.clientHeight,

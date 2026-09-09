@@ -258,3 +258,4 @@ Living behavior contracts for Pocket Ledger.
 | [239](239-xl-column-scroll-shadow/spec.md)              | Xl column scroll + card shadows                              | Accepted                                                                        |
 | [240](240-filter-card-title-gaps/spec.md)               | Filter card title + even header/footer padding               | Accepted                                                                        |
 | [241](241-sync-catalog-settings/spec.md)                | Sync pockets, category overlay, and settings                 | Accepted                                                                        |
+| [242](242-month-summary-pocket-transfers/spec.md)       | Pocket details Transfers bucket                              | Accepted                                                                        |

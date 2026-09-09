@@ -58,8 +58,8 @@ When scoped to pocket `P`:
 - **Income / expense / net / breakdowns** count only txs in that month that belong to `P`:
   - income/expense: `accountId === P`
   - transfer Admin Fee (106): only if `P` is the **source** (`accountId === P`)
-  - incoming transfers are **not** income (same as Home)
-- **Ending** = Opening + Net
+  - incoming transfers are **not** income (same as Home); they are Transfer in ([242](../242-month-summary-pocket-transfers/spec.md))
+- **Ending** = Opening + Net + TransferNet ([242](../242-month-summary-pocket-transfers/spec.md); supersedes Opening + Net only)
 - Voided txs ignored (002 / 014)
 
 **Bounds** (independent of Home): earliest = month of the earlier of this pocket’s `openingAsOf` and its non-voided touching txs; latest = current local month. Reuse `resolveMonthBounds` by passing this pocket’s txs + `[openingAsOf]`. Prev/next disabled at edges (109). Cursor is UI state on details; visiting details does not change Home’s month.
