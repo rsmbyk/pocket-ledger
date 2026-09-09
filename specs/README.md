@@ -259,4 +259,6 @@ Living behavior contracts for Pocket Ledger.
 | [240](240-filter-card-title-gaps/spec.md)               | Filter card title + even header/footer padding               | Accepted                                                                        |
 | [241](241-sync-catalog-settings/spec.md)                | Sync pockets, category overlay, and settings                 | Accepted                                                                        |
 | [242](242-month-summary-pocket-transfers/spec.md)       | Pocket details Transfers bucket                              | Accepted                                                                        |
+| [243](243-plans-filters-dirty-keep-open/spec.md)       | Plans filters dirty leave keep-open                         | Accepted                                                                        |
+| [244](244-plans-category-filter/spec.md)               | Plans category filter                                        | Accepted                                                                        |
 | [245](245-shell-loading-skeletons/spec.md)             | Shell loading skeletons                                      | Accepted                                                                        |

@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { LedgerPlan } from './plan';
+import { ADMIN_FEE_CATEGORY_ID, UNCATEGORIZED_FILTER } from './activity-filters';
 import {
+	countPlanAdvancedFilters,
 	filterPlans,
+	hasAdminFeePlanRow,
+	hasUncategorizedPlanRow,
+	isDefaultPlanFilters,
 	planListSections,
+	shouldShowPlanCategoryFilter,
 	sortPlansForList,
+	usedPlanCategoryIds,
 	type PlanFilterCriteria
 } from './plan-filters';
 
@@ -54,7 +61,12 @@ describe('plan filters', () => {
 				counterAccountId: 'beta'
 			})
 		];
-		const typeOnly: PlanFilterCriteria = { search: '', types: ['income'], pocketIds: [] };
+		const typeOnly: PlanFilterCriteria = {
+			search: '',
+			types: ['income'],
+			categoryIds: [],
+			pocketIds: []
+		};
 		expect(filterPlans(rows, typeOnly).map((p) => p.id)).toEqual(['inc']);
 		expect(filterPlans(rows, { pocketIds: ['beta'] }).map((p) => p.id)).toEqual(['xfer']);
 		expect(filterPlans(rows, { pocketIds: ['alpha'] }).map((p) => p.id)).toEqual(['exp']);
@@ -117,5 +129,87 @@ describe('plan filters', () => {
 			'2026-09-11',
 			'a'
 		]);
+	});
+});
+
+describe('plan category filters (Spec 244)', () => {
+	it('filters by user category, Uncategorized, and Admin Fee', () => {
+		const rows = [
+			plan({ id: 'food', categoryId: 'food', description: 'Lunch' }),
+			plan({ id: 'bare', categoryId: null, description: 'Bare' }),
+			plan({ id: 'fee', type: 'expense', feeMinor: 40, description: 'Tipped' }),
+			plan({
+				id: 'xfer-fee',
+				type: 'transfer',
+				feeMinor: 25,
+				counterAccountId: 'beta',
+				description: 'Paid xfer'
+			}),
+			plan({
+				id: 'xfer-free',
+				type: 'transfer',
+				feeMinor: 0,
+				counterAccountId: 'beta',
+				description: 'Free xfer'
+			}),
+			plan({
+				id: 'sentinel',
+				categoryId: ADMIN_FEE_CATEGORY_ID,
+				description: 'Fee cat'
+			})
+		];
+		expect(filterPlans(rows, { categoryIds: ['food'] }).map((p) => p.id)).toEqual(['food']);
+		expect(filterPlans(rows, { categoryIds: [UNCATEGORIZED_FILTER] }).map((p) => p.id)).toEqual([
+			'bare',
+			'fee',
+			'xfer-fee',
+			'xfer-free'
+		]);
+		expect(filterPlans(rows, { categoryIds: [ADMIN_FEE_CATEGORY_ID] }).map((p) => p.id)).toEqual([
+			'fee',
+			'xfer-fee',
+			'sentinel'
+		]);
+		expect(filterPlans(rows, { categoryIds: [] }).map((p) => p.id)).toEqual(rows.map((p) => p.id));
+	});
+
+	it('ANDs category with type', () => {
+		const rows = [
+			plan({ id: 'food-exp', type: 'expense', categoryId: 'food' }),
+			plan({ id: 'food-inc', type: 'income', categoryId: 'food' })
+		];
+		expect(
+			filterPlans(rows, { types: ['expense'], categoryIds: ['food'] }).map((p) => p.id)
+		).toEqual(['food-exp']);
+	});
+
+	it('counts category as an advanced filter', () => {
+		expect(countPlanAdvancedFilters({ categoryIds: ['food'] })).toBe(1);
+		expect(isDefaultPlanFilters({ categoryIds: ['food'] })).toBe(false);
+		expect(isDefaultPlanFilters({})).toBe(true);
+	});
+
+	it('used-only helpers hide when empty or uncategorized-only', () => {
+		expect(usedPlanCategoryIds([]).size).toBe(0);
+		expect(shouldShowPlanCategoryFilter([])).toBe(false);
+		expect(hasUncategorizedPlanRow([])).toBe(false);
+		expect(hasAdminFeePlanRow([])).toBe(false);
+
+		const uncategorized = [plan({ id: 'bare', categoryId: null })];
+		expect(usedPlanCategoryIds(uncategorized).size).toBe(0);
+		expect(shouldShowPlanCategoryFilter(uncategorized)).toBe(false);
+		expect(hasUncategorizedPlanRow(uncategorized)).toBe(true);
+
+		const used = [
+			plan({ id: 'food', categoryId: 'food' }),
+			plan({ id: 'bare', categoryId: null })
+		];
+		expect([...usedPlanCategoryIds(used)]).toEqual(['food']);
+		expect(shouldShowPlanCategoryFilter(used)).toBe(true);
+		expect(hasAdminFeePlanRow([plan({ id: 'fee', feeMinor: 10 })])).toBe(true);
+		expect(shouldShowPlanCategoryFilter([plan({ id: 'fee', feeMinor: 10 })])).toBe(true);
+		expect(
+			usedPlanCategoryIds([plan({ id: 'fee-cat', categoryId: ADMIN_FEE_CATEGORY_ID })]).size
+		).toBe(0);
 	});
 });
