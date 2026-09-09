@@ -20,7 +20,7 @@ Let the user keep **Plans** — expected money that is **not** on the ledger unt
 4. **Row chrome** — all three lists: header (Plan Description; Once has no Repeat chip) above tx-info (`TransactionListRow` language; date is `dueOn`).
 5. **Home card** (`home-plans-card`) — after the balance hero; all pockets; `today-7 <= dueOn <= today+7`; hide when empty; no Add; no See more; no search/filters.
 6. **Pocket details card** (`pocket-details-plans-card`) — after the balance hero; all **active** Plans for that pocket; always shown; header **Add Plan**; empty like Recent (032).
-7. **Plans page** — Transactions chrome **minus date range**: search, Filters button/drawer, **Add Plan**. Own session key `pocket-ledger-plans-list`. Search matches description, note, and amount (same loose amount match as 017). Filters: **type** and **pocket** only. List: all active Plans, grouped by `dueOn`, **nearest first**; within a day: pocket list order (Main, then `sortOrder`), then `createdAt` desc, then `id`.
+7. **Plans page** — Transactions chrome **minus date range**: search, Filters button/drawer, **Add Plan**. Own session key `pocket-ledger-plans-list`. Search matches description, note, and amount (same loose amount match as 017). Filters: **type**, **category**, and **pocket** (244; 223 shipped type and pocket only). List: all active Plans, grouped by `dueOn`, **nearest first**; within a day: pocket list order (Main, then `sortOrder`), then `createdAt` desc, then `id`.
 8. **Click** — Home → accept mode. Pocket details: in the 1-week window → accept; else edit. Plans page → always edit.
 9. **Edit mode** — Description, Tx info (Income / Transfer / Expense through Note; date label **Due**), Repeat locked to **Once** (224 unlocks Weekly / Monthly). **Drop plan** above footer (Drop-goal chrome). Footer **Cancel** | **Save** (Save writes the Plan, does not post).
 10. **Accept mode** — two sections: read-only Description + Repeat; editable Tx info (`occurredOn` defaults to `dueOn`). **Skip this occurrence** above footer (confirm). Footer **Cancel** | **Save**. Save posts a normal tx from current tx info and completes the Once Plan (gravestone). Cancel leaves the Plan unchanged. No Save draft (184). No Save for next (224).
@@ -139,10 +139,12 @@ Case-insensitive substring on `description` and `note`; amount via existing `amo
 
 ### Scenario: Plans filters are type and pocket only
 
+Superseded by [244](../244-plans-category-filter/spec.md) (Category added; still no date range or show-voided).
+
 - **Given** `/plans`
 - **When** Filters opens
 - **Then** Type and Pocket controls are present
-- **And** there is no date range, category, or show-voided control
+- **And** there is no date range or show-voided control
 
 ### Scenario: Nav order
 

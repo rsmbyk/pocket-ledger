@@ -33,6 +33,7 @@ function parseFilters(value: unknown): PlanFilterCriteria {
 	return normalizePlanFilters({
 		search: asString(raw.search, DEFAULT_PLAN_FILTERS.search),
 		types: parseTypes(raw),
+		categoryIds: asStringArray(raw.categoryIds),
 		pocketIds: asStringArray(raw.pocketIds)
 	});
 }

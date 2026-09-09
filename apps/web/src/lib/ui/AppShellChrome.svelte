@@ -88,11 +88,15 @@
 		countPlanAdvancedFilters,
 		DEFAULT_PLAN_FILTERS,
 		filterPlans,
+		hasAdminFeePlanRow,
+		hasUncategorizedPlanRow,
 		isDefaultPlanFilters,
 		normalizePlanFilters,
 		planFiltersEqual,
 		planListSections,
+		shouldShowPlanCategoryFilter,
 		sortPlansForList,
+		usedPlanCategoryIds,
 		type PlanFilterCriteria
 	} from '$lib/domain/plan-filters';
 	import { readPlansListSession, writePlansListSession } from '$lib/shared/plans-list-session';
@@ -332,6 +336,51 @@
 				: usedExpenseCategories
 	);
 
+	const usedPlanIds = $derived(usedPlanCategoryIds(plans));
+	const showPlanCategoryFilter = $derived(shouldShowPlanCategoryFilter(plans));
+	const usedPlanIncomeCategories = $derived(
+		Object.values(categoriesById).filter((c) => c.kind === 'income' && usedPlanIds.has(c.id))
+	);
+	const usedPlanExpenseCategories = $derived(
+		Object.values(categoriesById).filter((c) => c.kind === 'expense' && usedPlanIds.has(c.id))
+	);
+	const planCategoryFilterDisabled = $derived(isCategoryFilterDisabled(plansDraft.types));
+	const planCategoryKindsAllowed = $derived(categoryKindsForTypes(plansDraft.types));
+	const planCategoryGroupByKind = $derived(
+		planCategoryKindsAllowed === 'all' ||
+			(Array.isArray(planCategoryKindsAllowed) &&
+				planCategoryKindsAllowed.includes('income') &&
+				planCategoryKindsAllowed.includes('expense'))
+	);
+	const planCategoryShowAdminFee = $derived(
+		showPlanCategoryFilter &&
+			hasAdminFeePlanRow(plans) &&
+			(planCategoryKindsAllowed === 'all' ||
+				(Array.isArray(planCategoryKindsAllowed) && planCategoryKindsAllowed.includes('expense')))
+	);
+	const planCategoryShowUncategorized = $derived(
+		showPlanCategoryFilter && hasUncategorizedPlanRow(plans)
+	);
+	const planCategoryPickerIncome = $derived(
+		planCategoryKindsAllowed === 'all' ||
+			(Array.isArray(planCategoryKindsAllowed) && planCategoryKindsAllowed.includes('income'))
+			? usedPlanIncomeCategories
+			: []
+	);
+	const planCategoryPickerExpense = $derived(
+		planCategoryKindsAllowed === 'all' ||
+			(Array.isArray(planCategoryKindsAllowed) && planCategoryKindsAllowed.includes('expense'))
+			? usedPlanExpenseCategories
+			: []
+	);
+	const planCategoryPickerFlat = $derived(
+		planCategoryGroupByKind
+			? []
+			: Array.isArray(planCategoryKindsAllowed) && planCategoryKindsAllowed.includes('income')
+				? usedPlanIncomeCategories
+				: usedPlanExpenseCategories
+	);
+
 	const filtersSheetSide = $derived<'bottom' | 'right'>(desktop.current ? 'right' : 'bottom');
 	const filtersSheetClass = $derived(
 		filtersSheetSide === 'bottom'
@@ -393,12 +442,19 @@
 		return normalizePlanFilters(criteria);
 	}
 
+	function syncPlansDraftCategory(next: PlanFilterCriteria): PlanFilterCriteria {
+		return {
+			...next,
+			categoryIds: resolveCategoryIdsForTypes(next.categoryIds, next.types, categoryKinds)
+		};
+	}
+
 	function persistPlansListSession() {
 		writePlansListSession(plansApplied);
 	}
 
 	function openPlanFilters() {
-		plansDraft = clonePlanFilters(plansApplied);
+		plansDraft = syncPlansDraftCategory(clonePlanFilters(plansApplied));
 		plansFiltersOpen = true;
 	}
 
@@ -418,7 +474,7 @@
 
 	function onPlanFiltersOpenChange(open: boolean) {
 		if (open) {
-			plansDraft = clonePlanFilters(plansApplied);
+			plansDraft = syncPlansDraftCategory(clonePlanFilters(plansApplied));
 			plansFiltersOpen = true;
 			return;
 		}
@@ -427,6 +483,17 @@
 			return;
 		}
 		plansFiltersOpen = false;
+	}
+
+	function onPlanFiltersDismissAttempt(e: Event) {
+		if (shouldIgnoreDismissForNativePicker(e) || shouldIgnoreDismissForFloatingMenu(e)) {
+			e.preventDefault();
+			return;
+		}
+		if (plansDraftDirty || plansDiscardWarnOpen) {
+			e.preventDefault();
+			if (plansDraftDirty) plansDiscardWarnOpen = true;
+		}
 	}
 
 	function confirmDiscardPlanFilters() {
@@ -438,6 +505,23 @@
 	function clearPlanDraftFilters() {
 		plansDraft = { ...DEFAULT_PLAN_FILTERS, search: plansApplied.search };
 	}
+
+	function onPlanFilterTypesChange(next: string[]) {
+		const types = next.filter(
+			(t): t is ActivityTxType => t === 'income' || t === 'expense' || t === 'transfer'
+		);
+		plansDraft = syncPlansDraftCategory({ ...plansDraft, types });
+	}
+
+	$effect(() => {
+		if (showPlanCategoryFilter) return;
+		if (plansDraft.categoryIds.length === 0 && plansApplied.categoryIds.length === 0) return;
+		if (plansDraft.categoryIds.length > 0) plansDraft = { ...plansDraft, categoryIds: [] };
+		if (plansApplied.categoryIds.length > 0) {
+			plansApplied = { ...plansApplied, categoryIds: [] };
+			persistPlansListSession();
+		}
+	});
 
 	function updateAppliedPlanSearch(next: string) {
 		plansApplied = { ...plansApplied, search: next };
@@ -652,7 +736,7 @@
 
 	$effect(() => {
 		if (route !== 'plans' || !xlWide.current) return;
-		plansDraft = clonePlanFilters(plansApplied);
+		plansDraft = syncPlansDraftCategory(clonePlanFilters(plansApplied));
 	});
 
 	onMount(() => {
@@ -1385,15 +1469,7 @@
 							testid="plans-filter-type"
 							ariaLabel="Type"
 							values={[...plansDraft.types]}
-							onValuesChange={(next) => {
-								plansDraft = {
-									...plansDraft,
-									types: next.filter(
-										(t): t is ActivityTxType =>
-											t === 'income' || t === 'expense' || t === 'transfer'
-									)
-								};
-							}}
+							onValuesChange={onPlanFilterTypesChange}
 							items={[
 								{ id: 'income', label: 'Income', testid: 'plans-filter-type-income' },
 								{ id: 'expense', label: 'Expense', testid: 'plans-filter-type-expense' },
@@ -1401,6 +1477,28 @@
 							]}
 						/>
 					</div>
+					{#if showPlanCategoryFilter}
+						<div class="space-y-1">
+							<Label for="plans-filter-category">Category</Label>
+							<CategoryPicker
+								id="plans-filter-category"
+								testid="plans-filter-category"
+								multiple
+								values={[...plansDraft.categoryIds]}
+								onValuesChange={(next) => (plansDraft = { ...plansDraft, categoryIds: next })}
+								categories={planCategoryPickerFlat}
+								incomeCategories={planCategoryPickerIncome}
+								expenseCategories={planCategoryPickerExpense}
+								groups={categoryGroups}
+								groupByKind={planCategoryGroupByKind}
+								showAdminFee={planCategoryShowAdminFee}
+								showUncategorized={planCategoryShowUncategorized}
+								emptyMeans="all"
+								disabled={planCategoryFilterDisabled}
+								ariaLabel="Category"
+							/>
+						</div>
+					{/if}
 					<div class="space-y-1">
 						<Label for="plans-filter-pocket">Pocket</Label>
 						<FilterCheckSelect
@@ -1540,6 +1638,8 @@
 								showCloseButton={false}
 								interactOutsideBehavior="close"
 								escapeKeydownBehavior="close"
+								onInteractOutside={onPlanFiltersDismissAttempt}
+								onEscapeKeydown={onPlanFiltersDismissAttempt}
 							>
 								<Sheet.Title class="sr-only">Filters</Sheet.Title>
 								{@render planFilterPanel()}

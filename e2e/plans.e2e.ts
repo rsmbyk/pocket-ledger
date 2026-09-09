@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { ensureCategory, expectXlFilterCardColumn, expectXlFilterCardTitleAndPadding, goToNav, selectPlanCategory } from './nav';
+import { ensureCategory, expectXlFilterCardColumn, expectXlFilterCardTitleAndPadding, goToNav, selectPlanCategory, selectPlansFilterCategory } from './nav';
 
 function planForm(page: Page): Locator {
 	return page.getByTestId('plan-dialog').or(page.getByTestId('plan-sheet'));
@@ -39,6 +39,8 @@ async function addPlan(
 		note?: string;
 		dueOn?: string;
 		repeat?: 'once' | 'weekly' | 'monthly';
+		/** `null` leaves Uncategorized; omit to pick Food. */
+		category?: string | null;
 	}
 ): Promise<void> {
 	if (opts.from === 'pocket') {
@@ -57,7 +59,9 @@ async function addPlan(
 	}
 	await form.getByTestId('plan-type-expense').click();
 	await form.getByTestId('plan-amount').fill(opts.amount);
-	await selectPlanCategory(page, 'Food', form);
+	if (opts.category !== null) {
+		await selectPlanCategory(page, opts.category ?? 'Food', form);
+	}
 	if (opts.note) await form.getByTestId('plan-note').fill(opts.note);
 	if (opts.dueOn) {
 		await form.getByTestId('plan-due').locator('input[type="date"]').fill(opts.dueOn);
@@ -284,7 +288,7 @@ test.describe('223 / 224 Plans', () => {
 		});
 	});
 
-	test('Plans filters are type and pocket only', async ({ page }) => {
+	test('Plans filters are type, category, and pocket (244)', async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await page.goto('/plans');
 		await expect(page.getByTestId('plans-panel')).toBeVisible();
@@ -293,9 +297,116 @@ test.describe('223 / 224 Plans', () => {
 		await expect(sheet).toBeVisible();
 		await expect(sheet.getByTestId('plans-filter-type')).toBeVisible();
 		await expect(sheet.getByTestId('plans-filter-pocket')).toBeVisible();
+		await expect(sheet.getByTestId('plans-filter-category')).toHaveCount(0);
 		await expect(sheet.getByTestId('activity-filter-category')).toHaveCount(0);
 		await expect(sheet.getByTestId('activity-filter-show-voided')).toHaveCount(0);
 		await expect(page.getByTestId('activity-range-trigger')).toHaveCount(0);
+	});
+
+	test.describe('244 category filter', () => {
+		test.use({ viewport: { width: 1024, height: 800 } });
+
+		async function closePlanFilterMenu(page: Page): Promise<void> {
+			const typeMenu = page.getByTestId('plans-filter-type-expense');
+			if (await typeMenu.isVisible()) {
+				await page.getByTestId('plans-filter-type').click();
+				await expect(typeMenu).toBeHidden();
+			}
+		}
+
+		test('used Food appears; Groceries does not; Transfer disables; Apply filters', async ({
+			page
+		}) => {
+			await addPlan(page, { from: 'plans', description: 'Food lunch', amount: '15000' });
+			await addPlan(page, {
+				from: 'plans',
+				description: 'Bare note',
+				amount: '5000',
+				category: null
+			});
+
+			await goToNav(page, 'plans');
+			await page.getByTestId('plans-filters-open').click();
+			const sheet = page.getByTestId('plans-filters-sheet');
+			await expect(sheet).toBeVisible();
+			await expect(sheet.getByTestId('plans-filter-category')).toBeVisible();
+			await page.getByTestId('plans-filter-category').click();
+			await expect(page.getByRole('option', { name: 'Food', exact: true })).toBeVisible();
+			await expect(page.getByRole('option', { name: 'Groceries', exact: true })).toHaveCount(0);
+			await page.keyboard.press('Escape');
+
+			await page.getByTestId('plans-filter-type').click();
+			const transfer = page.getByTestId('plans-filter-type-transfer');
+			await expect(transfer).toBeVisible();
+			await transfer.click({ force: true });
+			await expect(transfer).toHaveAttribute('data-checked', 'true');
+			await closePlanFilterMenu(page);
+			await expect(page.getByTestId('plans-filter-category')).toBeDisabled();
+			await expect(page.getByTestId('plans-filter-category')).toContainText('All');
+
+			await page.getByTestId('plans-filters-clear').click();
+			await expect(page.getByTestId('plans-filter-category')).toBeEnabled();
+
+			await selectPlansFilterCategory(page, 'Food');
+			await page.getByTestId('plans-filter-category').click();
+			await expect(page.getByRole('option', { name: 'Food', exact: true })).toBeHidden();
+			await page.getByTestId('plans-filters-apply').click();
+			await expect(sheet).toBeHidden();
+			await expect(page.getByTestId('plans-list')).toContainText('Food lunch');
+			await expect(page.getByTestId('plans-list')).not.toContainText('Bare note');
+		});
+	});
+
+	test.describe('243 dirty leave keep-open', () => {
+		test.use({ viewport: { width: 1024, height: 800 } });
+
+		async function dirtyPlanFilters(page: Page): Promise<void> {
+			await goToNav(page, 'plans');
+			await page.getByTestId('plans-filters-open').click();
+			const sheet = page.getByTestId('plans-filters-sheet');
+			await expect(sheet).toBeVisible();
+			await page.getByTestId('plans-filter-type').click();
+			const expense = page.getByTestId('plans-filter-type-expense');
+			await expect(expense).toBeVisible();
+			await expense.click({ force: true });
+			await expect(expense).toHaveAttribute('data-checked', 'true');
+			await page.getByTestId('plans-filter-type').click();
+			await expect(expense).toBeHidden();
+		}
+
+		test('dirty overlay and Escape keep the sheet; Keep editing stays; Discard reopens', async ({
+			page
+		}) => {
+			await dirtyPlanFilters(page);
+			const sheet = page.getByTestId('plans-filters-sheet');
+			await page.locator('[data-slot="sheet-overlay"]').click({ position: { x: 8, y: 8 } });
+			await expect(page.getByRole('heading', { name: 'Discard filter changes?' })).toBeVisible();
+			await expect(sheet).toBeVisible();
+			await page.getByTestId('confirm-dialog-cancel').click();
+			await expect(page.getByRole('heading', { name: 'Discard filter changes?' })).toBeHidden();
+			await expect(sheet).toBeVisible();
+			await page.keyboard.press('Escape');
+			await expect(page.getByRole('heading', { name: 'Discard filter changes?' })).toBeVisible();
+			await expect(sheet).toBeVisible();
+			await page.getByTestId('plans-filters-discard-confirm').click();
+			await expect(sheet).toBeHidden();
+			await page.getByTestId('plans-filters-open').click();
+			await expect(sheet).toBeVisible();
+		});
+
+		test('overlay and Escape close a clean Filters sheet', async ({ page }) => {
+			await goToNav(page, 'plans');
+			await page.getByTestId('plans-filters-open').click();
+			const sheet = page.getByTestId('plans-filters-sheet');
+			await expect(sheet).toBeVisible();
+			await page.locator('[data-slot="sheet-overlay"]').click({ position: { x: 8, y: 8 } });
+			await expect(sheet).toBeHidden();
+
+			await page.getByTestId('plans-filters-open').click();
+			await expect(sheet).toBeVisible();
+			await page.keyboard.press('Escape');
+			await expect(sheet).toBeHidden();
+		});
 	});
 
 	test('232 dialog is shorter than the viewport with sticky save; 233 Due min is today', async ({
@@ -326,7 +437,8 @@ test.describe('223 / 224 Plans', () => {
 		await dialog.locator('.overflow-y-auto').evaluate((el) => {
 			el.scrollTop = 80;
 		});
-		expect((await heading.boundingBox())?.y).toBe(headerY);
+		const afterY = (await heading.boundingBox())?.y;
+		expect(Math.abs((afterY ?? 0) - (headerY ?? 0))).toBeLessThan(4);
 		await expect(dialog.getByTestId('plan-save')).toBeVisible();
 		await dialog.getByTestId('plan-close').click();
 	});

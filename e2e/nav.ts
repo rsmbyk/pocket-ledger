@@ -106,6 +106,15 @@ export async function selectActivityFilterCategory(page: Page, name: string): Pr
 	await page.getByRole('option', { name, exact: true }).click();
 }
 
+/** Pick a category from the Plans filter CategoryPicker. */
+export async function selectPlansFilterCategory(page: Page, name: string): Promise<void> {
+	await page.getByTestId('plans-filter-category').click();
+	const search = page.getByTestId('category-picker-search');
+	await search.waitFor({ state: 'visible', timeout: 5_000 });
+	await search.fill(name);
+	await page.getByRole('option', { name, exact: true }).click();
+}
+
 /** Confirm the in-app void ConfirmDialog. */
 export async function confirmVoid(page: Page): Promise<void> {
 	await page.getByTestId('tx-void-confirm').click();
