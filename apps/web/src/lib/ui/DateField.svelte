@@ -14,6 +14,8 @@
 		onValueChange: (next: string) => void;
 		/** Native `min` on the date input (YYYY-MM-DD). */
 		min?: string;
+		/** Native `max` on the date input (YYYY-MM-DD). */
+		max?: string;
 		/** Optional trailing control inside the field chrome (right side). */
 		trailing?: Snippet;
 	};
@@ -27,6 +29,7 @@
 		testid = 'date-field',
 		onValueChange,
 		min,
+		max,
 		trailing
 	}: Props = $props();
 
@@ -77,6 +80,7 @@
 		{disabled}
 		{value}
 		min={min}
+		max={max}
 		aria-label={ariaLabel}
 		onclick={(e) => {
 			const el = e.currentTarget as HTMLInputElement;

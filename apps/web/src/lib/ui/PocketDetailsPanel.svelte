@@ -7,6 +7,7 @@
 	import InboxIcon from '@lucide/svelte/icons/inbox';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import TargetIcon from '@lucide/svelte/icons/target';
+	import GaugeIcon from '@lucide/svelte/icons/gauge';
 	import WalletIcon from '@lucide/svelte/icons/wallet';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -16,9 +17,12 @@
 	import TransactionListRow from '$lib/ui/TransactionListRow.svelte';
 	import PlanListRow from '$lib/ui/PlanListRow.svelte';
 	import PocketGoalFormDialog from '$lib/ui/PocketGoalFormDialog.svelte';
+	import PocketBudgetFormDialog from '$lib/ui/PocketBudgetFormDialog.svelte';
 	import GoalProgressChrome from '$lib/ui/GoalProgressChrome.svelte';
+	import BudgetProgressChrome from '$lib/ui/BudgetProgressChrome.svelte';
 	import type { Account } from '$lib/domain/account';
 	import type { CategoryRow } from '$lib/data/db';
+	import type { OverlayGroup } from '$lib/domain/category-overlay';
 	import { latestPocketTransactions, ADMIN_FEE_CATEGORY_ID, ADMIN_FEE_LABEL } from '$lib/domain/activity-filters';
 	import { STOCK_ADMIN_FEE_ICON, STOCK_CUSTOM_ICON, STOCK_UNCATEGORIZED_ICON } from '$lib/domain/default-category-catalog';
 	import {
@@ -29,6 +33,15 @@
 		sortPastGoals,
 		type PocketGoal
 	} from '$lib/domain/goals';
+	import {
+		budgetProgressPercent,
+		budgetUsedMinor,
+		effectiveStartOn,
+		formatBudgetAppliesTitle,
+		isActiveBudget,
+		sortActiveBudgets,
+		type PocketBudget
+	} from '$lib/domain/budgets';
 	import { formatMinor } from '$lib/domain/money';
 	import {
 		buildMonthSummary,
@@ -47,6 +60,12 @@
 	import { sortPlansForList } from '$lib/domain/plan-filters';
 	import { goalEndOfDayBalance } from '$lib/domain/pocket-balance';
 	import { createPocketGoal, dropPocketGoal, updatePocketGoal } from '$lib/application/goals';
+	import {
+		createPocketBudget,
+		dropPocketBudget,
+		restartPocketBudget,
+		updatePocketBudget
+	} from '$lib/application/budgets';
 
 	type Props = {
 		pocket: Account;
@@ -56,7 +75,9 @@
 		categoriesById: Record<string, CategoryRow>;
 		pockets: Account[];
 		goals: PocketGoal[];
+		budgets?: PocketBudget[];
 		plans?: LedgerPlan[];
+		categoryGroups?: OverlayGroup[];
 		hideAmounts?: boolean;
 		onAdd: () => void;
 		onAddPlan?: () => void;
@@ -74,7 +95,9 @@
 		categoriesById,
 		pockets,
 		goals,
+		budgets = [],
 		plans = [],
+		categoryGroups = [],
 		hideAmounts = false,
 		onAdd,
 		onAddPlan,
@@ -88,6 +111,9 @@
 	let goalFormOpen = $state(false);
 	let goalFormMode = $state<'create' | 'edit'>('create');
 	let editingGoal = $state<PocketGoal | null>(null);
+	let budgetFormOpen = $state(false);
+	let budgetFormMode = $state<'create' | 'edit'>('create');
+	let editingBudget = $state<PocketBudget | null>(null);
 	let pastOpen = $state(false);
 	/** Matches Tailwind `xl` — three-column details (235). */
 	const xlWide = new MediaQuery('min-width: 1280px');
@@ -119,6 +145,16 @@
 	);
 	const today = $derived(todayOccurredOn());
 	const pocketGoals = $derived(goals.filter((g) => g.accountId === pocket.id));
+	const pocketBudgets = $derived(budgets.filter((b) => b.accountId === pocket.id && isActiveBudget(b)));
+	const budgetUsedById = $derived(
+		Object.fromEntries(
+			pocketBudgets.map((b) => [b.id, budgetUsedMinor(b, transactions, today)])
+		) as Record<string, number>
+	);
+	const activeBudgets = $derived(sortActiveBudgets(pocketBudgets, budgetUsedById));
+	const budgetCats = $derived(
+		Object.values(categoriesById).map((c) => ({ id: c.id, name: c.name, groupId: c.groupId }))
+	);
 	const pocketPlans = $derived(
 		sortPlansForList(
 			plans.filter((p) => planTouchesPocket(p, pocket.id)),
@@ -153,6 +189,19 @@
 	function onNextMonth() {
 		if (!canNext) return;
 		requestedMonth = shiftMonth(monthKey, 1);
+	}
+
+	function openCreateBudget() {
+		editingBudget = null;
+		budgetFormMode = 'create';
+		budgetFormOpen = true;
+	}
+
+	function openEditBudget(row: PocketBudget) {
+		if (!isActiveBudget(row)) return;
+		editingBudget = row;
+		budgetFormMode = 'edit';
+		budgetFormOpen = true;
 	}
 
 	function openCreateGoal() {
@@ -264,6 +313,82 @@
 								testid={`pocket-plan-row-${plan.id}`}
 								onOpen={() => onOpenPlan?.(plan)}
 							/>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</Card.Content>
+	</Card.Root>
+{/snippet}
+
+{#snippet budgetsCard()}
+	<Card.Root class="gap-0 py-0" data-testid="pocket-details-budgets-card">
+		<Card.Header class="flex flex-row items-center justify-between gap-2 space-y-0 px-4 py-3">
+			<Card.Title class="inline-flex items-center gap-1.5 text-base">
+				<GaugeIcon class="size-4" aria-hidden="true" />
+				Budgets
+			</Card.Title>
+			<Button type="button" size="sm" onclick={openCreateBudget} data-testid="pocket-details-add-budget">
+				<PlusIcon class="size-4" />
+				Add Budget
+			</Button>
+		</Card.Header>
+		<Card.Content class="px-2 pb-2">
+			{#if activeBudgets.length === 0}
+				<EmptyState
+					testid="pocket-details-budgets-empty"
+					title="No budgets"
+					description="Budgets you add will show up here."
+					class="px-2 pb-2"
+				>
+					{#snippet icon()}
+						<GaugeIcon class="size-5" />
+					{/snippet}
+				</EmptyState>
+			{:else}
+				<ul class="divide-border divide-y" data-testid="pocket-details-budgets-list">
+					{#each activeBudgets as row (row.id)}
+						{@const used = budgetUsedById[row.id] ?? 0}
+						{@const percent = budgetProgressPercent(row.limitMinor, used)}
+						<li>
+							<button
+								type="button"
+								class="hover:bg-accent/70 w-full rounded-md px-2 py-2.5 text-left"
+								data-testid={`pocket-details-budget-row-${row.id}`}
+								onclick={() => openEditBudget(row)}
+							>
+								<p
+									class="line-clamp-2 text-sm font-medium"
+									data-testid={`pocket-details-budget-title-${row.id}`}
+								>
+									{formatBudgetAppliesTitle(row, pocket.name, budgetCats, categoryGroups)}
+								</p>
+								<div class="mt-1 flex flex-wrap gap-1">
+									{#if row.hardLimit}
+										<span
+											class="bg-muted text-muted-foreground inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium"
+											data-testid={`pocket-details-budget-hard-${row.id}`}
+										>
+											Hard
+										</span>
+									{/if}
+									{#if row.period === 'monthly'}
+										<span
+											class="bg-muted text-muted-foreground inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium"
+											data-testid={`pocket-details-budget-monthly-${row.id}`}
+										>
+											Monthly
+										</span>
+									{/if}
+								</div>
+								<BudgetProgressChrome
+									usedMinor={used}
+									limitMinor={row.limitMinor}
+									{percent}
+									{currencyLabel}
+									{hideAmounts}
+								/>
+							</button>
 						</li>
 					{/each}
 				</ul>
@@ -424,6 +549,7 @@
 		<div class={colClass} data-testid="pocket-details-col-lists">
 			<div class="flex flex-col gap-4">
 				{@render plansCard()}
+				{@render budgetsCard()}
 				{@render goalsCard()}
 			</div>
 		</div>
@@ -432,6 +558,7 @@
 	<div class="space-y-4" data-testid="pocket-details-panel">
 		{@render identityCards()}
 		{@render plansCard()}
+		{@render budgetsCard()}
 		{@render goalsCard()}
 		{@render activityCards()}
 	</div>
@@ -473,6 +600,56 @@
 	onDrop={editingGoal
 		? async () => {
 				await dropPocketGoal(editingGoal!.id);
+				await onRefresh();
+			}
+		: undefined}
+/>
+
+<PocketBudgetFormDialog
+	open={budgetFormOpen}
+	mode={budgetFormMode}
+	{currencyLabel}
+	categories={Object.values(categoriesById)}
+	groups={categoryGroups}
+	initial={editingBudget}
+	initialStartOn={editingBudget ? effectiveStartOn(editingBudget, today) : today}
+	onOpenChange={(next) => {
+		budgetFormOpen = next;
+		if (!next) editingBudget = null;
+	}}
+	onSave={async (input) => {
+		if (budgetFormMode === 'create') {
+			await createPocketBudget({
+				accountId: pocket.id,
+				selectedIds: input.selectedIds,
+				allSelectableIds: input.allSelectableIds,
+				limitRaw: input.limitRaw,
+				startOn: input.startOn,
+				period: input.period,
+				hardLimit: input.hardLimit
+			});
+		} else if (editingBudget) {
+			await updatePocketBudget({
+				id: editingBudget.id,
+				selectedIds: input.selectedIds,
+				allSelectableIds: input.allSelectableIds,
+				limitRaw: input.limitRaw,
+				startOn: input.startOn,
+				period: input.period,
+				hardLimit: input.hardLimit
+			});
+		}
+		await onRefresh();
+	}}
+	onDrop={editingBudget
+		? async () => {
+				await dropPocketBudget(editingBudget!.id);
+				await onRefresh();
+			}
+		: undefined}
+	onRestart={editingBudget
+		? async () => {
+				await restartPocketBudget(editingBudget!.id);
 				await onRefresh();
 			}
 		: undefined}

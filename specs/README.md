@@ -262,3 +262,4 @@ Living behavior contracts for Pocket Ledger.
 | [243](243-plans-filters-dirty-keep-open/spec.md)       | Plans filters dirty leave keep-open                         | Accepted                                                                        |
 | [244](244-plans-category-filter/spec.md)               | Plans category filter                                        | Accepted                                                                        |
 | [245](245-shell-loading-skeletons/spec.md)             | Shell loading skeletons                                      | Accepted                                                                        |
+| [246](246-budgets/spec.md)                             | Pocket budgets                                               | Accepted                                                                        |

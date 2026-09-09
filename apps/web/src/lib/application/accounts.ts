@@ -18,8 +18,11 @@ import {
 import { ensureSeedCategories } from '$lib/application/transactions';
 import { todayOccurredOn, isValidOccurredOn } from '$lib/domain/transaction-rules';
 import { isActive } from '$lib/domain/goals';
+import { isActiveBudget } from '$lib/domain/budgets';
 import { listGoalsForAccount } from '$lib/data/goals-repo';
+import { listBudgetsForAccount } from '$lib/data/budgets-repo';
 import { softDeleteGoalsForPocket } from '$lib/application/goals';
+import { softDeleteBudgetsForPocket } from '$lib/application/budgets';
 import { getDisplayCurrency } from '$lib/application/display-currency';
 import { pushAccountById } from '$lib/application/sync-client';
 
@@ -210,6 +213,7 @@ export const POCKET_DELETE_HAS_TRANSACTIONS =
 	'This pocket still has transactions, including voided. Voiding is not enough.';
 export const POCKET_DELETE_HAS_ACTIVE_GOALS = 'Drop all active goals first.';
 export const POCKET_DELETE_HAS_ACTIVE_PLANS = 'Drop all active plans first.';
+export const POCKET_DELETE_HAS_BUDGETS = 'Drop all budgets first.';
 
 export async function pocketDeleteBlockers(id: string): Promise<string[]> {
 	const reasons: string[] = [];
@@ -224,6 +228,8 @@ export async function pocketDeleteBlockers(id: string): Promise<string[]> {
 	if (plans.some((p) => p.accountId === id || p.counterAccountId === id)) {
 		reasons.push(POCKET_DELETE_HAS_ACTIVE_PLANS);
 	}
+	const budgets = await listBudgetsForAccount(id);
+	if (budgets.some((b) => isActiveBudget(b))) reasons.push(POCKET_DELETE_HAS_BUDGETS);
 	return reasons;
 }
 
@@ -235,6 +241,7 @@ export async function deletePocket(id: string): Promise<void> {
 	const blockers = await pocketDeleteBlockers(id);
 	if (blockers.length > 0) throw new Error(blockers.join(' '));
 	await softDeleteGoalsForPocket(id);
+	await softDeleteBudgetsForPocket(id);
 	await deleteAccount(id);
 	await pushAccountById(id, true);
 }

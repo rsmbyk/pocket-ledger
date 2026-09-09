@@ -32,6 +32,9 @@
 		isBlockedAmountKey,
 		isCreateTxDirty,
 		isEditTxDirty,
+		isValidOccurredOn,
+		parseAmountInput,
+		parseNonNegativeAmountInput,
 		todayOccurredOn,
 		type AddableTransactionType,
 		type TxFormBaseline
@@ -50,6 +53,12 @@
 	import { cn } from '$lib/utils.js';
 	import { shouldIgnoreDismissForNativePicker } from '$lib/ui/native-picker-dismiss';
 	import { SyncConflictError } from '$lib/application/sync';
+	import {
+		exceededBudgets,
+		formatBudgetAppliesTitle,
+		isActiveBudget,
+		type PocketBudget
+	} from '$lib/domain/budgets';
 
 	type AddMode = 'normal' | 'transfer';
 
@@ -74,6 +83,10 @@
 		onSaved: () => void | Promise<void>;
 		onPushTransaction?: (id: string, deleted?: boolean) => void | Promise<void>;
 		onSyncConflict?: () => void | Promise<void>;
+		budgets?: PocketBudget[];
+		ledgerTransactions?: LedgerTransaction[];
+		categoriesById?: Record<string, CategoryRow>;
+		onGoToPocket?: (pocketId: string) => void;
 	};
 
 	let {
@@ -86,7 +99,11 @@
 		onOpenChange,
 		onSaved,
 		onPushTransaction,
-		onSyncConflict
+		onSyncConflict,
+		budgets = [],
+		ledgerTransactions = [],
+		categoriesById = {},
+		onGoToPocket
 	}: Props = $props();
 
 	const desktop = new MediaQuery('min-width: 768px');
@@ -116,6 +133,9 @@
 	let transferEditBaseline = $state<TransferEditBaseline | null>(null);
 	let voidConfirmOpen = $state(false);
 	let discardConfirmOpen = $state(false);
+	let budgetWarnOpen = $state(false);
+	let budgetHits = $state<PocketBudget[]>([]);
+	let budgetWarnAction = $state<'view' | null>(null);
 
 	let transferSourceId = $state('');
 	let transferDestId = $state('');
@@ -506,62 +526,126 @@
 		}
 	}
 
+	function buildProposedTx(): LedgerTransaction {
+		if ((editing && editing.type === 'transfer') || mode === 'transfer') {
+			const amountMinor = parseAmountInput(transferAmountRaw);
+			let feeMinor = 0;
+			try {
+				feeMinor = parseNonNegativeAmountInput(transferFeeRaw);
+			} catch {
+				feeMinor = 0;
+			}
+			const on = transferOccurredOn || todayOccurredOn();
+			if (!isValidOccurredOn(on)) throw new Error('Date must be YYYY-MM-DD');
+			return {
+				id: editing?.id ?? '',
+				accountId: transferSourceId,
+				counterAccountId: transferDestId || null,
+				type: 'transfer',
+				amountMinor,
+				feeMinor,
+				categoryId: null,
+				note: transferNote,
+				occurredOn: on,
+				createdAt: editing?.createdAt ?? '',
+				voidedAt: null
+			};
+		}
+		const amountMinor = parseAmountInput(amountRaw);
+		const on = occurredOn || todayOccurredOn();
+		if (!isValidOccurredOn(on)) throw new Error('Date must be YYYY-MM-DD');
+		let feeMinor = 0;
+		if (type === 'expense') {
+			feeMinor = parseNonNegativeAmountInput(expenseFeeRaw);
+		}
+		return {
+			id: editing?.id ?? '',
+			accountId: selectedAccountId,
+			counterAccountId: null,
+			type,
+			amountMinor,
+			feeMinor,
+			categoryId: categoryId.trim() ? categoryId : null,
+			note,
+			occurredOn: on,
+			createdAt: editing?.createdAt ?? '',
+			voidedAt: null
+		};
+	}
+
+	async function commitSave() {
+		let savedId: string | null = null;
+		if (editing && editing.type === 'transfer') {
+			await updateTransfer({
+				id: editing.id,
+				sourceAccountId: transferSourceId,
+				destAccountId: transferDestId,
+				amountRaw: transferAmountRaw,
+				feeRaw: transferFeeRaw,
+				note: transferNote,
+				occurredOn: transferOccurredOn
+			});
+			savedId = editing.id;
+		} else if (editing) {
+			await updateTransaction({
+				id: editing.id,
+				accountId: selectedAccountId,
+				type,
+				amountRaw,
+				feeRaw: type === 'expense' ? expenseFeeRaw : '',
+				categoryId,
+				note,
+				occurredOn
+			});
+			savedId = editing.id;
+		} else if (mode === 'transfer') {
+			const tx = await addTransfer({
+				sourceAccountId: transferSourceId,
+				destAccountId: transferDestId,
+				amountRaw: transferAmountRaw,
+				feeRaw: transferFeeRaw,
+				note: transferNote,
+				occurredOn: transferOccurredOn
+			});
+			clearTxCreateDraft();
+			savedId = tx.id;
+		} else {
+			const tx = await addTransaction({
+				accountId: selectedAccountId,
+				type,
+				amountRaw,
+				feeRaw: type === 'expense' ? expenseFeeRaw : '',
+				categoryId,
+				note,
+				occurredOn
+			});
+			clearTxCreateDraft();
+			savedId = tx.id;
+		}
+		if (savedId && onPushTransaction) await onPushTransaction(savedId);
+		onOpenChange(false);
+		await onSaved();
+	}
+
 	async function save() {
 		if (isVoidedView || saveDisabled) return;
 		saving = true;
 		clearFieldError();
 		try {
-			let savedId: string | null = null;
-			if (editing && editing.type === 'transfer') {
-				await updateTransfer({
-					id: editing.id,
-					sourceAccountId: transferSourceId,
-					destAccountId: transferDestId,
-					amountRaw: transferAmountRaw,
-					feeRaw: transferFeeRaw,
-					note: transferNote,
-					occurredOn: transferOccurredOn
-				});
-				savedId = editing.id;
-			} else if (editing) {
-				await updateTransaction({
-					id: editing.id,
-					accountId: selectedAccountId,
-					type,
-					amountRaw,
-					feeRaw: type === 'expense' ? expenseFeeRaw : '',
-					categoryId,
-					note,
-					occurredOn
-				});
-				savedId = editing.id;
-			} else if (mode === 'transfer') {
-				const tx = await addTransfer({
-					sourceAccountId: transferSourceId,
-					destAccountId: transferDestId,
-					amountRaw: transferAmountRaw,
-					feeRaw: transferFeeRaw,
-					note: transferNote,
-					occurredOn: transferOccurredOn
-				});
-				clearTxCreateDraft();
-				savedId = tx.id;
-			} else {
-				const tx = await addTransaction({
-					accountId: selectedAccountId,
-					type,
-					amountRaw,
-					feeRaw: type === 'expense' ? expenseFeeRaw : '',
-					categoryId,
-					note,
-					occurredOn
-				});
-				clearTxCreateDraft();
-				savedId = tx.id;
+			const proposed = buildProposedTx();
+			const hits = exceededBudgets(
+				budgets.filter((b) => isActiveBudget(b)),
+				ledgerTransactions,
+				proposed,
+				todayOccurredOn(),
+				editing?.id ?? null
+			);
+			if (hits.length > 0) {
+				budgetHits = hits;
+				budgetWarnOpen = true;
+				return;
 			}
-			if (savedId && onPushTransaction) await onPushTransaction(savedId);
-			onOpenChange(false);
-			await onSaved();
+			await commitSave();
 		} catch (err) {
 			if (err instanceof SyncConflictError) {
 				onOpenChange(false);
@@ -571,6 +655,54 @@
 			setCaughtError(err);
 		} finally {
 			saving = false;
+		}
+	}
+
+	const budgetWarnHard = $derived(budgetHits.some((b) => b.hardLimit));
+	const budgetWarnNames = $derived(
+		budgetHits
+			.map((b) => {
+				const pocketName = accounts.find((a) => a.id === b.accountId)?.name ?? 'Pocket';
+				const cats = Object.values(categoriesById).map((c) => ({
+					id: c.id,
+					name: c.name,
+					groupId: c.groupId
+				}));
+				return formatBudgetAppliesTitle(b, pocketName, cats, categoryGroups);
+			})
+			.join(', ')
+	);
+
+	function onBudgetWarnOpenChange(next: boolean) {
+		if (next) {
+			budgetWarnOpen = true;
+			return;
+		}
+		const action = budgetWarnAction;
+		budgetWarnAction = null;
+		budgetWarnOpen = false;
+		const hard = budgetHits.some((b) => b.hardLimit);
+		const pocketId = budgetHits[0]?.accountId;
+		if (action === 'view') {
+			if (!editing) writeTxCreateDraft(snapshotTxCreateDraft());
+			onOpenChange(false);
+			if (pocketId) onGoToPocket?.(pocketId);
+			return;
+		}
+		if (!hard) {
+			saving = true;
+			void commitSave()
+				.catch((err) => {
+					if (err instanceof SyncConflictError) {
+						onOpenChange(false);
+						void onSyncConflict?.();
+						return;
+					}
+					setCaughtError(err);
+				})
+				.finally(() => {
+					saving = false;
+				});
 		}
 	}
 
@@ -1106,4 +1238,20 @@
 	onOpenChange={(next) => (discardConfirmOpen = next)}
 	onConfirm={confirmDiscard}
 	onSecondary={isEdit ? undefined : saveCreateDraft}
+/>
+
+<ConfirmDialog
+	open={budgetWarnOpen}
+	title={budgetWarnHard ? 'This exceeds a hard limit' : 'This exceeds a budget'}
+	description={`Saving this would go over: ${budgetWarnNames}.`}
+	confirmLabel="View pocket"
+	cancelLabel="Close"
+	dangerChrome={budgetWarnHard}
+	confirmTestId="tx-budget-warn-view"
+	contentTestId="tx-budget-warn"
+	interactOutsideBehavior="ignore"
+	onOpenChange={onBudgetWarnOpenChange}
+	onConfirm={() => {
+		budgetWarnAction = 'view';
+	}}
 />

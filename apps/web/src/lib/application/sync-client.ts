@@ -21,6 +21,7 @@ export const SYNC_KIND_CATEGORY_GROUP = 'categoryGroup';
 export const SYNC_KIND_SETTING = 'setting';
 export const SYNC_KIND_GOAL = 'goal';
 export const SYNC_KIND_PLAN = 'plan';
+export const SYNC_KIND_BUDGET = 'budget';
 
 /** Settings that follow the signed-in account (Spec 241). */
 export const LEDGER_SETTING_KEYS = new Set([
@@ -109,10 +110,11 @@ function isSeedMain(account: Account): boolean {
 async function dropUnusedLocalSeedMain(liveCloudMains: Set<string>): Promise<void> {
 	if (liveCloudMains.size === 0) return;
 	const locals = await db.accounts.toArray();
-	const [txs, plans, goals] = await Promise.all([
+	const [txs, plans, goals, budgets] = await Promise.all([
 		db.transactions.toArray(),
 		db.plans.toArray(),
-		db.goals.toArray()
+		db.goals.toArray(),
+		db.budgets.toArray()
 	]);
 	for (const account of locals) {
 		if (liveCloudMains.has(account.id)) continue;
@@ -120,7 +122,8 @@ async function dropUnusedLocalSeedMain(liveCloudMains: Set<string>): Promise<voi
 		const used =
 			txs.some((t) => t.accountId === account.id || t.counterAccountId === account.id) ||
 			plans.some((p) => p.accountId === account.id || p.counterAccountId === account.id) ||
-			goals.some((g) => g.accountId === account.id);
+			goals.some((g) => g.accountId === account.id) ||
+			budgets.some((b) => b.accountId === account.id);
 		if (used) continue;
 		await db.accounts.delete(account.id);
 		await db.syncRevs.delete(revId(SYNC_KIND_ACCOUNT, account.id));
@@ -154,6 +157,9 @@ export async function pullAndApply(): Promise<void> {
 		} else if (entity.kind === SYNC_KIND_PLAN) {
 			if (entity.deleted) await db.plans.delete(entity.id);
 			else if (entity.blob) await db.plans.put(JSON.parse(entity.blob));
+		} else if (entity.kind === SYNC_KIND_BUDGET) {
+			if (entity.deleted) await db.budgets.delete(entity.id);
+			else if (entity.blob) await db.budgets.put(JSON.parse(entity.blob));
 		} else if (entity.kind === SYNC_KIND_SETTING) {
 			await applySettingEntity(entity.id, entity.deleted, entity.blob);
 		}
@@ -173,13 +179,14 @@ async function catchUpOne(kind: string, id: string, blob: unknown, deleted = fal
 
 /** PUT local rows that the server has never seen (Spec 119 / 241). Call after a successful pull. */
 export async function catchUpPushLocal(): Promise<void> {
-	const [accounts, categories, groups, transactions, goals, plans, settings] = await Promise.all([
+	const [accounts, categories, groups, transactions, goals, plans, budgets, settings] = await Promise.all([
 		db.accounts.toArray(),
 		db.categories.toArray(),
 		db.categoryGroups.toArray(),
 		db.transactions.toArray(),
 		db.goals.toArray(),
 		db.plans.toArray(),
+		db.budgets.toArray(),
 		db.settings.toArray()
 	]);
 	for (const row of accounts) await catchUpOne(SYNC_KIND_ACCOUNT, row.id, row);
@@ -188,6 +195,7 @@ export async function catchUpPushLocal(): Promise<void> {
 	for (const row of transactions) await catchUpOne(SYNC_KIND_TRANSACTION, row.id, row);
 	for (const row of goals) await catchUpOne(SYNC_KIND_GOAL, row.id, row);
 	for (const row of plans) await catchUpOne(SYNC_KIND_PLAN, row.id, row);
+	for (const row of budgets) await catchUpOne(SYNC_KIND_BUDGET, row.id, row);
 	const seenSettings = new Set<string>();
 	for (const row of settings) {
 		if (!isLedgerSettingKey(row.key)) continue;

@@ -8,6 +8,7 @@
 	import AppCommandPalette from '$lib/ui/AppCommandPalette.svelte';
 	import type { Account } from '$lib/domain/account';
 	import type { PocketGoal } from '$lib/domain/goals';
+	import type { PocketBudget } from '$lib/domain/budgets';
 	import type { LedgerPlan } from '$lib/domain/plan';
 	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import type { CategoryRow } from '$lib/data/db';
@@ -25,6 +26,7 @@
 		account: Account | null;
 		accounts: Account[];
 		goals?: PocketGoal[];
+		budgets?: PocketBudget[];
 		plans?: LedgerPlan[];
 		isSinglePot: boolean;
 		balanceMinor: number;
@@ -94,6 +96,7 @@
 		account,
 		accounts,
 		goals = [],
+		budgets = [],
 		plans = [],
 		isSinglePot: _isSinglePot,
 		balanceMinor,
@@ -287,6 +290,7 @@
 				{account}
 				{accounts}
 				{goals}
+				{budgets}
 				{plans}
 				{balanceMinor}
 				{transactions}
@@ -376,6 +380,10 @@
 		onSaved={onRefreshLedger}
 		{onPushTransaction}
 		{onSyncConflict}
+		{budgets}
+		ledgerTransactions={transactions}
+		{categoriesById}
+		onGoToPocket={(id) => void goto(`/pockets/${id}`)}
 	/>
 {/if}
 

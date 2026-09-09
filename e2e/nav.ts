@@ -196,6 +196,40 @@ export async function addPocketGoal(
 	await expect(dialog).toBeHidden();
 }
 
+export async function addPocketBudget(
+	page: Page,
+	opts: {
+		amount: string;
+		selectAll?: boolean;
+		category?: string;
+		hardLimit?: boolean;
+		monthly?: boolean;
+		startOn?: string;
+	}
+): Promise<void> {
+	await expect(page.getByTestId('pocket-details-panel')).toBeVisible();
+	await page.getByTestId('pocket-details-add-budget').click();
+	const dialog = page.getByTestId('pocket-budget-form-dialog');
+	await expect(dialog).toBeVisible();
+	if (opts.selectAll) {
+		await page.getByTestId('pocket-budget-select-all').click();
+	} else if (opts.category) {
+		await dialog.getByRole('checkbox', { name: opts.category, exact: true }).check();
+	}
+	await page.getByTestId('pocket-budget-limit-input').fill(opts.amount);
+	if (opts.startOn) {
+		await page.getByTestId('pocket-budget-start-input').locator('input[type="date"]').fill(opts.startOn);
+	}
+	if (opts.monthly) {
+		await page.getByTestId('pocket-budget-period-monthly').check();
+	}
+	if (opts.hardLimit) {
+		await page.getByTestId('pocket-budget-hard-limit').check();
+	}
+	await page.getByTestId('pocket-budget-save').click();
+	await expect(dialog).toBeHidden();
+}
+
 /** Copy/download then ack the hex kit (202). Download avoids clipboard in CI. */
 export async function confirmHexKit(page: Page): Promise<void> {
 	await expect(page.getByTestId('hex-kit-screen')).toBeVisible();

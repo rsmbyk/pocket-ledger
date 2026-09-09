@@ -55,6 +55,7 @@ export async function resetLocalData(options: ResetLocalDataOptions): Promise<vo
 			db.transactions,
 			db.goals,
 			db.plans,
+			db.budgets,
 			db.netWorthSnapshots,
 			db.settings
 		],
@@ -64,6 +65,7 @@ export async function resetLocalData(options: ResetLocalDataOptions): Promise<vo
 				db.transactions.clear(),
 				db.goals.clear(),
 				db.plans.clear(),
+				db.budgets.clear(),
 				db.netWorthSnapshots.clear(),
 				db.settings.clear(),
 				db.categories.clear(),
