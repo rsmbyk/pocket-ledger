@@ -221,19 +221,21 @@
 	}
 
 	$effect(() => {
-		if (
-			!shouldRedirectMissingPocket({
-				pocketId,
-				pocketFound: Boolean(detailsPocket),
-				ledgerReady
-			})
-		) {
-			return;
-		}
 		const path = page.url.pathname.replace(/\/+$/, '') || '/';
 		const nearest = nearestValidPath(path);
 		if (isGatePath(nearest)) return;
-		if (path !== '/pockets') void goto('/pockets', { replaceState: true });
+		if (pocketId && !detailsPocket && !ledgerReady) {
+			if (path !== nearest) void goto(nearest, { replaceState: true });
+			return;
+		}
+		const desired = shouldRedirectMissingPocket({
+			pocketId,
+			pocketFound: Boolean(detailsPocket),
+			ledgerReady
+		})
+			? '/pockets'
+			: nearest;
+		if (path !== desired) void goto(desired, { replaceState: true });
 	});
 
 	function openAddPlan(accountId?: string) {
