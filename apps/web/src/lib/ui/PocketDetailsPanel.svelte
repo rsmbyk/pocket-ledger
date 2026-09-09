@@ -343,6 +343,7 @@
 		summary={summary}
 		{currencyLabel}
 		{hideAmounts}
+		showTransfers
 		canPrev={canPrev}
 		canNext={canNext}
 		onPrevMonth={onPrevMonth}

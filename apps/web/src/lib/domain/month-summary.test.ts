@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LedgerTransaction } from '$lib/domain/transaction';
+import { balanceAtDayStart } from './pocket-balance';
 import {
 	buildMonthSummary,
 	canShiftMonth,
@@ -54,7 +55,10 @@ describe('month-summary', () => {
 			incomeByCategory: [],
 			expenseByCategory: [],
 			openingMinor: 0,
-			endingMinor: 0
+			endingMinor: 0,
+			transferInMinor: 0,
+			transferOutMinor: 0,
+			transferNetMinor: 0
 		});
 	});
 
@@ -313,11 +317,104 @@ describe('month-summary', () => {
 		expect(main.expenseByCategory).toEqual([
 			{ categoryId: '__admin_fee__', label: 'Admin Fee', amountMinor: 250 }
 		]);
+		expect(main.transferInMinor).toBe(0);
+		expect(main.transferOutMinor).toBe(10_000);
+		expect(main.transferNetMinor).toBe(-10_000);
+		expect(main.endingMinor).toBe(-10_250);
 
 		const vac = buildMonthSummary(rows, '2026-07', {}, pockets, { pocketId: 'vac' });
 		expect(vac.expenseMinor).toBe(0);
 		expect(vac.incomeMinor).toBe(0);
 		expect(vac.expenseByCategory).toEqual([]);
+		expect(vac.transferInMinor).toBe(10_000);
+		expect(vac.transferOutMinor).toBe(0);
+		expect(vac.transferNetMinor).toBe(10_000);
+		expect(vac.endingMinor).toBe(10_000);
+	});
+
+	it('keeps Home transfer principal at zero so Ending is Opening + Net (242)', () => {
+		const pockets = [
+			{ id: 'main', openingBalanceMinor: 0, openingAsOf: '2026-01-01' },
+			{ id: 'vac', openingBalanceMinor: 0, openingAsOf: '2026-01-01' }
+		];
+		const rows = [
+			tx({
+				type: 'transfer',
+				amountMinor: 10_000,
+				feeMinor: 250,
+				occurredOn: '2026-07-02',
+				accountId: 'main',
+				counterAccountId: 'vac'
+			})
+		];
+		const home = buildMonthSummary(rows, '2026-07', {}, pockets);
+		expect(home.transferInMinor).toBe(0);
+		expect(home.transferOutMinor).toBe(0);
+		expect(home.transferNetMinor).toBe(0);
+		expect(home.expenseMinor).toBe(250);
+		expect(home.endingMinor).toBe(home.openingMinor + home.netMinor);
+		expect(home.endingMinor).toBe(-250);
+	});
+
+	it('matches pocket Ending to next-month day-start balance (242)', () => {
+		const pockets = [
+			{ id: 'main', openingBalanceMinor: 50_000, openingAsOf: '2026-01-01' },
+			{ id: 'vac', openingBalanceMinor: 20_000, openingAsOf: '2026-01-01' }
+		];
+		const rows = [
+			tx({
+				type: 'income',
+				amountMinor: 5_000,
+				accountId: 'main',
+				occurredOn: '2026-07-01',
+				categoryId: 'sal'
+			}),
+			tx({
+				type: 'transfer',
+				amountMinor: 10_000,
+				feeMinor: 250,
+				occurredOn: '2026-07-02',
+				accountId: 'main',
+				counterAccountId: 'vac'
+			}),
+			tx({
+				type: 'expense',
+				amountMinor: 3_000,
+				accountId: 'vac',
+				occurredOn: '2026-07-10',
+				categoryId: 'food'
+			})
+		];
+		const nextStart = `${shiftMonth('2026-07', 1)}-01`;
+		for (const id of ['main', 'vac'] as const) {
+			const summary = buildMonthSummary(rows, '2026-07', {}, pockets, { pocketId: id });
+			const pocket = pockets.find((p) => p.id === id)!;
+			expect(summary.endingMinor).toBe(summary.openingMinor + summary.netMinor + summary.transferNetMinor);
+			expect(summary.endingMinor).toBe(balanceAtDayStart(pocket, nextStart, rows));
+		}
+	});
+
+	it('ignores voided transfers in pocket in/out (242)', () => {
+		const pockets = [
+			{ id: 'main', openingBalanceMinor: 0, openingAsOf: '2026-01-01' },
+			{ id: 'vac', openingBalanceMinor: 0, openingAsOf: '2026-01-01' }
+		];
+		const rows = [
+			tx({
+				type: 'transfer',
+				amountMinor: 10_000,
+				feeMinor: 250,
+				occurredOn: '2026-07-02',
+				accountId: 'main',
+				counterAccountId: 'vac',
+				voidedAt: '2026-07-03T00:00:00.000Z'
+			})
+		];
+		const vac = buildMonthSummary(rows, '2026-07', {}, pockets, { pocketId: 'vac' });
+		expect(vac.transferInMinor).toBe(0);
+		expect(vac.transferOutMinor).toBe(0);
+		expect(vac.transferNetMinor).toBe(0);
+		expect(vac.endingMinor).toBe(0);
 	});
 
 	it('ignores voided transfer fees', () => {

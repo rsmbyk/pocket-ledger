@@ -6,11 +6,16 @@
 	import { ADMIN_FEE_CATEGORY_ID, ADMIN_FEE_LABEL } from '$lib/domain/activity-filters';
 	import { cn } from '$lib/utils.js';
 
+	type BreakdownChartRow = MonthSummary['expenseByCategory'][number] & {
+		barVar?: string;
+		testid?: string;
+	};
+
 	type Props = {
 		title: string;
 		/** Optional icon rendered inline before the title text. */
 		titleIcon?: Snippet;
-		rows: MonthSummary['expenseByCategory'];
+		rows: BreakdownChartRow[];
 		currencyLabel: string;
 		emptyLabel: string;
 		barClass?: string;
@@ -35,8 +40,12 @@
 	const max = $derived(Math.max(...rows.map((c) => c.amountMinor), 1));
 	let hoveredKey = $state<string | null>(null);
 
-	function rowKey(row: MonthSummary['expenseByCategory'][number]): string {
+	function rowKey(row: BreakdownChartRow): string {
 		return row.categoryId ?? '__uncategorized__';
+	}
+
+	function rowBarVar(row: BreakdownChartRow): string | undefined {
+		return row.barVar ?? barVar;
 	}
 </script>
 
@@ -54,6 +63,7 @@
 			{#each rows as row (rowKey(row))}
 				{@const key = rowKey(row)}
 				{@const active = hoveredKey === key}
+				{@const colorVar = rowBarVar(row)}
 				<li
 					class={cn('space-y-1 rounded-md px-1 py-1 transition-colors', active && 'bg-muted/70')}
 					onmouseenter={() => (hoveredKey = key)}
@@ -67,7 +77,7 @@
 						{:else}
 							<span class="truncate">{row.label}</span>
 						{/if}
-						<span class="text-muted-foreground shrink-0">
+						<span class="text-muted-foreground shrink-0" data-testid={row.testid}>
 							{#if hideAmounts}
 								••••
 							{:else}
@@ -79,11 +89,11 @@
 						<div
 							class={cn(
 								'h-full rounded-full transition-[width,background-color] duration-300',
-								!barVar && barClass
+								!colorVar && barClass
 							)}
 							style={`width: ${(row.amountMinor / max) * 100}%;${
-								barVar
-									? ` background-color: color-mix(in srgb, var(${barVar}) ${active ? 100 : 50}%, var(--muted));`
+								colorVar
+									? ` background-color: color-mix(in srgb, var(${colorVar}) ${active ? 100 : 50}%, var(--muted));`
 									: ''
 							}`}
 						></div>

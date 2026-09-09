@@ -3,6 +3,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 	import ShoppingBagIcon from '@lucide/svelte/icons/shopping-bag';
+	import ArrowLeftRightIcon from '@lucide/svelte/icons/arrow-left-right';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import CategoryBreakdownChart from '$lib/ui/CategoryBreakdownChart.svelte';
@@ -16,6 +17,8 @@
 		hideAmounts?: boolean;
 		canPrev?: boolean;
 		canNext?: boolean;
+		/** Pocket details: Transfers chart + footer TransferNet (spec 242). */
+		showTransfers?: boolean;
 		onPrevMonth: () => void;
 		onNextMonth: () => void;
 	};
@@ -26,6 +29,7 @@
 		hideAmounts = false,
 		canPrev = true,
 		canNext = true,
+		showTransfers = false,
 		onPrevMonth,
 		onNextMonth
 	}: Props = $props();
@@ -33,6 +37,27 @@
 	function money(amount: number): string {
 		return hideAmounts ? '••••' : formatMinor(amount, currencyLabel);
 	}
+
+	const transferRows = $derived.by(() => {
+		if (!showTransfers) return [];
+		if (summary.transferInMinor === 0 && summary.transferOutMinor === 0) return [];
+		return [
+			{
+				categoryId: '__transfer_in__',
+				label: 'Transfer in',
+				amountMinor: summary.transferInMinor,
+				barVar: '--income' as const,
+				testid: 'month-transfer-in'
+			},
+			{
+				categoryId: '__transfer_out__',
+				label: 'Transfer out',
+				amountMinor: summary.transferOutMinor,
+				barVar: '--destructive' as const,
+				testid: 'month-transfer-out'
+			}
+		];
+	});
 </script>
 
 {#snippet incomeTitleIcon()}
@@ -41,6 +66,10 @@
 
 {#snippet expenseTitleIcon()}
 	<ShoppingBagIcon class="text-destructive size-3.5" aria-hidden="true" />
+{/snippet}
+
+{#snippet transferTitleIcon()}
+	<ArrowLeftRightIcon class="text-muted-foreground size-3.5" aria-hidden="true" />
 {/snippet}
 
 <Card.Root class="gap-0 py-0" data-testid="month-summary">
@@ -141,6 +170,19 @@
 				{hideAmounts}
 			/>
 		</div>
+		{#if showTransfers}
+			<div class="border-border border-t px-4 py-3">
+				<CategoryBreakdownChart
+					title="Transfers"
+					titleIcon={transferTitleIcon}
+					rows={transferRows}
+					{currencyLabel}
+					emptyLabel="No transfers this month."
+					testid="transfer-chart"
+					{hideAmounts}
+				/>
+			</div>
+		{/if}
 
 		<div
 			class="border-border space-y-1.5 border-t px-4 py-3 text-sm"
@@ -166,6 +208,21 @@
 					data-testid="month-footer-net">{money(summary.netMinor)}</span
 				>
 			</div>
+			{#if showTransfers}
+				<div class="flex justify-between gap-2">
+					<span class="text-muted-foreground">Transfers</span>
+					<span
+						class={[
+							'tabular-nums',
+							hideAmounts && 'text-muted-foreground',
+							!hideAmounts && summary.transferNetMinor > 0 && 'text-income',
+							!hideAmounts && summary.transferNetMinor < 0 && 'text-destructive',
+							!hideAmounts && summary.transferNetMinor === 0 && 'text-muted-foreground'
+						]}
+						data-testid="month-footer-transfers">{money(summary.transferNetMinor)}</span
+					>
+				</div>
+			{/if}
 			<div class="flex justify-between gap-2 font-medium">
 				<span>Ending</span>
 				<span

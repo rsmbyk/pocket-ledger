@@ -22,8 +22,14 @@ export type MonthSummary = {
 	expenseByCategory: CategoryTotal[];
 	/** Ledger balance at month start (sum of pocket balances at day 1). */
 	openingMinor: MinorUnits;
-	/** openingMinor + netMinor */
+	/** openingMinor + netMinor + transferNetMinor (Home transferNet is 0). */
 	endingMinor: MinorUnits;
+	/** Pocket-scoped incoming transfer principal; 0 on Home. */
+	transferInMinor: MinorUnits;
+	/** Pocket-scoped outgoing transfer principal; 0 on Home. */
+	transferOutMinor: MinorUnits;
+	/** transferInMinor − transferOutMinor */
+	transferNetMinor: MinorUnits;
 };
 
 export function isValidMonthKey(value: string): value is MonthKey {
@@ -188,7 +194,8 @@ function categoryTotals(
  * Opening = sum of each pocket’s balance at `${monthKey}-01` (Spec 110).
  * @param categoryMeta Map of category id → name + sortOrder (Categories menu order).
  * @param pockets All pockets; each contributes its day-start balance to Opening.
- * @param options.pocketId When set (spec 148), Opening and in-month totals are this pocket only.
+ * @param options.pocketId When set (spec 148 / 242), Opening and in-month totals are this pocket only;
+ *   Ending includes TransferNet.
  */
 export function buildMonthSummary(
 	transactions: LedgerTransaction[],
@@ -210,6 +217,8 @@ export function buildMonthSummary(
 	}
 	let incomeMinor = 0;
 	let expenseMinor = 0;
+	let transferInMinor = 0;
+	let transferOutMinor = 0;
 	const incomeMap = new Map<string, MinorUnits>();
 	const expenseMap = new Map<string, MinorUnits>();
 
@@ -239,16 +248,37 @@ export function buildMonthSummary(
 				expenseMap.set(ADMIN_FEE_CATEGORY_ID, (expenseMap.get(ADMIN_FEE_CATEGORY_ID) ?? 0) + fee);
 			}
 		} else if (tx.type === 'transfer') {
-			if (scopedId && tx.accountId !== scopedId) continue;
-			const fee = storedFeeMinor(tx);
-			if (fee > 0) {
-				expenseMinor += fee;
-				expenseMap.set(ADMIN_FEE_CATEGORY_ID, (expenseMap.get(ADMIN_FEE_CATEGORY_ID) ?? 0) + fee);
+			if (scopedId) {
+				const isSource = tx.accountId === scopedId;
+				const isDest = tx.counterAccountId === scopedId;
+				if (!isSource && !isDest) continue;
+				if (isDest) transferInMinor += tx.amountMinor;
+				if (isSource) {
+					transferOutMinor += tx.amountMinor;
+					const fee = storedFeeMinor(tx);
+					if (fee > 0) {
+						expenseMinor += fee;
+						expenseMap.set(
+							ADMIN_FEE_CATEGORY_ID,
+							(expenseMap.get(ADMIN_FEE_CATEGORY_ID) ?? 0) + fee
+						);
+					}
+				}
+			} else {
+				const fee = storedFeeMinor(tx);
+				if (fee > 0) {
+					expenseMinor += fee;
+					expenseMap.set(
+						ADMIN_FEE_CATEGORY_ID,
+						(expenseMap.get(ADMIN_FEE_CATEGORY_ID) ?? 0) + fee
+					);
+				}
 			}
 		}
 	}
 
 	const netMinor = incomeMinor - expenseMinor;
+	const transferNetMinor = transferInMinor - transferOutMinor;
 
 	return {
 		monthKey,
@@ -258,6 +288,9 @@ export function buildMonthSummary(
 		incomeByCategory: categoryTotals(incomeMap, categoryMeta),
 		expenseByCategory: categoryTotals(expenseMap, categoryMeta),
 		openingMinor,
-		endingMinor: openingMinor + netMinor
+		endingMinor: openingMinor + netMinor + transferNetMinor,
+		transferInMinor,
+		transferOutMinor,
+		transferNetMinor
 	};
 }
