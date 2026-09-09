@@ -54,6 +54,7 @@
 	} from '$lib/domain/month-summary';
 	import { parseThemePreference, THEME_STORAGE_KEY, type ThemePreference } from '$lib/shared/theme';
 	import { isGatePath, nearestValidPath } from '$lib/shared/router';
+	import { shellNeedsLedger } from '$lib/shared/shell-loading';
 	import {
 		consumeGisRedirectHash,
 		disableGoogleAutoSelect,
@@ -141,7 +142,9 @@
 	let monthBounds = $state<MonthBounds | null>(null);
 	let lockEnabled = $state(false);
 	let unlocked = $state(true);
-	let ready = $state(false);
+	let sessionReady = $state(false);
+	let ledgerReady = $state(false);
+	let monthLoading = $state(false);
 	let error = $state<string | null>(null);
 	let cloudError = $state<string | null>(null);
 	let themePreference = $state<ThemePreference>('system');
@@ -169,6 +172,16 @@
 
 	let canPrevMonth = $derived(monthBounds ? canShiftMonth(monthKey, -1, monthBounds) : false);
 	let canNextMonth = $derived(monthBounds ? canShiftMonth(monthKey, 1, monthBounds) : false);
+	let needsLedger = $derived(
+		shellNeedsLedger({
+			unlocked,
+			signedIn,
+			accountOnboarding,
+			accountRecoveryOpen,
+			pendingPassphraseReset,
+			dekPresent
+		})
+	);
 
 	async function refreshLedger(active: Account, key: MonthKey = monthKey) {
 		const [overview, balance, recent, allCategories, monthLoad, groups, allGoals, allPlans] =
@@ -197,7 +210,7 @@
 		incomeCategories = allCategories.filter((c) => c.kind === 'income' && !c.hidden);
 	}
 
-	async function bootstrap() {
+	async function loadSession() {
 		recoveryOffered = await loadRecoveryOffered();
 		pendingPassphraseReset = await loadPendingPassphraseReset();
 		if (pendingPassphraseReset && !getDataKey()) {
@@ -238,8 +251,10 @@
 		}
 		if (signedIn && accountOnboarding && accountOnboarding !== 'complete') {
 			account = await ensureDefaultAccount();
-			return;
 		}
+	}
+
+	async function loadLedger() {
 		if (signedIn) {
 			try {
 				await syncFromCloud();
@@ -271,6 +286,15 @@
 		}
 	}
 
+	async function finishLedgerLoad() {
+		if (needsLedger) {
+			await loadLedger();
+			ledgerReady = true;
+		} else {
+			ledgerReady = false;
+		}
+	}
+
 	onMount(() => {
 		themePreference = parseThemePreference(userPrefersMode.current);
 		const gisRedirect = consumeGisRedirectHash(window.location.hash, {
@@ -285,7 +309,8 @@
 		});
 		void (async () => {
 			try {
-				await bootstrap();
+				await loadSession();
+				sessionReady = true;
 				if (gisRedirect.kind === 'credential') {
 					try {
 						await onGoogleCredential(gisRedirect.credential);
@@ -295,10 +320,11 @@
 				} else if (gisRedirect.kind === 'error') {
 					cloudError = 'Google Sign-In failed. Try again.';
 				}
-				ready = true;
+				await finishLedgerLoad();
 			} catch (err) {
 				error = err instanceof Error ? err.message : 'Failed to open local database';
-				ready = true;
+				sessionReady = true;
+				ledgerReady = true;
 			}
 		})();
 		const onActivity = () => {
@@ -312,6 +338,7 @@
 				lockSession();
 				unlocked = false;
 				dekPresent = false;
+				ledgerReady = false;
 				screensaverOn = true;
 			}
 		}, 1000);
@@ -320,6 +347,7 @@
 				lockSession();
 				unlocked = false;
 				dekPresent = false;
+				ledgerReady = false;
 				screensaverOn = true;
 			}
 			if (document.visibilityState === 'visible') {
@@ -369,20 +397,30 @@
 
 	async function onPrevMonth() {
 		if (!account || !monthBounds || !canShiftMonth(monthKey, -1, monthBounds)) return;
-		const nextKey = shiftMonth(monthKey, -1);
-		const loaded = await loadMonthSummary(account.id, nextKey);
-		monthKey = loaded.monthKey;
-		monthBounds = loaded.bounds;
-		monthSummary = loaded.summary;
+		monthLoading = true;
+		try {
+			const nextKey = shiftMonth(monthKey, -1);
+			const loaded = await loadMonthSummary(account.id, nextKey);
+			monthKey = loaded.monthKey;
+			monthBounds = loaded.bounds;
+			monthSummary = loaded.summary;
+		} finally {
+			monthLoading = false;
+		}
 	}
 
 	async function onNextMonth() {
 		if (!account || !monthBounds || !canShiftMonth(monthKey, 1, monthBounds)) return;
-		const nextKey = shiftMonth(monthKey, 1);
-		const loaded = await loadMonthSummary(account.id, nextKey);
-		monthKey = loaded.monthKey;
-		monthBounds = loaded.bounds;
-		monthSummary = loaded.summary;
+		monthLoading = true;
+		try {
+			const nextKey = shiftMonth(monthKey, 1);
+			const loaded = await loadMonthSummary(account.id, nextKey);
+			monthKey = loaded.monthKey;
+			monthBounds = loaded.bounds;
+			monthSummary = loaded.summary;
+		} finally {
+			monthLoading = false;
+		}
 	}
 
 	function clearCloudIdentity() {
@@ -459,7 +497,9 @@
 		}
 		unlocked = true;
 		dekPresent = true;
-		await bootstrap();
+		ledgerReady = false;
+		await loadSession();
+		await finishLedgerLoad();
 	}
 
 	function applyMe(me: AuthMe) {
@@ -489,8 +529,9 @@
 		const text = await file.text();
 		const backup = parseEncryptedBackupJson(text);
 		await restoreEncryptedBackup(backup, passphrase);
-		await bootstrap();
-		if (account && unlocked) await refreshLedger(account);
+		ledgerReady = false;
+		await loadSession();
+		await finishLedgerLoad();
 	}
 
 	async function onResetLocalData(options: {
@@ -498,12 +539,13 @@
 		preservePassphrase: boolean;
 	}) {
 		await resetLocalData(options);
-		await bootstrap();
-		if (account && unlocked) await refreshLedger(account);
+		ledgerReady = false;
+		await loadSession();
+		await finishLedgerLoad();
 	}
 
 	function gatePath(): string | null {
-		if (!ready || screensaverOn) return null;
+		if (!sessionReady || screensaverOn) return null;
 		if (lockEnabled && !unlocked && !signedIn) return '/unlock';
 		if (signedIn && (accountRecoveryOpen || (pendingPassphraseReset && !dekPresent))) {
 			return '/recovery';
@@ -518,7 +560,7 @@
 	}
 
 	function syncGatePath() {
-		if (!ready || screensaverOn) return;
+		if (!sessionReady || screensaverOn) return;
 		const target = gatePath();
 		const path = page.url.pathname.replace(/\/+$/, '') || '/';
 		if (target) {
@@ -561,6 +603,7 @@
 		applyMe(me);
 		if (me.onboarding === 'complete') {
 			unlocked = false;
+			ledgerReady = false;
 		}
 	}
 
@@ -605,7 +648,7 @@
 	themeColors={{ dark: '#0a0a0a', light: '#ffffff' }}
 />
 
-{#if !ready}
+{#if !sessionReady}
 	<StartupLoading />
 {:else if screensaverOn}
 	<ScreensaverOverlay
@@ -616,7 +659,7 @@
 			if (!lockEnabled && !signedIn) {
 				await ensureLocalDek();
 				unlocked = true;
-				if (account) await refreshLedger(account);
+				await finishLedgerLoad();
 			}
 		}}
 	/>
@@ -662,8 +705,9 @@
 			applyMe(me);
 			if (me.onboarding === 'complete') {
 				unlocked = true;
-				await bootstrap();
-				if (account) await refreshLedger(account);
+				ledgerReady = false;
+				await loadSession();
+				await finishLedgerLoad();
 				return;
 			}
 			recoveryKit = generateRecoveryKit();
@@ -677,8 +721,9 @@
 			await uploadRecoveryWrap(recoveryKit!.compact);
 			accountOnboarding = 'complete';
 			unlocked = true;
-			await bootstrap();
-			if (account) await refreshLedger(account);
+			ledgerReady = false;
+			await loadSession();
+			await finishLedgerLoad();
 		}}
 	/>
 {:else if signedIn && accountOnboarding === 'complete' && !unlocked}
@@ -732,6 +777,7 @@
 			lockSession();
 			unlocked = false;
 			dekPresent = false;
+			ledgerReady = false;
 		}}
 		onCreatePocket={async (input: CreatePocketInput) => {
 			try {
@@ -853,7 +899,8 @@
 			webauthnEnrolled = true;
 		}}
 		{webauthnEnrolled}
-		{ready}
+		{ledgerReady}
+		{monthLoading}
 		{error}
 	/>
 {/if}

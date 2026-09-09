@@ -7,6 +7,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import CategoryBreakdownChart from '$lib/ui/CategoryBreakdownChart.svelte';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import type { MonthSummary } from '$lib/domain/month-summary';
 	import { formatMonthLabel } from '$lib/domain/month-summary';
 	import { formatMinor } from '$lib/domain/money';
@@ -19,6 +20,8 @@
 		canNext?: boolean;
 		/** Pocket details: Transfers chart + footer TransferNet (spec 242). */
 		showTransfers?: boolean;
+		/** Home month cursor wait (spec 245): keep chrome, pulse the body. */
+		loading?: boolean;
 		onPrevMonth: () => void;
 		onNextMonth: () => void;
 	};
@@ -30,6 +33,7 @@
 		canPrev = true,
 		canNext = true,
 		showTransfers = false,
+		loading = false,
 		onPrevMonth,
 		onNextMonth
 	}: Props = $props();
@@ -79,7 +83,7 @@
 				variant="outline"
 				size="icon-sm"
 				aria-label="Previous month"
-				disabled={!canPrev}
+				disabled={loading || !canPrev}
 				onclick={onPrevMonth}
 			>
 				<ChevronLeftIcon class="size-4" />
@@ -94,7 +98,7 @@
 				variant="outline"
 				size="icon-sm"
 				aria-label="Next month"
-				disabled={!canNext}
+				disabled={loading || !canNext}
 				onclick={onNextMonth}
 			>
 				<ChevronRightIcon class="size-4" />
@@ -102,6 +106,22 @@
 		</div>
 	</Card.Header>
 	<Card.Content class="p-0">
+		{#if loading}
+			<div class="space-y-3 p-4" data-testid="month-summary-skeleton">
+				<div class="grid grid-cols-3 gap-2">
+					<Skeleton class="h-14 rounded-md" />
+					<Skeleton class="h-14 rounded-md" />
+					<Skeleton class="h-14 rounded-md" />
+				</div>
+				<Skeleton class="h-24 w-full" />
+				<Skeleton class="h-24 w-full" />
+				<div class="space-y-2">
+					<Skeleton class="h-3.5 w-full" />
+					<Skeleton class="h-3.5 w-full" />
+					<Skeleton class="h-3.5 w-full" />
+				</div>
+			</div>
+		{:else}
 		<div class="border-border border-t px-4 py-3">
 			<div class="grid grid-cols-3 gap-2 text-center text-sm">
 				<div class="bg-muted/40 rounded-md px-2 py-2">
@@ -231,5 +251,6 @@
 				>
 			</div>
 		</div>
+		{/if}
 	</Card.Content>
 </Card.Root>

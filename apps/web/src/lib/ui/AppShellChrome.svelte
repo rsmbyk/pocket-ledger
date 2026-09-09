@@ -100,6 +100,11 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import CategoryPicker from '$lib/ui/CategoryPicker.svelte';
+	import ShellStageSkeleton from '$lib/ui/ShellStageSkeleton.svelte';
+	import {
+		shouldShowPocketDetailsSkeleton,
+		shouldShowShellSkeleton
+	} from '$lib/shared/shell-loading';
 
 	type Props = {
 		account: Account | null;
@@ -112,6 +117,8 @@
 		monthSummary: MonthSummary | null;
 		canPrevMonth?: boolean;
 		canNextMonth?: boolean;
+		ledgerReady?: boolean;
+		monthLoading?: boolean;
 		expenseCategories: CategoryRow[];
 		incomeCategories: CategoryRow[];
 		categoryGroups: OverlayGroup[];
@@ -121,6 +128,7 @@
 		route: AppRoute;
 		pageTitle: string;
 		detailsPocket?: Account | null;
+		pocketId?: string | null;
 		onThemePreferenceChange: (next: ThemePreference) => void;
 		onPrevMonth: () => void | Promise<void>;
 		onNextMonth: () => void | Promise<void>;
@@ -185,6 +193,8 @@
 		monthSummary,
 		canPrevMonth = false,
 		canNextMonth = false,
+		ledgerReady = true,
+		monthLoading = false,
 		expenseCategories: _expenseCategories,
 		incomeCategories: _incomeCategories,
 		categoryGroups,
@@ -194,6 +204,7 @@
 		route,
 		pageTitle,
 		detailsPocket = null,
+		pocketId = null,
 		onThemePreferenceChange,
 		onPrevMonth,
 		onNextMonth,
@@ -330,8 +341,21 @@
 	const activityStageWide = $derived(
 		(route === 'transactions' || route === 'plans') && xlWide.current
 	);
+	const stageLoading = $derived(
+		shouldShowShellSkeleton({
+			sessionReady: true,
+			ledgerReady,
+			gated: false
+		})
+	);
+	const detailsSkeleton = $derived(
+		shouldShowPocketDetailsSkeleton({
+			pocketId: pocketId ?? null,
+			ledgerReady
+		})
+	);
 	const dashboardStageWide = $derived(
-		xlWide.current && (route === 'home' || Boolean(detailsPocket))
+		xlWide.current && (route === 'home' || Boolean(detailsPocket) || detailsSkeleton)
 	);
 
 	const advancedFilterCount = $derived(countAdvancedFilters(applied));
@@ -758,6 +782,7 @@
 				size="icon-sm"
 				data-testid="pocket-details-edit"
 				aria-label={`Edit ${detailsPocket.name}`}
+				disabled={!ledgerReady}
 				onclick={() => (detailsEditRequest = detailsPocket)}
 			>
 				<PencilIcon class="size-4" />
@@ -770,6 +795,7 @@
 				size="icon-sm"
 				data-testid="toggle-home-amounts"
 				aria-label={hideHomeAmounts ? 'Show money' : 'Hide money'}
+				disabled={!ledgerReady}
 				onclick={toggleHomeAmounts}
 			>
 				{#if hideHomeAmounts}
@@ -861,7 +887,7 @@
 		</div>
 	{/snippet}
 
-	{#if route === 'transactions' && !xlWide.current}
+	{#if route === 'transactions' && !xlWide.current && !stageLoading}
 		{@render activityChrome()}
 	{/if}
 
@@ -929,10 +955,13 @@
 		</div>
 	{/snippet}
 
-	{#if route === 'plans' && !xlWide.current}
+	{#if route === 'plans' && !xlWide.current && !stageLoading}
 		{@render plansChrome()}
 	{/if}
 
+	{#if stageLoading}
+		<ShellStageSkeleton {route} pocketDetails={detailsSkeleton} />
+	{:else}
 	<div
 		class={[
 			'mx-auto flex w-full flex-1 flex-col gap-4 p-4 pb-8 md:gap-4 md:p-6 md:pb-8 max-w-3xl',
@@ -1007,6 +1036,7 @@
 						hideAmounts={hideHomeAmounts}
 						canPrev={canPrevMonth}
 						canNext={canNextMonth}
+						loading={monthLoading}
 						onPrevMonth={() => void onPrevMonth()}
 						onNextMonth={() => void onNextMonth()}
 					/>
@@ -1661,6 +1691,7 @@
 			/>
 		{/if}
 	</div>
+	{/if}
 	</div>
 </Sidebar.Inset>
 

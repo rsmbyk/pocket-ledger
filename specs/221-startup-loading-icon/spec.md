@@ -53,3 +53,4 @@ While the ledger is still opening, show a loading icon only. Drop the “Startin
 ## Related
 
 - 000 scaffold shell
+- 245 shell loading skeletons — spinner is **session-unknown only**; AppShell `!ready` splash superseded
