@@ -272,25 +272,6 @@ test.describe('248 sticky groups, unique scope, list preview', () => {
 		expect(barBox.width).toBeGreaterThan(320);
 	});
 
-	test('second pocket-wide Save errors and Select all is disabled', async ({ page }) => {
-		await goToNav(page, 'pockets');
-		await page.locator('[data-testid^="pocket-row-"]').first().click();
-		await addPocketBudget(page, { amount: '100000', selectAll: true });
-
-		await page.getByTestId('pocket-details-add-budget').click();
-		const dialog = page.getByTestId('pocket-budget-form-dialog');
-		await expect(dialog).toBeVisible();
-		await expect(page.getByTestId('pocket-budget-select-all')).toBeDisabled();
-		const groups = dialog.locator('[data-testid^="pocket-budget-group-"]');
-		const count = await groups.count();
-		for (let i = 0; i < count; i += 1) {
-			await groups.nth(i).check();
-		}
-		await page.getByTestId('pocket-budget-limit-input').fill('50000');
-		await page.getByTestId('pocket-budget-save').click();
-		await expect(dialog.getByText('A budget with this scope already exists on this pocket.')).toBeVisible();
-	});
-
 	test('Home sticky title stays Home after adding a category', async ({ page }) => {
 		await goToNav(page, 'pockets');
 		await page.locator('[data-testid^="pocket-row-"]').first().click();
@@ -315,5 +296,57 @@ test.describe('248 sticky groups, unique scope, list preview', () => {
 		await goToNav(page, 'pockets');
 		await page.locator('[data-testid^="pocket-row-"]').first().click();
 		await expect(page.getByTestId('pocket-details-budgets-list').getByText('Home', { exact: true })).toBeVisible();
+	});
+});
+
+test.describe('249 unique-scope form UX', () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/');
+		await expect(page.getByTestId('home-panel')).toBeVisible();
+	});
+
+	test('Select all stays enabled; second pocket-wide Save shows Applies to error', async ({
+		page
+	}) => {
+		await goToNav(page, 'pockets');
+		await page.locator('[data-testid^="pocket-row-"]').first().click();
+		await addPocketBudget(page, { amount: '100000', selectAll: true });
+
+		await page.getByTestId('pocket-details-add-budget').click();
+		const dialog = page.getByTestId('pocket-budget-form-dialog');
+		await expect(dialog).toBeVisible();
+		const selectAll = page.getByTestId('pocket-budget-select-all');
+		await expect(selectAll).toBeEnabled();
+		await selectAll.click();
+		await expect(selectAll).toBeDisabled();
+		await page.getByTestId('pocket-budget-limit-input').fill('50000');
+		const save = page.getByTestId('pocket-budget-save');
+		await expect(save).toBeEnabled();
+		await save.click();
+		await expect(dialog).toBeVisible();
+		const err = page.getByTestId('pocket-budget-applies-error');
+		await expect(err).toBeVisible();
+		await expect(err).toHaveText('A budget with this scope already exists on this pocket.');
+		await dialog.getByRole('checkbox', { name: 'Groceries', exact: true }).uncheck();
+		await expect(err).toHaveCount(0);
+		await expect(selectAll).toBeEnabled();
+	});
+
+	test('second Groceries Save shows Applies to error', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.locator('[data-testid^="pocket-row-"]').first().click();
+		await addPocketBudget(page, { amount: '1000', category: 'Groceries' });
+
+		await page.getByTestId('pocket-details-add-budget').click();
+		const dialog = page.getByTestId('pocket-budget-form-dialog');
+		await expect(dialog).toBeVisible();
+		await expect(page.getByTestId('pocket-budget-select-all')).toBeEnabled();
+		await dialog.getByRole('checkbox', { name: 'Groceries', exact: true }).check();
+		await page.getByTestId('pocket-budget-limit-input').fill('2000');
+		await page.getByTestId('pocket-budget-save').click();
+		await expect(dialog).toBeVisible();
+		const err = page.getByTestId('pocket-budget-applies-error');
+		await expect(err).toBeVisible();
+		await expect(err).toHaveText('A budget with this scope already exists on this pocket.');
 	});
 });

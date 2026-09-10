@@ -25,7 +25,7 @@ A full group check should keep covering new categories in that group. Two active
 2. **Unique Applies to** — `budgetScopeKey`: `'pocket'` or `g:${sorted groupIds}|c:${sorted categoryIds}`.
    - At most one **active** budget per key per pocket. Dropped do not block. Create/update refuse duplicates (`except` this id). Copy: **A budget with this scope already exists on this pocket.**
    - Pocket-wide is that key for Select all. Two Groceries-only budgets forbidden. Pocket-wide + Groceries allowed. Sticky Home vs snapshot of some Home children are different keys.
-   - Form: Select all also disabled when another active pocket-wide exists (not this row). Duplicate leftover sets error on Save.
+   - Form chrome for uniqueness is [249](../249-budget-unique-scope-ux/spec.md): Select all stays enabled; Save refuses and shows the copy under Applies to. Duplicate leftover sets error on Save.
    - No Dexie unique index. Legacy duplicate pocket-wide: list shows one (first after current active sort); Save without changing scope still works.
 
 3. **Pockets list card** — [PocketsPanel.svelte](../../apps/web/src/lib/ui/PocketsPanel.svelte) gets `budgets` (and enough ledger data to derive used). Two columns (149/151):
@@ -99,4 +99,4 @@ type PocketBudget = {
 
 ## Related
 
-- 246, 247
+- 246, 247, 249

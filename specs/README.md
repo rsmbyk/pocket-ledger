@@ -265,3 +265,4 @@ Living behavior contracts for Pocket Ledger.
 | [246](246-budgets/spec.md)                             | Pocket budgets                                               | Accepted                                                                        |
 | [247](247-budget-chrome/spec.md)                       | Budget form/details chrome                                   | Accepted                                                                        |
 | [248](248-pockets-list-budget/spec.md)                 | Sticky groups, unique scope, Pockets-list budget             | Accepted                                                                        |
+| [249](249-budget-unique-scope-ux/spec.md)              | Budget unique-scope form UX                                  | Accepted                                                                        |
