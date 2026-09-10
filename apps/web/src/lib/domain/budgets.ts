@@ -158,16 +158,23 @@ export function exceededBudgets(
 
 export function sortActiveBudgets<T extends PocketBudget>(
 	budgets: T[],
-	usedById: Record<string, number>
+	usedById: Record<string, number>,
+	today: string
 ): T[] {
 	return budgets
 		.filter((b) => isActiveBudget(b))
 		.slice()
 		.sort((a, b) => {
+			if (a.appliesTo !== b.appliesTo) return a.appliesTo === 'pocket' ? -1 : 1;
 			const byPercent =
 				budgetProgressPercent(b.limitMinor, usedById[b.id] ?? 0) -
 				budgetProgressPercent(a.limitMinor, usedById[a.id] ?? 0);
 			if (byPercent !== 0) return byPercent;
+			if (a.limitMinor !== b.limitMinor) return b.limitMinor - a.limitMinor;
+			const byStart = effectiveStartOn(a, today).localeCompare(effectiveStartOn(b, today));
+			if (byStart !== 0) return byStart;
+			if (a.period !== b.period) return a.period === 'monthly' ? -1 : 1;
+			if (a.hardLimit !== b.hardLimit) return a.hardLimit ? -1 : 1;
 			const byCreated = a.createdAt.localeCompare(b.createdAt);
 			if (byCreated !== 0) return byCreated;
 			return a.id.localeCompare(b.id);

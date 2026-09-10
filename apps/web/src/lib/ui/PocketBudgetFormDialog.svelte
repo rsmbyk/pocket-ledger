@@ -2,7 +2,10 @@
 	import { untrack } from 'svelte';
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import SearchIcon from '@lucide/svelte/icons/search';
+	import SearchXIcon from '@lucide/svelte/icons/search-x';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as InputGroup from '$lib/components/ui/input-group/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
@@ -13,6 +16,7 @@
 		assertBudgetLimit,
 		assertBudgetStartOn,
 		groupSelectionState,
+		isAllSelectable,
 		resolveAppliesTo,
 		withGroupToggled,
 		type BudgetPeriod,
@@ -28,6 +32,8 @@
 		parseAmountInput,
 		todayOccurredOn
 	} from '$lib/domain/transaction-rules';
+	import { filterCatalogGroups } from '$lib/domain/category-catalog-filter';
+	import EmptyState from '$lib/ui/EmptyState.svelte';
 	import { applyGroupedAmountInput } from '$lib/ui/amount-field-caret';
 	import { shouldIgnoreDismissForNativePicker } from '$lib/ui/native-picker-dismiss';
 	import {
@@ -78,6 +84,7 @@
 	let period = $state<BudgetPeriod>('ongoing');
 	let hardLimit = $state(false);
 	let collapsed = $state<Record<string, boolean>>({});
+	let appliesQuery = $state('');
 	let error = $state<{ key: FormFieldKey; message: string } | null>(null);
 	let busy = $state(false);
 	let dropConfirmOpen = $state(false);
@@ -90,6 +97,8 @@
 	const expenseCats = $derived(categories.filter((c) => c.kind === 'expense'));
 	const allSelectableIds = $derived(expenseCats.map((c) => c.id));
 	const selectedSet = $derived(new Set(selectedIds));
+	const allSelected = $derived(isAllSelectable(selectedSet, allSelectableIds));
+	const filteredApplies = $derived(filterCatalogGroups(expenseGroups, expenseCats, appliesQuery));
 	const limitDisplay = $derived(formatAmountDigitsDisplay(limitRaw));
 
 	const validLimit = $derived.by(() => {
@@ -132,6 +141,7 @@
 		period = initial?.period ?? 'ongoing';
 		hardLimit = initial?.hardLimit === true;
 		collapsed = {};
+		appliesQuery = '';
 		error = null;
 		discardConfirmOpen = false;
 		const resolved = resolveAppliesTo(ids, selectable);
@@ -267,74 +277,104 @@
 						variant="outline"
 						size="sm"
 						data-testid="pocket-budget-select-all"
+						disabled={allSelected}
 						onclick={selectAll}
 					>
 						Select all
 					</Button>
 				</div>
+				<div class="relative">
+					<SearchIcon
+						class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+						aria-hidden="true"
+					/>
+					<Input
+						type="search"
+						placeholder="Search categories or groups"
+						class="pl-9"
+						bind:value={appliesQuery}
+						data-testid="pocket-budget-applies-search"
+						aria-label="Search categories or groups"
+					/>
+				</div>
 				<div
 					class="border-border max-h-48 space-y-1 overflow-y-auto rounded-md border p-2"
 					data-testid="pocket-budget-applies-to"
 				>
-					{#each expenseGroups as group (group.id)}
-						{@const kids = catsInGroup(group.id)}
-						{#if kids.length > 0}
-							{@const state = groupSelectionState(
-								kids.map((c) => c.id),
-								selectedSet
-							)}
-							<div>
-								<div class="flex items-center gap-1">
-									<button
-										type="button"
-										class="text-muted-foreground hover:text-foreground shrink-0 p-0.5"
-										aria-expanded={!collapsed[group.id]}
-										onclick={() => (collapsed[group.id] = !collapsed[group.id])}
-									>
-										{#if collapsed[group.id]}
-											<ChevronRightIcon class="size-4" />
-										{:else}
-											<ChevronDownIcon class="size-4" />
-										{/if}
-									</button>
-									<label class="flex min-w-0 flex-1 items-center gap-2 py-0.5 text-sm font-medium">
-										<input
-											type="checkbox"
-											class="size-4 accent-primary"
-											checked={state === 'all'}
-											indeterminate={state === 'some'}
-											data-testid={`pocket-budget-group-${group.id}`}
-											onchange={(e) => toggleGroup(group.id, e.currentTarget.checked)}
-										/>
-										<span class="truncate">{group.name}</span>
-									</label>
+					{#if filteredApplies.length === 0}
+						<EmptyState
+							class="py-4"
+							testid="pocket-budget-applies-search-empty"
+							title="No matches"
+							description="Try a different category or group name."
+						>
+							{#snippet icon()}
+								<SearchXIcon class="size-5" />
+							{/snippet}
+						</EmptyState>
+					{:else}
+						{#each filteredApplies as row (row.group.id)}
+							{@const kids = row.categories}
+							{#if kids.length > 0}
+								{@const allKids = catsInGroup(row.group.id)}
+								{@const state = groupSelectionState(
+									allKids.map((c) => c.id),
+									selectedSet
+								)}
+								{@const groupCollapsed = appliesQuery.trim() ? false : collapsed[row.group.id]}
+								<div>
+									<div class="flex items-center gap-1">
+										<button
+											type="button"
+											class="text-muted-foreground hover:text-foreground shrink-0 p-0.5"
+											aria-expanded={!groupCollapsed}
+											onclick={() => (collapsed[row.group.id] = !collapsed[row.group.id])}
+										>
+											{#if groupCollapsed}
+												<ChevronRightIcon class="size-4" />
+											{:else}
+												<ChevronDownIcon class="size-4" />
+											{/if}
+										</button>
+										<label class="flex min-w-0 flex-1 items-center gap-2 py-0.5 text-sm font-medium">
+											<input
+												type="checkbox"
+												class="size-4 accent-primary"
+												checked={state === 'all'}
+												indeterminate={state === 'some'}
+												data-testid={`pocket-budget-group-${row.group.id}`}
+												onchange={(e) => toggleGroup(row.group.id, e.currentTarget.checked)}
+											/>
+											<span class="truncate">{row.group.name}</span>
+										</label>
+									</div>
+									{#if !groupCollapsed}
+										<ul class="ml-7 space-y-0.5">
+											{#each kids as cat (cat.id)}
+												<li>
+													<label
+														class={cn(
+															'flex items-center gap-2 py-0.5 text-sm',
+															cat.hidden && 'text-muted-foreground opacity-70'
+														)}
+													>
+														<input
+															type="checkbox"
+															class="size-4 accent-primary"
+															checked={selectedSet.has(cat.id)}
+															data-testid={`pocket-budget-cat-${cat.id}`}
+															onchange={(e) => toggleCat(cat.id, e.currentTarget.checked)}
+														/>
+														<span class="truncate">{cat.name}</span>
+													</label>
+												</li>
+											{/each}
+										</ul>
+									{/if}
 								</div>
-								{#if !collapsed[group.id]}
-									<ul class="ml-7 space-y-0.5">
-										{#each kids as cat (cat.id)}
-											<li>
-												<label
-													class={cn(
-														'flex items-center gap-2 py-0.5 text-sm',
-														cat.hidden && 'text-muted-foreground opacity-70'
-													)}
-												>
-													<input
-														type="checkbox"
-														class="size-4 accent-primary"
-														checked={selectedSet.has(cat.id)}
-														data-testid={`pocket-budget-cat-${cat.id}`}
-														onchange={(e) => toggleCat(cat.id, e.currentTarget.checked)}
-													/>
-													<span class="truncate">{cat.name}</span>
-												</label>
-											</li>
-										{/each}
-									</ul>
-								{/if}
-							</div>
-						{/if}
-					{/each}
+							{/if}
+						{/each}
+					{/if}
 				</div>
 				{#if error?.key === 'category'}
 					<p class="text-destructive text-sm" role="alert">{error.message}</p>
@@ -433,6 +473,7 @@
 					variant="outline"
 					class="w-full"
 					data-testid="pocket-budget-restart"
+					disabled={initialStartOn === today}
 					onclick={() => (restartConfirmOpen = true)}
 				>
 					Restart

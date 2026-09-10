@@ -21,7 +21,7 @@ Give each pocket spending caps. A budget applies to the whole pocket or to selec
 3. **Monthly period** — Do not rewrite `startOn` at month turn by itself. `effectiveStartOn = period === 'monthly' ? max(startOn, first of today’s month) : startOn`.
 4. **Exceed** — Warn/block only when `used + thisTxContribution > limitMinor` (exactly at the cap is allowed). Edit: subtract this row’s current contribution, then add the new one. Income never warns.
 5. **Bar** — `budgetBarFillCss(p) = goalBarFillCss(100 - clamp(p, 0, 100))` (171 stops). Width `min(percent, 100)%`. Percent **text may exceed 100**. Hide-amounts (048 / 089) hides money here too.
-6. **Details card** (`pocket-details-budgets-card`) — always on, between Plans and Goals (xl lists column and stacked layout). Title **Budgets**. Header **Add Budget** (`pocket-details-add-budget`). Empty (`pocket-details-budgets-empty`): **No budgets** / **Budgets you add will show up here.** List (`pocket-details-budgets-list`). No See more, no history. Click row → edit. Sort: highest percent first, then `createdAt` asc, then `id`.
+6. **Details card** (`pocket-details-budgets-card`) — always on, between Plans and Goals (xl lists column and stacked layout). Title **Budgets**. Header **Add Budget** (`pocket-details-add-budget`). Empty (`pocket-details-budgets-empty`): **No budgets** / **Budgets you add will show up here.** List (`pocket-details-budgets-list`). No See more, no history. Click row → edit. Sort superseded by [247](../247-budget-chrome/spec.md).
 7. **Row** — (1) title: pocket name if pocket-wide, else catalog order with **full groups collapsed to the group name**, `line-clamp-2` + ellipsis; (2) badges **Hard** / **Monthly**; (3) used / limit; (4) percent; (5) bar.
 8. **Form** (`pocket-budget-form-dialog`) — field order: **Applies to** → **Amount** → **Start date** → **Period** → **Hard limit**. Save disabled when nothing applies / invalid limit / edit unchanged vs the populated snapshot (034). Dirty leave matches the goal dialog. Editing a budget does not rewrite txs; used is always derived.
 9. **Applies to** — scrollable expense groups/categories (stock + custom), **including hidden** (muted). Omit income. Omit synthetic Admin Fee and Uncategorized. Groups expand/collapse (default expanded). Group check = all children; uncheck group = uncheck all children; uncheck one child of a full group = uncheck the group; indeterminate when partial. **Select all** (`pocket-budget-select-all`) ⇒ `appliesTo: 'pocket'` (auto-includes future expense categories, uncategorized, fees, transfer-out). Checking every selectable expense category is the same as Select all. Unchecking any category demotes to an id list.
@@ -72,7 +72,7 @@ type PocketBudget = {
 - `txContribution(budget, tx, today)` → 0 if voided or outside window; else rules in scope §2
 - `budgetUsedMinor(budget, txs, today, exceptId?)` → sum of contributions
 - `budgetWouldExceed(budget, txs, proposed, today, replacingId?)` → used (excluding replacing) + contribution(proposed) `> limitMinor`
-- `sortActiveBudgets(budgets, usedById)` → active only; percent desc, then `createdAt` asc, then `id`
+- `sortActiveBudgets(budgets, usedById, today)` → see [247](../247-budget-chrome/spec.md)
 - Group check / Select all / title collapse as in scope §7–9
 
 ### Mutate
