@@ -8,6 +8,7 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import TargetIcon from '@lucide/svelte/icons/target';
 	import GaugeIcon from '@lucide/svelte/icons/gauge';
+	import LandmarkIcon from '@lucide/svelte/icons/landmark';
 	import WalletIcon from '@lucide/svelte/icons/wallet';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -151,7 +152,7 @@
 			pocketBudgets.map((b) => [b.id, budgetUsedMinor(b, transactions, today)])
 		) as Record<string, number>
 	);
-	const activeBudgets = $derived(sortActiveBudgets(pocketBudgets, budgetUsedById));
+	const activeBudgets = $derived(sortActiveBudgets(pocketBudgets, budgetUsedById, today));
 	const budgetCats = $derived(
 		Object.values(categoriesById).map((c) => ({ id: c.id, name: c.name, groupId: c.groupId }))
 	);
@@ -353,34 +354,45 @@
 						<li>
 							<button
 								type="button"
-								class="hover:bg-accent/70 w-full rounded-md px-2 py-2.5 text-left"
+								class="hover:bg-accent/70 flex w-full flex-col gap-1 rounded-md px-2 py-2.5 text-left"
 								data-testid={`pocket-details-budget-row-${row.id}`}
 								onclick={() => openEditBudget(row)}
 							>
 								<p
-									class="line-clamp-2 text-sm font-medium"
+									class="flex items-start gap-1.5 text-sm font-medium"
 									data-testid={`pocket-details-budget-title-${row.id}`}
 								>
-									{formatBudgetAppliesTitle(row, pocket.name, budgetCats, categoryGroups)}
+									{#if row.appliesTo === 'pocket'}
+										<LandmarkIcon
+											class="mt-0.5 size-3.5 shrink-0"
+											aria-hidden="true"
+											data-testid={`pocket-details-budget-pocket-icon-${row.id}`}
+										/>
+									{/if}
+									<span class="line-clamp-2 min-w-0">
+										{formatBudgetAppliesTitle(row, pocket.name, budgetCats, categoryGroups)}
+									</span>
 								</p>
-								<div class="mt-1 flex flex-wrap gap-1">
-									{#if row.hardLimit}
-										<span
-											class="bg-muted text-muted-foreground inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium"
-											data-testid={`pocket-details-budget-hard-${row.id}`}
-										>
-											Hard
-										</span>
-									{/if}
-									{#if row.period === 'monthly'}
-										<span
-											class="bg-muted text-muted-foreground inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium"
-											data-testid={`pocket-details-budget-monthly-${row.id}`}
-										>
-											Monthly
-										</span>
-									{/if}
-								</div>
+								{#if row.hardLimit || row.period === 'monthly'}
+									<div class="flex flex-wrap gap-1">
+										{#if row.hardLimit}
+											<span
+												class="bg-muted text-muted-foreground inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium"
+												data-testid={`pocket-details-budget-hard-${row.id}`}
+											>
+												Hard
+											</span>
+										{/if}
+										{#if row.period === 'monthly'}
+											<span
+												class="bg-muted text-muted-foreground inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium"
+												data-testid={`pocket-details-budget-monthly-${row.id}`}
+											>
+												Monthly
+											</span>
+										{/if}
+									</div>
+								{/if}
 								<BudgetProgressChrome
 									usedMinor={used}
 									limitMinor={row.limitMinor}

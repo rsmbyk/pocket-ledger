@@ -201,10 +201,21 @@ describe('budgets domain', () => {
 		});
 	});
 
-	it('sorts active budgets by percent then createdAt', () => {
+	it('sorts pocket-wide first even when a category row is hotter', () => {
 		const rows = [
-			budget({ id: 'old', createdAt: '2026-01-01T00:00:00.000Z', limitMinor: 100 }),
-			budget({ id: 'hot', createdAt: '2026-02-01T00:00:00.000Z', limitMinor: 100 }),
+			budget({
+				id: 'groc',
+				appliesTo: 'categories',
+				limitMinor: 100,
+				createdAt: '2026-01-01T00:00:00.000Z'
+			}),
+			budget({
+				id: 'all',
+				appliesTo: 'pocket',
+				categoryIds: [],
+				limitMinor: 10_000,
+				createdAt: '2026-02-01T00:00:00.000Z'
+			}),
 			budget({
 				id: 'dropped',
 				cancelledAt: 'x',
@@ -213,9 +224,90 @@ describe('budgets domain', () => {
 			})
 		];
 		expect(isActiveBudget(rows[2]!)).toBe(false);
-		expect(sortActiveBudgets(rows, { old: 10, hot: 90, dropped: 100 }).map((b) => b.id)).toEqual([
-			'hot',
-			'old'
+		expect(sortActiveBudgets(rows, { groc: 150, all: 0, dropped: 100 }, today).map((b) => b.id)).toEqual([
+			'all',
+			'groc'
 		]);
+	});
+
+	it('sorts by unclamped percent, then larger limit, then older effectiveStartOn', () => {
+		expect(
+			sortActiveBudgets(
+				[
+					budget({ id: 'cool', limitMinor: 100 }),
+					budget({ id: 'hot', limitMinor: 100 })
+				],
+				{ cool: 50, hot: 150 },
+				today
+			).map((b) => b.id)
+		).toEqual(['hot', 'cool']);
+
+		expect(
+			sortActiveBudgets(
+				[
+					budget({ id: 'small', limitMinor: 100 }),
+					budget({ id: 'big', limitMinor: 200 })
+				],
+				{ small: 50, big: 100 },
+				today
+			).map((b) => b.id)
+		).toEqual(['big', 'small']);
+
+		expect(
+			sortActiveBudgets(
+				[
+					budget({ id: 'late', period: 'monthly', startOn: '2026-09-05', limitMinor: 100 }),
+					budget({ id: 'early', period: 'monthly', startOn: '2026-08-01', limitMinor: 100 })
+				],
+				{ late: 0, early: 0 },
+				today
+			).map((b) => b.id)
+		).toEqual(['early', 'late']);
+	});
+
+	it('sorts monthly before ongoing, hard before soft, then createdAt and id', () => {
+		expect(
+			sortActiveBudgets(
+				[
+					budget({ id: 'ongoing', period: 'ongoing', limitMinor: 100 }),
+					budget({ id: 'monthly', period: 'monthly', limitMinor: 100 })
+				],
+				{ ongoing: 0, monthly: 0 },
+				today
+			).map((b) => b.id)
+		).toEqual(['monthly', 'ongoing']);
+
+		expect(
+			sortActiveBudgets(
+				[
+					budget({ id: 'soft', hardLimit: false, limitMinor: 100 }),
+					budget({ id: 'hard', hardLimit: true, limitMinor: 100 })
+				],
+				{ soft: 0, hard: 0 },
+				today
+			).map((b) => b.id)
+		).toEqual(['hard', 'soft']);
+
+		expect(
+			sortActiveBudgets(
+				[
+					budget({ id: 'new', createdAt: '2026-02-01T00:00:00.000Z', limitMinor: 100 }),
+					budget({ id: 'old', createdAt: '2026-01-01T00:00:00.000Z', limitMinor: 100 })
+				],
+				{ new: 0, old: 0 },
+				today
+			).map((b) => b.id)
+		).toEqual(['old', 'new']);
+
+		expect(
+			sortActiveBudgets(
+				[
+					budget({ id: 'b', createdAt: '2026-01-01T00:00:00.000Z', limitMinor: 100 }),
+					budget({ id: 'a', createdAt: '2026-01-01T00:00:00.000Z', limitMinor: 100 })
+				],
+				{ a: 0, b: 0 },
+				today
+			).map((b) => b.id)
+		).toEqual(['a', 'b']);
 	});
 });

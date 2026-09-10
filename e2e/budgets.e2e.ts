@@ -153,3 +153,85 @@ test.describe('246 pocket budgets', () => {
 		);
 	});
 });
+
+test.describe('247 budget chrome', () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/');
+		await expect(page.getByTestId('home-panel')).toBeVisible();
+	});
+
+	test('Select all disables when every category is checked', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.locator('[data-testid^="pocket-row-"]').first().click();
+		await page.getByTestId('pocket-details-add-budget').click();
+		const dialog = page.getByTestId('pocket-budget-form-dialog');
+		await expect(dialog).toBeVisible();
+		const selectAll = page.getByTestId('pocket-budget-select-all');
+		await expect(selectAll).toBeEnabled();
+		await selectAll.click();
+		await expect(selectAll).toBeDisabled();
+		await dialog.getByRole('checkbox', { name: 'Groceries', exact: true }).uncheck();
+		await expect(selectAll).toBeEnabled();
+	});
+
+	test('pocket-wide shows Landmark and sorts first even when a category row is hotter', async ({
+		page
+	}) => {
+		await goToNav(page, 'pockets');
+		await page.locator('[data-testid^="pocket-row-"]').first().click();
+		await addPocketBudget(page, { amount: '100000', selectAll: true });
+		await addPocketBudget(page, { amount: '1000', category: 'Groceries' });
+
+		await page.getByTestId('pocket-details-add').click();
+		const sheet = page.getByTestId('tx-dialog');
+		await sheet.getByTestId('tx-type-expense').click();
+		await sheet.getByLabel(/amount/i).fill('1500');
+		await selectTxCategory(page, 'Groceries', sheet);
+		await sheet.getByRole('button', { name: 'Save' }).click();
+		await page.getByTestId('confirm-dialog-cancel').click();
+		await expect(sheet).toBeHidden();
+
+		const list = page.getByTestId('pocket-details-budgets-list');
+		const rows = list.locator('[data-testid^="pocket-details-budget-row-"]');
+		await expect(rows.first()).toContainText('Main');
+		await expect(rows.nth(1)).toContainText('Groceries');
+		await expect(list.locator('[data-testid^="pocket-details-budget-pocket-icon-"]')).toHaveCount(1);
+		await expect(rows.first().locator('[data-testid^="pocket-details-budget-pocket-icon-"]')).toBeVisible();
+		await expect(rows.nth(1).locator('[data-testid^="pocket-details-budget-pocket-icon-"]')).toHaveCount(0);
+	});
+
+	test('Restart disables when the stored window already starts today', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.locator('[data-testid^="pocket-row-"]').first().click();
+		await addPocketBudget(page, { amount: '10000', category: 'Groceries' });
+		await page.getByTestId('pocket-details-budgets-list').getByText('Groceries').click();
+		const dialog = page.getByTestId('pocket-budget-form-dialog');
+		await expect(dialog).toBeVisible();
+		await expect(page.getByTestId('pocket-budget-restart')).toBeDisabled();
+		await page.keyboard.press('Escape');
+		await expect(dialog).toBeHidden();
+
+		await addPocketBudget(page, { amount: '20000', category: 'Rent', startOn: '2020-01-01' });
+		await page.getByTestId('pocket-details-budgets-list').getByText('Rent').click();
+		await expect(dialog).toBeVisible();
+		await expect(page.getByTestId('pocket-budget-restart')).toBeEnabled();
+	});
+
+	test('Applies to search filters categories and shows empty copy', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.locator('[data-testid^="pocket-row-"]').first().click();
+		await page.getByTestId('pocket-details-add-budget').click();
+		const dialog = page.getByTestId('pocket-budget-form-dialog');
+		await expect(dialog).toBeVisible();
+		const search = page.getByTestId('pocket-budget-applies-search');
+		await search.fill('groc');
+		await expect(dialog.getByRole('checkbox', { name: 'Groceries', exact: true })).toBeVisible();
+		await expect(dialog.getByRole('checkbox', { name: 'Rent', exact: true })).toBeHidden();
+		await expect(dialog.getByRole('checkbox', { name: 'Home', exact: true })).toBeHidden();
+		await search.fill('zzzz');
+		const empty = page.getByTestId('pocket-budget-applies-search-empty');
+		await expect(empty).toBeVisible();
+		await expect(empty).toContainText('No matches');
+		await expect(empty).toContainText('Try a different category or group name.');
+	});
+});
