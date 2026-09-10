@@ -14,7 +14,7 @@ Tighten the budget form and details list chrome shipped in 246: no-op actions ar
 
 ### In scope
 
-1. **Select all** (`pocket-budget-select-all`) — native `disabled` when `isAllSelectable` (every selectable expense category is checked, including edit of a pocket-wide budget). Copy stays **Select all**. Unchecking any category re-enables (248 may also keep it disabled when another pocket-wide exists).
+1. **Select all** (`pocket-budget-select-all`) — native `disabled` when `isAllSelectable` (every selectable expense category is checked, including edit of a pocket-wide budget). Copy stays **Select all**. Unchecking any category re-enables. An existing pocket-wide budget does not extra-disable Select all ([249](../249-budget-unique-scope-ux/spec.md)).
 2. **Pocket-wide icon** — details list title (`pocket-details-budget-title-*`) shows Landmark (`size-3.5`, `aria-hidden`) to the left of the pocket name when `appliesTo === 'pocket'`. Testid `pocket-details-budget-pocket-icon-${id}`. Category-scope rows stay text-only. Warn-dialog names stay plain text.
 3. **List sort** — supersedes 246 percent → `createdAt` → `id`. `sortActiveBudgets(budgets, usedById, today)`: pocket-wide first; used percent higher first (unclamped); `limitMinor` higher first; `effectiveStartOn` oldest first; Monthly before Ongoing; Hard before not; `createdAt` oldest first; then `id`.
 4. **Restart** — edit only; `disabled` when `initialStartOn === today` (stored `effectiveStartOn`, not the dirty Start date field). Monthly mid-month with a past stored `startOn` stays enabled.
@@ -72,4 +72,4 @@ Tighten the budget form and details list chrome shipped in 246: no-op actions ar
 
 ## Related
 
-- 246
+- 246, 249

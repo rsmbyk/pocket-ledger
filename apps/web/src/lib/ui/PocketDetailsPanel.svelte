@@ -641,7 +641,6 @@
 	groups={categoryGroups}
 	initial={editingBudget}
 	initialStartOn={editingBudget ? effectiveStartOn(editingBudget, today) : today}
-	activeBudgets={pocketBudgets}
 	onOpenChange={(next) => {
 		budgetFormOpen = next;
 		if (!next) editingBudget = null;

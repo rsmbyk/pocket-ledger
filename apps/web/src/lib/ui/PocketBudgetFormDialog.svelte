@@ -17,7 +17,6 @@
 		assertBudgetStartOn,
 		groupSelectionState,
 		hydrateBudgetScope,
-		isActiveBudget,
 		isAllSelectable,
 		resolveAppliesTo,
 		withGroupToggled,
@@ -53,7 +52,6 @@
 		groups: OverlayGroup[];
 		initial: PocketBudget | null;
 		initialStartOn: string;
-		activeBudgets?: PocketBudget[];
 		onOpenChange: (open: boolean) => void;
 		onSave: (input: {
 			selectedIds: string[];
@@ -75,7 +73,6 @@
 		groups,
 		initial,
 		initialStartOn,
-		activeBudgets = [],
 		onOpenChange,
 		onSave,
 		onDrop,
@@ -107,14 +104,6 @@
 		groups: expenseGroups.map((g) => ({ id: g.id, name: g.name, kind: g.kind })),
 		categories: expenseCats.map((c) => ({ id: c.id, name: c.name, groupId: c.groupId }))
 	});
-	const otherPocketWide = $derived(
-		activeBudgets.some(
-			(b) =>
-				isActiveBudget(b) &&
-				hydrateBudgetScope(b, appliesCatalog).appliesTo === 'pocket' &&
-				b.id !== initial?.id
-		)
-	);
 	const limitDisplay = $derived(formatAmountDigitsDisplay(limitRaw));
 
 	const validLimit = $derived.by(() => {
@@ -185,12 +174,17 @@
 		return expenseCats.filter((c) => c.groupId === groupId);
 	}
 
+	function clearAppliesError() {
+		if (error?.key === 'category') error = null;
+	}
+
 	function toggleGroup(groupId: string, check: boolean) {
 		selectedIds = withGroupToggled(
 			catsInGroup(groupId).map((c) => c.id),
 			selectedSet,
 			check
 		);
+		clearAppliesError();
 	}
 
 	function toggleCat(id: string, check: boolean) {
@@ -198,10 +192,12 @@
 		if (check) next.add(id);
 		else next.delete(id);
 		selectedIds = [...next];
+		clearAppliesError();
 	}
 
 	function selectAll() {
 		selectedIds = [...allSelectableIds];
+		clearAppliesError();
 	}
 
 	function onLimitInput(el: HTMLInputElement) {
@@ -301,7 +297,7 @@
 						variant="outline"
 						size="sm"
 						data-testid="pocket-budget-select-all"
-						disabled={allSelected || otherPocketWide}
+						disabled={allSelected}
 						onclick={selectAll}
 					>
 						Select all
@@ -401,7 +397,9 @@
 					{/if}
 				</div>
 				{#if error?.key === 'category'}
-					<p class="text-destructive text-sm" role="alert">{error.message}</p>
+					<p class="text-destructive text-sm" role="alert" data-testid="pocket-budget-applies-error">
+						{error.message}
+					</p>
 				{/if}
 			</div>
 
