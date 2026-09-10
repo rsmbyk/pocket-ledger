@@ -29,5 +29,8 @@ describe('classifyFormFieldError', () => {
 		expect(classifyFormFieldError('Name is required')).toBe('name');
 		expect(classifyFormFieldError('A pocket named "Daily" already exists')).toBe('name');
 		expect(classifyFormFieldError('Choose a category for this type')).toBe('category');
+		expect(classifyFormFieldError('A budget with this scope already exists on this pocket.')).toBe(
+			'category'
+		);
 	});
 });

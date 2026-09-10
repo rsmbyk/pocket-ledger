@@ -6,12 +6,17 @@ import {
 	assertBudgetStartOn,
 	isActiveBudget,
 	resolveAppliesTo,
+	findDuplicateActiveScope,
+	DUPLICATE_BUDGET_SCOPE,
+	hydrateBudgetScope,
 	type BudgetAppliesTo,
 	type BudgetPeriod,
+	type BudgetScopeCatalog,
 	type PocketBudget
 } from '$lib/domain/budgets';
 import { parseAmountInput, todayOccurredOn } from '$lib/domain/transaction-rules';
 import { pushSealedEntity } from '$lib/application/sync-client';
+import { listAllCategories, listResolvedGroups } from '$lib/application/categories';
 
 export const SYNC_KIND_BUDGET = 'budget';
 
@@ -41,6 +46,7 @@ export type CreatePocketBudgetInput = {
 	accountId: string;
 	appliesTo?: BudgetAppliesTo;
 	categoryIds?: string[];
+	groupIds?: string[];
 	selectedIds?: string[];
 	allSelectableIds?: string[];
 	limitRaw: string;
@@ -50,21 +56,48 @@ export type CreatePocketBudgetInput = {
 };
 
 function resolveScope(
-	input: Pick<CreatePocketBudgetInput, 'appliesTo' | 'categoryIds' | 'selectedIds' | 'allSelectableIds'>
-): { appliesTo: BudgetAppliesTo; categoryIds: string[] } {
+	input: Pick<
+		CreatePocketBudgetInput,
+		'appliesTo' | 'categoryIds' | 'selectedIds' | 'allSelectableIds' | 'groupIds'
+	>,
+	catalog: BudgetScopeCatalog
+): { appliesTo: BudgetAppliesTo; categoryIds: string[]; groupIds: string[] } {
 	if (input.selectedIds && input.allSelectableIds) {
-		const resolved = resolveAppliesTo(input.selectedIds, input.allSelectableIds);
-		if (resolved.appliesTo === 'categories' && resolved.categoryIds.length === 0) {
+		const resolved = resolveAppliesTo(input.selectedIds, input.allSelectableIds, catalog);
+		if (resolved.appliesTo === 'categories' && resolved.categoryIds.length === 0 && resolved.groupIds.length === 0) {
 			throw new Error('Choose at least one category');
 		}
 		return resolved;
 	}
 	const appliesTo = input.appliesTo ?? 'categories';
 	const categoryIds = appliesTo === 'pocket' ? [] : [...(input.categoryIds ?? [])];
-	if (appliesTo === 'categories' && categoryIds.length === 0) {
+	const groupIds = appliesTo === 'pocket' ? [] : [...(input.groupIds ?? [])];
+	if (appliesTo === 'categories' && categoryIds.length === 0 && groupIds.length === 0) {
 		throw new Error('Choose at least one category');
 	}
-	return { appliesTo, categoryIds };
+	return { appliesTo, categoryIds, groupIds };
+}
+
+async function loadBudgetCatalog(): Promise<BudgetScopeCatalog> {
+	const [groups, categories] = await Promise.all([listResolvedGroups(), listAllCategories()]);
+	return {
+		groups: groups.filter((g) => g.kind === 'expense'),
+		categories: categories
+			.filter((c) => c.kind === 'expense')
+			.map((c) => ({ id: c.id, name: c.name, groupId: c.groupId }))
+	};
+}
+
+async function assertUniqueScope(
+	accountId: string,
+	scope: { appliesTo: BudgetAppliesTo; groupIds: string[]; categoryIds: string[] },
+	exceptId: string | null,
+	catalog: BudgetScopeCatalog
+): Promise<void> {
+	const rows = await listBudgetsRaw();
+	if (findDuplicateActiveScope(rows, accountId, scope, exceptId, catalog)) {
+		throw new Error(DUPLICATE_BUDGET_SCOPE);
+	}
 }
 
 export async function createPocketBudget(input: CreatePocketBudgetInput): Promise<PocketBudget> {
@@ -75,12 +108,15 @@ export async function createPocketBudget(input: CreatePocketBudgetInput): Promis
 	const today = todayOccurredOn();
 	const startOn = input.startOn?.trim() ? input.startOn.trim() : today;
 	assertBudgetStartOn(startOn, today);
-	const scope = resolveScope(input);
+	const catalog = await loadBudgetCatalog();
+	const scope = resolveScope(input, catalog);
+	await assertUniqueScope(input.accountId, scope, null, catalog);
 	const plain: PocketBudget = {
 		id: createId(),
 		accountId: input.accountId,
 		appliesTo: scope.appliesTo,
 		categoryIds: scope.categoryIds,
+		groupIds: scope.groupIds,
 		limitMinor,
 		hardLimit: input.hardLimit === true,
 		period: input.period === 'monthly' ? 'monthly' : 'ongoing',
@@ -98,6 +134,7 @@ export type UpdatePocketBudgetInput = {
 	id: string;
 	appliesTo?: BudgetAppliesTo;
 	categoryIds?: string[];
+	groupIds?: string[];
 	selectedIds?: string[];
 	allSelectableIds?: string[];
 	limitRaw?: string;
@@ -121,15 +158,26 @@ export async function updatePocketBudget(input: UpdatePocketBudgetInput): Promis
 		startOn = input.startOn.trim();
 		assertBudgetStartOn(startOn, today);
 	}
+	const catalog = await loadBudgetCatalog();
+	const storedScope = hydrateBudgetScope(stored, catalog);
 	const scope =
 		input.selectedIds && input.allSelectableIds
-			? resolveScope(input)
-			: input.appliesTo !== undefined || input.categoryIds !== undefined
-				? resolveScope({
-						appliesTo: input.appliesTo ?? stored.appliesTo,
-						categoryIds: input.categoryIds ?? stored.categoryIds
-					})
-				: { appliesTo: stored.appliesTo, categoryIds: stored.categoryIds };
+			? resolveScope(input, catalog)
+			: input.appliesTo !== undefined || input.categoryIds !== undefined || input.groupIds !== undefined
+				? resolveScope(
+						{
+							appliesTo: input.appliesTo ?? storedScope.appliesTo,
+							categoryIds: input.categoryIds ?? storedScope.categoryIds,
+							groupIds: input.groupIds ?? storedScope.groupIds
+						},
+						catalog
+					)
+				: {
+						appliesTo: storedScope.appliesTo,
+						categoryIds: storedScope.categoryIds,
+						groupIds: storedScope.groupIds
+					};
+	await assertUniqueScope(stored.accountId, scope, stored.id, catalog);
 	const next: PocketBudget = {
 		...stored,
 		...scope,
@@ -147,8 +195,9 @@ export async function restartPocketBudget(id: string): Promise<PocketBudget> {
 	const stored = (await listBudgetsRaw()).find((b) => b.id === id);
 	if (!stored) throw new Error('Budget not found');
 	if (!isActiveBudget(stored)) throw new Error('Dropped budgets cannot be restarted');
+	const catalog = await loadBudgetCatalog();
 	const next: PocketBudget = {
-		...stored,
+		...hydrateBudgetScope(stored, catalog),
 		startOn: todayOccurredOn()
 	};
 	await putBudget(next);

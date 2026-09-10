@@ -39,7 +39,9 @@
 		budgetUsedMinor,
 		effectiveStartOn,
 		formatBudgetAppliesTitle,
+		hydrateBudgetScope,
 		isActiveBudget,
+		firstActiveBudgetPerScope,
 		sortActiveBudgets,
 		type PocketBudget
 	} from '$lib/domain/budgets';
@@ -146,13 +148,27 @@
 	);
 	const today = $derived(todayOccurredOn());
 	const pocketGoals = $derived(goals.filter((g) => g.accountId === pocket.id));
-	const pocketBudgets = $derived(budgets.filter((b) => b.accountId === pocket.id && isActiveBudget(b)));
+	const budgetCatalog = $derived({
+		groups: categoryGroups,
+		categories: Object.values(categoriesById).map((c) => ({
+			id: c.id,
+			name: c.name,
+			groupId: c.groupId
+		}))
+	});
+	const pocketBudgets = $derived(
+		budgets
+			.filter((b) => b.accountId === pocket.id && isActiveBudget(b))
+			.map((b) => hydrateBudgetScope(b, budgetCatalog))
+	);
 	const budgetUsedById = $derived(
 		Object.fromEntries(
-			pocketBudgets.map((b) => [b.id, budgetUsedMinor(b, transactions, today)])
+			pocketBudgets.map((b) => [b.id, budgetUsedMinor(b, transactions, today, null, budgetCatalog)])
 		) as Record<string, number>
 	);
-	const activeBudgets = $derived(sortActiveBudgets(pocketBudgets, budgetUsedById, today));
+	const activeBudgets = $derived(
+		firstActiveBudgetPerScope(sortActiveBudgets(pocketBudgets, budgetUsedById, today))
+	);
 	const budgetCats = $derived(
 		Object.values(categoriesById).map((c) => ({ id: c.id, name: c.name, groupId: c.groupId }))
 	);
@@ -625,6 +641,7 @@
 	groups={categoryGroups}
 	initial={editingBudget}
 	initialStartOn={editingBudget ? effectiveStartOn(editingBudget, today) : today}
+	activeBudgets={pocketBudgets}
 	onOpenChange={(next) => {
 		budgetFormOpen = next;
 		if (!next) editingBudget = null;

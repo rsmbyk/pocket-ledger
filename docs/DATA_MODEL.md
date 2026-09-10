@@ -80,14 +80,15 @@ Live Dexie rows (spec 152): `id`, `accountId`, optional `description`, `targetMi
 
 ## budgets
 
-Spending caps per pocket (spec 246). Dexie `budgets`; sync `kind: 'budget'`. Drop is soft-delete (`cancelledAt` + `deletedAt`). Used is derived, never stored.
+Spending caps per pocket (specs 246, 248). Dexie `budgets`; sync `kind: 'budget'`. Drop is soft-delete (`cancelledAt` + `deletedAt`). Used is derived, never stored.
 
 | Field        | Notes                                                                 |
 | ------------ | --------------------------------------------------------------------- |
 | id           | UUID                                                                  |
 | accountId    | Pocket                                                                |
 | appliesTo    | `pocket` \| `categories`                                              |
-| categoryIds  | Expense category ids; empty when pocket-wide                          |
+| categoryIds  | Expense category ids not covered by a sticky group; empty when pocket-wide |
+| groupIds     | Sticky expense group ids (spec 248); empty when pocket-wide. Dexie v12.   |
 | limitMinor   | Positive integer                                                      |
 | hardLimit    | When true, a tx that would exceed is not created                      |
 | period       | `ongoing` \| `monthly`                                                |

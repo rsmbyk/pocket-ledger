@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addPocketBudget, goToNav, openAdd, selectTxCategory } from './nav';
+import { addPocketBudget, addPocketGoal, clickCategoryGroupAdd, goToNav, selectCategoriesKind, selectTxCategory } from './nav';
 
 test.describe('246 pocket budgets', () => {
 	test.beforeEach(async ({ page }) => {
@@ -233,5 +233,87 @@ test.describe('247 budget chrome', () => {
 		await expect(empty).toBeVisible();
 		await expect(empty).toContainText('No matches');
 		await expect(empty).toContainText('Try a different category or group name.');
+	});
+});
+
+test.describe('248 sticky groups, unique scope, list preview', () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto('/');
+		await expect(page.getByTestId('home-panel')).toBeVisible();
+	});
+
+	test('Pockets list shows pocket-wide chrome between info and goal', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.locator('[data-testid^="pocket-row-"]').first().click();
+		await addPocketBudget(page, { amount: '100000', selectAll: true, hardLimit: true, monthly: true });
+		await addPocketBudget(page, { amount: '1000', category: 'Groceries' });
+		await addPocketGoal(page, { target: '50000' });
+		await page.getByTestId('pocket-details-back').click();
+
+		const row = page.locator('[data-testid^="pocket-row-"]').first();
+		const chrome = row.locator('[data-testid^="pocket-list-budget-"]');
+		await expect(chrome).toBeVisible();
+		await expect(row.getByText('Hard', { exact: true })).toBeVisible();
+		await expect(row.getByText('Monthly', { exact: true })).toBeVisible();
+		await expect(page.getByTestId('pockets-panel').getByText('Groceries')).toHaveCount(0);
+
+		const nameBox = await row.getByTestId('pocket-main-icon').boundingBox();
+		const barBox = await chrome.getByTestId('budget-progress-bar').boundingBox();
+		const goalBox = await row.getByTestId('goal-progress').boundingBox();
+		const balanceBox = await row.getByTestId('pocket-row-balance').boundingBox();
+		const rowBox = await row.boundingBox();
+		expect(nameBox && barBox && goalBox && balanceBox && rowBox).toBeTruthy();
+		if (!nameBox || !barBox || !goalBox || !balanceBox || !rowBox) return;
+		expect(barBox.y).toBeGreaterThan(nameBox.y);
+		expect(goalBox.y).toBeGreaterThan(barBox.y);
+		expect(Math.abs(barBox.x - nameBox.x)).toBeLessThan(8);
+		expect(barBox.x + barBox.width).toBeGreaterThan(balanceBox.x);
+		expect(rowBox.x + rowBox.width - (barBox.x + barBox.width)).toBeLessThan(24);
+		expect(barBox.width).toBeGreaterThan(320);
+	});
+
+	test('second pocket-wide Save errors and Select all is disabled', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.locator('[data-testid^="pocket-row-"]').first().click();
+		await addPocketBudget(page, { amount: '100000', selectAll: true });
+
+		await page.getByTestId('pocket-details-add-budget').click();
+		const dialog = page.getByTestId('pocket-budget-form-dialog');
+		await expect(dialog).toBeVisible();
+		await expect(page.getByTestId('pocket-budget-select-all')).toBeDisabled();
+		const groups = dialog.locator('[data-testid^="pocket-budget-group-"]');
+		const count = await groups.count();
+		for (let i = 0; i < count; i += 1) {
+			await groups.nth(i).check();
+		}
+		await page.getByTestId('pocket-budget-limit-input').fill('50000');
+		await page.getByTestId('pocket-budget-save').click();
+		await expect(dialog.getByText('A budget with this scope already exists on this pocket.')).toBeVisible();
+	});
+
+	test('Home sticky title stays Home after adding a category', async ({ page }) => {
+		await goToNav(page, 'pockets');
+		await page.locator('[data-testid^="pocket-row-"]').first().click();
+		await page.getByTestId('pocket-details-add-budget').click();
+		const dialog = page.getByTestId('pocket-budget-form-dialog');
+		await expect(dialog).toBeVisible();
+		await dialog.getByRole('checkbox', { name: 'Home', exact: true }).check();
+		await page.getByTestId('pocket-budget-limit-input').fill('20000');
+		await page.getByTestId('pocket-budget-save').click();
+		await expect(dialog).toBeHidden();
+		const list = page.getByTestId('pocket-details-budgets-list');
+		await expect(list.getByText('Home', { exact: true })).toBeVisible();
+
+		await goToNav(page, 'categories');
+		await selectCategoriesKind(page, 'expense');
+		const home = page.getByTestId('category-group-stock-group:home');
+		await clickCategoryGroupAdd(home);
+		await expect(page.getByTestId('category-name-input')).toBeVisible();
+		await page.getByTestId('category-name-input').fill('Garden gnome');
+		await page.getByTestId('category-add').click();
+
+		await goToNav(page, 'pockets');
+		await page.locator('[data-testid^="pocket-row-"]').first().click();
+		await expect(page.getByTestId('pocket-details-budgets-list').getByText('Home', { exact: true })).toBeVisible();
 	});
 });

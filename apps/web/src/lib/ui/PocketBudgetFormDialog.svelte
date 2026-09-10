@@ -16,6 +16,8 @@
 		assertBudgetLimit,
 		assertBudgetStartOn,
 		groupSelectionState,
+		hydrateBudgetScope,
+		isActiveBudget,
 		isAllSelectable,
 		resolveAppliesTo,
 		withGroupToggled,
@@ -51,6 +53,7 @@
 		groups: OverlayGroup[];
 		initial: PocketBudget | null;
 		initialStartOn: string;
+		activeBudgets?: PocketBudget[];
 		onOpenChange: (open: boolean) => void;
 		onSave: (input: {
 			selectedIds: string[];
@@ -72,6 +75,7 @@
 		groups,
 		initial,
 		initialStartOn,
+		activeBudgets = [],
 		onOpenChange,
 		onSave,
 		onDrop,
@@ -99,6 +103,18 @@
 	const selectedSet = $derived(new Set(selectedIds));
 	const allSelected = $derived(isAllSelectable(selectedSet, allSelectableIds));
 	const filteredApplies = $derived(filterCatalogGroups(expenseGroups, expenseCats, appliesQuery));
+	const appliesCatalog = $derived({
+		groups: expenseGroups.map((g) => ({ id: g.id, name: g.name, kind: g.kind })),
+		categories: expenseCats.map((c) => ({ id: c.id, name: c.name, groupId: c.groupId }))
+	});
+	const otherPocketWide = $derived(
+		activeBudgets.some(
+			(b) =>
+				isActiveBudget(b) &&
+				hydrateBudgetScope(b, appliesCatalog).appliesTo === 'pocket' &&
+				b.id !== initial?.id
+		)
+	);
 	const limitDisplay = $derived(formatAmountDigitsDisplay(limitRaw));
 
 	const validLimit = $derived.by(() => {
@@ -111,22 +127,29 @@
 	});
 	const validStart = $derived(isValidOccurredOn(startOn) && startOn <= today);
 	const scopeOk = $derived(
-		resolveAppliesTo(selectedIds, allSelectableIds).appliesTo === 'pocket' ||
+		resolveAppliesTo(selectedIds, allSelectableIds, appliesCatalog).appliesTo === 'pocket' ||
 			selectedIds.length > 0
 	);
 	const dirty = $derived(
 		isBudgetFormDirty(
 			{ selectedIds, limitRaw, startOn, period, hardLimit },
 			baseline,
-			allSelectableIds
+			allSelectableIds,
+			appliesCatalog
 		)
 	);
 	const canSave = $derived(!busy && validLimit && validStart && scopeOk && dirty);
 
 	function selectedForBudget(row: PocketBudget | null): string[] {
 		if (!row) return [];
-		if (row.appliesTo === 'pocket') return [...allSelectableIds];
-		return [...row.categoryIds];
+		const scoped = hydrateBudgetScope(row, appliesCatalog);
+		if (scoped.appliesTo === 'pocket') return [...allSelectableIds];
+		const ids = new Set(scoped.categoryIds);
+		const sticky = new Set(scoped.groupIds);
+		for (const cat of expenseCats) {
+			if (sticky.has(cat.groupId)) ids.add(cat.id);
+		}
+		return [...ids];
 	}
 
 	$effect(() => {
@@ -144,11 +167,12 @@
 		appliesQuery = '';
 		error = null;
 		discardConfirmOpen = false;
-		const resolved = resolveAppliesTo(ids, selectable);
+		const resolved = resolveAppliesTo(ids, selectable, untrack(() => appliesCatalog));
 		baseline = initial
 			? {
 					appliesTo: resolved.appliesTo,
 					categoryIds: resolved.categoryIds,
+					groupIds: resolved.groupIds,
 					limitRaw: amountDigitsOnly(String(initial.limitMinor)),
 					startOn: initialStartOn,
 					period: initial.period,
@@ -277,7 +301,7 @@
 						variant="outline"
 						size="sm"
 						data-testid="pocket-budget-select-all"
-						disabled={allSelected}
+						disabled={allSelected || otherPocketWide}
 						onclick={selectAll}
 					>
 						Select all

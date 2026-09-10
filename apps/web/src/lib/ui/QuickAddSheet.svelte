@@ -638,7 +638,15 @@
 				ledgerTransactions,
 				proposed,
 				todayOccurredOn(),
-				editing?.id ?? null
+				editing?.id ?? null,
+				{
+					groups: categoryGroups,
+					categories: Object.values(categoriesById).map((c) => ({
+						id: c.id,
+						name: c.name,
+						groupId: c.groupId
+					}))
+				}
 			);
 			if (hits.length > 0) {
 				budgetHits = hits;

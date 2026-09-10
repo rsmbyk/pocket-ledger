@@ -10,11 +10,14 @@ import {
 	budgetWouldExceed,
 	effectiveStartOn,
 	exceededBudgets,
+	findDuplicateActiveScope,
 	formatBudgetAppliesTitle,
 	groupSelectionState,
+	hydrateBudgetScope,
 	isActiveBudget,
 	isAllSelectable,
 	resolveAppliesTo,
+	budgetScopeKey,
 	sortActiveBudgets,
 	txContribution,
 	withGroupToggled,
@@ -34,6 +37,7 @@ function budget(partial: Partial<PocketBudget> & Pick<PocketBudget, 'id'>): Pock
 		createdAt: '2026-09-01T00:00:00.000Z',
 		cancelledAt: null,
 		deletedAt: null,
+		groupIds: [],
 		...partial
 	};
 }
@@ -194,11 +198,102 @@ describe('budgets domain', () => {
 		expect(groupSelectionState(['a', 'b'], new Set(['a', 'b']))).toBe('all');
 		expect(withGroupToggled(['a', 'b'], new Set(['c']), true).sort()).toEqual(['a', 'b', 'c']);
 		expect(isAllSelectable(new Set(all), all)).toBe(true);
-		expect(resolveAppliesTo(['a', 'b', 'c'], all)).toEqual({ appliesTo: 'pocket', categoryIds: [] });
+		expect(resolveAppliesTo(['a', 'b', 'c'], all)).toEqual({
+			appliesTo: 'pocket',
+			groupIds: [],
+			categoryIds: []
+		});
 		expect(resolveAppliesTo(['a', 'b'], all)).toEqual({
 			appliesTo: 'categories',
+			groupIds: [],
 			categoryIds: ['a', 'b']
 		});
+	});
+
+	it('stores a full group as sticky and expands used from the live catalog', () => {
+		const catalog = {
+			groups: [{ id: 'home', name: 'Home', kind: 'expense' as const }],
+			categories: [
+				{ id: 'rent', name: 'Rent', groupId: 'home' },
+				{ id: 'hoa', name: 'HOA', groupId: 'home' }
+			]
+		};
+		expect(resolveAppliesTo(['rent', 'hoa'], ['rent', 'hoa', 'groc'], catalog)).toEqual({
+			appliesTo: 'categories',
+			groupIds: ['home'],
+			categoryIds: []
+		});
+		expect(resolveAppliesTo(['rent'], ['rent', 'hoa', 'groc'], catalog)).toEqual({
+			appliesTo: 'categories',
+			groupIds: [],
+			categoryIds: ['rent']
+		});
+
+		const sticky = budget({ id: 'home', groupIds: ['home'], categoryIds: [] });
+		const live = [
+			...catalog.categories,
+			{ id: 'gnome', name: 'Garden gnome', groupId: 'home' }
+		];
+		expect(txContribution(sticky, tx({ id: 'new', categoryId: 'gnome' }), today, live)).toBe(1_000);
+		expect(
+			txContribution(
+				sticky,
+				tx({ id: 'fee', categoryId: 'rent', amountMinor: 500, feeMinor: 50 }),
+				today,
+				live
+			)
+		).toBe(500);
+
+		const snapshot = budget({ id: 'old', categoryIds: ['rent', 'hoa'] });
+		const hydrated = hydrateBudgetScope(snapshot, catalog);
+		expect(hydrated.groupIds).toEqual(['home']);
+		expect(hydrated.categoryIds).toEqual([]);
+		expect(txContribution(hydrated, tx({ id: 'new', categoryId: 'gnome' }), today, live)).toBe(1_000);
+
+		const demoted = budget({ id: 'part', categoryIds: ['rent'] });
+		expect(
+			budgetUsedMinor(demoted, [tx({ id: 'new', categoryId: 'gnome' })], today, null, live)
+		).toBe(0);
+		expect(formatBudgetAppliesTitle(sticky, 'Daily', live, catalog.groups)).toBe('Home');
+	});
+
+	it('keys unique Applies to per pocket', () => {
+		expect(budgetScopeKey(budget({ id: 'pw', appliesTo: 'pocket', categoryIds: [] }))).toBe('pocket');
+		expect(budgetScopeKey(budget({ id: 'g', categoryIds: ['groceries'] }))).toBe(
+			'g:|c:groceries'
+		);
+		expect(budgetScopeKey(budget({ id: 'h', groupIds: ['home'], categoryIds: [] }))).toBe(
+			'g:home|c:'
+		);
+		expect(
+			budgetScopeKey(budget({ id: 'mix', groupIds: ['home'], categoryIds: ['groceries'] }))
+		).toBe('g:home|c:groceries');
+		const catalog = {
+			groups: [{ id: 'home', name: 'Home', kind: 'expense' as const }],
+			categories: [
+				{ id: 'rent', name: 'Rent', groupId: 'home' },
+				{ id: 'hoa', name: 'HOA', groupId: 'home' }
+			]
+		};
+		const first = budget({ id: 'a', appliesTo: 'pocket', categoryIds: [] });
+		expect(
+			findDuplicateActiveScope(
+				[first],
+				'p',
+				{ appliesTo: 'pocket', groupIds: [], categoryIds: [] },
+				null,
+				catalog
+			)?.id
+		).toBe('a');
+		expect(
+			findDuplicateActiveScope(
+				[first],
+				'p',
+				{ appliesTo: 'pocket', groupIds: [], categoryIds: [] },
+				'a',
+				catalog
+			)
+		).toBeNull();
 	});
 
 	it('sorts pocket-wide first even when a category row is hotter', () => {

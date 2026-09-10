@@ -13,6 +13,7 @@
 	import DateField from '$lib/ui/DateField.svelte';
 	import PocketLabel from '$lib/ui/PocketLabel.svelte';
 	import GoalProgressChrome from '$lib/ui/GoalProgressChrome.svelte';
+	import BudgetProgressChrome from '$lib/ui/BudgetProgressChrome.svelte';
 	import type { Account } from '$lib/domain/account';
 	import { DEFAULT_ACCOUNT_NAME, isUnsetMainName, pocketDisplayName } from '$lib/domain/account';
 	import {
@@ -23,6 +24,17 @@
 	import { pocketDetailsPath } from '$lib/shared/router';
 	import { classifyFormFieldError, type FormFieldKey } from '$lib/domain/form-field-error';
 	import { goalProgressPercent, previewGoal, type PocketGoal } from '$lib/domain/goals';
+	import {
+		budgetProgressPercent,
+		budgetUsedMinor,
+		hydrateBudgetScope,
+		isActiveBudget,
+		sortActiveBudgets,
+		type PocketBudget
+	} from '$lib/domain/budgets';
+	import type { CategoryRow } from '$lib/data/db';
+	import type { OverlayGroup } from '$lib/domain/category-overlay';
+	import type { LedgerTransaction } from '$lib/domain/transaction';
 	import { formatMinor } from '$lib/domain/money';
 	import { formatOccurredOnDisplay } from '$lib/domain/occurred-on-display';
 	import {
@@ -43,6 +55,10 @@
 		balances: Record<string, number>;
 		currencyLabel: string;
 		goals: PocketGoal[];
+		budgets?: PocketBudget[];
+		transactions?: LedgerTransaction[];
+		categoriesById?: Record<string, CategoryRow>;
+		categoryGroups?: OverlayGroup[];
 		onCreatePocket: (input: CreatePocketInput) => void | Promise<void>;
 		onUpdatePocket: (input: UpdatePocketInput) => void | Promise<void>;
 		onDeletePocket: (id: string) => void | Promise<void>;
@@ -68,6 +84,10 @@
 		balances,
 		currencyLabel,
 		goals,
+		budgets = [],
+		transactions = [],
+		categoriesById = {},
+		categoryGroups = [],
 		onCreatePocket,
 		onUpdatePocket,
 		onDeletePocket,
@@ -89,6 +109,32 @@
 	});
 
 	const mainPocket = $derived(pockets.find((p) => p.isMain) ?? null);
+	const budgetCatalog = $derived({
+		groups: categoryGroups,
+		categories: Object.values(categoriesById).map((c) => ({
+			id: c.id,
+			name: c.name,
+			groupId: c.groupId
+		}))
+	});
+	const pocketWideById = $derived.by(() => {
+		const today = todayOccurredOn();
+		const map: Record<string, { budget: PocketBudget; used: number }> = {};
+		for (const pocket of pockets) {
+			const rows = budgets
+				.filter((b) => b.accountId === pocket.id && isActiveBudget(b))
+				.map((b) => hydrateBudgetScope(b, budgetCatalog))
+				.filter((b) => b.appliesTo === 'pocket');
+			if (rows.length === 0) continue;
+			const usedById = Object.fromEntries(
+				rows.map((b) => [b.id, budgetUsedMinor(b, transactions, today, null, budgetCatalog)])
+			) as Record<string, number>;
+			const first = sortActiveBudgets(rows, usedById, today)[0];
+			if (!first) continue;
+			map[pocket.id] = { budget: first, used: usedById[first.id] ?? 0 };
+		}
+		return map;
+	});
 
 	let formOpen = $state(false);
 	let formMode = $state<'create' | 'edit'>('create');
@@ -327,6 +373,10 @@
 	)}
 	{@const href = pocketDetailsPath(p.id)}
 	{@const description = p.notes.trim()}
+	{@const wide = pocketWideById[p.id]}
+	{@const widePercent = wide
+		? budgetProgressPercent(wide.budget.limitMinor, wide.used)
+		: 0}
 	<a
 		href={href}
 		class="absolute inset-0 z-0"
@@ -344,21 +394,58 @@
 		{:else}
 			<span class="-my-3 w-6 shrink-0 self-stretch" aria-hidden="true"></span>
 		{/if}
-		<div class="min-w-0 flex-1 self-start">
-			<PocketLabel
-				name={p.name}
-				isMain={p.isMain}
-				class="font-medium"
-				iconTestid={p.isMain ? 'pocket-main-icon' : undefined}
-			/>
-			{#if description}
-				<p class="text-muted-foreground truncate text-xs" data-testid="pocket-description">
-					{description}
+		<div class="flex min-w-0 flex-1 flex-col gap-1.5">
+			<div class="flex items-start justify-between gap-2">
+				<div class="min-w-0">
+					<PocketLabel
+						name={p.name}
+						isMain={p.isMain}
+						class="font-medium"
+						iconTestid={p.isMain ? 'pocket-main-icon' : undefined}
+					/>
+					{#if description}
+						<p class="text-muted-foreground truncate text-xs" data-testid="pocket-description">
+							{description}
+						</p>
+					{/if}
+				</div>
+				<p class="shrink-0 self-start font-medium tabular-nums" data-testid="pocket-row-balance">
+					{hideAmounts ? '••••' : formatMinor(balance, currencyLabel)}
 				</p>
+			</div>
+			{#if wide}
+				<div data-testid={`pocket-list-budget-${p.id}`}>
+					{#if wide.budget.hardLimit || wide.budget.period === 'monthly'}
+						<div class="flex flex-wrap gap-1">
+							{#if wide.budget.hardLimit}
+								<span
+									class="bg-muted text-muted-foreground inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium"
+									data-testid={`pocket-row-budget-hard-${p.id}`}
+								>
+									Hard
+								</span>
+							{/if}
+							{#if wide.budget.period === 'monthly'}
+								<span
+									class="bg-muted text-muted-foreground inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium"
+									data-testid={`pocket-row-budget-monthly-${p.id}`}
+								>
+									Monthly
+								</span>
+							{/if}
+						</div>
+					{/if}
+					<BudgetProgressChrome
+						usedMinor={wide.used}
+						limitMinor={wide.budget.limitMinor}
+						percent={widePercent}
+						{currencyLabel}
+						{hideAmounts}
+					/>
+				</div>
 			{/if}
 			{#if preview}
 				<GoalProgressChrome
-					class="mt-1.5 max-w-xs"
 					currentMinor={balance}
 					targetMinor={preview.targetMinor}
 					percent={goalProgressPercent(preview.targetMinor, balance)}
@@ -368,9 +455,6 @@
 				/>
 			{/if}
 		</div>
-		<p class="shrink-0 self-start font-medium tabular-nums" data-testid="pocket-row-balance">
-			{hideAmounts ? '••••' : formatMinor(balance, currencyLabel)}
-		</p>
 	</div>
 {/snippet}
 
