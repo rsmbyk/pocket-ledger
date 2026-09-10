@@ -10,6 +10,7 @@ export type PocketBudget = {
 	accountId: string;
 	appliesTo: BudgetAppliesTo;
 	categoryIds: string[];
+	groupIds: string[];
 	limitMinor: number;
 	hardLimit: boolean;
 	period: BudgetPeriod;
@@ -45,6 +46,19 @@ export type BudgetGroupRef = {
 };
 
 export type GroupSelectionState = 'none' | 'some' | 'all';
+
+export type BudgetScopeCatalog = {
+	groups: readonly BudgetGroupRef[];
+	categories: readonly BudgetCategoryRef[];
+};
+
+export type ResolvedBudgetScope = {
+	appliesTo: BudgetAppliesTo;
+	groupIds: string[];
+	categoryIds: string[];
+};
+
+export const DUPLICATE_BUDGET_SCOPE = 'A budget with this scope already exists on this pocket.';
 
 export function assertBudgetLimit(limitMinor: number): void {
 	if (!Number.isInteger(limitMinor) || limitMinor <= 0) {
@@ -100,7 +114,12 @@ function storedFee(tx: Pick<BudgetTx, 'feeMinor'>): number {
 	return typeof fee === 'number' && Number.isInteger(fee) && fee >= 0 ? fee : 0;
 }
 
-export function txContribution(budget: PocketBudget, tx: BudgetTx, today: string): number {
+export function txContribution(
+	budget: PocketBudget,
+	tx: BudgetTx,
+	today: string,
+	categories: readonly BudgetCategoryRef[] = []
+): number {
 	if (isVoided(tx)) return 0;
 	if (!inWindow(tx.occurredOn, effectiveStartOn(budget, today), today)) return 0;
 
@@ -115,20 +134,34 @@ export function txContribution(budget: PocketBudget, tx: BudgetTx, today: string
 	}
 
 	if (tx.type !== 'expense' || tx.accountId !== budget.accountId) return 0;
-	if (!tx.categoryId || !budget.categoryIds.includes(tx.categoryId)) return 0;
+	if (!categoryMatchesBudget(budget, tx.categoryId, categories)) return 0;
 	return tx.amountMinor;
+}
+
+function categoryMatchesBudget(
+	budget: PocketBudget,
+	categoryId: string | null,
+	categories: readonly BudgetCategoryRef[]
+): boolean {
+	if (!categoryId) return false;
+	if (budget.categoryIds.includes(categoryId)) return true;
+	const cat = categories.find((c) => c.id === categoryId);
+	return Boolean(cat && (budget.groupIds ?? []).includes(cat.groupId));
 }
 
 export function budgetUsedMinor(
 	budget: PocketBudget,
 	txs: BudgetTx[],
 	today: string,
-	exceptId?: string | null
+	exceptId?: string | null,
+	catalog: BudgetScopeCatalog | readonly BudgetCategoryRef[] = []
 ): number {
+	const resolved = resolveCatalog(catalog);
+	const scoped = hydrateBudgetScope(budget, resolved);
 	let used = 0;
 	for (const row of txs) {
 		if (exceptId && row.id === exceptId) continue;
-		used += txContribution(budget, row, today);
+		used += txContribution(scoped, row, today, resolved.categories);
 	}
 	return used;
 }
@@ -138,10 +171,13 @@ export function budgetWouldExceed(
 	txs: BudgetTx[],
 	proposed: BudgetTx,
 	today: string,
-	replacingId?: string | null
+	replacingId?: string | null,
+	catalog: BudgetScopeCatalog | readonly BudgetCategoryRef[] = []
 ): boolean {
-	const used = budgetUsedMinor(budget, txs, today, replacingId);
-	return used + txContribution(budget, proposed, today) > budget.limitMinor;
+	const used = budgetUsedMinor(budget, txs, today, replacingId, catalog);
+	const resolved = resolveCatalog(catalog);
+	const scoped = hydrateBudgetScope(budget, resolved);
+	return used + txContribution(scoped, proposed, today, resolved.categories) > budget.limitMinor;
 }
 
 export function exceededBudgets(
@@ -149,10 +185,11 @@ export function exceededBudgets(
 	txs: BudgetTx[],
 	proposed: BudgetTx,
 	today: string,
-	replacingId?: string | null
+	replacingId?: string | null,
+	catalog: BudgetScopeCatalog | readonly BudgetCategoryRef[] = []
 ): PocketBudget[] {
 	return budgets.filter(
-		(b) => isActiveBudget(b) && budgetWouldExceed(b, txs, proposed, today, replacingId)
+		(b) => isActiveBudget(b) && budgetWouldExceed(b, txs, proposed, today, replacingId, catalog)
 	);
 }
 
@@ -214,12 +251,110 @@ export function isAllSelectable(selected: ReadonlySet<string>, allIds: readonly 
 
 export function resolveAppliesTo(
 	selectedIds: readonly string[],
-	allSelectableIds: readonly string[]
-): { appliesTo: BudgetAppliesTo; categoryIds: string[] } {
+	allSelectableIds: readonly string[],
+	catalog: BudgetScopeCatalog = { groups: [], categories: [] }
+): ResolvedBudgetScope {
 	if (isAllSelectable(new Set(selectedIds), allSelectableIds)) {
-		return { appliesTo: 'pocket', categoryIds: [] };
+		return { appliesTo: 'pocket', groupIds: [], categoryIds: [] };
 	}
-	return { appliesTo: 'categories', categoryIds: [...selectedIds] };
+	const selected = new Set(selectedIds);
+	const groupIds: string[] = [];
+	const covered = new Set<string>();
+	const allow = new Set(allSelectableIds);
+	for (const group of catalog.groups) {
+		if (group.kind !== 'expense') continue;
+		const members = catalog.categories
+			.filter((c) => c.groupId === group.id && allow.has(c.id))
+			.map((c) => c.id);
+		if (members.length === 0) continue;
+		if (members.every((id) => selected.has(id))) {
+			groupIds.push(group.id);
+			for (const id of members) covered.add(id);
+		}
+	}
+	return {
+		appliesTo: 'categories',
+		groupIds,
+		categoryIds: selectedIds.filter((id) => !covered.has(id))
+	};
+}
+
+export function budgetScopeKey(
+	budget: Pick<PocketBudget, 'appliesTo' | 'groupIds' | 'categoryIds'>
+): string {
+	if (budget.appliesTo === 'pocket') return 'pocket';
+	const groups = [...(budget.groupIds ?? [])].sort().join(',');
+	const cats = [...budget.categoryIds].sort().join(',');
+	return `g:${groups}|c:${cats}`;
+}
+
+export function hydrateBudgetScope(budget: PocketBudget, catalog: BudgetScopeCatalog): PocketBudget {
+	if (budget.appliesTo === 'pocket') {
+		return { ...budget, groupIds: [], categoryIds: [] };
+	}
+	const groupIds = new Set(budget.groupIds ?? []);
+	const leftover = new Set(budget.categoryIds);
+	const groups =
+		catalog.groups.length > 0
+			? catalog.groups
+			: uniqueGroupsFromCategories(catalog.categories);
+	for (const group of groups) {
+		if (group.kind && group.kind !== 'expense') continue;
+		const members = catalog.categories.filter((c) => c.groupId === group.id);
+		if (members.length === 0) continue;
+		if (members.every((m) => leftover.has(m.id))) {
+			groupIds.add(group.id);
+			for (const m of members) leftover.delete(m.id);
+		}
+	}
+	return { ...budget, groupIds: [...groupIds], categoryIds: [...leftover] };
+}
+
+export function firstActiveBudgetPerScope<T extends PocketBudget>(sorted: T[]): T[] {
+	const seen = new Set<string>();
+	const out: T[] = [];
+	for (const row of sorted) {
+		const key = budgetScopeKey(row);
+		if (seen.has(key)) continue;
+		seen.add(key);
+		out.push(row);
+	}
+	return out;
+}
+
+export function findDuplicateActiveScope(
+	budgets: readonly PocketBudget[],
+	accountId: string,
+	scope: Pick<PocketBudget, 'appliesTo' | 'groupIds' | 'categoryIds'>,
+	exceptId: string | null,
+	catalog: BudgetScopeCatalog
+): PocketBudget | null {
+	const key = budgetScopeKey(scope);
+	for (const row of budgets) {
+		if (row.accountId !== accountId) continue;
+		if (!isActiveBudget(row)) continue;
+		if (exceptId && row.id === exceptId) continue;
+		if (budgetScopeKey(hydrateBudgetScope(row, catalog)) === key) return row;
+	}
+	return null;
+}
+
+function resolveCatalog(
+	catalog: BudgetScopeCatalog | readonly BudgetCategoryRef[]
+): BudgetScopeCatalog {
+	if ('categories' in catalog && 'groups' in catalog && !Array.isArray(catalog)) return catalog;
+	return { groups: [], categories: catalog as readonly BudgetCategoryRef[] };
+}
+
+function uniqueGroupsFromCategories(categories: readonly BudgetCategoryRef[]): BudgetGroupRef[] {
+	const seen = new Set<string>();
+	const groups: BudgetGroupRef[] = [];
+	for (const cat of categories) {
+		if (seen.has(cat.groupId)) continue;
+		seen.add(cat.groupId);
+		groups.push({ id: cat.groupId, name: cat.groupId, kind: 'expense' });
+	}
+	return groups;
 }
 
 export function normalizeStoredBudget(raw: unknown): PocketBudget | null {
@@ -232,11 +367,15 @@ export function normalizeStoredBudget(raw: unknown): PocketBudget | null {
 	const categoryIds = Array.isArray(row.categoryIds)
 		? row.categoryIds.filter((id): id is string => typeof id === 'string')
 		: [];
+	const groupIds = Array.isArray(row.groupIds)
+		? row.groupIds.filter((id): id is string => typeof id === 'string')
+		: [];
 	return {
 		id,
 		accountId,
 		appliesTo,
 		categoryIds: appliesTo === 'pocket' ? [] : categoryIds,
+		groupIds: appliesTo === 'pocket' ? [] : groupIds,
 		limitMinor: typeof row.limitMinor === 'number' ? row.limitMinor : 0,
 		hardLimit: row.hardLimit === true,
 		period: row.period === 'monthly' ? 'monthly' : 'ongoing',
@@ -248,16 +387,21 @@ export function normalizeStoredBudget(raw: unknown): PocketBudget | null {
 }
 
 export function formatBudgetAppliesTitle(
-	budget: Pick<PocketBudget, 'appliesTo' | 'categoryIds'>,
+	budget: Pick<PocketBudget, 'appliesTo' | 'categoryIds' | 'groupIds'>,
 	pocketName: string,
 	categories: BudgetCategoryRef[],
 	groups: BudgetGroupRef[]
 ): string {
 	if (budget.appliesTo === 'pocket') return pocketName;
+	const sticky = new Set(budget.groupIds ?? []);
 	const selected = new Set(budget.categoryIds);
 	const parts: string[] = [];
 	for (const group of groups) {
 		if (group.kind !== 'expense') continue;
+		if (sticky.has(group.id)) {
+			parts.push(group.name);
+			continue;
+		}
 		const inGroup = categories.filter((c) => c.groupId === group.id);
 		if (inGroup.length === 0) continue;
 		const picked = inGroup.filter((c) => selected.has(c.id));

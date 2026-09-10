@@ -39,6 +39,7 @@ describe('budget-form-dirty', () => {
 		const baseline = {
 			appliesTo: 'pocket' as const,
 			categoryIds: [] as string[],
+			groupIds: [] as string[],
 			limitRaw: '10000',
 			startOn: today,
 			period: 'ongoing' as const,

@@ -1745,6 +1745,10 @@
 				balances={pocketBalances}
 				{currencyLabel}
 				{goals}
+				{budgets}
+				{transactions}
+				{categoriesById}
+				{categoryGroups}
 				hideAmounts={hideHomeAmounts}
 				{onCreatePocket}
 				{onUpdatePocket}

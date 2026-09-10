@@ -367,6 +367,29 @@ export class PocketLedgerDb extends Dexie {
 			netWorthSnapshots: 'id, capturedOn',
 			syncRevs: 'id'
 		});
+		this.version(12)
+			.stores({
+				accounts: 'id, name, sortOrder, isMain',
+				categories: 'id, kind, name, sortOrder, deletedAt, groupId, hidden',
+				categoryGroups: 'id, kind',
+				transactions: 'id, accountId, type, occurredOn, categoryId',
+				settings: 'key',
+				goals: 'id, accountId',
+				plans: 'id, accountId, dueOn, type',
+				budgets: 'id, accountId',
+				netWorthSnapshots: 'id, capturedOn',
+				syncRevs: 'id'
+			})
+			.upgrade(async (tx) => {
+				const table = tx.table('budgets');
+				const rows = (await table.toArray()) as Array<Record<string, unknown>>;
+				for (const row of rows) {
+					await table.put({
+						...row,
+						groupIds: Array.isArray(row.groupIds) ? row.groupIds : []
+					});
+				}
+			});
 	}
 }
 

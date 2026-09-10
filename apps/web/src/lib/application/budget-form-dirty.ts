@@ -1,4 +1,4 @@
-import { resolveAppliesTo, type BudgetAppliesTo, type BudgetPeriod } from '$lib/domain/budgets';
+import { resolveAppliesTo, type BudgetAppliesTo, type BudgetPeriod, type BudgetScopeCatalog } from '$lib/domain/budgets';
 
 export type BudgetFormLive = {
 	selectedIds: string[];
@@ -11,6 +11,7 @@ export type BudgetFormLive = {
 export type BudgetFormBaseline = {
 	appliesTo: BudgetAppliesTo;
 	categoryIds: string[];
+	groupIds: string[];
 	limitRaw: string;
 	startOn: string;
 	period: BudgetPeriod;
@@ -18,8 +19,9 @@ export type BudgetFormBaseline = {
 };
 
 export const BUDGET_CREATE_BASELINE = (today: string): BudgetFormBaseline => ({
-	appliesTo: 'categories',
-	categoryIds: [],
+		appliesTo: 'categories',
+		categoryIds: [],
+		groupIds: [],
 	limitRaw: '',
 	startOn: today,
 	period: 'ongoing',
@@ -36,12 +38,14 @@ function sameIds(a: readonly string[], b: readonly string[]): boolean {
 export function isBudgetFormDirty(
 	live: BudgetFormLive,
 	baseline: BudgetFormBaseline,
-	allSelectableIds: readonly string[]
+	allSelectableIds: readonly string[],
+	catalog: BudgetScopeCatalog = { groups: [], categories: [] }
 ): boolean {
-	const resolved = resolveAppliesTo(live.selectedIds, allSelectableIds);
+	const resolved = resolveAppliesTo(live.selectedIds, allSelectableIds, catalog);
 	if (resolved.appliesTo !== baseline.appliesTo) return true;
-	if (resolved.appliesTo === 'categories' && !sameIds(resolved.categoryIds, baseline.categoryIds)) {
-		return true;
+	if (resolved.appliesTo === 'categories') {
+		if (!sameIds(resolved.groupIds, baseline.groupIds ?? [])) return true;
+		if (!sameIds(resolved.categoryIds, baseline.categoryIds)) return true;
 	}
 	return (
 		live.limitRaw !== baseline.limitRaw ||

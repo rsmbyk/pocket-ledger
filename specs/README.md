@@ -264,3 +264,4 @@ Living behavior contracts for Pocket Ledger.
 | [245](245-shell-loading-skeletons/spec.md)             | Shell loading skeletons                                      | Accepted                                                                        |
 | [246](246-budgets/spec.md)                             | Pocket budgets                                               | Accepted                                                                        |
 | [247](247-budget-chrome/spec.md)                       | Budget form/details chrome                                   | Accepted                                                                        |
+| [248](248-pockets-list-budget/spec.md)                 | Sticky groups, unique scope, Pockets-list budget             | Accepted                                                                        |

@@ -33,13 +33,14 @@ describe('budgets application', () => {
 
 		const cats = await createPocketBudget({
 			accountId: account.id,
-			selectedIds: ['g1', 'g2', 'g3'],
+			selectedIds: ['g1', 'g2'],
 			allSelectableIds: ['g1', 'g2', 'g3'],
 			limitRaw: '50000',
 			hardLimit: true,
 			period: 'monthly'
 		});
-		expect(cats.appliesTo).toBe('pocket');
+		expect(cats.appliesTo).toBe('categories');
+		expect(cats.categoryIds).toEqual(['g1', 'g2']);
 		expect(cats.hardLimit).toBe(true);
 		expect(cats.period).toBe('monthly');
 
@@ -98,5 +99,57 @@ describe('budgets application', () => {
 		expect(isActiveBudget(dropped)).toBe(false);
 		expect(await db.budgets.get(row.id)).toBeTruthy();
 		await expect(updatePocketBudget({ id: row.id, limitRaw: '1' })).rejects.toThrow(/dropped/i);
+	});
+
+	it('refuses a second active budget with the same Applies to key', async () => {
+		const account = await ensureDefaultAccount();
+		const pocketWide = await createPocketBudget({
+			accountId: account.id,
+			appliesTo: 'pocket',
+			limitRaw: '10000'
+		});
+		await expect(
+			createPocketBudget({
+				accountId: account.id,
+				appliesTo: 'pocket',
+				limitRaw: '20000'
+			})
+		).rejects.toThrow(/scope already exists/i);
+
+		const groc = await createPocketBudget({
+			accountId: account.id,
+			selectedIds: ['stock:expense:groceries'],
+			allSelectableIds: ['stock:expense:groceries', 'stock:expense:rent'],
+			limitRaw: '5000'
+		});
+		expect(groc.appliesTo).toBe('categories');
+		await expect(
+			createPocketBudget({
+				accountId: account.id,
+				selectedIds: ['stock:expense:groceries'],
+				allSelectableIds: ['stock:expense:groceries', 'stock:expense:rent'],
+				limitRaw: '8000'
+			})
+		).rejects.toThrow(/scope already exists/i);
+
+		const home = await createPocketBudget({
+			accountId: account.id,
+			groupIds: ['stock-group:home'],
+			appliesTo: 'categories',
+			limitRaw: '30000'
+		});
+		expect(home.groupIds).toEqual(['stock-group:home']);
+		expect(home.categoryIds).toEqual([]);
+
+		await dropPocketBudget(pocketWide.id);
+		const again = await createPocketBudget({
+			accountId: account.id,
+			appliesTo: 'pocket',
+			limitRaw: '15000'
+		});
+		expect(again.appliesTo).toBe('pocket');
+
+		const saved = await updatePocketBudget({ id: again.id, limitRaw: '16000' });
+		expect(saved.limitMinor).toBe(16_000);
 	});
 });
