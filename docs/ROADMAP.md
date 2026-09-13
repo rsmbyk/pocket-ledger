@@ -2,20 +2,28 @@
 
 Ordered slices. Each slice gets a numbered spec before code.
 
-## Local-first + optional cloud (current wave)
+## Next
+
+No numbered slice is queued. The next spec ID is **250**.
+
+Parked (not v1): Android (`pocket-ledger-android`, Spec 122), cloud lockout + email, wipe/delete account, Argon2id, custom domain, GCS. See `docs/PRODUCT.md`.
+
+## Shipped — local-first + optional cloud
 
 1. ~~**Docs unlock** — two modes, GCP, decided/dropped/parked, architecture, flows~~ → `specs/115-docs-unlock-local-first-cloud/`
-2. **GitHub Actions CI** — check, unit, e2e; no deploy → `specs/116-github-actions-ci/`
+2. ~~**GitHub Actions CI** — check, unit, e2e; no deploy~~ → `specs/116-github-actions-ci/`
 3. ~~**SvelteKit path URLs + PWA** — replace hash router; keep SW~~ → `specs/117-sveltekit-path-urls-pwa/`
 4. ~~**Cloud Run web** — path-filtered Actions; retire Cloudflare production~~ → `specs/118-gcp-cloud-run-web/`
 5. ~~**Google Sign-In + account lock** — mandatory passphrase, hex kit, resumable onboarding, session manager~~ → `specs/119-google-sign-in-account-lock/`
 6. ~~**Local DEK wrapping + encrypted backup** — always-on DEK; signed-out export/import only~~ → `specs/120-local-dek-wrapping-encrypted-backup/`
 7. ~~**Signed-in sync** — `rev`, 409 close+refresh, gravestones, 30s poll, settings~~ → `specs/121-signed-in-sync/`
 8. ~~**Production Cloud SQL + Google** — durable Postgres, bake GIS client id~~ → `specs/178-production-cloud-sql-google/`
-9. **GIS popup sign-in** — official GIS button, not One Tap `prompt()` → `specs/179-gis-popup-sign-in/`
+9. ~~**GIS popup sign-in** — official GIS button, not One Tap `prompt()`~~ → `specs/179-gis-popup-sign-in/`
 10. **Android** — parked; second GitHub repo `pocket-ledger-android`, not this tree → `specs/122-android-second-repo-parked/`
 
-Parked after this wave (not v1): cloud lockout + email, wipe/delete account, Argon2id, custom domain, GCS. See `docs/PRODUCT.md`.
+## Shipped — after cloud (123–249)
+
+Catalog overlay, visual system, Transactions and Settings hubs, GIS polish, Plans, pocket budgets, and dashboard chrome. Latest on `main` is Spec 249 (budget unique-scope form UX). Full index: `specs/README.md`.
 
 ## Shipped (historical)
 

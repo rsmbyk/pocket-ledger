@@ -9,9 +9,7 @@ Personal finance app with **two modes**, one web app, one git repo (`pocket-ledg
 - **Signed out** — Dexie, PWA, offline after first load, **no API**. Optional device passphrase.
 - **Signed in** — Google Sign-In only, **mandatory account passphrase**, end-to-end encryption, automatic sync. **Online** for money. Dexie is a cache.
 
-Never force Google on local-only users. Hosting target is **GCP Cloud Run** (not Cloudflare).
-
-Code still matches the pre-cloud client until Specs 116–121 land; this file is the product contract those slices implement.
+Never force Google on local-only users. Hosting is **GCP Cloud Run** (not Cloudflare). Specs 116–121, 178, and 179 have landed (CI, path-URL PWA, Cloud Run, Google session, DEK wrapping, signed-in sync, production Cloud SQL, GIS popup). This file stays the product contract.
 
 ## Locked
 

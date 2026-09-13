@@ -5,7 +5,7 @@
 1. Read `docs/PRODUCT.md`, `docs/ARCHITECTURE.md`, `docs/PROCESS.md`.
 2. Follow SDD: **plan → Draft spec → tasks → wait for Ronald’s OK/Accept → then code** (see `docs/PROCESS.md` and `.cursor/rules/sdd-gate.mdc`).
 3. **Permission gate:** Do not edit `src/**` (or `apps/**`) or install deps for a behavior/UI change until he Accepts the Draft (or explicitly OKs that slice). “Proceed” on a new ask ≠ implement — it means advance the current SDD step.
-4. Prefer TDD for `src/lib/domain` and `src/lib/application` (and the same layers under `apps/web` / `apps/api` after the workspace move).
+4. Prefer TDD for `apps/web/src/lib/domain` and `apps/web/src/lib/application` (and `apps/api` for the Hono app).
 
 ## Hard constraints
 
@@ -20,10 +20,10 @@
 
 ## Stack pointers
 
-- UI: shadcn under `src/lib/components/ui` (or `apps/web` equivalent after 117/118)
+- UI: shadcn under `apps/web/src/lib/components/ui`
 - Theme: `mode-watcher` + `pocket-ledger-theme` storage key
 - Hosting: GCP Cloud Run, two services, path-filtered GitHub Actions — see `docs/HOSTING.md`
-- Target layout: `apps/web` (SvelteKit `adapter-static`) + `apps/api` (Hono)
+- Layout: `apps/web` (SvelteKit `adapter-static`) + `apps/api` (Hono)
 
 ## Cursor Cloud specific instructions
 
@@ -41,4 +41,4 @@ npm-workspaces monorepo (Node 22): `apps/web` (SvelteKit, `adapter-static`) + `a
   - After Google (or fake) sign-in: set passphrase + save recovery kit. Sync then hits `GET/PUT /v1/sync` on the API with the `pl_session` cookie.
 - `npm run test:e2e` self-starts BOTH the API (:8787) and the web preview (:4173) with fake auth (see root `playwright.config.ts`) — do NOT start servers manually for E2E.
 - Dev-only console noise (safe to ignore): `vite dev` does not emit the PWA `sw.js` (service-worker MIME error) — it only exists in `build`/`preview`, which the E2E "registers a service worker" test covers; and `GET /v1/me` returns 401 until you sign in.
-- `npm run check` (svelte-check + tsc for web, `node --check` for api) passes cleanly. **`npm run lint` is currently broken repo-wide** (it errors out, not just formatting warnings): root `prettier.config.js` sets `tailwindStylesheet: './src/app.css'`, a path left over from before the monorepo move — the stylesheet now lives at `apps/web/src/app.css`, so `prettier-plugin-tailwindcss` throws `ENOENT` on every JS file. Fixing that one path restores lint; do NOT mass-reformat the repo to work around it.
+- `npm run check` (svelte-check + tsc for web, `node --check` for api) passes cleanly. `npm run lint` runs (`prettier.config.js` already points at `apps/web/src/app.css`); leftover formatting drift is a separate pass, not an ENOENT abort.
