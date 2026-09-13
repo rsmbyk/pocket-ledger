@@ -2,9 +2,9 @@
 
 Two modes, one web app. **Signed out:** client-only Dexie PWA, no API. **Signed in:** SvelteKit talks to Hono; Dexie is a cache; Cloud SQL holds ciphertext.
 
-Docs describe the **target**. Specs 117–121 and 178 are in the tree: Kit PWA, Cloud Run, wrapping, Google session, ciphertext sync, and production Cloud SQL. Android stays parked (Spec 122).
+Docs describe the **shipped** two-mode tree. Specs 117–121, 178, and 179 are in the tree: Kit PWA, Cloud Run, wrapping, Google session, ciphertext sync, production Cloud SQL, and GIS popup sign-in. Android stays parked (Spec 122).
 
-## Target layout
+## Layout
 
 ```text
 pocket-ledger/
@@ -49,11 +49,11 @@ flowchart LR
 ui            → presentation (Svelte + shadcn)
 application   → use cases / orchestration
 domain        → pure types & money rules
-data          → Dexie, repos, migrations (and later HTTP to Hono)
+data          → Dexie, repos, migrations, and HTTP to Hono when signed in
 shared        → cross-cutting helpers (theme, etc.)
 ```
 
-Paths stay `src/lib/…` until the workspace move (`apps/web`) in Spec 117/118. The layer names do not change.
+Layer folders live under `apps/web/src/lib/…` (and `apps/api` for the Hono app). The layer names do not change.
 
 ### Dependency rule
 
@@ -76,13 +76,13 @@ Simple ledger rows include:
 - `type`: `income` | `expense` | `transfer`
 - `counterAccountId` (nullable; destination pocket for transfers)
 
-Do not invent a second parallel storage model when transfers arrive — extend this shape.
+Transfers already use this shape. Do not invent a second parallel storage model.
 
 ## Encryption (DEK wrapping)
 
 ELI5: diary pages use one **metal key** (DEK). Passphrase / hex / WebAuthn are **boxes** around copies of that key. Change password = new box, same key. Email cannot open a box.
 
-Today’s `lock.ts` is **direct derive** (passphrase → AES key). Target (Spec 120 / ADR 0008): random 32-byte DEK + PBKDF2 box key (SHA-256, 600,000 iterations) + AES-GCM wrap in settings (`lock.wrappedDek` / `lock.rawDek`). `field-crypto.ts` still only sees the DEK in RAM.
+Spec 120 / ADR 0008: random 32-byte DEK + PBKDF2 box key (SHA-256, 600,000 iterations) + AES-GCM wrap in settings (`lock.wrappedDek` / `lock.rawDek`). `field-crypto.ts` only sees the DEK in RAM.
 
 - Passphrase off: store **raw** DEK in IndexedDB.
 - Passphrase on: store salt + wrapped DEK only.
@@ -100,7 +100,7 @@ No Cloud KMS envelope. Operator never has the DEK.
 
 SvelteKit **path** URLs (Spec 117 / 134 / 148 / 154 / 204 / 223): `/`, `/transactions` (`/activity` replace-navigates here), `/pockets`, `/pockets/:id`, `/plans`, `/categories`, `/settings` (`/more` replace-navigates here). The service worker stays so signed-out still works offline after first load. Invalid paths replace-navigate to the nearest valid parent (204). Hash bookmarks (`#/activity`) are not preserved.
 
-Panel chrome still lives in `AppShell`; `src/lib/shared/router.ts` maps pathnames to panel ids. Navigation uses SvelteKit `goto`.
+Panel chrome still lives in `AppShell`; `apps/web/src/lib/shared/router.ts` maps pathnames to panel ids. Navigation uses SvelteKit `goto`.
 
 ## Sync (signed-in, Spec 121 / 241)
 
@@ -112,5 +112,5 @@ Unit = one encrypted entity + plain `id`, `kind` (`transaction`, `account`, `cat
 | --------------------- | -------------------------------- |
 | domain / shared       | Vitest (node)                    |
 | application (fakes)   | Vitest                           |
-| API (Hono, after 119) | Vitest                           |
+| API (Hono)            | Vitest                           |
 | acceptance            | Playwright against built preview |
