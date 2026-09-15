@@ -9,17 +9,15 @@ Personal finance app with **two modes**, one web app, one git repo (`pocket-ledg
 - **Signed out** — Dexie, PWA, offline after first load, **no API**. Optional device passphrase.
 - **Signed in** — Google Sign-In only, **mandatory account passphrase**, end-to-end encryption, automatic sync. **Online** for money. Dexie is a cache.
 
-Never force Google on local-only users. Hosting target is **GCP Cloud Run** (not Cloudflare).
-
-Code still matches the pre-cloud client until Specs 116–121 land; this file is the product contract those slices implement.
+Never force Google on local-only users. Hosting is **GCP Cloud Run** (not Cloudflare). Specs 116–121, 178, and 179 have landed (CI, path-URL PWA, Cloud Run, Google session, DEK wrapping, signed-in sync, production Cloud SQL, GIS popup). This file stays the product contract.
 
 ## Locked
 
 | Area                                 | Decision                                                                                                                                                                                                                                                                            |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Name                                 | `pocket-ledger`                                                                                                                                                                                                                                                                     |
-| Hosting                              | **GCP** two Cloud Run services (static web + API) in **us-central1** (Iowa) so Cloud Run’s always-free allowance applies. Default `*.run.app` is OK. Custom domain parked.                                                                                                                                                                                 |
-| Client                               | Svelte 5 + shadcn-svelte + Tailwind. Target: SvelteKit `adapter-static`, **path** URLs, keep PWA (Spec 117).                                                                                                                                                                        |
+| Hosting                              | **GCP** two Cloud Run services (static web + API) in **us-central1** so Cloud Run’s always-free allowance applies. Default `*.run.app` is OK. Custom domain parked.                                                                                                                                                                                 |
+| Client                               | Svelte 5 + shadcn-svelte + Tailwind. SvelteKit `adapter-static`, **path** URLs, PWA (Spec 117).                                                                                                                                                                        |
 | Repo                                 | npm workspaces: `apps/web` + `apps/api` (Hono). `openapi.yaml` in this repo. Android is a **second GitHub repo**, not this tree.                                                                                                                                                    |
 | Auth                                 | Google Sign-In **only** for cloud. No email/password.                                                                                                                                                                                                                               |
 | Storage (signed out)                 | IndexedDB via Dexie is the only ledger                                                                                                                                                                                                                                              |
