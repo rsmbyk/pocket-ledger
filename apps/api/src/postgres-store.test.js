@@ -311,39 +311,4 @@ describe('postgres store', () => {
 		await store.deleteSession(session.id);
 		expect(await store.getSession(session.id)).toBeNull();
 	});
-
-	it('deleteAccount removes user, sessions, and entities', async () => {
-		const store = await createPostgresStore(createFakePool());
-		await store.ensureUser({ googleSub: 'sub1', email: 'a@b.com' });
-		await store.putWrap('sub1', { wrap: { kdf: 'x' }, wrapRev: 0 });
-		await store.createSession({ userSub: 'sub1', userAgent: 'a' });
-		await store.putEntity('sub1', { id: 'tx1', kind: 'tx', rev: 0, blob: 'sealed' });
-		await store.deleteAccount('sub1');
-		expect(await store.getUser('sub1')).toBeNull();
-		expect(await store.listSessions('sub1')).toHaveLength(0);
-		expect(await store.listEntities('sub1')).toHaveLength(0);
-		expect(await store.cloudHasData('sub1')).toBe(false);
-	});
-
-	it('resetAccountKeepSession clears wrap and entities but keeps this session', async () => {
-		const store = await createPostgresStore(createFakePool());
-		await store.ensureUser({ googleSub: 'sub1', email: 'a@b.com' });
-		await store.putWrap('sub1', {
-			wrap: { kdf: 'x' },
-			recoveryWrap: { kdf: 'x' },
-			wrapRev: 0
-		});
-		const keep = await store.createSession({ userSub: 'sub1', userAgent: 'keep' });
-		await store.createSession({ userSub: 'sub1', userAgent: 'other' });
-		await store.putEntity('sub1', { id: 'tx1', kind: 'tx', rev: 0, blob: 'sealed' });
-		await store.resetAccountKeepSession('sub1', keep.id);
-		const user = await store.getUser('sub1');
-		expect(user.wrap).toBeNull();
-		expect(user.recoveryWrap).toBeNull();
-		expect(user.wrapRev).toBe(0);
-		expect((await store.getSession(keep.id)).id).toBe(keep.id);
-		expect(await store.listSessions('sub1')).toHaveLength(1);
-		expect(await store.listEntities('sub1')).toHaveLength(0);
-		expect(await store.cloudHasData('sub1')).toBe(false);
-	});
 });

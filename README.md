@@ -2,7 +2,7 @@
 
 Local-first personal finance tracker with optional Google cloud sync. Signed-out: PWA, data stays on the device (IndexedDB). Signed-in: E2E ciphertext on GCP; we never have the passphrase.
 
-**Live:** https://pocket-ledger-web-w6fanfnuqa-uc.a.run.app (Cloud Run, `us-central1`). Confirm the URL after the first Iowa deploy if the hash differs. Changing origin starts an empty IndexedDB; restore an encrypted backup or sign in if you need history.
+**Live:** https://pocket-ledger-web-w6fanfnuqa-uc.a.run.app (Cloud Run, `us-central1`). Changing origin starts an empty IndexedDB; restore an encrypted backup or sign in if you need history.
 
 ## Stack
 
@@ -57,7 +57,7 @@ Read these before changing behavior:
 | [docs/PRODUCT.md](docs/PRODUCT.md)           | Locked product decisions (two modes, dropped/parked) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, wrapping, workspaces                         |
 | [docs/PROCESS.md](docs/PROCESS.md)           | SDD + TDD + GitHub Flow                              |
-| [docs/HOSTING.md](docs/HOSTING.md)           | GCP Cloud Run (Iowa, two services)                   |
+| [docs/HOSTING.md](docs/HOSTING.md)           | GCP Cloud Run (`us-central1`, two services)          |
 | [docs/FIRST_WORK.md](docs/FIRST_WORK.md)     | Scaffold scope                                       |
 | [docs/ROADMAP.md](docs/ROADMAP.md)           | Feature order                                        |
 | [specs/](specs/)                             | Living behavior specs                                |

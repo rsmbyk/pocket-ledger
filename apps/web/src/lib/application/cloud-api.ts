@@ -25,16 +25,8 @@ export function googleClientId(): string {
 	return ((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? '').trim();
 }
 
-/** Spec 181 temporary: fixed fake Google identity for production Cursor testing. */
-export const DEBUG_FAKE_GOOGLE_SUB = 'pl-debug-cursor';
-export const DEBUG_FAKE_GOOGLE_TOKEN = `fake.${DEBUG_FAKE_GOOGLE_SUB}.cursor-debug@pocket-ledger.test`;
-
 /** Spec 241 testing-only: two Playwright contexts share one fake GIS token. */
 export const E2E_FAKE_TOKEN_KEY = 'pl-e2e-fake-token';
-
-export function shouldWipeCloudOnSignOut(googleSub: string | null | undefined): boolean {
-	return googleSub === DEBUG_FAKE_GOOGLE_SUB;
-}
 
 type Json = Record<string, unknown>;
 
@@ -127,18 +119,6 @@ export async function listCloudSessions(): Promise<CloudSession[]> {
 
 export async function revokeCloudSession(id: string): Promise<void> {
 	await request(`/v1/sessions/${id}`, { method: 'DELETE' });
-}
-
-/** Spec 180 temporary: wipe this account’s cloud copy. */
-export async function resetCloudAccount(opts: { signOut: boolean }): Promise<{
-	ok: true;
-	signedOut: boolean;
-	onboarding?: AuthMe['onboarding'];
-}> {
-	return request('/v1/debug/reset-cloud', {
-		method: 'POST',
-		body: JSON.stringify({ signOut: opts.signOut })
-	});
 }
 
 export type CloudWrap = {

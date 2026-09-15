@@ -10,8 +10,7 @@ Signed-in mode needs a Google identity, an API, and Postgres ciphertext. Local-o
 
 ## Decision
 
-- Leave Cloudflare as the production target.
-- Host **two Cloud Run** services in **us-central1** (Iowa): static web (`adapter-static`) and Hono API. Region is Iowa so Cloud Run’s always-free allowance applies (Jakarta does not).
+- Host **two Cloud Run** services in **us-central1**: static web (`adapter-static`) and Hono API. Region is `us-central1` so Cloud Run’s always-free allowance applies (`asia-southeast2` does not).
 - Default `*.run.app` hostnames are OK; custom domain is parked.
 - Session cookie on the **API** host; CORS from the web origin.
 - Deploy with GitHub Actions + Workload Identity Federation, **path-filtered** so a web change does not roll the API service (and vice versa).
@@ -24,5 +23,5 @@ Rejected: Firebase Auth/Firestore as the ledger, Clerk, adapter-node as the web 
 ## Consequences
 
 - Web can stay a PWA (offline after first load) while the API is online-only for signed-in money.
-- Operators must configure GCP + WIF; deploys depend on GitHub Actions (Spec 116 restores CI; Spec 118 adds deploy).
+- Operators must configure GCP + WIF; deploys depend on GitHub Actions (Spec 116 CI; Spec 118 deploy).
 - Two origins: cookie and CORS must be explicit.

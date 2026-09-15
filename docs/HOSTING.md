@@ -5,10 +5,10 @@
 | Item    | Value                                                                                                                                                                                    |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Project  | `pocket-ledger-rsmbyk`                                                                                                                                                                   |
-| Region   | **us-central1** (Iowa). Cloud Run always-free allowance applies here; Jakarta (`asia-southeast2`) does not.                                                                              |
+| Region   | **us-central1**. Cloud Run always-free allowance applies here; `asia-southeast2` does not.                                                                              |
 | Web      | Cloud Run serving **static** SvelteKit assets (`Dockerfile.web`)                                                                                                                         |
 | API      | Cloud Run running Hono (`Dockerfile.api`)                                                                                                                                                |
-| URLs     | Web: https://pocket-ledger-web-w6fanfnuqa-uc.a.run.app — API: https://pocket-ledger-api-w6fanfnuqa-uc.a.run.app (confirm after first Iowa deploy). Custom domain is **parked**. Jakarta `-et` URLs are retired after cutover. |
+| URLs     | Web: https://pocket-ledger-web-w6fanfnuqa-uc.a.run.app — API: https://pocket-ledger-api-w6fanfnuqa-uc.a.run.app. Custom domain is **parked**. `asia-southeast2` `-et` URLs are retired after cutover. |
 | Origins  | **Two origins** + CORS. Session cookie lives on the **API** host (not same-origin cookies).                                                                                              |
 | Deploy   | GitHub Actions + Workload Identity Federation. **Path-filtered:** `apps/web/**` does not deploy API; `apps/api/**` does not deploy web.                                                  |
 | Images   | Artifact Registry `cloud-run-source-deploy` in `us-central1`; Cloud Build uses `cloudbuild.web.yaml` / `cloudbuild.api.yaml` because `gcloud run deploy` has no `--dockerfile` flag.     |
@@ -19,23 +19,23 @@ Cutover to Cloud Run is a **new origin** = **empty IndexedDB**. Data on the Clou
 
 **Production deploy path is GitHub Actions → Cloud Run** (Spec 118). Repo variables `GCP_PROJECT_ID`, `GCP_WIF_PROVIDER`, `GCP_DEPLOY_SA`, and `GCP_REGION` (`us-central1`) are set. If `GCP_PROJECT_ID` is missing, the deploy workflows still skip Cloud Run so PRs can CI. Google’s frontend reserves `/healthz`, so probe `/v1/me` (401 when signed out) instead.
 
-Production signed-in (Spec 178): bake `VITE_API_URL` (defaults to the API `*.run.app` URL) and `VITE_GOOGLE_CLIENT_ID` into the web image. The API uses Cloud SQL when GitHub var `CLOUD_SQL_INSTANCE` is set and Secret Manager `database-url` is bound. **Spec 181 temporary:** Cloud Run sets `AUTH_ALLOW_FAKE=1` and `AUTH_FAKE_SUB=pl-debug-cursor` so Settings can **Sign up with fake account** without GIS (Cursor’s browser cannot finish the Google popup). Remove with specs 180–181. Until `GOOGLE_CLIENT_ID` is set, Settings shows “Cloud sign-in is not configured on this build.” Set `GOOGLE_CLIENT_ID` and `CLOUD_SQL_INSTANCE` together so Sign in never appears without persistence.
+Production signed-in (Spec 178): bake `VITE_API_URL` (defaults to the API `*.run.app` URL) and `VITE_GOOGLE_CLIENT_ID` into the web image. The API uses Cloud SQL when GitHub var `CLOUD_SQL_INSTANCE` is set and Secret Manager `database-url` is bound. Production does **not** set `AUTH_ALLOW_FAKE` (Spec 250). Until `GOOGLE_CLIENT_ID` is set, Settings shows “Cloud sign-in is not configured on this build.” Set `GOOGLE_CLIENT_ID` and `CLOUD_SQL_INSTANCE` together so Sign in never appears without persistence.
 
 ## Cookie and CORS
 
 - Session cookie: **7-day rolling**, HttpOnly, Secure, on the API host. Production uses SameSite=None (`COOKIE_SECURE` default).
 - Web origin is allowlisted on the API for credentialed CORS (`WEB_ORIGIN`).
 - Do not put the session cookie on the web host.
-- API env: `GOOGLE_CLIENT_ID` (GIS audience), `AUTH_ALLOW_FAKE=1` for local/e2e (`fake.<sub>.<email>` tokens) and **temporarily** on Cloud Run with `AUTH_FAKE_SUB=pl-debug-cursor` (Spec 181). `COOKIE_SECURE=0` on http://127.0.0.1, `WEB_ORIGIN`, `DATABASE_URL` (production).
+- API env: `GOOGLE_CLIENT_ID` (GIS audience), `AUTH_ALLOW_FAKE=1` for local/e2e only (`fake.<sub>.<email>` tokens). Production Cloud Run removes `AUTH_ALLOW_FAKE` and `AUTH_FAKE_SUB` (Spec 250). `COOKIE_SECURE=0` on http://127.0.0.1, `WEB_ORIGIN`, `DATABASE_URL` (production).
 
 Web build env: `VITE_API_URL`, `VITE_GOOGLE_CLIENT_ID`. `VITE_FAKE_GOOGLE=1` for e2e only — never bake fake Google into the Cloud Run web image.
 
 ## GitHub Actions
 
-- **CI** (Spec 116): lint/typecheck, Vitest, Playwright on `pull_request` and `push` to `main`. CI does **not** deploy.
+- **CI** (Spec 116): check, unit, and e2e on `pull_request` and `push` to `main`. CI does **not** deploy.
 - **Deploy** (Spec 118): path-filtered jobs to Cloud Run. Web-only changes must not roll the API service, and vice versa.
 
-Repo variables (not secrets): `GCP_PROJECT_ID` = `pocket-ledger-rsmbyk`, `GCP_REGION` = `us-central1`, `GCP_DEPLOY_SA` = `pocket-ledger-deploy@pocket-ledger-rsmbyk.iam.gserviceaccount.com`, `GCP_WIF_PROVIDER` = `projects/513150170654/locations/global/workloadIdentityPools/github/providers/github`. The WIF provider only admits OIDC tokens from `rsmbyk/pocket-ledger`. **Change `GCP_REGION` from `asia-southeast2` to `us-central1` in the GitHub repo variables** or deploys keep landing in Jakarta.
+Repo variables (not secrets): `GCP_PROJECT_ID` = `pocket-ledger-rsmbyk`, `GCP_REGION` = `us-central1`, `GCP_DEPLOY_SA` = `pocket-ledger-deploy@pocket-ledger-rsmbyk.iam.gserviceaccount.com`, `GCP_WIF_PROVIDER` = `projects/513150170654/locations/global/workloadIdentityPools/github/providers/github`. The WIF provider only admits OIDC tokens from `rsmbyk/pocket-ledger`. Keep `GCP_REGION` at `us-central1` or deploys land in `asia-southeast2`.
 
 Optional / Spec 178 (set after the ops checklist below):
 
@@ -50,7 +50,7 @@ GCP Secret Manager (not a GitHub secret): `database-url` → Cloud Run `DATABASE
 
 Do these in project `pocket-ledger-rsmbyk` / region `us-central1`. Then set the GitHub vars (`GCP_REGION=us-central1` included) and redeploy **both** services (`workflow_dispatch` on `deploy-api` and `deploy-web` is enough). Keep OAuth consent in **Testing**; do not start Google verification.
 
-A new Cloud Run region is a **new origin** = empty IndexedDB on the Iowa URL. After Iowa is healthy, delete the Jakarta Cloud Run services (`pocket-ledger-web` / `pocket-ledger-api` in `asia-southeast2`) so you do not pay for both. First Iowa image push may need Artifact Registry `cloud-run-source-deploy` in `us-central1` (Cloud Build often creates it).
+A new Cloud Run region is a **new origin** = empty IndexedDB on the `us-central1` URL. After that region is healthy, delete the `asia-southeast2` Cloud Run services (`pocket-ledger-web` / `pocket-ledger-api`) so you do not pay for both. First `us-central1` image push may need Artifact Registry `cloud-run-source-deploy` in `us-central1` (Cloud Build often creates it).
 
 ### 1. APIs
 
@@ -136,7 +136,7 @@ In APIs & Services → OAuth consent screen:
 
 Credentials → Create credentials → **OAuth client ID** → application type **Web application**:
 
-- Authorized JavaScript origins: `https://pocket-ledger-web-w6fanfnuqa-uc.a.run.app` (the Iowa web URL; add it after the first web deploy if the hash differs). For local compose, also add `http://127.0.0.1:5173` (and `http://127.0.0.1:4173` if you use the preview profile).
+- Authorized JavaScript origins: `https://pocket-ledger-web-w6fanfnuqa-uc.a.run.app` (the production web URL). For local compose, also add `http://127.0.0.1:5173` (and `http://127.0.0.1:4173` if you use the preview profile).
 - Redirect URIs (Spec 218 mobile / installed PWA): `https://pocket-ledger-api-w6fanfnuqa-uc.a.run.app/v1/auth/gis-callback`. For local compose, also add `http://127.0.0.1:8080/v1/auth/gis-callback`. Desktop tabs still use `renderButton` + `ux_mode: popup` (no extra web-origin redirect URI). Do **not** use One Tap `google.accounts.id.prompt()` — FedCM One Tap often fails silently on Cloud Run.
 
 Copy the client id into GitHub repo variable `GOOGLE_CLIENT_ID`.
