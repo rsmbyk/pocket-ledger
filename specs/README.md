@@ -196,8 +196,8 @@ Living behavior contracts for Pocket Ledger.
 | [177](177-tx-footer-row/spec.md)                         | Tx Save and Close on one row                                 | Accepted                                                                        |
 | [178](178-production-cloud-sql-google/spec.md)           | Production Cloud SQL + Google Sign-In                        | Accepted                                                                        |
 | [179](179-gis-popup-sign-in/spec.md)                     | GIS popup sign-in (not One Tap)                              | Accepted — visible chrome superseded by [209](209-gis-button-fill-width/spec.md) then [210](210-gis-button-stretch/spec.md) |
-| [180](180-debug-reset-cloud/spec.md)                     | Debug reset cloud (temporary)                                | Accepted                                                                        |
-| [181](181-debug-fake-signup/spec.md)                     | Debug fake signup (temporary)                                | Accepted                                                                        |
+| [180](180-debug-reset-cloud/spec.md)                     | Debug reset cloud (temporary)                                | Superseded by [250](250-remove-temporary-debug/spec.md)                         |
+| [181](181-debug-fake-signup/spec.md)                     | Debug fake signup (temporary)                                | Superseded by [250](250-remove-temporary-debug/spec.md)                         |
 | [182](182-gis-button-theme/spec.md)                      | GIS button follows light/dark                                | Accepted                                                                        |
 | [183](183-onboarding-passphrase-live-check/spec.md)      | Onboarding passphrase live check                             | Accepted                                                                        |
 | [184](184-form-modal-unsaved-leave/spec.md)              | Form modal unsaved-leave; Save draft only on Add tx          | Accepted                                                                        |
@@ -266,3 +266,4 @@ Living behavior contracts for Pocket Ledger.
 | [247](247-budget-chrome/spec.md)                       | Budget form/details chrome                                   | Accepted                                                                        |
 | [248](248-pockets-list-budget/spec.md)                 | Sticky groups, unique scope, Pockets-list budget             | Accepted                                                                        |
 | [249](249-budget-unique-scope-ux/spec.md)              | Budget unique-scope form UX                                  | Accepted                                                                        |
+| [250](250-remove-temporary-debug/spec.md)              | Remove temporary debug (180/181)                             | Accepted                                                                        |

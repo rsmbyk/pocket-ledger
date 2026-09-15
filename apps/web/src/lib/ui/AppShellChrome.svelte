@@ -169,11 +169,7 @@
 		onGoogleSignIn?: () => void | Promise<void>;
 		onGoogleCredential?: (idToken: string) => void | Promise<void>;
 		cloudError?: string | null;
-		onDebugFakeSignUp?: () => void | Promise<void>;
-		debugFakeUser?: boolean;
 		onSignOut?: () => void | Promise<void>;
-		onResetCloudSignOut?: () => void | Promise<void>;
-		onResetCloudStaySignedIn?: () => void | Promise<void>;
 		onRevokeSession?: (id: string) => void | Promise<void>;
 		onSaveIdle?: (minutes: number, leaveTab: boolean) => void | Promise<void>;
 		onSaveCurrency?: (code: string) => void | Promise<void>;
@@ -238,11 +234,7 @@
 		onGoogleSignIn,
 		onGoogleCredential,
 		cloudError = null,
-		onDebugFakeSignUp,
-		debugFakeUser = false,
 		onSignOut,
-		onResetCloudSignOut,
-		onResetCloudStaySignedIn,
 		onRevokeSession,
 		onSaveIdle,
 		onSaveCurrency,
@@ -1787,11 +1779,7 @@
 				{onGoogleSignIn}
 				{onGoogleCredential}
 				{cloudError}
-				{onDebugFakeSignUp}
-				{debugFakeUser}
 				{onSignOut}
-				{onResetCloudSignOut}
-				{onResetCloudStaySignedIn}
 				{onRevokeSession}
 				{onSaveIdle}
 				{onSaveCurrency}

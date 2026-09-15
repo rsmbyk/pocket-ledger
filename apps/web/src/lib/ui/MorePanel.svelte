@@ -55,11 +55,7 @@
 		onGoogleSignIn?: () => void | Promise<void>;
 		onGoogleCredential?: (idToken: string) => void | Promise<void>;
 		cloudError?: string | null;
-		onDebugFakeSignUp?: () => void | Promise<void>;
-		debugFakeUser?: boolean;
 		onSignOut?: () => void | Promise<void>;
-		onResetCloudSignOut?: () => void | Promise<void>;
-		onResetCloudStaySignedIn?: () => void | Promise<void>;
 		onRevokeSession?: (id: string) => void | Promise<void>;
 		onSaveIdle?: (minutes: number, leaveTab: boolean) => void | Promise<void>;
 		onSaveCurrency?: (code: string) => void | Promise<void>;
@@ -85,11 +81,7 @@
 		onGoogleSignIn,
 		onGoogleCredential,
 		cloudError = null,
-		onDebugFakeSignUp,
-		debugFakeUser = false,
 		onSignOut,
-		onResetCloudSignOut,
-		onResetCloudStaySignedIn,
 		onRevokeSession,
 		onSaveIdle,
 		onSaveCurrency,
@@ -127,9 +119,6 @@
 	let exportPassError = $state<string | null>(null);
 	let disableLockConfirmOpen = $state(false);
 	let signOutOpen = $state(false);
-	let fakeSignupOpen = $state(false);
-	let resetCloudSignOutOpen = $state(false);
-	let resetCloudStayOpen = $state(false);
 	let error = $state<string | null>(null);
 	let gisHost = $state<HTMLDivElement | undefined>(undefined);
 	const alertMessage = $derived(error ?? cloudError);
@@ -276,12 +265,7 @@
 					{@render sectionHeading('Account')}
 					<p class="text-muted-foreground text-sm">
 						{#if signedIn}
-							Signed in as {userEmail}.
-							{#if debugFakeUser}
-								Signing out deletes this debug user’s cloud copy and wipes this device.
-							{:else}
-								Signing out wipes this device; cloud stays.
-							{/if}
+							Signed in as {userEmail}. Signing out wipes this device; cloud stays.
 						{:else}
 							Optional. Google only. You can keep using Pocket Ledger without an account.
 						{/if}
@@ -317,26 +301,6 @@
 						>
 							Sign out
 						</Button>
-						{#if onResetCloudSignOut}
-							<Button
-								type="button"
-								variant="destructive"
-								data-testid="debug-reset-cloud-sign-out"
-								onclick={() => (resetCloudSignOutOpen = true)}
-							>
-								Reset cloud and sign out
-							</Button>
-						{/if}
-						{#if onResetCloudStaySignedIn}
-							<Button
-								type="button"
-								variant="destructive"
-								data-testid="debug-reset-cloud-stay"
-								onclick={() => (resetCloudStayOpen = true)}
-							>
-								Reset cloud, stay signed in
-							</Button>
-						{/if}
 						{#if onEnrollWebAuthn}
 							<Button
 								type="button"
@@ -362,16 +326,6 @@
 							class="gis-sign-in scheme-light w-full overflow-hidden rounded-[4px]"
 							data-testid="google-sign-in"
 						></div>
-						{#if onDebugFakeSignUp}
-							<Button
-								type="button"
-								variant="destructive"
-								data-testid="debug-fake-signup"
-								onclick={() => (fakeSignupOpen = true)}
-							>
-								Sign up with fake account
-							</Button>
-						{/if}
 					{:else}
 						<p class="text-muted-foreground text-sm">
 							Cloud sign-in is not configured on this build.
@@ -1097,9 +1051,7 @@
 <ConfirmDialog
 	open={signOutOpen}
 	title="Sign out?"
-	description={debugFakeUser
-		? 'Testing only. Permanently deletes this debug user’s cloud copy and wipes this device.'
-		: 'This device’s copy is wiped. There is no signed-in file export. Cloud data stays.'}
+	description="This device’s copy is wiped. There is no signed-in file export. Cloud data stays."
 	confirmLabel="Sign out"
 	destructive
 	dangerChrome
@@ -1107,47 +1059,5 @@
 	onOpenChange={(open) => (signOutOpen = open)}
 	onConfirm={async () => {
 		if (onSignOut) await wrap(onSignOut);
-	}}
-/>
-
-<ConfirmDialog
-	open={fakeSignupOpen}
-	title="Sign up with fake account?"
-	description="Testing only. Wipes this device and signs in as the debug fake user (no Google). Next sign-out deletes that user’s cloud copy."
-	confirmLabel="Sign up with fake account"
-	destructive
-	dangerChrome
-	confirmTestId="debug-fake-signup-confirm"
-	onOpenChange={(open) => (fakeSignupOpen = open)}
-	onConfirm={async () => {
-		if (onDebugFakeSignUp) await wrap(onDebugFakeSignUp);
-	}}
-/>
-
-<ConfirmDialog
-	open={resetCloudSignOutOpen}
-	title="Reset cloud and sign out?"
-	description="Testing only. Permanently deletes this account’s cloud copy and wipes this device. You will need to Sign in with Google again."
-	confirmLabel="Reset and sign out"
-	destructive
-	dangerChrome
-	confirmTestId="debug-reset-cloud-sign-out-confirm"
-	onOpenChange={(open) => (resetCloudSignOutOpen = open)}
-	onConfirm={async () => {
-		if (onResetCloudSignOut) await wrap(onResetCloudSignOut);
-	}}
-/>
-
-<ConfirmDialog
-	open={resetCloudStayOpen}
-	title="Reset cloud, stay signed in?"
-	description="Testing only. Permanently deletes this account’s cloud copy and wipes this device. You stay signed in and will set a new passphrase."
-	confirmLabel="Reset and stay signed in"
-	destructive
-	dangerChrome
-	confirmTestId="debug-reset-cloud-stay-confirm"
-	onOpenChange={(open) => (resetCloudStayOpen = open)}
-	onConfirm={async () => {
-		if (onResetCloudStaySignedIn) await wrap(onResetCloudStaySignedIn);
 	}}
 />

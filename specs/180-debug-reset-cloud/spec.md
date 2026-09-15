@@ -1,7 +1,7 @@
 # Spec 180: Debug reset cloud (temporary)
 
 - **ID:** 180
-- **Status:** Accepted
+- **Status:** Superseded by [250](../250-remove-temporary-debug/spec.md)
 - **Owner:** Ronald / Vex
 - **Plan:** [./plan.md](./plan.md)
 - **Tasks:** [./tasks.md](./tasks.md)

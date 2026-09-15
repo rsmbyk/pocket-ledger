@@ -58,9 +58,10 @@ test.describe('119 cloud onboarding', () => {
 		await expect(page.getByTestId('account-pass-submit')).toBeEnabled();
 	});
 
-	test('debug reset stay signed in returns to passphrase without GIS', async ({ page }) => {
+	test('debug cloud controls are absent', async ({ page }) => {
 		await page.goto('/');
 		await goToNav(page, 'more');
+		await expect(page.getByTestId('debug-fake-signup')).toHaveCount(0);
 		await page.getByTestId('google-sign-in').click();
 		await page.getByTestId('account-pass').fill('account-pass');
 		await page.getByTestId('account-pass-confirm').fill('account-pass');
@@ -68,29 +69,8 @@ test.describe('119 cloud onboarding', () => {
 		await confirmHexKit(page);
 		await expect(page.getByTestId('app-shell')).toBeVisible();
 		await goToNav(page, 'more');
-		await page.getByTestId('debug-reset-cloud-stay').click();
-		await page.getByTestId('debug-reset-cloud-stay-confirm').click();
-		await expect(page.getByTestId('account-passphrase-screen')).toBeVisible();
-		await expect(page.getByTestId('google-sign-in')).toHaveCount(0);
-	});
-
-	test('debug reset and sign out shows Sign in again', async ({ page }) => {
-		await page.goto('/');
-		await goToNav(page, 'more');
-		await page.getByTestId('google-sign-in').click();
-		await page.getByTestId('account-pass').fill('account-pass');
-		await page.getByTestId('account-pass-confirm').fill('account-pass');
-		await page.getByTestId('account-pass-submit').click();
-		await confirmHexKit(page);
-		await expect(page.getByTestId('app-shell')).toBeVisible();
-		await goToNav(page, 'more');
-		await page.getByTestId('debug-reset-cloud-sign-out').click();
-		await Promise.all([
-			page.waitForURL((url) => new URL(url).pathname === '/'),
-			page.getByTestId('debug-reset-cloud-sign-out-confirm').click()
-		]);
-		await page.goto('/settings');
-		await expect(page.getByTestId('google-sign-in')).toBeVisible();
+		await expect(page.getByTestId('debug-reset-cloud-stay')).toHaveCount(0);
+		await expect(page.getByTestId('debug-reset-cloud-sign-out')).toHaveCount(0);
 	});
 
 	test('185 recovery kit after three wrong unlocks', async ({ page }) => {

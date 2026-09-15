@@ -73,9 +73,9 @@ jobs:
           if [ -n "${GOOGLE_CLIENT_ID}" ]; then
             ENV_VARS="${ENV_VARS},GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}"
           fi
-          # Spec 181 temporary: debug fake signup in Cursor. Remove with specs 180–181.
-          ENV_VARS="${ENV_VARS},AUTH_ALLOW_FAKE=1,AUTH_FAKE_SUB=pl-debug-cursor"
           DEPLOY_ARGS+=(--update-env-vars "$ENV_VARS")
+          # Spec 250: drop leftover Spec 181 fake auth if the service still has it.
+          DEPLOY_ARGS+=(--remove-env-vars=AUTH_ALLOW_FAKE,AUTH_FAKE_SUB)
           if [ -n "${CLOUD_SQL_INSTANCE}" ]; then
             DEPLOY_ARGS+=(--add-cloudsql-instances="$CLOUD_SQL_INSTANCE")
             DEPLOY_ARGS+=(--set-secrets=DATABASE_URL=database-url:latest)

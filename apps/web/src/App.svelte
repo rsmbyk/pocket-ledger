@@ -75,11 +75,8 @@
 		listCloudSessions,
 		LocalConflictError,
 		logoutCloud,
-		resetCloudAccount,
 		revokeCloudSession,
-		shouldWipeCloudOnSignOut,
 		signInWithGoogleToken,
-		DEBUG_FAKE_GOOGLE_TOKEN,
 		E2E_FAKE_TOKEN_KEY,
 		type CloudSession
 	} from '$lib/application/cloud-api';
@@ -155,7 +152,6 @@
 	let userEmail = $state<string | null>(null);
 	let userDisplayName = $state('');
 	let userPictureUrl = $state('');
-	let cloudGoogleSub = $state<string | null>(null);
 	let accountOnboarding = $state<AuthMe['onboarding'] | null>(null);
 	let recoveryKit = $state<RecoveryKit | null>(null);
 	let recoveryOffered = $state(false);
@@ -433,7 +429,6 @@
 		userEmail = null;
 		userDisplayName = '';
 		userPictureUrl = '';
-		cloudGoogleSub = null;
 		accountOnboarding = null;
 		sessions = [];
 		recoveryKit = null;
@@ -512,7 +507,6 @@
 		userEmail = me.user.email;
 		userDisplayName = displayNameFromIdentity(me.user.displayName, me.user.email);
 		userPictureUrl = me.user.pictureUrl ?? '';
-		cloudGoogleSub = me.user.googleSub;
 		accountOnboarding = me.onboarding;
 		if (me.onboarding === 'needs-kit' && !recoveryKit) {
 			recoveryKit = generateRecoveryKit();
@@ -636,14 +630,6 @@
 			}
 		}
 		await onGoogleCredential(token);
-	}
-
-	async function onDebugFakeSignUp() {
-		clearDataKey();
-		await db.delete();
-		await db.open();
-		await ensureLocalDek();
-		await onGoogleCredential(DEBUG_FAKE_GOOGLE_TOKEN);
 	}
 </script>
 
@@ -848,31 +834,12 @@
 		{onGoogleSignIn}
 		{onGoogleCredential}
 		{cloudError}
-		{onDebugFakeSignUp}
-		debugFakeUser={shouldWipeCloudOnSignOut(cloudGoogleSub)}
 		onSignOut={async () => {
 			disableGoogleAutoSelect();
-			if (shouldWipeCloudOnSignOut(cloudGoogleSub)) {
-				await resetCloudAccount({ signOut: true });
-			} else {
-				await logoutCloud();
-			}
+			await logoutCloud();
 			clearDataKey();
 			await db.delete();
 			pingSiblingTabsSignedOut();
-			window.location.assign('/');
-		}}
-		onResetCloudSignOut={async () => {
-			await resetCloudAccount({ signOut: true });
-			clearDataKey();
-			await db.delete();
-			pingSiblingTabsSignedOut();
-			window.location.assign('/');
-		}}
-		onResetCloudStaySignedIn={async () => {
-			await resetCloudAccount({ signOut: false });
-			clearDataKey();
-			await db.delete();
 			window.location.assign('/');
 		}}
 		onRevokeSession={async (id) => {

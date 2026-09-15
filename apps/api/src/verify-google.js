@@ -1,26 +1,23 @@
 /**
- * Specs 119, 178, 181: GIS tokeninfo + optional fake tokens.
- * AUTH_ALLOW_FAKE=1 accepts `fake.<sub>.<email>`.
- * AUTH_FAKE_SUB, when set, allowlists that fake sub only (production debug user).
+ * Specs 119, 178, 250: GIS tokeninfo + optional fake tokens.
+ * AUTH_ALLOW_FAKE=1 accepts `fake.<sub>.<email>` (local / e2e only).
  */
 
 /**
  * @param {string} idToken
  * @param {{
  *   allowFake: boolean;
- *   allowedSub: string;
  *   googleClientId: string;
  *   fetchImpl?: typeof fetch;
  * }} opts
  * @returns {Promise<{ sub: string; email: string; name: string; picture: string } | null>}
  */
 export async function verifyGoogleToken(idToken, opts) {
-	const { allowFake, allowedSub, googleClientId, fetchImpl = fetch } = opts;
+	const { allowFake, googleClientId, fetchImpl = fetch } = opts;
 	if (allowFake && idToken.startsWith('fake.')) {
 		const rest = idToken.slice('fake.'.length);
 		const dot = rest.indexOf('.');
 		const sub = (dot === -1 ? rest : rest.slice(0, dot)) || 'dev';
-		if (allowedSub && sub !== allowedSub) return null;
 		const email = dot === -1 ? 'dev@localhost' : rest.slice(dot + 1);
 		const resolvedEmail = email || 'dev@localhost';
 		const local = resolvedEmail.split('@')[0] || resolvedEmail;
