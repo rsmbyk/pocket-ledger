@@ -1,6 +1,14 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+import {
+	areaAndIpForRequest,
+	clientIpFromHeaders,
+	defaultLookupArea,
+	publicSession,
+	sessionLabelsFromRequest,
+	sortSessionsForList
+} from './session-meta.js';
 
 export const COOKIE_NAME = 'pl_session';
 const SESSION_SECONDS = 7 * 24 * 60 * 60;
@@ -22,6 +30,7 @@ export function onboardingState(user) {
 export function createApp(deps) {
 	const { store, verifyGoogle, webOrigin } = deps;
 	const cookieSecure = deps.cookieSecure !== false;
+	const lookupArea = deps.lookupArea ?? defaultLookupArea;
 	const app = new Hono();
 
 	app.use(
@@ -29,7 +38,7 @@ export function createApp(deps) {
 		cors({
 			origin: webOrigin,
 			credentials: true,
-			allowHeaders: ['Content-Type'],
+			allowHeaders: ['Content-Type', 'X-PL-Client', 'X-PL-Browser', 'X-PL-Device'],
 			allowMethods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS']
 		})
 	);
@@ -60,7 +69,8 @@ export function createApp(deps) {
 		}
 		const session = await store.createSession({
 			userSub: user.googleSub,
-			userAgent: c.req.header('user-agent') ?? ''
+			userAgent: c.req.header('user-agent') ?? '',
+			...sessionMetaFromContext(c, lookupArea)
 		});
 		writeSessionCookie(c, session.id, cookieSecure);
 		return c.json({
@@ -98,12 +108,10 @@ export function createApp(deps) {
 	});
 
 	app.get('/v1/me', async (c) => {
-		const session = await requireSession(c, store);
+		const session = await requireLiveSession(c, store, lookupArea, cookieSecure);
 		if (session.ok === false) return session.res;
 		const user = await store.getUser(session.value.userSub);
 		if (!user) return c.json({ error: 'unknown_user' }, 401);
-		await store.touchSession(session.value.id);
-		writeSessionCookie(c, session.value.id, cookieSecure);
 		return c.json({
 			user: publicUser(user),
 			onboarding: onboardingState(user),
@@ -112,22 +120,33 @@ export function createApp(deps) {
 	});
 
 	app.get('/v1/sessions', async (c) => {
-		const session = await requireSession(c, store);
+		const session = await requireLiveSession(c, store, lookupArea, cookieSecure);
 		if (session.ok === false) return session.res;
-		const sessions = await store.listSessions(session.value.userSub);
+		const sessions = sortSessionsForList(
+			await store.listSessions(session.value.userSub),
+			session.value.id
+		);
 		return c.json({
-			sessions: sessions.map((s) => ({
-				id: s.id,
-				userAgent: s.userAgent,
-				createdAt: s.createdAt,
-				lastSeenAt: s.lastSeenAt,
-				current: s.id === session.value.id
-			}))
+			sessions: sessions.map((s) => publicSession(s, session.value.id))
 		});
 	});
 
+	app.post('/v1/sessions/revoke-all', async (c) => {
+		const session = await requireLiveSession(c, store, lookupArea, cookieSecure);
+		if (session.ok === false) return session.res;
+		const body = await c.req.json().catch(() => ({}));
+		const includeCurrent = body.includeCurrent === true;
+		if (includeCurrent) {
+			await store.deleteSessionsForUser(session.value.userSub);
+			deleteCookie(c, COOKIE_NAME, cookieOpts(cookieSecure));
+		} else {
+			await store.deleteOtherSessions(session.value.userSub, session.value.id);
+		}
+		return c.json({ ok: true });
+	});
+
 	app.delete('/v1/sessions/:id', async (c) => {
-		const session = await requireSession(c, store);
+		const session = await requireLiveSession(c, store, lookupArea, cookieSecure);
 		if (session.ok === false) return session.res;
 		const id = c.req.param('id');
 		const target = await store.getSession(id);
@@ -142,7 +161,7 @@ export function createApp(deps) {
 	});
 
 	app.get('/v1/wrap', async (c) => {
-		const session = await requireSession(c, store);
+		const session = await requireLiveSession(c, store, lookupArea, cookieSecure);
 		if (session.ok === false) return session.res;
 		const user = await store.getUser(session.value.userSub);
 		if (!user) return c.json({ error: 'unknown_user' }, 401);
@@ -156,7 +175,7 @@ export function createApp(deps) {
 	});
 
 	app.put('/v1/wrap', async (c) => {
-		const session = await requireSession(c, store);
+		const session = await requireLiveSession(c, store, lookupArea, cookieSecure);
 		if (session.ok === false) return session.res;
 		const body = await c.req.json().catch(() => ({}));
 		try {
@@ -176,13 +195,13 @@ export function createApp(deps) {
 	});
 
 	app.get('/v1/sync', async (c) => {
-		const session = await requireSession(c, store);
+		const session = await requireLiveSession(c, store, lookupArea, cookieSecure);
 		if (session.ok === false) return session.res;
 		return c.json({ entities: await store.listEntities(session.value.userSub) });
 	});
 
 	app.put('/v1/sync/:kind/:id', async (c) => {
-		const session = await requireSession(c, store);
+		const session = await requireLiveSession(c, store, lookupArea, cookieSecure);
 		if (session.ok === false) return session.res;
 		const body = await c.req.json().catch(() => ({}));
 		try {
@@ -237,4 +256,40 @@ async function requireSession(c, store) {
 		return { ok: false, res: c.json({ error: 'unauthorized' }, 401) };
 	}
 	return { ok: true, value: session };
+}
+
+function sessionMetaFromContext(c, lookupArea) {
+	const ip = clientIpFromHeaders({
+		'x-forwarded-for': c.req.header('x-forwarded-for') ?? '',
+		'x-real-ip': c.req.header('x-real-ip') ?? ''
+	});
+	const labels = sessionLabelsFromRequest({
+		clientHeader: c.req.header('x-pl-client'),
+		browserHeader: c.req.header('x-pl-browser'),
+		deviceHeader: c.req.header('x-pl-device'),
+		userAgent: c.req.header('user-agent')
+	});
+	return {
+		...labels,
+		userAgent: c.req.header('user-agent') ?? '',
+		...areaAndIpForRequest(ip, lookupArea)
+	};
+}
+
+async function requireLiveSession(c, store, lookupArea, cookieSecure) {
+	const session = await requireSession(c, store);
+	if (session.ok === false) return session;
+	const prev = session.value;
+	const meta = sessionMetaFromContext(c, lookupArea);
+	await store.touchSession(session.value.id, {
+		...meta,
+		client: meta.client === 'android' ? 'android' : prev.client || 'browser',
+		browserLabel: meta.browserLabel || prev.browserLabel || '',
+		deviceLabel: meta.deviceLabel || prev.deviceLabel || '',
+		lastIp: meta.lastIp || prev.lastIp || '',
+		lastArea: meta.lastIp ? meta.lastArea : prev.lastArea || meta.lastArea || '',
+		userAgent: meta.userAgent || prev.userAgent || ''
+	});
+	writeSessionCookie(c, session.value.id, cookieSecure);
+	return session;
 }

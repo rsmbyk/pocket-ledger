@@ -1,4 +1,5 @@
 import { SyncConflictError, type SyncEntity } from '$lib/application/sync';
+import { sessionRequestHeaders } from '$lib/application/session-device';
 
 export class LocalConflictError extends Error {
 	readonly status = 409;
@@ -31,13 +32,16 @@ export const E2E_FAKE_TOKEN_KEY = 'pl-e2e-fake-token';
 type Json = Record<string, unknown>;
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+	const meta = await sessionRequestHeaders().catch(() => ({}) as Record<string, string>);
+	const headers = new Headers(init.headers);
+	if (!headers.has('content-type')) headers.set('content-type', 'application/json');
+	for (const [key, value] of Object.entries(meta)) {
+		if (value && !headers.has(key)) headers.set(key, value);
+	}
 	const res = await fetch(`${apiBase()}${path}`, {
 		...init,
 		credentials: 'include',
-		headers: {
-			'content-type': 'application/json',
-			...(init.headers ?? {})
-		}
+		headers
 	});
 	if (res.status === 409) {
 		const body = (await res.json().catch(() => ({}))) as Json;
@@ -106,10 +110,13 @@ export async function logoutCloud(): Promise<void> {
 
 export type CloudSession = {
 	id: string;
-	userAgent: string;
-	createdAt: string;
-	lastSeenAt: string;
 	current: boolean;
+	client: 'browser' | 'android';
+	browserLabel: string;
+	deviceLabel: string;
+	lastSeenAt: string;
+	lastArea: string;
+	lastIp: string;
 };
 
 export async function listCloudSessions(): Promise<CloudSession[]> {
@@ -119,6 +126,13 @@ export async function listCloudSessions(): Promise<CloudSession[]> {
 
 export async function revokeCloudSession(id: string): Promise<void> {
 	await request(`/v1/sessions/${id}`, { method: 'DELETE' });
+}
+
+export async function revokeAllCloudSessions(includeCurrent: boolean): Promise<void> {
+	await request('/v1/sessions/revoke-all', {
+		method: 'POST',
+		body: JSON.stringify({ includeCurrent })
+	});
 }
 
 export type CloudWrap = {

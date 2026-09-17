@@ -18,6 +18,7 @@
 	import type { CreatePocketInput, UpdatePocketInput } from '$lib/application/accounts';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import type { CloudSession } from '$lib/application/cloud-api';
 	import { isAppRoute, isGatePath, nearestValidPath, parsePath, parsePocketId, routeToPath, type AppRoute } from '$lib/shared/router';
 	import { DEFAULT_LEAVE_TAB } from '$lib/application/idle';
 	import { shouldRedirectMissingPocket } from '$lib/shared/shell-loading';
@@ -65,12 +66,7 @@
 		userEmail?: string | null;
 		userDisplayName?: string;
 		userPictureUrl?: string;
-		sessions?: Array<{
-			id: string;
-			userAgent: string;
-			lastSeenAt: string;
-			current: boolean;
-		}>;
+		sessions?: CloudSession[];
 		idleMinutes?: number;
 		leaveTab?: boolean;
 		displayCurrency?: string;
@@ -79,6 +75,7 @@
 		cloudError?: string | null;
 		onSignOut?: () => void | Promise<void>;
 		onRevokeSession?: (id: string) => void | Promise<void>;
+		onRevokeAllSessions?: (includeCurrent: boolean) => void | Promise<void>;
 		onSaveIdle?: (minutes: number, leaveTab: boolean) => void | Promise<void>;
 		onSaveCurrency?: (code: string) => void | Promise<void>;
 		onEnrollWebAuthn?: () => void | Promise<void>;
@@ -137,6 +134,7 @@
 		cloudError = null,
 		onSignOut,
 		onRevokeSession,
+		onRevokeAllSessions,
 		onSaveIdle,
 		onSaveCurrency,
 		onEnrollWebAuthn,
@@ -330,6 +328,7 @@
 				{cloudError}
 				{onSignOut}
 				{onRevokeSession}
+				{onRevokeAllSessions}
 				{onSaveIdle}
 				{onSaveCurrency}
 				{onEnrollWebAuthn}

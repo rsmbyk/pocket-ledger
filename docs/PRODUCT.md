@@ -25,7 +25,7 @@ Never force Google on local-only users. Hosting is **GCP Cloud Run** (not Cloudf
 | Encryption                           | Always-on DEK after one-time migrate. Device passphrase optional; account passphrase **mandatory** while signed in.                                                                                                                                                                 |
 | Backup                               | Encrypted envelope, **signed-out only**. Old plaintext `formatVersion: 1` rejected. Hidden while signed in.                                                                                                                                                                         |
 | Sync                                 | Signed-in only. Server `rev` CAS; **409** closes the editor. Gravestones. 30s poll. No offline queue.                                                                                                                                                                               |
-| Session                              | API cookie, 7-day rolling, HttpOnly Secure. Session manager (list + revoke).                                                                                                                                                                                                        |
+| Session                              | API cookie, 7-day rolling, HttpOnly Secure. Session manager (list + revoke other devices + revoke-all). Last access, GeoIP area, and last IP are shown to the account owner.                                                                                                                                                                                                        |
 | UI kit                               | shadcn-svelte (Vega / Lucide) + Tailwind                                                                                                                                                                                                                                            |
 | Theme                                | Dark mode from day one; default **system**; Light / Dark / System override. Theme and idle **sync with the ledger** while signed in.                                                                                                                                                |
 | Visual                               | **Mist** surfaces, **Ink** primary, **Figtree**, **7px** radius, Current+ cards, Brick money/charts/danger, Soft chart hover, Lift sheets, Quiet focus, overlay-fade scrollbars, buttons use desktop height at every viewport (spec 133) |
@@ -139,7 +139,7 @@ Server stores **ciphertext**. Cannot field-merge. Unit = one encrypted entity + 
 
 ## Session
 
-API cookie: **7-day rolling**, HttpOnly Secure, on the **API** host (two Cloud Run origins + CORS). Idle still dumps the DEK. **Session manager:** list sessions, revoke (sign out that device).
+API cookie: **7-day rolling**, HttpOnly Secure, on the **API** host (two Cloud Run origins + CORS). Idle still dumps the DEK. **Session manager** (signed-in Settings → Cloud Sync → Sessions): labeled devices, last access, GeoIP area, last IP, revoke other devices, revoke-all (optional also this device). Account holds Sign out and WebAuthn. The owner can see last IP; the operator still never has the DEK.
 
 ## Crypto numbers
 

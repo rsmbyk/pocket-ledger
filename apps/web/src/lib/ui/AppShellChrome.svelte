@@ -20,6 +20,7 @@
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import { DEFAULT_LEAVE_TAB } from '$lib/application/idle';
+	import type { CloudSession } from '$lib/application/cloud-api';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Sheet from '$lib/components/ui/sheet/index.js';
@@ -157,12 +158,7 @@
 		userEmail?: string | null;
 		userDisplayName?: string;
 		userPictureUrl?: string;
-		sessions?: Array<{
-			id: string;
-			userAgent: string;
-			lastSeenAt: string;
-			current: boolean;
-		}>;
+		sessions?: CloudSession[];
 		idleMinutes?: number;
 		leaveTab?: boolean;
 		displayCurrency?: string;
@@ -171,6 +167,7 @@
 		cloudError?: string | null;
 		onSignOut?: () => void | Promise<void>;
 		onRevokeSession?: (id: string) => void | Promise<void>;
+		onRevokeAllSessions?: (includeCurrent: boolean) => void | Promise<void>;
 		onSaveIdle?: (minutes: number, leaveTab: boolean) => void | Promise<void>;
 		onSaveCurrency?: (code: string) => void | Promise<void>;
 		onEnrollWebAuthn?: () => void | Promise<void>;
@@ -236,6 +233,7 @@
 		cloudError = null,
 		onSignOut,
 		onRevokeSession,
+		onRevokeAllSessions,
 		onSaveIdle,
 		onSaveCurrency,
 		onEnrollWebAuthn,
@@ -1766,6 +1764,8 @@
 				{signedIn}
 				{cloudConfigured}
 				{userEmail}
+				{userDisplayName}
+				{userPictureUrl}
 				{sessions}
 				{idleMinutes}
 				{leaveTab}
@@ -1781,6 +1781,7 @@
 				{cloudError}
 				{onSignOut}
 				{onRevokeSession}
+				{onRevokeAllSessions}
 				{onSaveIdle}
 				{onSaveCurrency}
 				{onEnrollWebAuthn}

@@ -21,6 +21,11 @@ function toSessionRow(s) {
 		id: s.id,
 		user_sub: s.userSub,
 		user_agent: s.userAgent,
+		client: s.client ?? 'browser',
+		browser_label: s.browserLabel ?? '',
+		device_label: s.deviceLabel ?? '',
+		last_area: s.lastArea ?? '',
+		last_ip: s.lastIp ?? '',
 		created_at: s.createdAt,
 		last_seen_at: s.lastSeenAt,
 		expires_at: new Date(s.expiresAt)
@@ -101,7 +106,12 @@ function createFakePool() {
 					userAgent: params[2],
 					createdAt: params[3],
 					lastSeenAt: params[4],
-					expiresAt: params[5] instanceof Date ? params[5].getTime() : Number(params[5])
+					expiresAt: params[5] instanceof Date ? params[5].getTime() : Number(params[5]),
+					client: params[6] ?? 'browser',
+					browserLabel: params[7] ?? '',
+					deviceLabel: params[8] ?? '',
+					lastArea: params[9] ?? '',
+					lastIp: params[10] ?? ''
 				};
 				sessions.set(session.id, session);
 				return { rows: [toSessionRow(session)] };
@@ -122,6 +132,12 @@ function createFakePool() {
 				if (!s) return { rows: [] };
 				s.lastSeenAt = params[1];
 				s.expiresAt = params[2] instanceof Date ? params[2].getTime() : Number(params[2]);
+				if (params[3] !== undefined) s.client = params[3];
+				if (params[4] !== undefined) s.browserLabel = params[4];
+				if (params[5] !== undefined) s.deviceLabel = params[5];
+				if (params[6] !== undefined) s.lastArea = params[6];
+				if (params[7] !== undefined) s.lastIp = params[7];
+				if (params[8] !== undefined) s.userAgent = params[8];
 				return { rows: [toSessionRow(s)] };
 			}
 			case 'delete-session': {
