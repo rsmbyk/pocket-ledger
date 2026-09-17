@@ -24,8 +24,17 @@
 	import { inspectEncryptedBackup, type BackupInspectSummary } from '$lib/application/backup';
 	import { verifyPassphrase } from '$lib/application/lock';
 	import { newPassphraseLiveState } from '$lib/application/new-passphrase-fields';
-	import { apiBase, fakeGoogleEnabled, googleClientId } from '$lib/application/cloud-api';
+	import { apiBase, fakeGoogleEnabled, googleClientId, type CloudSession } from '$lib/application/cloud-api';
 	import { mountGoogleSignInButton } from '$lib/application/google-signin';
+	import { profileInitials } from '$lib/application/google-profile';
+	import {
+		formatSessionAccessLine,
+		formatSessionArea,
+		formatSessionIp,
+		formatSessionLastAccess
+	} from '$lib/domain/session-access-display';
+	import { Badge } from '$lib/components/ui/badge/index.js';
+	import { Separator } from '$lib/components/ui/separator/index.js';
 	import { untrack } from 'svelte';
 	import { mode } from 'mode-watcher';
 
@@ -34,12 +43,9 @@
 		signedIn?: boolean;
 		cloudConfigured?: boolean;
 		userEmail?: string | null;
-		sessions?: Array<{
-			id: string;
-			userAgent: string;
-			lastSeenAt: string;
-			current: boolean;
-		}>;
+		userDisplayName?: string;
+		userPictureUrl?: string;
+		sessions?: CloudSession[];
 		idleMinutes?: number;
 		leaveTab?: boolean;
 		displayCurrency?: string;
@@ -57,6 +63,7 @@
 		cloudError?: string | null;
 		onSignOut?: () => void | Promise<void>;
 		onRevokeSession?: (id: string) => void | Promise<void>;
+		onRevokeAllSessions?: (includeCurrent: boolean) => void | Promise<void>;
 		onSaveIdle?: (minutes: number, leaveTab: boolean) => void | Promise<void>;
 		onSaveCurrency?: (code: string) => void | Promise<void>;
 		onEnrollWebAuthn?: () => void | Promise<void>;
@@ -68,6 +75,8 @@
 		signedIn = false,
 		cloudConfigured = false,
 		userEmail = null,
+		userDisplayName = '',
+		userPictureUrl = '',
 		sessions = [],
 		idleMinutes = DEFAULT_IDLE_MINUTES,
 		leaveTab = DEFAULT_LEAVE_TAB,
@@ -83,6 +92,7 @@
 		cloudError = null,
 		onSignOut,
 		onRevokeSession,
+		onRevokeAllSessions,
 		onSaveIdle,
 		onSaveCurrency,
 		onEnrollWebAuthn,
@@ -119,6 +129,9 @@
 	let exportPassError = $state<string | null>(null);
 	let disableLockConfirmOpen = $state(false);
 	let signOutOpen = $state(false);
+	let revokeSessionId = $state<string | null>(null);
+	let revokeAllOpen = $state(false);
+	let revokeAllIncludeCurrent = $state(false);
 	let error = $state<string | null>(null);
 	let gisHost = $state<HTMLDivElement | undefined>(undefined);
 	const alertMessage = $derived(error ?? cloudError);
@@ -261,38 +274,84 @@
 				</Card.Title>
 			</Card.Header>
 			<Card.Content class="flex flex-col gap-4 px-0">
+				{#if signedIn}
+					<div class="flex flex-col gap-2" data-testid="settings-section-sessions">
+						{@render sectionHeading('Sessions')}
+						<ul class="text-sm" data-testid="session-list">
+							{#each sessions as session, index (session.id)}
+								{#if index > 0}
+									<Separator class="my-3" />
+								{/if}
+								<li class="flex items-start justify-between gap-3">
+									<div class="min-w-0 space-y-1">
+										<p class="flex flex-wrap items-center gap-2">
+											<span>{formatSessionAccessLine(session)}</span>
+											{#if session.current}
+												<Badge variant="secondary" data-testid="session-this-device">This device</Badge>
+											{/if}
+										</p>
+										<p class="text-muted-foreground">
+											Last access {formatSessionLastAccess(session.lastSeenAt)}
+										</p>
+										<p class="text-muted-foreground">{formatSessionArea(session.lastArea)}</p>
+										<p class="text-muted-foreground font-mono text-xs">{formatSessionIp(session.lastIp)}</p>
+									</div>
+									{#if !session.current && onRevokeSession}
+										<Button
+											type="button"
+											variant="destructive"
+											size="sm"
+											onclick={() => (revokeSessionId = session.id)}
+											data-testid="session-revoke"
+										>
+											Revoke
+										</Button>
+									{/if}
+								</li>
+							{/each}
+						</ul>
+						{#if sessions.length > 1 && onRevokeAllSessions}
+							<Button
+								type="button"
+								variant="destructive"
+								onclick={() => {
+									revokeAllIncludeCurrent = false;
+									revokeAllOpen = true;
+								}}
+								data-testid="session-revoke-all"
+							>
+								Revoke all sessions
+							</Button>
+						{/if}
+					</div>
+				{/if}
 				<div class="flex flex-col gap-2">
 					{@render sectionHeading('Account')}
-					<p class="text-muted-foreground text-sm">
-						{#if signedIn}
-							Signed in as {userEmail}. Signing out wipes this device; cloud stays.
-						{:else}
-							Optional. Google only. You can keep using Pocket Ledger without an account.
-						{/if}
-					</p>
 					{#if signedIn}
-						{#if sessions.length > 0}
-							<ul class="space-y-2 text-sm" data-testid="session-list">
-								{#each sessions as session (session.id)}
-									<li class="flex items-center justify-between gap-2">
-										<span>
-											{session.current ? 'This device' : session.userAgent || 'Other device'}
-										</span>
-										{#if !session.current && onRevokeSession}
-											<Button
-												type="button"
-												variant="destructive"
-												size="sm"
-												onclick={() => void wrap(() => onRevokeSession(session.id))}
-												data-testid="session-revoke"
-											>
-												Revoke
-											</Button>
-										{/if}
-									</li>
-								{/each}
-							</ul>
-						{/if}
+						<div class="flex items-center gap-3" data-testid="settings-account-profile">
+							<span
+								class="bg-muted flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-medium"
+								aria-hidden="true"
+							>
+								{#if userPictureUrl}
+									<img
+										src={userPictureUrl}
+										alt=""
+										class="size-full object-cover"
+										referrerpolicy="no-referrer"
+									/>
+								{:else}
+									{profileInitials(userDisplayName, userEmail ?? '')}
+								{/if}
+							</span>
+							<span class="min-w-0">
+								<span class="block truncate font-medium">{userDisplayName || userEmail}</span>
+								<span class="text-muted-foreground block truncate text-xs">{userEmail}</span>
+							</span>
+						</div>
+						<p class="text-muted-foreground text-sm">
+							Signing out wipes this device; cloud stays.
+						</p>
 						<Button
 							type="button"
 							variant="destructive"
@@ -311,25 +370,30 @@
 								{webauthnEnrolled ? 'This device unlock is on' : 'Use this device’s screen lock'}
 							</Button>
 						{/if}
-					{:else if cloudConfigured && fakeGoogleEnabled() && onGoogleSignIn}
-						<Button
-							type="button"
-							class="w-full"
-							onclick={() => void wrap(onGoogleSignIn)}
-							data-testid="google-sign-in"
-						>
-							Sign in with Google
-						</Button>
-					{:else if cloudConfigured && googleClientId()}
-						<div
-							bind:this={gisHost}
-							class="gis-sign-in scheme-light w-full overflow-hidden rounded-[4px]"
-							data-testid="google-sign-in"
-						></div>
 					{:else}
 						<p class="text-muted-foreground text-sm">
-							Cloud sign-in is not configured on this build.
+							Optional. Google only. You can keep using Pocket Ledger without an account.
 						</p>
+						{#if cloudConfigured && fakeGoogleEnabled() && onGoogleSignIn}
+							<Button
+								type="button"
+								class="w-full"
+								onclick={() => void wrap(onGoogleSignIn)}
+								data-testid="google-sign-in"
+							>
+								Sign in with Google
+							</Button>
+						{:else if cloudConfigured && googleClientId()}
+							<div
+								bind:this={gisHost}
+								class="gis-sign-in scheme-light w-full overflow-hidden rounded-[4px]"
+								data-testid="google-sign-in"
+							></div>
+						{:else}
+							<p class="text-muted-foreground text-sm">
+								Cloud sign-in is not configured on this build.
+							</p>
+						{/if}
 					{/if}
 				</div>
 			</Card.Content>
@@ -1061,3 +1125,84 @@
 		if (onSignOut) await wrap(onSignOut);
 	}}
 />
+
+<ConfirmDialog
+	open={revokeSessionId !== null}
+	title="Revoke this session?"
+	description="That device will be signed out of Pocket Ledger. Cloud data stays."
+	confirmLabel="Revoke"
+	destructive
+	dangerChrome
+	confirmTestId="session-revoke-confirm"
+	onOpenChange={(open) => {
+		if (!open) revokeSessionId = null;
+	}}
+	onConfirm={async () => {
+		const id = revokeSessionId;
+		if (id && onRevokeSession) await wrap(() => onRevokeSession(id));
+	}}
+/>
+
+<Dialog.Root
+	open={revokeAllOpen}
+	onOpenChange={(open) => {
+		revokeAllOpen = open;
+		if (!open) revokeAllIncludeCurrent = false;
+	}}
+>
+	<Dialog.Content
+		class="max-w-sm sm:max-w-sm z-[60] gap-0 overflow-hidden p-0"
+		overlayClass="z-[60]"
+		data-testid="session-revoke-all-dialog"
+		showCloseButton={false}
+	>
+		<Dialog.Header
+			class="gap-1 space-y-0 border-b border-destructive/20 bg-destructive/5 px-6 py-3"
+		>
+			<div class="flex items-center gap-2">
+				<TriangleAlertIcon class="text-destructive size-5 shrink-0" aria-hidden="true" />
+				<Dialog.Title>Revoke all sessions?</Dialog.Title>
+			</div>
+		</Dialog.Header>
+		<div class="space-y-4 px-6 py-4">
+			<Dialog.Description>
+				Other devices will be signed out of Pocket Ledger. They will need to sign in with Google
+				again. Cloud data stays. This device stays signed in unless you choose otherwise.
+			</Dialog.Description>
+			<div class="flex flex-col gap-1">
+				<label class="flex items-center gap-2 text-sm">
+					<input
+						type="checkbox"
+						class="size-5 accent-primary md:size-4"
+						bind:checked={revokeAllIncludeCurrent}
+						data-testid="session-revoke-all-include-current"
+					/>
+					Also revoke this device
+				</label>
+				<p
+					class="text-muted-foreground pl-7 text-sm"
+					data-testid="session-revoke-all-include-current-hint"
+				>
+					You will be signed out of this device.
+				</p>
+			</div>
+			<Dialog.Footer class="gap-2 sm:justify-end">
+				<Button type="button" variant="outline" onclick={() => (revokeAllOpen = false)}>
+					Cancel
+				</Button>
+				<Button
+					type="button"
+					variant="destructive"
+					data-testid="session-revoke-all-confirm"
+					onclick={() =>
+						void wrap(async () => {
+							if (onRevokeAllSessions) await onRevokeAllSessions(revokeAllIncludeCurrent);
+							revokeAllOpen = false;
+						})}
+				>
+					Revoke
+				</Button>
+			</Dialog.Footer>
+		</div>
+	</Dialog.Content>
+</Dialog.Root>

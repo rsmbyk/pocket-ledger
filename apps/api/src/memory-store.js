@@ -47,12 +47,26 @@ export function createMemoryStore() {
 			const user = users.get(sub);
 			return Boolean(user?.wrap);
 		},
-		createSession({ userSub, userAgent, now = Date.now() }) {
+		createSession({
+			userSub,
+			userAgent,
+			client = 'browser',
+			browserLabel = '',
+			deviceLabel = '',
+			lastArea = '',
+			lastIp = '',
+			now = Date.now()
+		}) {
 			const id = crypto.randomUUID();
 			const session = {
 				id,
 				userSub,
 				userAgent: userAgent ?? '',
+				client: client === 'android' ? 'android' : 'browser',
+				browserLabel: browserLabel ?? '',
+				deviceLabel: deviceLabel ?? '',
+				lastArea: lastArea ?? '',
+				lastIp: lastIp ?? '',
 				createdAt: new Date(now).toISOString(),
 				lastSeenAt: new Date(now).toISOString(),
 				expiresAt: now + SESSION_MS
@@ -68,15 +82,33 @@ export function createMemoryStore() {
 				.filter((s) => s.userSub === userSub)
 				.sort((a, b) => b.lastSeenAt.localeCompare(a.lastSeenAt));
 		},
-		touchSession(id, now = Date.now()) {
+		touchSession(id, nowOrMeta = Date.now()) {
 			const session = sessions.get(id);
 			if (!session) return null;
+			const meta = typeof nowOrMeta === 'number' ? { now: nowOrMeta } : (nowOrMeta ?? {});
+			const now = meta.now ?? Date.now();
 			session.lastSeenAt = new Date(now).toISOString();
 			session.expiresAt = now + SESSION_MS;
+			if (meta.client) session.client = meta.client === 'android' ? 'android' : 'browser';
+			if (meta.browserLabel !== undefined) session.browserLabel = meta.browserLabel ?? '';
+			if (meta.deviceLabel !== undefined) session.deviceLabel = meta.deviceLabel ?? '';
+			if (meta.lastArea !== undefined) session.lastArea = meta.lastArea ?? '';
+			if (meta.lastIp !== undefined) session.lastIp = meta.lastIp ?? '';
+			if (meta.userAgent !== undefined) session.userAgent = meta.userAgent ?? '';
 			return session;
 		},
 		deleteSession(id) {
 			sessions.delete(id);
+		},
+		deleteOtherSessions(userSub, keepId) {
+			for (const [id, session] of sessions) {
+				if (session.userSub === userSub && id !== keepId) sessions.delete(id);
+			}
+		},
+		deleteSessionsForUser(userSub) {
+			for (const [id, session] of sessions) {
+				if (session.userSub === userSub) sessions.delete(id);
+			}
 		},
 		putEntity(userSub, { id, kind, rev, deleted, blob }) {
 			const key = entityKey(userSub, kind, id);

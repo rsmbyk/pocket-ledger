@@ -267,3 +267,4 @@ Living behavior contracts for Pocket Ledger.
 | [248](248-pockets-list-budget/spec.md)                 | Sticky groups, unique scope, Pockets-list budget             | Accepted                                                                        |
 | [249](249-budget-unique-scope-ux/spec.md)              | Budget unique-scope form UX                                  | Accepted                                                                        |
 | [250](250-remove-temporary-debug/spec.md)              | Remove temporary debug (180/181)                             | Accepted                                                                        |
+| [251](251-cloud-sessions-section/spec.md)              | Cloud Sync Sessions section                                  | Accepted                                                                        |

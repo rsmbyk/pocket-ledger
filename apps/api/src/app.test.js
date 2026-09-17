@@ -8,14 +8,15 @@ function fakeGoogle(idToken) {
 	return Promise.resolve({ sub, email: email || `${sub}@example.com` });
 }
 
-function appWith(store = createMemoryStore()) {
+function appWith(store = createMemoryStore(), extra = {}) {
 	return {
 		store,
 		app: createApp({
 			store,
 			verifyGoogle: fakeGoogle,
 			webOrigin: 'http://127.0.0.1:4173',
-			cookieSecure: false
+			cookieSecure: false,
+			...extra
 		})
 	};
 }
@@ -112,6 +113,122 @@ describe('auth session', () => {
 		expect(revoked.status).toBe(200);
 		const after = await app.request('/v1/me', { headers: { cookie: cookieB } });
 		expect(after.status).toBe(401);
+	});
+
+	it('returns labeled sessions without public userAgent and puts current first', async () => {
+		const store = createMemoryStore();
+		const { app } = appWith(store, {
+			lookupArea: () => ({ city: 'Bandung', region: 'West Java', country: 'ID' })
+		});
+		const a = await app.request('/v1/auth/google', {
+			method: 'POST',
+			headers: {
+				'content-type': 'application/json',
+				'user-agent':
+					'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+				'x-forwarded-for': '203.0.113.9',
+				'x-pl-client': 'browser',
+				'x-pl-browser': 'Chrome 128',
+				'x-pl-device': 'Windows 11'
+			},
+			body: JSON.stringify({ idToken: 'fake.sub1.a@b.com' })
+		});
+		const b = await app.request('/v1/auth/google', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json', 'user-agent': 'device-b' },
+			body: JSON.stringify({ idToken: 'fake.sub1.a@b.com' })
+		});
+		const cookieA = cookieHeader(a);
+		const otherId = cookieHeader(b).replace('pl_session=', '');
+		const other = [...(await store.listSessions('sub1'))].find((s) => s.id !== cookieHeader(a).replace('pl_session=', ''));
+		await store.touchSession(other.id, Date.now() + 60_000);
+		const list = await app.request('/v1/sessions', { headers: { cookie: cookieA } });
+		const sessions = (await list.json()).sessions;
+		expect(sessions[0].current).toBe(true);
+		expect(sessions[0]).not.toHaveProperty('userAgent');
+		expect(sessions[0].client).toBe('browser');
+		expect(sessions[0].browserLabel).toBe('Chrome 128');
+		expect(sessions[0].deviceLabel).toBe('Windows 11');
+		expect(sessions[0].lastIp).toBe('203.0.113.9');
+		expect(sessions[0].lastArea).toMatch(/Bandung/);
+		expect(sessions.some((s) => s.id === otherId || !s.current)).toBe(true);
+	});
+
+	it('advances lastSeenAt on sync GET and PUT', async () => {
+		const { app } = appWith();
+		const login = await app.request('/v1/auth/google', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ idToken: 'fake.sub1.a@b.com' })
+		});
+		const cookie = cookieHeader(login);
+		const first = await app.request('/v1/sessions', { headers: { cookie } });
+		const before = (await first.json()).sessions[0].lastSeenAt;
+		await new Promise((r) => setTimeout(r, 8));
+		await app.request('/v1/sync', { headers: { cookie } });
+		await app.request('/v1/sync/tx/tx1', {
+			method: 'PUT',
+			headers: { cookie, 'content-type': 'application/json' },
+			body: JSON.stringify({ rev: 0, blob: 'x' })
+		});
+		const afterList = await app.request('/v1/sessions', { headers: { cookie } });
+		const after = (await afterList.json()).sessions[0].lastSeenAt;
+		expect(after > before).toBe(true);
+	});
+
+	it('uses Local network for private IPs', async () => {
+		const { app } = appWith();
+		const login = await app.request('/v1/auth/google', {
+			method: 'POST',
+			headers: {
+				'content-type': 'application/json',
+				'x-forwarded-for': '127.0.0.1'
+			},
+			body: JSON.stringify({ idToken: 'fake.sub1.a@b.com' })
+		});
+		const list = await app.request('/v1/sessions', { headers: { cookie: cookieHeader(login) } });
+		const row = (await list.json()).sessions[0];
+		expect(row.lastArea).toBe('Local network');
+		expect(row.lastIp).toBe('127.0.0.1');
+	});
+
+	it('revokes all other sessions or every session including current', async () => {
+		const { app } = appWith();
+		const a = await app.request('/v1/auth/google', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ idToken: 'fake.sub1.a@b.com' })
+		});
+		const b = await app.request('/v1/auth/google', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ idToken: 'fake.sub1.a@b.com' })
+		});
+		const cookieA = cookieHeader(a);
+		const cookieB = cookieHeader(b);
+		const others = await app.request('/v1/sessions/revoke-all', {
+			method: 'POST',
+			headers: { cookie: cookieA, 'content-type': 'application/json' },
+			body: JSON.stringify({ includeCurrent: false })
+		});
+		expect(others.status).toBe(200);
+		expect((await app.request('/v1/me', { headers: { cookie: cookieB } })).status).toBe(401);
+		expect((await app.request('/v1/me', { headers: { cookie: cookieA } })).status).toBe(200);
+
+		const c = await app.request('/v1/auth/google', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ idToken: 'fake.sub1.a@b.com' })
+		});
+		const cookieC = cookieHeader(c);
+		const all = await app.request('/v1/sessions/revoke-all', {
+			method: 'POST',
+			headers: { cookie: cookieA, 'content-type': 'application/json' },
+			body: JSON.stringify({ includeCurrent: true })
+		});
+		expect(all.status).toBe(200);
+		expect((await app.request('/v1/me', { headers: { cookie: cookieA } })).status).toBe(401);
+		expect((await app.request('/v1/me', { headers: { cookie: cookieC } })).status).toBe(401);
 	});
 });
 

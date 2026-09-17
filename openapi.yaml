@@ -59,6 +59,19 @@ paths:
       summary: List sessions for this Google user
       responses:
         '200': { description: Session list }
+  /v1/sessions/revoke-all:
+    post:
+      summary: Revoke other sessions, or all including this device
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                includeCurrent: { type: boolean }
+      responses:
+        '200': { description: Revoked }
   /v1/sessions/{id}:
     delete:
       summary: Revoke a session

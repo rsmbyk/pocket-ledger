@@ -28,6 +28,11 @@ function mapSession(row) {
 		id: row.id,
 		userSub: row.user_sub,
 		userAgent: row.user_agent ?? '',
+		client: row.client === 'android' ? 'android' : 'browser',
+		browserLabel: row.browser_label ?? '',
+		deviceLabel: row.device_label ?? '',
+		lastArea: row.last_area ?? '',
+		lastIp: row.last_ip ?? '',
 		createdAt:
 			row.created_at instanceof Date ? row.created_at.toISOString() : String(row.created_at),
 		lastSeenAt:
@@ -159,23 +164,49 @@ export async function createPostgresStore(pool) {
 			const row = res.rows[0];
 			return Boolean(row?.has_entities) || Boolean(row?.has_wrap);
 		},
-		async createSession({ userSub, userAgent, now = Date.now() }) {
+		async createSession({
+			userSub,
+			userAgent,
+			client = 'browser',
+			browserLabel = '',
+			deviceLabel = '',
+			lastArea = '',
+			lastIp = '',
+			now = Date.now()
+		}) {
 			const id = crypto.randomUUID();
 			const createdAt = new Date(now).toISOString();
 			const expiresAt = new Date(now + SESSION_MS);
 			const res = await pool.query(
 				`-- pl:insert-session
-				INSERT INTO sessions (id, user_sub, user_agent, created_at, last_seen_at, expires_at)
-				VALUES ($1, $2, $3, $4, $5, $6)
-				RETURNING id, user_sub, user_agent, created_at, last_seen_at, expires_at`,
-				[id, userSub, userAgent ?? '', createdAt, createdAt, expiresAt]
+				INSERT INTO sessions (
+					id, user_sub, user_agent, created_at, last_seen_at, expires_at,
+					client, browser_label, device_label, last_area, last_ip
+				)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+				RETURNING id, user_sub, user_agent, created_at, last_seen_at, expires_at,
+					client, browser_label, device_label, last_area, last_ip`,
+				[
+					id,
+					userSub,
+					userAgent ?? '',
+					createdAt,
+					createdAt,
+					expiresAt,
+					client === 'android' ? 'android' : 'browser',
+					browserLabel ?? '',
+					deviceLabel ?? '',
+					lastArea ?? '',
+					lastIp ?? ''
+				]
 			);
 			return mapSession(res.rows[0]);
 		},
 		async getSession(id) {
 			const res = await pool.query(
 				`-- pl:get-session
-				SELECT id, user_sub, user_agent, created_at, last_seen_at, expires_at
+				SELECT id, user_sub, user_agent, created_at, last_seen_at, expires_at,
+					client, browser_label, device_label, last_area, last_ip
 				FROM sessions WHERE id = $1`,
 				[id]
 			);
@@ -184,22 +215,46 @@ export async function createPostgresStore(pool) {
 		async listSessions(userSub) {
 			const res = await pool.query(
 				`-- pl:list-sessions
-				SELECT id, user_sub, user_agent, created_at, last_seen_at, expires_at
+				SELECT id, user_sub, user_agent, created_at, last_seen_at, expires_at,
+					client, browser_label, device_label, last_area, last_ip
 				FROM sessions WHERE user_sub = $1
 				ORDER BY last_seen_at DESC`,
 				[userSub]
 			);
 			return res.rows.map(mapSession);
 		},
-		async touchSession(id, now = Date.now()) {
+		async touchSession(id, nowOrMeta = Date.now()) {
+			const meta = typeof nowOrMeta === 'number' ? { now: nowOrMeta } : (nowOrMeta ?? {});
+			const now = meta.now ?? Date.now();
 			const lastSeenAt = new Date(now).toISOString();
 			const expiresAt = new Date(now + SESSION_MS);
+			const existing = await this.getSession(id);
+			if (!existing) return null;
+			const client = meta.client ?? existing.client;
+			const browserLabel = meta.browserLabel !== undefined ? meta.browserLabel : existing.browserLabel;
+			const deviceLabel = meta.deviceLabel !== undefined ? meta.deviceLabel : existing.deviceLabel;
+			const lastArea = meta.lastArea !== undefined ? meta.lastArea : existing.lastArea;
+			const lastIp = meta.lastIp !== undefined ? meta.lastIp : existing.lastIp;
+			const userAgent = meta.userAgent !== undefined ? meta.userAgent : existing.userAgent;
 			const res = await pool.query(
 				`-- pl:touch-session
-				UPDATE sessions SET last_seen_at = $2, expires_at = $3
+				UPDATE sessions SET last_seen_at = $2, expires_at = $3,
+					client = $4, browser_label = $5, device_label = $6, last_area = $7, last_ip = $8,
+					user_agent = $9
 				WHERE id = $1
-				RETURNING id, user_sub, user_agent, created_at, last_seen_at, expires_at`,
-				[id, lastSeenAt, expiresAt]
+				RETURNING id, user_sub, user_agent, created_at, last_seen_at, expires_at,
+					client, browser_label, device_label, last_area, last_ip`,
+				[
+					id,
+					lastSeenAt,
+					expiresAt,
+					client === 'android' ? 'android' : 'browser',
+					browserLabel ?? '',
+					deviceLabel ?? '',
+					lastArea ?? '',
+					lastIp ?? '',
+					userAgent ?? ''
+				]
 			);
 			return mapSession(res.rows[0]);
 		},
@@ -208,6 +263,20 @@ export async function createPostgresStore(pool) {
 				`-- pl:delete-session
 				DELETE FROM sessions WHERE id = $1`,
 				[id]
+			);
+		},
+		async deleteOtherSessions(userSub, keepId) {
+			await pool.query(
+				`-- pl:delete-other-sessions
+				DELETE FROM sessions WHERE user_sub = $1 AND id <> $2`,
+				[userSub, keepId]
+			);
+		},
+		async deleteSessionsForUser(userSub) {
+			await pool.query(
+				`-- pl:delete-user-sessions
+				DELETE FROM sessions WHERE user_sub = $1`,
+				[userSub]
 			);
 		},
 		async putEntity(userSub, { id, kind, rev, deleted, blob }) {

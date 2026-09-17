@@ -76,6 +76,7 @@
 		LocalConflictError,
 		logoutCloud,
 		revokeCloudSession,
+		revokeAllCloudSessions,
 		signInWithGoogleToken,
 		E2E_FAKE_TOKEN_KEY,
 		type CloudSession
@@ -844,6 +845,18 @@
 		}}
 		onRevokeSession={async (id) => {
 			await revokeCloudSession(id);
+			sessions = await listCloudSessions();
+		}}
+		onRevokeAllSessions={async (includeCurrent) => {
+			await revokeAllCloudSessions(includeCurrent);
+			if (includeCurrent) {
+				disableGoogleAutoSelect();
+				clearDataKey();
+				await db.delete();
+				pingSiblingTabsSignedOut();
+				window.location.assign('/');
+				return;
+			}
 			sessions = await listCloudSessions();
 		}}
 		onSaveIdle={async (minutes, on) => {

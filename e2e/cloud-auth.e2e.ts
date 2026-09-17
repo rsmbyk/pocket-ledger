@@ -7,6 +7,7 @@ test.describe('119 cloud onboarding', () => {
 		await expect(page.getByTestId('home-panel')).toBeVisible();
 		await goToNav(page, 'more');
 		await expect(page.getByTestId('google-sign-in')).toBeVisible();
+		await expect(page.getByTestId('settings-section-sessions')).toHaveCount(0);
 		await goToNav(page, 'home');
 		await expect(page.getByTestId('home-panel')).toBeVisible();
 	});
@@ -37,6 +38,15 @@ test.describe('119 cloud onboarding', () => {
 		await expect(page.getByTestId('app-shell')).toBeVisible();
 		await goToNav(page, 'more');
 		await expect(page.getByTestId('export-backup')).toHaveCount(0);
+		await expect(page.getByTestId('settings-section-sessions')).toBeVisible();
+		const sessionsBox = await page.getByTestId('settings-section-sessions').boundingBox();
+		const profileBox = await page.getByTestId('settings-account-profile').boundingBox();
+		expect(sessionsBox && profileBox && sessionsBox.y < profileBox.y).toBe(true);
+		await expect(page.getByTestId('session-this-device')).toHaveText('This device');
+		await expect(page.getByTestId('session-revoke')).toHaveCount(0);
+		await expect(page.getByTestId('session-revoke-all')).toHaveCount(0);
+		await expect(page.getByTestId('settings-account-profile')).toBeVisible();
+		await expect(page.getByTestId('cloud-sign-out')).toBeVisible();
 	});
 
 	test('183 account passphrase Continue stays disabled until the pair is valid', async ({
