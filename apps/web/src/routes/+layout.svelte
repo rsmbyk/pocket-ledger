@@ -3,8 +3,10 @@
 	import '../app.css';
 	import App from '../App.svelte';
 	import OverlayScrollbars from '$lib/ui/OverlayScrollbars.svelte';
+	import { applyInstalledPwaZoomLock, readInstalledPwaFlags } from '$lib/shared/page-zoom';
 
 	onMount(() => {
+		applyInstalledPwaZoomLock(document, readInstalledPwaFlags());
 		if ('serviceWorker' in navigator) {
 			void navigator.serviceWorker.register('/sw.js');
 		}

@@ -5,6 +5,31 @@
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="apple-touch-icon" href="/icons/icon-192.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+		<script>
+			(function () {
+				var standalone = false;
+				try {
+					standalone =
+						(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+						window.navigator.standalone === true;
+				} catch (e) {}
+				if (!standalone) return;
+				var meta = document.querySelector('meta[name="viewport"]');
+				if (meta) {
+					var content = meta.getAttribute('content') || '';
+					if (!/maximum-scale\s*=/i.test(content)) content += ', maximum-scale=1.0';
+					if (!/user-scalable\s*=/i.test(content)) content += ', user-scalable=no';
+					meta.setAttribute('content', content);
+				}
+				var prevent = function (event) {
+					event.preventDefault();
+				};
+				document.addEventListener('gesturestart', prevent, { passive: false });
+				document.addEventListener('gesturechange', prevent, { passive: false });
+				document.addEventListener('gestureend', prevent, { passive: false });
+				document.documentElement.setAttribute('data-pl-zoom-lock', '');
+			})();
+		</script>
 		<meta name="theme-color" content="#eef1f4" />
 		<meta name="description" content="Offline-first personal finance tracker" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
