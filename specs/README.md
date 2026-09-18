@@ -268,3 +268,4 @@ Living behavior contracts for Pocket Ledger.
 | [249](249-budget-unique-scope-ux/spec.md)              | Budget unique-scope form UX                                  | Accepted                                                                        |
 | [250](250-remove-temporary-debug/spec.md)              | Remove temporary debug (180/181)                             | Accepted                                                                        |
 | [251](251-cloud-sessions-section/spec.md)              | Cloud Sync Sessions section                                  | Accepted                                                                        |
+| [252](252-pwa-zoom-lock/spec.md)                       | Lock zoom in the installed PWA                               | Accepted                                                                        |

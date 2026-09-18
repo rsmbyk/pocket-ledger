@@ -135,6 +135,12 @@
 		@apply font-sans antialiased;
 	}
 
+	@media (display-mode: standalone) {
+		html {
+			touch-action: pan-x pan-y;
+		}
+	}
+
 	body {
 		@apply m-0 min-h-svh bg-background text-foreground;
 	}

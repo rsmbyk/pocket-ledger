@@ -37,6 +37,29 @@ test.describe('000 scaffold', () => {
 		await expect(page.getByTestId('shell-stage-skeleton')).toHaveCount(0);
 	});
 
+	test('252 browser tab keeps a zoomable viewport', async ({ page }) => {
+		await page.goto('/');
+		await expect(page.locator('meta[name="viewport"]')).toHaveAttribute(
+			'content',
+			'width=device-width, initial-scale=1.0, viewport-fit=cover'
+		);
+	});
+
+	test('252 installed PWA locks pinch zoom', async ({ page }) => {
+		await page.addInitScript(() => {
+			Object.defineProperty(navigator, 'standalone', {
+				configurable: true,
+				get: () => true
+			});
+		});
+		await page.goto('/');
+		await expect(page.locator('meta[name="viewport"]')).toHaveAttribute(
+			'content',
+			'width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no'
+		);
+		await expect(page.locator('html')).toHaveAttribute('data-pl-zoom-lock', '');
+	});
+
 	test('registers a service worker for PWA', async ({ page }) => {
 		await page.goto('/');
 		await expect
