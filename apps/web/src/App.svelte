@@ -96,6 +96,8 @@
 	import {
 		SETTINGS_IDLE_LEAVE_TAB,
 		SETTINGS_IDLE_MINUTES,
+		SETTINGS_CLOUD_SESSION,
+		SETTINGS_WRAP_REV,
 		SETTINGS_THEME_PREFERENCE,
 		SETTINGS_WEBAUTHN,
 		db
@@ -121,9 +123,11 @@
 	import type { AuthMe } from '$lib/application/cloud-api';
 	import {
 		bumpAuthEpoch,
+		CLOUD_SESSION_MARKER,
 		isAuthEpochStorageEvent,
 		isUnauthorizedError,
-		shouldDropCloudSession
+		shouldDropCloudSession,
+		shouldWipeExpiredCloudSession
 	} from '$lib/application/cloud-session';
 
 	let account = $state<Account | null>(null);
@@ -213,6 +217,23 @@
 	}
 
 	async function loadSession() {
+		const sessionExpected =
+			(await getSetting(SETTINGS_CLOUD_SESSION)) === CLOUD_SESSION_MARKER ||
+			(await getSetting(SETTINGS_WRAP_REV)) != null;
+		if (cloudConfigured()) {
+			try {
+				const me = await fetchMe();
+				if (shouldWipeExpiredCloudSession(sessionExpected, me)) {
+					await wipeLocalState();
+				} else if (me) {
+					await applyMe(me);
+				} else {
+					clearCloudIdentity();
+				}
+			} catch {
+				/* keep local data when the API is unavailable */
+			}
+		}
 		recoveryOffered = await loadRecoveryOffered();
 		pendingPassphraseReset = await loadPendingPassphraseReset();
 		if (pendingPassphraseReset && !getDataKey()) {
@@ -235,15 +256,6 @@
 		webauthnEnrolled = Boolean(await getSetting(SETTINGS_WEBAUTHN));
 		const lockout = await loadLockout();
 		lockoutUntil = lockout.lockedUntil;
-		if (cloudConfigured()) {
-			try {
-				const me = await fetchMe();
-				if (me) applyMe(me);
-				else clearCloudIdentity();
-			} catch {
-				/* keep current identity if API is down */
-			}
-		}
 		if (!unlocked) {
 			if (!signedIn) {
 				account = await ensureDefaultAccount();
@@ -436,6 +448,17 @@
 		accountRecoveryOpen = false;
 	}
 
+	async function wipeLocalState() {
+		clearDataKey();
+		await db.delete();
+		await db.open();
+		clearCloudIdentity();
+		unlocked = true;
+		dekPresent = false;
+		lockEnabled = false;
+		ledgerReady = false;
+	}
+
 	function leaveDeadCloudSession() {
 		window.location.assign('/');
 	}
@@ -503,7 +526,8 @@
 		await finishLedgerLoad();
 	}
 
-	function applyMe(me: AuthMe) {
+	async function applyMe(me: AuthMe) {
+		await setSetting(SETTINGS_CLOUD_SESSION, CLOUD_SESSION_MARKER);
 		signedIn = true;
 		userEmail = me.user.email;
 		userDisplayName = displayNameFromIdentity(me.user.displayName, me.user.email);
@@ -600,7 +624,7 @@
 			await db.open();
 			await ensureLocalDek();
 		}
-		applyMe(me);
+		await applyMe(me);
 		if (me.onboarding === 'complete') {
 			unlocked = false;
 			ledgerReady = false;
@@ -694,7 +718,7 @@
 			recoveryOffered = false;
 			const me = await fetchMe();
 			if (!me) throw new Error('Not signed in');
-			applyMe(me);
+			await applyMe(me);
 			if (me.onboarding === 'complete') {
 				unlocked = true;
 				ledgerReady = false;
@@ -838,8 +862,7 @@
 		onSignOut={async () => {
 			disableGoogleAutoSelect();
 			await logoutCloud();
-			clearDataKey();
-			await db.delete();
+			await wipeLocalState();
 			pingSiblingTabsSignedOut();
 			window.location.assign('/');
 		}}
@@ -851,8 +874,7 @@
 			await revokeAllCloudSessions(includeCurrent);
 			if (includeCurrent) {
 				disableGoogleAutoSelect();
-				clearDataKey();
-				await db.delete();
+				await wipeLocalState();
 				pingSiblingTabsSignedOut();
 				window.location.assign('/');
 				return;

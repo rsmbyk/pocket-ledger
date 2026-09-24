@@ -3,6 +3,7 @@
 import type { AuthMe } from './cloud-api';
 
 export const AUTH_EPOCH_STORAGE_KEY = 'pocket-ledger-auth-epoch';
+export const CLOUD_SESSION_MARKER = '1';
 
 export function isUnauthorizedError(err: unknown): boolean {
 	if (!(err instanceof Error)) return false;
@@ -12,6 +13,13 @@ export function isUnauthorizedError(err: unknown): boolean {
 
 export function shouldDropCloudSession(signedIn: boolean, me: AuthMe | null): boolean {
 	return signedIn && me === null;
+}
+
+export function shouldWipeExpiredCloudSession(
+	sessionExpected: boolean,
+	me: AuthMe | null
+): boolean {
+	return sessionExpected && me === null;
 }
 
 export function bumpAuthEpoch(storage: { setItem(key: string, value: string): void }): void {
