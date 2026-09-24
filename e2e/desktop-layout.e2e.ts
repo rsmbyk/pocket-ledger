@@ -151,7 +151,7 @@ test.describe('013 desktop layout', () => {
 
 		const homeBtn = rail.getByTestId('nav-home');
 		await expect(homeBtn).toHaveAccessibleName('Home');
-		await expect(homeBtn.locator('span')).toHaveClass(/sr-only/);
+		await expect(homeBtn.locator('span').first()).toHaveClass(/sr-only/);
 		// Menu highlight is 36x36 with a 16px icon (collapsed only).
 		await expect.poll(async () => (await homeBtn.boundingBox())?.width ?? 0).toBeGreaterThan(32);
 		await expect.poll(async () => (await homeBtn.boundingBox())?.width ?? 0).toBeLessThan(40);
@@ -163,6 +163,14 @@ test.describe('013 desktop layout', () => {
 		await expect
 			.poll(async () => (await homeBtn.locator('svg').boundingBox())?.width ?? 0)
 			.toBeLessThan(20);
+		// Smooth motion: 500ms expo rail, labels stagger top-down on collapse.
+		expect(await rail.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe(
+			'0.5s'
+		);
+		const txDelay = await rail
+			.getByTestId('nav-transactions')
+			.evaluate((btn) => getComputedStyle(btn.querySelectorAll('span')[1]).transitionDelay);
+		expect(txDelay).toBe('0.06s');
 		// 7px gap between collapsed menu items (half the side gutter).
 		const pocketsBtn = rail.getByTestId('nav-pockets');
 		await expect
