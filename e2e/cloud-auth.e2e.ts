@@ -293,88 +293,11 @@ test.describe('119 cloud onboarding', () => {
 		await expect(page.getByTestId('account-unlock-screen')).toHaveCount(0);
 		await expect(page.locator('body')).not.toContainText('unauthorized');
 		// Full reload of `/` after drop; allow slow CI boot.
-		try {
-			await expect(page.getByTestId('unlock-screen')).toBeVisible({ timeout: 15_000 });
-		} finally {
-			// TEMP-CI-PROBE: dump Dexie settings keys (no values) to diagnose CI-only stuck boot.
-			const probe = await page
-				.evaluate(async () => {
-					const out: Record<string, unknown> = { url: location.href };
-					try {
-						const dbs = await indexedDB.databases();
-						out.dbs = dbs.map((d) => d.name);
-						const openReq = indexedDB.open('pocket-ledger');
-						const db = await new Promise<IDBDatabase>((resolve, reject) => {
-							openReq.onsuccess = () => resolve(openReq.result);
-							openReq.onerror = () => reject(openReq.error);
-							openReq.onblocked = () => reject(new Error('blocked'));
-						});
-						try {
-							if (Array.from(db.objectStoreNames).includes('settings')) {
-								const vals = await new Promise<Array<{ key: string }>>(
-									(resolve, reject) => {
-										const q = db
-											.transaction('settings', 'readonly')
-											.objectStore('settings')
-											.getAll();
-										q.onsuccess = () => resolve(q.result as Array<{ key: string }>);
-										q.onerror = () => reject(q.error);
-									}
-								);
-								out.settings = vals.map((v) => v.key);
-							} else {
-								out.settings = 'NO-SETTINGS-STORE';
-							}
-						} finally {
-							db.close();
-						}
-					} catch (e) {
-						out.error = String(e);
-					}
-					return out;
-				})
-				.catch((e: unknown) => ({ error: String(e) }));
-			console.log(`TEMP-CI-PROBE ${JSON.stringify(probe)}`);
-		}
+		await expect(page.getByTestId('unlock-screen')).toBeVisible({ timeout: 15_000 });
 		await expect(page.getByTestId('unlock-screen')).toContainText('Unlock this device');
 		await page.getByTestId('unlock-passphrase').fill('account-pass');
 		await page.getByTestId('unlock-submit').click();
 		await expect(page.getByTestId('app-shell')).toBeVisible();
-	});
-
-	test('TEMP reload keeps account lock without logout', async ({ page }) => {
-		await page.goto('/');
-		await goToNav(page, 'more');
-		await page.getByTestId('google-sign-in').click();
-		await page.getByTestId('account-pass').fill('account-pass');
-		await page.getByTestId('account-pass-confirm').fill('account-pass');
-		await page.getByTestId('account-pass-submit').click();
-		await confirmHexKit(page);
-		await expect(page.getByTestId('app-shell')).toBeVisible();
-		const preKeys = await page
-			.evaluate(async () => {
-				const openReq = indexedDB.open('pocket-ledger');
-				const db = await new Promise<IDBDatabase>((resolve, reject) => {
-					openReq.onsuccess = () => resolve(openReq.result);
-					openReq.onerror = () => reject(openReq.error);
-				});
-				try {
-					const vals = await new Promise<Array<{ key: string }>>((resolve, reject) => {
-						const q = db.transaction('settings', 'readonly').objectStore('settings').getAll();
-						q.onsuccess = () => resolve(q.result as Array<{ key: string }>);
-						q.onerror = () => reject(q.error);
-					});
-					return vals.map((v) => v.key);
-				} finally {
-					db.close();
-				}
-			})
-			.catch((e: unknown) => [`ERROR:${String(e)}`]);
-		console.log(`TEMP-PRELOCK ${JSON.stringify(preKeys)}`);
-		await page.getByTestId('header-lock').click();
-		await expect(page.getByTestId('account-unlock-screen')).toBeVisible();
-		await page.reload();
-		await expect(page.getByTestId('account-unlock-screen')).toBeVisible({ timeout: 15_000 });
 	});
 
 	test('211 visible tab drops stale account Unlock', async ({ page }) => {
