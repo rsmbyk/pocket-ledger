@@ -342,6 +342,21 @@ test.describe('119 cloud onboarding', () => {
 		await expect(page.getByTestId('app-shell')).toBeVisible();
 	});
 
+	test('TEMP reload keeps account lock without logout', async ({ page }) => {
+		await page.goto('/');
+		await goToNav(page, 'more');
+		await page.getByTestId('google-sign-in').click();
+		await page.getByTestId('account-pass').fill('account-pass');
+		await page.getByTestId('account-pass-confirm').fill('account-pass');
+		await page.getByTestId('account-pass-submit').click();
+		await confirmHexKit(page);
+		await expect(page.getByTestId('app-shell')).toBeVisible();
+		await page.getByTestId('header-lock').click();
+		await expect(page.getByTestId('account-unlock-screen')).toBeVisible();
+		await page.reload();
+		await expect(page.getByTestId('account-unlock-screen')).toBeVisible({ timeout: 15_000 });
+	});
+
 	test('211 visible tab drops stale account Unlock', async ({ page }) => {
 		await page.goto('/');
 		await goToNav(page, 'more');
