@@ -745,7 +745,7 @@
 
 <Sidebar.Root collapsible="icon">
 	<Sidebar.Header
-		class="p-6 transition-[padding,min-height] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:min-h-16 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-4"
+		class="p-6 transition-[padding,min-height] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:min-h-14 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-3"
 	>
 		<div
 			class="flex flex-col items-center gap-3 text-center group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"

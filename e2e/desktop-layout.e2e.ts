@@ -197,10 +197,11 @@ test.describe('013 desktop layout', () => {
 		const headerBox = await header.boundingBox();
 		const toolbarBox = await toolbar.boundingBox();
 		expect(headerBox && toolbarBox).toBeTruthy();
-		// Collapsed brand strip is 64px (32px logo + 16px padding each side);
-		// the inset toolbar stays at min-h-14 (56px).
-		expect(Math.abs((headerBox?.height ?? 0) - 64)).toBeLessThan(4);
+		// Collapsed brand strip is 56px (32px logo + 12px padding each side),
+		// matching the inset toolbar (min-h-14) per Spec 226.
+		expect(Math.abs((headerBox?.height ?? 0) - 56)).toBeLessThan(4);
 		expect(Math.abs((toolbarBox?.height ?? 0) - 56)).toBeLessThan(8);
+		expect(Math.abs((headerBox?.height ?? 0) - (toolbarBox?.height ?? 0))).toBeLessThan(8);
 
 		await page.reload();
 		await expect(page.getByTestId('home-panel')).toBeVisible();
