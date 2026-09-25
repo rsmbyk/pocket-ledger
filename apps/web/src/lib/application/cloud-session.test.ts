@@ -4,7 +4,8 @@ import {
 	bumpAuthEpoch,
 	isAuthEpochStorageEvent,
 	isUnauthorizedError,
-	shouldDropCloudSession
+	shouldDropCloudSession,
+	shouldWipeExpiredCloudSession
 } from './cloud-session';
 
 describe('isUnauthorizedError', () => {
@@ -43,6 +44,25 @@ describe('shouldDropCloudSession', () => {
 
 	it('is false when already signed out', () => {
 		expect(shouldDropCloudSession(false, null)).toBe(false);
+	});
+});
+
+describe('shouldWipeExpiredCloudSession', () => {
+	it('wipes when a persisted cloud session is now unauthorized', () => {
+		expect(shouldWipeExpiredCloudSession(true, null)).toBe(true);
+	});
+
+	it('does not wipe a local-only install', () => {
+		expect(shouldWipeExpiredCloudSession(false, null)).toBe(false);
+	});
+
+	it('does not wipe while the cloud session is valid', () => {
+		expect(
+			shouldWipeExpiredCloudSession(true, {
+				user: { googleSub: 'sub', email: 'a@b.test' },
+				onboarding: 'complete'
+			})
+		).toBe(false);
 	});
 });
 

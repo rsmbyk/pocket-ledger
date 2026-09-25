@@ -406,6 +406,7 @@ export const SETTINGS_LOCKOUT = 'lock.lockout';
 export const SETTINGS_RECOVERY_OFFERED = 'cloud.recoveryOffered';
 export const SETTINGS_PENDING_PASSPHRASE_RESET = 'cloud.pendingPassphraseReset';
 export const SETTINGS_WRAP_REV = 'cloud.wrapRev';
+export const SETTINGS_CLOUD_SESSION = 'cloud.session';
 export const SETTINGS_WEBAUTHN = 'lock.webauthn';
 export const SETTINGS_CATEGORY_OVERLAY = 'category.overlayPrefs';
 export const SETTINGS_CATEGORY_MIGRATED = 'category.catalogMigrated';
