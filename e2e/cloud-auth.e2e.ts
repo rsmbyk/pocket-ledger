@@ -351,6 +351,26 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('account-pass-submit').click();
 		await confirmHexKit(page);
 		await expect(page.getByTestId('app-shell')).toBeVisible();
+		const preKeys = await page
+			.evaluate(async () => {
+				const openReq = indexedDB.open('pocket-ledger');
+				const db = await new Promise<IDBDatabase>((resolve, reject) => {
+					openReq.onsuccess = () => resolve(openReq.result);
+					openReq.onerror = () => reject(openReq.error);
+				});
+				try {
+					const vals = await new Promise<Array<{ key: string }>>((resolve, reject) => {
+						const q = db.transaction('settings', 'readonly').objectStore('settings').getAll();
+						q.onsuccess = () => resolve(q.result as Array<{ key: string }>);
+						q.onerror = () => reject(q.error);
+					});
+					return vals.map((v) => v.key);
+				} finally {
+					db.close();
+				}
+			})
+			.catch((e: unknown) => [`ERROR:${String(e)}`]);
+		console.log(`TEMP-PRELOCK ${JSON.stringify(preKeys)}`);
 		await page.getByTestId('header-lock').click();
 		await expect(page.getByTestId('account-unlock-screen')).toBeVisible();
 		await page.reload();
