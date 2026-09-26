@@ -25,9 +25,12 @@ See [`README.md`](./README.md) for column meanings and owner phrases.
 
 | ID | Title | Summary | Type | Priority | Effort | Spec | Branch | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| ITEM-002 | Unlock screen: focus passphrase field + Enter to unlock | Passphrase field not focused on load; autofill without `input` events leaves Unlock disabled | fix | P1 | S | [254](../specs/254-unlock-focus-submit/spec.md) | fix/254-unlock-focus-submit | 2026-09-27 |
 
 ## In review
+
+| ID | Title | Summary | Type | Priority | Effort | Spec | PR | Updated |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ITEM-002 | Unlock screen: focus passphrase field + Enter to unlock | Passphrase field not focused on load; autofill without `input` events leaves Unlock disabled | fix | P1 | S | [254](../specs/254-unlock-focus-submit/spec.md) | #116 | 2026-09-27 |
 
 | ID | Title | Summary | Type | Priority | Effort | Spec | PR | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |

@@ -1,6 +1,6 @@
 ---
 id: ITEM-002
-status: in_progress
+status: in_review
 title: 'Unlock screen: focus passphrase field + Enter to unlock'
 type: fix
 priority: P1
@@ -9,11 +9,11 @@ created: 2026-09-26
 updated: 2026-09-27
 spec: 254-unlock-focus-submit
 branch: fix/254-unlock-focus-submit
-pr:
+pr: 116
 archived_at:
 archive_reason:
 bump: patch
-release_version:
+release_version: 0.0.1
 ---
 
 # ITEM-002: Unlock screen: focus passphrase field + Enter to unlock
