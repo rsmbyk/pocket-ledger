@@ -114,3 +114,7 @@ Unit = one encrypted entity + plain `id`, `kind` (`transaction`, `account`, `cat
 | application (fakes)   | Vitest                           |
 | API (Hono)            | Vitest                           |
 | acceptance            | Playwright against built preview |
+
+## Git model
+
+Git Flow (ADR 0009, Spec 253): `main` is production, `develop` is integration. Features branch from and PR into `develop`. Hotfixes branch from `main`. Releases cut `main` when the owner says release. CI runs on `develop` + `main`; production deploys trigger from `main` only.
