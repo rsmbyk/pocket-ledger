@@ -275,7 +275,10 @@
 			</Card.Root>
 		</main>
 	{:else}
-		<Sidebar.Provider class={lockViewport ? 'h-svh min-h-0 overflow-hidden' : 'min-h-svh'}>
+		<Sidebar.Provider
+			class={lockViewport ? 'h-svh min-h-0 overflow-hidden' : 'min-h-svh'}
+			style="--sidebar-width-icon: 4rem;"
+		>
 			<AppShellChrome
 				{account}
 				{accounts}

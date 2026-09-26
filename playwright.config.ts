@@ -6,6 +6,10 @@ export default defineConfig({
 	testDir: 'e2e',
 	testMatch: '**/*.e2e.ts',
 	fullyParallel: true,
+	// Serial e2e in CI: the suite is timing-sensitive (600k-iteration PBKDF2,
+	// full-reload boots) and parallel workers on shared runners starve each
+	// other, producing moving flakes in unrelated files.
+	workers: process.env.CI ? 1 : undefined,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 1 : 0,
 	reporter: process.env.CI ? 'github' : 'list',

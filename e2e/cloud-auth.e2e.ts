@@ -292,7 +292,8 @@ test.describe('119 cloud onboarding', () => {
 		await page.getByTestId('unlock-submit').click();
 		await expect(page.getByTestId('account-unlock-screen')).toHaveCount(0);
 		await expect(page.locator('body')).not.toContainText('unauthorized');
-		await expect(page.getByTestId('unlock-screen')).toBeVisible();
+		// Full reload of `/` after drop; allow slow CI boot.
+		await expect(page.getByTestId('unlock-screen')).toBeVisible({ timeout: 15_000 });
 		await expect(page.getByTestId('unlock-screen')).toContainText('Unlock this device');
 		await page.getByTestId('unlock-passphrase').fill('account-pass');
 		await page.getByTestId('unlock-submit').click();
@@ -319,7 +320,8 @@ test.describe('119 cloud onboarding', () => {
 		});
 		await expect(page.getByTestId('account-unlock-screen')).toHaveCount(0);
 		await expect(page.locator('body')).not.toContainText('unauthorized');
-		await expect(page.getByTestId('unlock-screen')).toBeVisible();
+		// Full reload of `/` after drop; allow slow CI boot.
+		await expect(page.getByTestId('unlock-screen')).toBeVisible({ timeout: 15_000 });
 	});
 
 	test('211 sibling tab leaves account Unlock after sign-out', async ({ page, context }) => {

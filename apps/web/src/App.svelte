@@ -98,6 +98,7 @@
 		SETTINGS_IDLE_MINUTES,
 		SETTINGS_CLOUD_SESSION,
 		SETTINGS_WRAP_REV,
+		SETTINGS_WRAPPED_DEK,
 		SETTINGS_THEME_PREFERENCE,
 		SETTINGS_WEBAUTHN,
 		db
@@ -224,7 +225,15 @@
 			try {
 				const me = await fetchMe();
 				if (shouldWipeExpiredCloudSession(sessionExpected, me)) {
-					await wipeLocalState();
+					// Spec 211: a device lock keeps guarding local data — drop cloud
+					// but stay locked. Only wipe orphaned state when no lock exists.
+					const hasDeviceLock =
+						(await getSetting(SETTINGS_WRAPPED_DEK)) != null || (await isLockEnabled());
+					if (hasDeviceLock) {
+						clearCloudIdentity();
+					} else {
+						await wipeLocalState();
+					}
 				} else if (me) {
 					await applyMe(me);
 				} else {

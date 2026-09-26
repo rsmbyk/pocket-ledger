@@ -131,16 +131,60 @@ test.describe('013 desktop layout', () => {
 		const expandedBox = await logo.boundingBox();
 		expect(expandedBox?.height ?? 0).toBeGreaterThan(40);
 
+		// Expanded highlight has 16px left padding (base 8px + 8px).
+		const homeBtnExpanded = rail.getByTestId('nav-home');
+		const btnBox = await homeBtnExpanded.boundingBox();
+		const btnSvgBox = await homeBtnExpanded.locator('svg').boundingBox();
+		expect(btnBox && btnSvgBox).toBeTruthy();
+		expect(btnSvgBox!.x - btnBox!.x).toBeGreaterThanOrEqual(14);
+		expect(btnSvgBox!.x - btnBox!.x).toBeLessThanOrEqual(18);
+
 		await page.getByTestId('open-menu').click();
 		await expect(rail.getByText('Pocket Ledger')).toBeHidden();
 		await expect(rail.getByTestId('nav-home')).toBeVisible();
 		// Width animates 300ms after data-collapsible=icon; the wordmark hides immediately.
-		await expect.poll(async () => (await rail.boundingBox())?.width ?? 0).toBeLessThan(120);
-		expect((await rail.boundingBox())?.width ?? 0).toBeGreaterThan(40);
+		// Collapsed rail is 4rem (64px).
+		await expect
+			.poll(async () => (await rail.boundingBox())?.width ?? 0)
+			.toBeGreaterThan(56);
+		await expect.poll(async () => (await rail.boundingBox())?.width ?? 0).toBeLessThan(72);
 
 		const homeBtn = rail.getByTestId('nav-home');
 		await expect(homeBtn).toHaveAccessibleName('Home');
-		await expect(homeBtn.locator('span')).toHaveClass(/sr-only/);
+		await expect(homeBtn.locator('span').first()).toHaveClass(/sr-only/);
+		// Menu highlight is 36x36 with a 16px icon (collapsed only).
+		await expect.poll(async () => (await homeBtn.boundingBox())?.width ?? 0).toBeGreaterThan(32);
+		await expect.poll(async () => (await homeBtn.boundingBox())?.width ?? 0).toBeLessThan(40);
+		await expect.poll(async () => (await homeBtn.boundingBox())?.height ?? 0).toBeGreaterThan(32);
+		await expect.poll(async () => (await homeBtn.boundingBox())?.height ?? 0).toBeLessThan(40);
+		await expect
+			.poll(async () => (await homeBtn.locator('svg').boundingBox())?.width ?? 0)
+			.toBeGreaterThan(12);
+		await expect
+			.poll(async () => (await homeBtn.locator('svg').boundingBox())?.width ?? 0)
+			.toBeLessThan(20);
+		// Smooth motion: 500ms expo rail, labels stagger top-down on collapse.
+		expect(await rail.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe(
+			'0.5s'
+		);
+		const txDelay = await rail
+			.getByTestId('nav-transactions')
+			.evaluate((btn) => getComputedStyle(btn.querySelectorAll('span')[1]).transitionDelay);
+		expect(txDelay).toBe('0.06s');
+		// 7px gap between collapsed menu items (half the side gutter).
+		const pocketsBtn = rail.getByTestId('nav-pockets');
+		await expect
+			.poll(async () => {
+				const a = await homeBtn.boundingBox();
+				const b = await pocketsBtn.boundingBox();
+				if (!a || !b) return -1;
+				return b.y - (a.y + a.height);
+			})
+			.toBeGreaterThan(5);
+		expect(
+			(await pocketsBtn.boundingBox())!.y -
+				((await homeBtn.boundingBox())!.y + (await homeBtn.boundingBox())!.height)
+		).toBeLessThan(9);
 		await expect.poll(async () => {
 			const r = await rail.boundingBox();
 			const i = await homeBtn.locator('svg').boundingBox();
@@ -153,11 +197,35 @@ test.describe('013 desktop layout', () => {
 		const headerBox = await header.boundingBox();
 		const toolbarBox = await toolbar.boundingBox();
 		expect(headerBox && toolbarBox).toBeTruthy();
+		// Collapsed brand strip is 56px (32px logo + 12px padding each side),
+		// matching the inset toolbar (min-h-14) per Spec 226.
+		expect(Math.abs((headerBox?.height ?? 0) - 56)).toBeLessThan(4);
+		expect(Math.abs((toolbarBox?.height ?? 0) - 56)).toBeLessThan(8);
 		expect(Math.abs((headerBox?.height ?? 0) - (toolbarBox?.height ?? 0))).toBeLessThan(8);
 
 		await page.reload();
 		await expect(page.getByTestId('home-panel')).toBeVisible();
 		await expect(page.getByTestId('app-drawer-rail').getByText('Pocket Ledger')).toBeHidden();
+
+		// Gutter click at the rail edge (outside the 36px highlight)
+		// still hits the nav button via its extended hit area.
+		const railBox = await rail.boundingBox();
+		const pocketsBox = await pocketsBtn.boundingBox();
+		expect(railBox && pocketsBox).toBeTruthy();
+		await page.mouse.click(
+			railBox!.x + 2,
+			pocketsBox!.y + pocketsBox!.height / 2
+		);
+		await expect(page).toHaveURL(/\/pockets\/?$/);
+
+		// Collapsed tooltip sits beside the rail, not overlapping it.
+		await rail.getByTestId('nav-home').hover();
+		const tip = page.locator('[data-slot="tooltip-content"][data-state="instant-open"]');
+		await expect(tip).toBeVisible();
+		const tipBox = await tip.boundingBox();
+		const railBoxAfter = await rail.boundingBox();
+		expect(tipBox && railBoxAfter).toBeTruthy();
+		expect(tipBox!.x).toBeGreaterThanOrEqual(railBoxAfter!.x + railBoxAfter!.width - 1);
 	});
 
 	test('227 sm viewport uses the icon rail not an overlay', async ({ page }) => {

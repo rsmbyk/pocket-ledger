@@ -562,6 +562,12 @@
 		{ id: 'settings', label: 'Settings', icon: SettingsIcon }
 	];
 
+	/** Label stagger: top-down on collapse, bottom-up on expand. */
+	function labelDelay(i: number): string {
+		const k = sidebar.state === 'collapsed' ? i : navItems.length - 1 - i;
+		return `${k * 30}ms`;
+	}
+
 	function cloneFilters(criteria: ActivityFilterCriteria): ActivityFilterCriteria {
 		return normalizeActivityFilters(criteria);
 	}
@@ -739,41 +745,50 @@
 
 <Sidebar.Root collapsible="icon">
 	<Sidebar.Header
-		class="p-6 group-data-[collapsible=icon]:min-h-14 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
+		class="p-6 transition-[padding,min-height] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:min-h-14 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-3"
 	>
 		<div
-			class="flex flex-col items-center gap-3 text-center group-data-[collapsible=icon]:h-14 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
+			class="flex flex-col items-center gap-3 text-center group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
 		>
 			<img
 				src="/favicon.svg"
 				alt=""
 				width="48"
 				height="48"
-				class="size-12 rounded-lg transition-[width,height] duration-300 ease-in-out group-data-[collapsible=icon]:size-8"
+				class="size-12 rounded-lg transition-[width,height] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:size-8"
 			/>
-			<p class="text-base font-semibold group-data-[collapsible=icon]:hidden">Pocket Ledger</p>
+			<p class="max-h-6 overflow-hidden text-base font-semibold transition-[max-height,opacity] duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:max-h-0 group-data-[collapsible=icon]:opacity-0">Pocket Ledger</p>
 		</div>
 	</Sidebar.Header>
 
 	<Sidebar.Content>
-		<Sidebar.Group>
+		<Sidebar.Group class="group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-[7px]">
 			<Sidebar.GroupContent>
-				<Sidebar.Menu data-testid="app-nav" aria-label="Primary">
-					{#each navItems as item (item.id)}
+				<Sidebar.Menu
+					data-testid="app-nav"
+					aria-label="Primary"
+					class="group-data-[collapsible=icon]:gap-[7px]"
+				>
+					{#each navItems as item, i (item.id)}
 						{@const Icon = item.icon}
 						<Sidebar.MenuItem>
 							<Sidebar.MenuButton
 								size="lg"
 								isActive={route === item.id}
 								tooltipContent={item.label}
+								tooltipContentProps={{ sideOffset: 18 }}
 								aria-label={item.label}
-								class="text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
+								class="text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground group-data-[collapsible=icon]:relative group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-9! group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:overflow-visible! group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:[&_svg]:size-4! group-data-[collapsible=icon]:before:absolute group-data-[collapsible=icon]:before:inset-y-0 group-data-[collapsible=icon]:before:-inset-x-3.5 group-data-[collapsible=icon]:before:content-[''] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] pl-4"
 								data-testid={`nav-${item.id}`}
 								aria-current={route === item.id ? 'page' : undefined}
 								onclick={() => navigate(item.id)}
 							>
 								<Icon />
-								<span class="group-data-[collapsible=icon]:sr-only">{item.label}</span>
+								<span class="sr-only">{item.label}</span>
+								<span
+									class="min-w-0 max-w-40 truncate transition-[max-width,opacity] duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:max-w-0 group-data-[collapsible=icon]:opacity-0"
+									style="transition-delay: {labelDelay(i)}"
+									aria-hidden="true">{item.label}</span>
 							</Sidebar.MenuButton>
 						</Sidebar.MenuItem>
 					{/each}
@@ -782,10 +797,10 @@
 		</Sidebar.Group>
 	</Sidebar.Content>
 	{#if signedIn && userEmail}
-		<Sidebar.Footer class="p-2 group-data-[collapsible=icon]:px-0">
+		<Sidebar.Footer class="p-2 group-data-[collapsible=icon]:p-2">
 			<button
 				type="button"
-				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+				class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm transition-[padding] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-12 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
 				data-testid="sidebar-account"
 			>
 				<span
@@ -803,7 +818,7 @@
 						{profileInitials(userDisplayName, userEmail)}
 					{/if}
 				</span>
-				<span class="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+				<span class="max-h-10 min-w-0 flex-1 overflow-hidden transition-[max-height,opacity] duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] group-data-[collapsible=icon]:max-h-0 group-data-[collapsible=icon]:opacity-0">
 					<span class="block truncate font-medium">{userDisplayName || userEmail}</span>
 					<span class="text-muted-foreground block truncate text-xs">{userEmail}</span>
 				</span>
