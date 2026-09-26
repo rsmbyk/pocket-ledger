@@ -1,6 +1,6 @@
 ---
 id: ITEM-001
-status: in-review
+status: done
 title: 'Adopt vexbook v0.4.0 + Git Flow'
 type: chore
 priority: P0
