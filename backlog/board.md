@@ -30,7 +30,7 @@ See [`README.md`](./README.md) for column meanings and owner phrases.
 
 | ID | Title | Summary | Type | Priority | Effort | Spec | PR | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| ITEM-001 | Adopt vexbook v0.4.0 + Git Flow | Process adopt (Spec 253); board bootstrapped by the adopt itself | chore | P0 | M | [253](../specs/253-adopt-vexbook-v040/spec.md) | | 2026-09-26 |
+| ITEM-001 | Adopt vexbook v0.4.0 + Git Flow | Process adopt (Spec 253); board bootstrapped by the adopt itself | chore | P0 | M | [253](../specs/253-adopt-vexbook-v040/spec.md) | #115 | 2026-09-26 |
 
 ## Done
 

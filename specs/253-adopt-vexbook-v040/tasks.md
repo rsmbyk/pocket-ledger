@@ -15,4 +15,4 @@
 - [x] Create `develop` from `main` (if absent); record Git Flow in PROCESS/ARCHITECTURE/ADR
 - [x] Update CI `on` branches (`develop` + `main`) and PR-target references
 - [x] `npm run check` clean (docs-only; no unit/e2e rule change)
-- [ ] Draft PR into `develop` linking Spec 253 (branch `chore/253-adopt-vexbook-v040` committed)
+- [x] Draft PR into `develop` linking Spec 253 (#115)

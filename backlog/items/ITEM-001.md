@@ -9,7 +9,7 @@ created: 2026-09-26
 updated: 2026-09-26
 spec: 253-adopt-vexbook-v040
 branch: chore/253-adopt-vexbook-v040
-pr:
+pr: 115
 archived_at:
 archive_reason:
 bump: none
