@@ -597,7 +597,10 @@
 		const target = gatePath();
 		const path = page.url.pathname.replace(/\/+$/, '') || '/';
 		if (target) {
-			if (path !== target) void goto(target, { replaceState: true });
+			// keepFocus: URL bookkeeping for a visible gate screen, not a user
+			// navigation — the router's default blur would steal focus from the
+			// gate screen's own field (Spec 254 unlock focus).
+			if (path !== target) void goto(target, { replaceState: true, keepFocus: true });
 			return;
 		}
 		const nearest = nearestValidPath(path);
