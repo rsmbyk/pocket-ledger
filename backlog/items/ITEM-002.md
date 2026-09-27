@@ -1,6 +1,6 @@
 ---
 id: ITEM-002
-status: in_review
+status: done
 title: 'Unlock screen: focus passphrase field + Enter to unlock'
 type: fix
 priority: P1

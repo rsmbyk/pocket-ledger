@@ -30,13 +30,10 @@ See [`README.md`](./README.md) for column meanings and owner phrases.
 
 | ID | Title | Summary | Type | Priority | Effort | Spec | PR | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| ITEM-002 | Unlock screen: focus passphrase field + Enter to unlock | Passphrase field not focused on load; autofill without `input` events leaves Unlock disabled | fix | P1 | S | [254](../specs/254-unlock-focus-submit/spec.md) | #116 | 2026-09-27 |
-
-| ID | Title | Summary | Type | Priority | Effort | Spec | PR | Updated |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
 ## Done
 
 | ID | Title | Summary | Type | Priority | Effort | Spec | Merged | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ITEM-002 | Unlock screen: focus passphrase field + Enter to unlock | Passphrase field not focused on load; autofill without `input` events leaves Unlock disabled | fix | P1 | S | [254](../specs/254-unlock-focus-submit/spec.md) | develop (#116) | 2026-09-27 |
 | ITEM-001 | Adopt vexbook v0.4.0 + Git Flow | Process adopt (Spec 253); board bootstrapped by the adopt itself | chore | P0 | M | [253](../specs/253-adopt-vexbook-v040/spec.md) | develop (#115) | 2026-09-26 |
