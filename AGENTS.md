@@ -17,7 +17,7 @@ This repo follows vexbook process at `v0.4.0` (adopted in ADR `docs/adr/0009-ado
 - Money = integer minor units.
 - Navigation: SvelteKit **path** URLs (Spec 117); do not reintroduce a hash router as the source of truth.
 - Encryption: always-on DEK wrapping (Spec 120). Operator never stores passphrase, hex kit, or raw DEK. Do not add Cloud KMS “no passphrase” mode.
-- Git Flow: `develop` is integration; feature work branches from and PRs into `develop` (`feat/*`, `fix/*`, `chore/*`, `docs/*`). Hotfixes branch from `main`. Releases cut `main` when Ronald says release. Squash-merge normal features; merge commits only for hotfixes (see `docs/PROCESS.md` and ADR 0009). Never create `cursor/` (or other non-standard) branches.
+- Git Flow is this repo's model (`docs/PROCESS.md` → `### Git Flow`): `main` is production; `develop` is integration. Feature work (`feat/*`, `fix/*`, `chore/*`, `docs/*`) branches from and opens a PR into `develop`; hotfixes branch from `main`; releases cut `main` when Ronald says release. Merge style for Git Flow (this repo does NOT use GitHub Flow): normal feature/chore/fix/docs branches are **squash-merged** (one commit per PR, keeping `develop` linear); hotfixes and releases are **standard merges** (merge commit, preserving hotfix history). After a squash merge, delete the merged **remote** branch only — leave the local branch intact (so the work remains locally available for any follow-up edits); never delete local branches on the agent's behalf. Never create `cursor/` (or other non-standard) branches.
 - Android is **not** in this repo (`pocket-ledger-android` later, Spec 122).
 
 ## Stack pointers
