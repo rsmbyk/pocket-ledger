@@ -9,7 +9,7 @@ created: 2026-09-29
 updated: 2026-09-29
 spec: 255-docs-compose-port-alignment
 branch: chore/255-docs-compose-port-alignment
-pr:
+pr: 118
 archived_at:
 archive_reason:
 bump: none
