@@ -1,6 +1,6 @@
 ---
 id: ITEM-003
-status: in_review
+status: done
 title: 'Align Git Flow docs and isolate Docker Compose host ports'
 type: chore
 priority: P1

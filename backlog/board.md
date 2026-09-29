@@ -31,11 +31,11 @@ See [`README.md`](./README.md) for column meanings and owner phrases.
 | ID | Title | Summary | Type | Priority | Effort | Spec | PR | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
-| ITEM-003 | Align Git Flow docs and isolate Docker Compose host ports | Correct stale process wording, use uncommon local Compose ports, and update the roadmap | chore | P1 | S | [255](../specs/255-docs-compose-port-alignment/spec.md) | [#118](https://github.com/rsmbyk/pocket-ledger/pull/118) | 2026-09-29 |
 
 ## Done
 
 | ID | Title | Summary | Type | Priority | Effort | Spec | Merged | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ITEM-003 | Align Git Flow docs and isolate Docker Compose host ports | Correct stale process wording, use uncommon local Compose ports, and update the roadmap | chore | P1 | S | [255](../specs/255-docs-compose-port-alignment/spec.md) | develop (#118) | 2026-09-29 |
 | ITEM-002 | Unlock screen: focus passphrase field + Enter to unlock | Passphrase field not focused on load; autofill without `input` events leaves Unlock disabled | fix | P1 | S | [254](../specs/254-unlock-focus-submit/spec.md) | develop (#116) | 2026-09-27 |
 | ITEM-001 | Adopt vexbook v0.4.0 + Git Flow | Process adopt (Spec 253); board bootstrapped by the adopt itself | chore | P0 | M | [253](../specs/253-adopt-vexbook-v040/spec.md) | develop (#115) | 2026-09-26 |

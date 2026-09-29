@@ -16,7 +16,7 @@
 - [x] Remove the manually maintained next-spec value from `docs/ROADMAP.md`.
 - [x] Verify `docker compose config` contains the intended loopback port mappings and `rg` finds no stale Compose-facing old ports.
 - [x] Fill Traceability in `./spec.md`.
-- [ ] Update ITEM + [`backlog/board.md`](../../backlog/board.md) in this PR (In review while open; Done before merge).
+- [x] Update ITEM + [`backlog/board.md`](../../backlog/board.md) in this PR (In review while open; Done before merge).
 - [x] Conventional Commit + draft PR linking `./spec.md` (same PR; extra commits fine)
 
 ## Done when
