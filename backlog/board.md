@@ -31,6 +31,8 @@ See [`README.md`](./README.md) for column meanings and owner phrases.
 | ID | Title | Summary | Type | Priority | Effort | Spec | PR | Updated |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
+| ITEM-003 | Align Git Flow docs and isolate Docker Compose host ports | Correct stale process wording, use uncommon local Compose ports, and update the roadmap | chore | P1 | S | [255](../specs/255-docs-compose-port-alignment/spec.md) | pending | 2026-09-29 |
+
 ## Done
 
 | ID | Title | Summary | Type | Priority | Effort | Spec | Merged | Updated |
