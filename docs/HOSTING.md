@@ -136,8 +136,8 @@ In APIs & Services → OAuth consent screen:
 
 Credentials → Create credentials → **OAuth client ID** → application type **Web application**:
 
-- Authorized JavaScript origins: `https://pocket-ledger-web-w6fanfnuqa-uc.a.run.app` (the production web URL). For local compose, also add `http://127.0.0.1:5173` (and `http://127.0.0.1:4173` if you use the preview profile).
-- Redirect URIs (Spec 218 mobile / installed PWA): `https://pocket-ledger-api-w6fanfnuqa-uc.a.run.app/v1/auth/gis-callback`. For local compose, also add `http://127.0.0.1:8080/v1/auth/gis-callback`. Desktop tabs still use `renderButton` + `ux_mode: popup` (no extra web-origin redirect URI). Do **not** use One Tap `google.accounts.id.prompt()` — FedCM One Tap often fails silently on Cloud Run.
+- Authorized JavaScript origins: `https://pocket-ledger-web-w6fanfnuqa-uc.a.run.app` (the production web URL). For local compose, also add `http://127.0.0.1:45173` (and `http://127.0.0.1:44173` if you use the preview profile).
+- Redirect URIs (Spec 218 mobile / installed PWA): `https://pocket-ledger-api-w6fanfnuqa-uc.a.run.app/v1/auth/gis-callback`. For local compose, also add `http://127.0.0.1:48080/v1/auth/gis-callback`. Desktop tabs still use `renderButton` + `ux_mode: popup` (no extra web-origin redirect URI). Do **not** use One Tap `google.accounts.id.prompt()` — FedCM One Tap often fails silently on Cloud Run.
 
 Copy the client id into GitHub repo variable `GOOGLE_CLIENT_ID`.
 
@@ -153,12 +153,12 @@ Deploys pin Cloud Run to **min 0 / max 1** instance, **256 MiB**, CPU throttling
 
 Compose runs **web and API**. Copy `.env.example` to `.env` and set `GOOGLE_CLIENT_ID` (the public GIS Web client id) so Settings shows official Sign in with Google instead of “Cloud sign-in is not configured on this build.” Do **not** set `VITE_FAKE_GOOGLE` in compose (that swaps in a shadcn button).
 
-Open **http://127.0.0.1:5173** — not `localhost` — so the origin matches `WEB_ORIGIN`. API health: `http://127.0.0.1:8080/healthz`. In-memory store (no `DATABASE_URL`).
+Open **http://127.0.0.1:45173** — not `localhost` — so the origin matches `WEB_ORIGIN`. API health: `http://127.0.0.1:48080/healthz`. In-memory store (no `DATABASE_URL`).
 
 ```bash
 cp .env.example .env               # paste GOOGLE_CLIENT_ID
-docker compose up --build          # Vite → :5173, API → :8080
-WEB_ORIGIN=http://127.0.0.1:4173 docker compose --profile preview up --build api preview   # built preview → :4173
+docker compose up --build          # Vite → :45173, API → :48080
+WEB_ORIGIN=http://127.0.0.1:44173 docker compose --profile preview up --build api preview   # built preview → :44173
 ```
 
 `node_modules` lives in a named volume so the bind mount does not fight host/container installs.

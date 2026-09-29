@@ -11,7 +11,7 @@ Local-first personal finance tracker with optional Google cloud sync. Signed-out
 - Dexie (IndexedDB; cache when signed in)
 - Hono API + Cloud SQL (signed-in, Specs 119–121)
 - Vitest + Playwright
-- Spec-Driven Development + TDD + GitHub Flow
+- Spec-Driven Development + TDD + Git Flow
 - Hosting target: **GCP Cloud Run** (web + API). See [docs/HOSTING.md](docs/HOSTING.md).
 
 ## Quick start
@@ -30,7 +30,7 @@ cp .env.example .env   # set GOOGLE_CLIENT_ID for official Sign in with Google
 docker compose up --build
 ```
 
-Then open **http://127.0.0.1:5173** (not `localhost`) — web + API. See [docs/HOSTING.md](docs/HOSTING.md).
+Then open **http://127.0.0.1:45173** (not `localhost`) — web + API. See [docs/HOSTING.md](docs/HOSTING.md).
 
 ```bash
 npm run check
@@ -56,7 +56,7 @@ Read these before changing behavior:
 | -------------------------------------------- | ---------------------------------------------------- |
 | [docs/PRODUCT.md](docs/PRODUCT.md)           | Locked product decisions (two modes, dropped/parked) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, wrapping, workspaces                         |
-| [docs/PROCESS.md](docs/PROCESS.md)           | SDD + TDD + GitHub Flow                              |
+| [docs/PROCESS.md](docs/PROCESS.md)           | SDD + TDD + Git Flow                                 |
 | [docs/HOSTING.md](docs/HOSTING.md)           | GCP Cloud Run (`us-central1`, two services)          |
 | [docs/FIRST_WORK.md](docs/FIRST_WORK.md)     | Scaffold scope                                       |
 | [docs/ROADMAP.md](docs/ROADMAP.md)           | Feature order                                        |
