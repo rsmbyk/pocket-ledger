@@ -4,7 +4,7 @@ Ordered slices. Each slice gets a numbered spec before code.
 
 ## Next
 
-No numbered slice is queued. The next spec ID is **255**.
+No numbered slice is queued.
 
 Parked (not v1): Android (`pocket-ledger-android`, Spec 122), cloud lockout + email, wipe/delete account, Argon2id, custom domain, GCS. See `docs/PRODUCT.md`.
 

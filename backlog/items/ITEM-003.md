@@ -20,7 +20,7 @@ release_version:
 
 ## Summary
 
-Correct stale GitHub Flow wording, move Docker Compose's host-facing ports to uncommon loopback ports, and bring the roadmap's next-spec value up to date.
+Correct stale GitHub Flow wording, move Docker Compose's host-facing ports to uncommon loopback ports, and remove the stale manually maintained next-spec value from the roadmap.
 
 ## Notes
 
@@ -31,7 +31,7 @@ Correct stale GitHub Flow wording, move Docker Compose's host-facing ports to un
 
 - README identifies Git Flow.
 - Compose defaults and every Compose-specific instruction use the proposed ports consistently.
-- ROADMAP records 255 as the next available numbered spec.
+- ROADMAP does not require a manually updated next-spec value.
 
 ## Links
 

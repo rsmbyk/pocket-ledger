@@ -8,17 +8,17 @@
 
 ## Why
 
-The README still describes the superseded GitHub Flow model, Docker Compose exposes common local-development ports that can collide with other processes, and the roadmap incorrectly names 251 as the next available spec despite Specs 251–254 existing.
+The README still describes the superseded GitHub Flow model, Docker Compose exposes common local-development ports that can collide with other processes, and the roadmap carries a stale manually maintained next-spec value.
 
 ## Scope / edges
 
-**In:** README Git Flow wording; Compose loopback host mappings and browser-facing environment URLs; Compose-specific setup instructions in README, `.env.example`, `docs/HOSTING.md`, and `AGENTS.md`; roadmap next-spec value.
+**In:** README Git Flow wording; Compose loopback host mappings and browser-facing environment URLs; Compose-specific setup instructions in README, `.env.example`, `docs/HOSTING.md`, and `AGENTS.md`; removal of the roadmap next-spec value.
 
 **Out:** Native host-development and Playwright ports; container-internal ports; production deployment settings; behavior, dependencies, and tests.
 
 ## Approach
 
-Map Docker Compose's existing container ports to loopback host ports `45173` (Vite dev), `48080` (API), and `44173` (preview). Keep all internal service listeners unchanged. Update the Compose documentation and OAuth origin/redirect guidance to match those browser-facing ports, change README wording to Git Flow, and set the roadmap's next ID to 255.
+Map Docker Compose's existing container ports to loopback host ports `45173` (Vite dev), `48080` (API), and `44173` (preview). Keep all internal service listeners unchanged. Update the Compose documentation and OAuth origin/redirect guidance to match those browser-facing ports, change README wording to Git Flow, and remove the roadmap's manually maintained next-spec value.
 
 ## TDD
 

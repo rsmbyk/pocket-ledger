@@ -18,7 +18,7 @@ Make the repository's public and local-compose instructions truthful and reduce 
 - Replace README's GitHub Flow references with Git Flow.
 - Expose Docker Compose services only on loopback using host ports 45173 (dev web), 48080 (API), and 44173 (preview).
 - Make Compose browser-facing URLs, CORS defaults, API URLs, health-check guidance, and OAuth local origins/redirects consistent with those ports.
-- Update the roadmap to declare 255 as the next numbered spec.
+- Remove the roadmap's manually maintained next-spec value.
 
 ### Out of scope
 
@@ -51,11 +51,11 @@ Make the repository's public and local-compose instructions truthful and reduce 
 - **When** they use dev or preview with official Google Identity Services
 - **Then** the documented origins and redirect URI use 45173/44173/48080 respectively and match Compose configuration.
 
-### Scenario: Roadmap reports the next available spec
+### Scenario: Roadmap does not require manual spec-number maintenance
 
-- **Given** Specs 251 through 254 exist
+- **Given** numbered specs are added over time
 - **When** a contributor reads the roadmap
-- **Then** it reports 255 as the next spec ID.
+- **Then** it does not contain a manually maintained next-spec value.
 
 ## Traceability
 

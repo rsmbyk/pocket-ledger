@@ -13,7 +13,7 @@
 - [x] Update README Git Flow language and Compose URL.
 - [x] Update `docker-compose.yml` host-port mappings, CORS origin, browser API URLs, and comments.
 - [x] Update `.env.example`, `docs/HOSTING.md`, and `AGENTS.md` Compose-only instructions and OAuth URLs.
-- [x] Update `docs/ROADMAP.md` next-spec value.
+- [x] Remove the manually maintained next-spec value from `docs/ROADMAP.md`.
 - [x] Verify `docker compose config` contains the intended loopback port mappings and `rg` finds no stale Compose-facing old ports.
 - [x] Fill Traceability in `./spec.md`.
 - [ ] Update ITEM + [`backlog/board.md`](../../backlog/board.md) in this PR (In review while open; Done before merge).
